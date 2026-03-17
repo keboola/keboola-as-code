@@ -104,7 +104,15 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	// Limit request body size to prevent memory exhaustion attacks
 	req.Body = http.MaxBytesReader(w, req.Body, 1<<20) // 1MB limit
 	if err := req.ParseForm(); err != nil {
-		return err
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			// Request body exceeded the configured limit
+			h.pageWriter.WriteErrorPage(w, req, &h.app, http.StatusRequestEntityTooLarge, "Request body too large", "")
+			return nil
+		}
+		// Any other form parsing error is treated as a bad request
+		h.pageWriter.WriteErrorPage(w, req, &h.app, http.StatusBadRequest, "Invalid form data", "")
+		return nil
 	}
 
 	// CSRF token validation
