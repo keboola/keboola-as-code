@@ -215,6 +215,7 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 			}
 
 			// Inject E2B access token for E2B sandbox apps.
+			r.Out.Header.Del("e2b-traffic-access-token") // ensure old token is not forwarded if it was removed from the app config
 			if u.e2bAccessToken != "" {
 				r.Out.Header.Set("e2b-traffic-access-token", u.e2bAccessToken)
 			}
