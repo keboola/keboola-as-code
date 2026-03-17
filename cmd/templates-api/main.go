@@ -38,6 +38,9 @@ const (
 	ENVPrefix         = "TEMPLATES_"
 	ErrorNamePrefix   = "templates."
 	ExceptionIdPrefix = "keboola-templates-"
+
+	//nolint:gosec // G101: This is a header name constant, not hardcoded credentials
+	StorageTokenHeader = "X-StorageAPI-Token"
 )
 
 func main() {
@@ -126,7 +129,7 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 		ExceptionIDPrefix: ExceptionIdPrefix,
 		EnableGzip:        true, // Enable gzip compression for responses
 		MiddlewareOptions: []middleware.Option{
-			middleware.WithRedactedHeader("X-StorageAPI-Token"),
+			middleware.WithRedactedHeader(StorageTokenHeader),
 			middleware.WithPropagators(propagation.TraceContext{}),
 			middleware.WithFilter(func(req *http.Request) bool {
 				return req.URL.Path != "/health-check"
@@ -152,7 +155,7 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 			middleware.ProjectScope(middleware.ProjectScopeConfig{
 				ProjectScopeCtxKey: dependencies.ProjectRequestScopeCtxKey,
 				PublicScopeCtxKey:  dependencies.PublicRequestScopeCtxKey,
-				TokenHeader:        "X-StorageAPI-Token",
+				TokenHeader:        StorageTokenHeader,
 				CreateProjectScope: func(ctx context.Context, publicScope any, token string) (any, error) {
 					pubScp, ok := publicScope.(dependencies.PublicRequestScope)
 					if !ok {

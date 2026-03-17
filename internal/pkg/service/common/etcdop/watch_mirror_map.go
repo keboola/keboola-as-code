@@ -281,12 +281,15 @@ func (m *MirrorMap[T, K, V]) recordMemoryTelemetry(ctx context.Context, tel tele
 	var memoryConsumed int64
 
 	// Measure base memory usage of the map structure
+	//nolint:gosec // G115: Sizeof returns memory size in bytes, always fits in int64
 	memoryConsumed += int64(unsafe.Sizeof(*m))
 
 	// Lock the map to measure memory usage of its elements
 	for k, v := range m.mapData {
+		//nolint:gosec // G115: Sizeof returns memory size in bytes, always fits in int64
 		memoryConsumed += int64(unsafe.Sizeof(k)) // Add key size
-		memoryConsumed += int64(memory.Size(v))   // Add value size
+		//nolint:gosec // G115: memory.Size returns memory size in bytes, always fits in int64
+		memoryConsumed += int64(memory.Size(v)) // Add value size
 	}
 
 	// Emit metrics for the current map memory

@@ -50,7 +50,7 @@ type AppInfo struct {
 
 type appStatus struct {
 	CurrentState AppActualState `json:"currentState"`
-	AppsProxy    appsProxy      `json:"appsProxy,omitempty"`
+	AppsProxy    appsProxy      `json:"appsProxy"`
 }
 
 type appsProxy struct {

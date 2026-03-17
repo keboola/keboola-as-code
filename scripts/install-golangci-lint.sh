@@ -7,7 +7,7 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 #set -o xtrace          # Trace the execution of the script (debug)
 
 # Version to install
-GOLANGCI_LINT_VERSION="v2.9.0"
+GOLANGCI_LINT_VERSION="v2.11.3"
 
 # Determine installation directory
 BIN_DIR="$(go env GOBIN)"

@@ -82,7 +82,7 @@ func TestGzipMiddleware(t *testing.T) {
 			middleware := Gzip()
 
 			// Create test request.
-			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", nil)
 			req.Header.Set("Accept-Encoding", tt.acceptEncoding)
 
 			// Create response recorder.
@@ -132,7 +132,7 @@ func TestGzipMiddleware_EmptyBodyPaths(t *testing.T) {
 			// no body written
 		})
 		mw := Gzip()
-		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", nil)
 		req.Header.Set("Accept-Encoding", "gzip")
 		rr := httptest.NewRecorder()
 		mw(handler).ServeHTTP(rr, req)
@@ -159,7 +159,7 @@ func TestGzipMiddleware_EmptyBodyPaths(t *testing.T) {
 			// no body written
 		})
 		mw := Gzip()
-		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", nil)
 		req.Header.Set("Accept-Encoding", "gzip")
 		rr := httptest.NewRecorder()
 		mw(handler).ServeHTTP(rr, req)
@@ -178,7 +178,7 @@ func TestGzipMiddleware_EmptyBodyPaths(t *testing.T) {
 			// no headers, no body
 		})
 		mw := Gzip()
-		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", nil)
 		req.Header.Set("Accept-Encoding", "gzip")
 		rr := httptest.NewRecorder()
 		mw(handler).ServeHTTP(rr, req)
@@ -202,7 +202,7 @@ func TestGzipMiddleware_GzipWriterInitFailureFallback(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", nil)
 	req.Header.Set("Accept-Encoding", "gzip")
 	rr := httptest.NewRecorder()
 	mw(handler).ServeHTTP(rr, req)

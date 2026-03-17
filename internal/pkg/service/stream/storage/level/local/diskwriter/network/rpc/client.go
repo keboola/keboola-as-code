@@ -149,6 +149,7 @@ func OpenNetworkFile(
 		_ = clientConn.Close()
 		return nil, err
 	}
+	//nolint:gosec // G118: context.Background() is intentional, this goroutine outlives the request context
 	go func() {
 		ctx := context.Background()
 		// It is expected to receive only one message, `io.EOF` or `message` that the termination is done

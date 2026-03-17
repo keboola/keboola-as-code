@@ -22,6 +22,9 @@ import (
 const (
 	ErrorNamePrefix   = "stream.api."
 	ExceptionIDPrefix = "keboola-stream-api-"
+
+	//nolint:gosec // G101: This is a header name constant, not hardcoded credentials
+	StorageTokenHeader = "X-StorageAPI-Token"
 )
 
 func Start(ctx context.Context, d dependencies.APIScope, cfg config.Config) error {
@@ -35,7 +38,7 @@ func Start(ctx context.Context, d dependencies.APIScope, cfg config.Config) erro
 		ExceptionIDPrefix: ExceptionIDPrefix,
 		MiddlewareOptions: []middleware.Option{
 			middleware.WithRedactedRouteParam("secret"),
-			middleware.WithRedactedHeader("X-StorageAPI-Token"),
+			middleware.WithRedactedHeader(StorageTokenHeader),
 			middleware.WithPropagators(propagation.TraceContext{}),
 			// Ignore health checks
 			middleware.WithFilter(func(req *http.Request) bool {
@@ -58,7 +61,7 @@ func Start(ctx context.Context, d dependencies.APIScope, cfg config.Config) erro
 			middleware.ProjectScope(middleware.ProjectScopeConfig{
 				ProjectScopeCtxKey: dependencies.ProjectRequestScopeCtxKey,
 				PublicScopeCtxKey:  dependencies.PublicRequestScopeCtxKey,
-				TokenHeader:        "X-StorageAPI-Token",
+				TokenHeader:        StorageTokenHeader,
 				CreateProjectScope: func(ctx context.Context, publicScope any, token string) (any, error) {
 					pubScp, ok := publicScope.(dependencies.PublicRequestScope)
 					if !ok {

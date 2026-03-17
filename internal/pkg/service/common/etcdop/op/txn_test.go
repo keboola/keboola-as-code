@@ -1244,7 +1244,7 @@ func TestTxnOp_Merge_Nested(t *testing.T) {
 
 	onSucceeded := func(i int) func(result *TxnResult[NoResult]) {
 		return func(result *TxnResult[NoResult]) {
-			logs.WriteString(fmt.Sprintf("callback%d\n", i))
+			fmt.Fprintf(&logs, "callback%d\n", i)
 		}
 	}
 
@@ -1315,7 +1315,7 @@ func TestTxnOp_Merge_Nested_ServerError(t *testing.T) {
 
 	onSucceeded := func(i int) func(result *TxnResult[NoResult]) {
 		return func(result *TxnResult[NoResult]) {
-			logs.WriteString(fmt.Sprintf("callback%d\n", i))
+			fmt.Fprintf(&logs, "callback%d\n", i)
 		}
 	}
 

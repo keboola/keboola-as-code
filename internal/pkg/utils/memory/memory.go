@@ -33,14 +33,17 @@ func calculateSize(v reflect.Value, visited map[uintptr]bool) uintptr {
 	case reflect.Slice:
 		// Slice = header + array memory
 		elemSize := v.Type().Elem().Size()
+		//nolint:gosec // G115: Cap() returns valid slice capacity, safe to convert to uintptr
 		return baseSize + uintptr(v.Cap())*elemSize
 
 	case reflect.String:
 		// String header + bytes
+		//nolint:gosec // G115: Len() returns valid string length, safe to convert to uintptr
 		return baseSize + uintptr(v.Len())
 
 	case reflect.Array:
 		// Arrays have fixed size elements
+		//nolint:gosec // G115: Len() returns valid array length, safe to convert to uintptr
 		return uintptr(v.Len()) * v.Type().Elem().Size()
 
 	case reflect.Struct:

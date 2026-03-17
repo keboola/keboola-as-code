@@ -194,7 +194,7 @@ func (d *branchesDialog) unique(items model.AllowedBranches) model.AllowedBranch
 		m.Set(string(item), true)
 	}
 
-	unique := model.AllowedBranches{}
+	unique := make(model.AllowedBranches, 0, len(m.Keys()))
 	for _, item := range m.Keys() {
 		unique = append(unique, model.AllowedBranch(item))
 	}

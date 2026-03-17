@@ -93,7 +93,7 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	// Create request
 	rec := httptest.NewRecorder()
 	body := io.NopCloser(strings.NewReader("some body"))
-	req := httptest.NewRequest(http.MethodPost, "/api/item/123/my-secret-1?foo=bar&secret2=my-secret-2", body)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/item/123/my-secret-1?foo=bar&secret2=my-secret-2", body)
 	req.Header.Set("User-Agent", "my-user-agent")
 	req.Header.Set("X-StorageAPI-Token", "my-token")
 
@@ -112,11 +112,11 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 
 	// Send ignored requests
 	rec = httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/ignored-all", nil))
+	handler.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/ignored-all", nil))
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, responseContent, rec.Body.String())
 	rec = httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/ignored-tracing", nil))
+	handler.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/ignored-tracing", nil))
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, responseContent, rec.Body.String())
 
