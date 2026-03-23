@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/transfer"
 	"github.com/schollz/progressbar/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -123,7 +124,7 @@ func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadC
 }
 
 func upload(ctx context.Context, file *keboola.FileUploadCredentials, reader io.Reader, bar *progressbar.ProgressBar) (err error) {
-	blobWriter, err := keboola.NewUploadWriter(ctx, file)
+	blobWriter, err := transfer.NewUploadWriter(ctx, file)
 	defer func() {
 		err = blobWriter.Close()
 	}()

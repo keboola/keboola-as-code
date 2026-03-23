@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/transfer"
 	"github.com/klauspost/pgzip"
 	"github.com/schollz/progressbar/v3"
 	"go.uber.org/atomic"
@@ -163,7 +164,7 @@ func (d *downloader) readSliceTo(ctx context.Context, slice string, writer io.Wr
 	var reader io.Reader
 
 	// Create slice reader
-	if sliceReader, err := keboola.DownloadSliceReader(ctx, d.options.File, slice); err == nil {
+	if sliceReader, err := transfer.DownloadSliceReader(ctx, d.options.File, slice); err == nil {
 		defer func() {
 			if closeErr := sliceReader.Close(); returnErr == nil && closeErr != nil {
 				returnErr = closeErr
@@ -217,7 +218,7 @@ func (d *downloader) addHeaderToCSV(writer io.Writer) error {
 func (d *downloader) getSlices(ctx context.Context) ([]string, error) {
 	if d.options.File.IsSliced {
 		// Sliced file
-		return keboola.DownloadManifest(ctx, d.options.File)
+		return transfer.DownloadManifest(ctx, d.options.File)
 	} else {
 		// Simple file
 		return []string{""}, nil
@@ -237,7 +238,7 @@ func (d *downloader) totalSize(ctx context.Context) (size int64, err error) {
 			}
 
 			// Get slice size
-			if attrs, err := keboola.GetFileAttributes(ctx, d.options.File, slice); err == nil {
+			if attrs, err := transfer.GetFileAttributes(ctx, d.options.File, slice); err == nil {
 				atomicSize.Add(attrs.Size)
 				return nil
 			} else {

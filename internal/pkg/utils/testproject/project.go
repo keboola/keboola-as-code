@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
+	"github.com/keboola/keboola-sdk-go/v2/transfer"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -334,7 +335,7 @@ func (p *Project) prepareBucketTable(ctx context.Context, t *fixtures.Table) err
 	tableKey := keboola.TableKey{BranchID: p.defaultBranch.ID, TableID: t.ID}
 	if len(t.Rows) == 0 {
 		p.logf("▶ Table \"%s\"...", t.Name)
-		_, err := p.keboolaProjectAPI.CreateTableRequest(tableKey, t.Columns, keboola.WithPrimaryKey(t.PrimaryKey)).Send(ctx)
+		_, err := transfer.CreateTable(ctx, p.keboolaProjectAPI, tableKey, t.Columns, keboola.WithPrimaryKey(t.PrimaryKey))
 		if err != nil {
 			return err
 		}
@@ -363,7 +364,7 @@ func (p *Project) prepareBucketTable(ctx context.Context, t *fixtures.Table) err
 	if err != nil {
 		return err
 	}
-	_, err = keboola.Upload(ctx, file, buf)
+	_, err = transfer.Upload(ctx, file, buf)
 	if err != nil {
 		return err
 	}
@@ -401,7 +402,7 @@ func (p *Project) createFiles(files []*fixtures.File) error {
 			}
 
 			if fixture.Content != "" {
-				_, err = keboola.Upload(ctx, file, strings.NewReader(fixture.Content))
+				_, err = transfer.Upload(ctx, file, strings.NewReader(fixture.Content))
 				if err != nil {
 					errs.Append(errors.Errorf("could not upload file \"%s\" content: %w", fixture.Name, err))
 					return
@@ -411,14 +412,14 @@ func (p *Project) createFiles(files []*fixtures.File) error {
 			if len(fixture.Slices) > 0 {
 				slices := make([]string, 0, len(fixture.Slices))
 				for _, slice := range fixture.Slices {
-					_, err = keboola.UploadSlice(ctx, file, slice.Name, strings.NewReader(slice.Content))
+					_, err = transfer.UploadSlice(ctx, file, slice.Name, strings.NewReader(slice.Content))
 					if err != nil {
 						errs.Append(errors.Errorf("could not upload file \"%s\" slice \"%s\": %w", fixture.Name, slice.Name, err))
 						return
 					}
 					slices = append(slices, slice.Name)
 				}
-				_, err = keboola.UploadSlicedFileManifest(ctx, file, slices)
+				_, err = transfer.UploadSlicedFileManifest(ctx, file, slices)
 				if err != nil {
 					errs.Append(errors.Errorf("could not upload file \"%s\" manifest: %w", fixture.Name, err))
 					return
