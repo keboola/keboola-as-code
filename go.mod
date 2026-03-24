@@ -42,8 +42,8 @@ require (
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-cloud-encrypt v0.0.0-20250422071622-41a5d5547c43
-	github.com/keboola/go-utils v1.4.1
-	github.com/keboola/keboola-sdk-go/v2 v2.16.0
+	github.com/keboola/go-utils v1.4.0
+	github.com/keboola/keboola-sdk-go/v2 v2.16.1-0.20260324062957-b46d754f75c2
 	github.com/keboola/keboola-sdk-go/v2/transfer v1.0.0
 	github.com/klauspost/compress v1.18.4
 	github.com/klauspost/pgzip v1.2.6
