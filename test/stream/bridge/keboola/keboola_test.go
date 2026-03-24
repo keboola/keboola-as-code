@@ -17,6 +17,7 @@ import (
 	toxiproxyClient "github.com/Shopify/toxiproxy/v2/client"
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/transfer"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -810,7 +811,7 @@ func (ts *testState) testSlicesUpload(t *testing.T, ctx context.Context, expecta
 	require.Len(t, *keboolaFiles, len(expectations.expectedFiles))
 	downloadCred, err := ts.project.ProjectAPI().GetFileWithCredentialsRequest((*keboolaFiles)[len(*keboolaFiles)-1].FileKey).Send(ctx)
 	require.NoError(t, err)
-	slicesList, err := keboola.DownloadManifest(ctx, downloadCred)
+	slicesList, err := transfer.DownloadManifest(ctx, downloadCred)
 	require.NoError(t, err)
 	require.Len(t, slicesList, len(uploadedSlices))
 
@@ -818,7 +819,7 @@ func (ts *testState) testSlicesUpload(t *testing.T, ctx context.Context, expecta
 	ts.logSection(t, "checking slices content in the staging storage")
 	var allSlicesContent strings.Builder
 	for _, slice := range slicesList {
-		rawReader, err := keboola.DownloadSliceReader(ctx, downloadCred, slice)
+		rawReader, err := transfer.DownloadSliceReader(ctx, downloadCred, slice)
 		require.NoError(t, err)
 		gzipReader, err := gzip.NewReader(rawReader)
 		require.NoError(t, err)
