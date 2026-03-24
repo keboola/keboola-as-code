@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/transfer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
@@ -110,7 +111,7 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	}
 
 	// Upload slice
-	uploader, err := keboola.NewUploadSliceWriter(ctx, &credentials, slice.StagingStorage.Path)
+	uploader, err := transfer.NewUploadSliceWriter(ctx, &credentials, slice.StagingStorage.Path)
 	if err != nil {
 		return err
 	}
@@ -158,6 +159,6 @@ func (b *Bridge) uploadSlice(ctx context.Context, volume *diskreader.Volume, sli
 	manifestSlices = append(manifestSlices, slice.StagingStorage.Path)
 
 	// Update the manifest
-	_, err = keboola.UploadSlicedFileManifest(ctx, &credentials, manifestSlices)
+	_, err = transfer.UploadSlicedFileManifest(ctx, &credentials, manifestSlices)
 	return err
 }

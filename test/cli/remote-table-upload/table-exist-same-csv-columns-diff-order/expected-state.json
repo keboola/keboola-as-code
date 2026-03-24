@@ -36,26 +36,26 @@
   ],
   "files": [
     {
-      "name": "create_table_in.c_my_bucket.data",
+      "name": "data.csv",
+      "tags": [
+        "test"
+      ],
+      "isSliced": false,
+      "isEncrypted": true,
+      "isPermanent": false
+    },
+    {
+      "name": "data.csv",
+      "tags": [
+        "test"
+      ],
+      "isSliced": false,
+      "isEncrypted": true,
+      "isPermanent": false
+    },
+    {
+      "name": "table_header_in.c_my_bucket.data",
       "tags": [],
-      "isSliced": false,
-      "isEncrypted": true,
-      "isPermanent": false
-    },
-    {
-      "name": "data.csv",
-      "tags": [
-        "test"
-      ],
-      "isSliced": false,
-      "isEncrypted": true,
-      "isPermanent": false
-    },
-    {
-      "name": "data.csv",
-      "tags": [
-        "test"
-      ],
       "isSliced": false,
       "isEncrypted": true,
       "isPermanent": false
