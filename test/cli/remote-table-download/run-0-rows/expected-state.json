@@ -38,18 +38,18 @@
   ],
   "files": [
     {
-      "name": "create_table_in.c_test.accounts",
-      "tags": [],
-      "isSliced": false,
-      "isEncrypted": true,
-      "isPermanent": false
-    },
-    {
       "name": "in.c-test.accounts.csv",
       "tags": [
         "table-export"
       ],
       "isSliced": true,
+      "isEncrypted": true,
+      "isPermanent": false
+    },
+    {
+      "name": "table_header_in.c_test.accounts",
+      "tags": [],
+      "isSliced": false,
       "isEncrypted": true,
       "isPermanent": false
     }
