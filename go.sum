@@ -596,12 +596,6 @@ github.com/keboola/go-oauth2-proxy/v7 v7.13.1-0.20251120082210-251fbcb18c16 h1:m
 github.com/keboola/go-oauth2-proxy/v7 v7.13.1-0.20251120082210-251fbcb18c16/go.mod h1:2KeAM0/QPbyUAoky+PXVgQDt/5m0qNcn30z9jh4ig8A=
 github.com/keboola/go-utils v1.4.0 h1:WTyj95yrr8O8HxtC8TSTyUcElZiRGDeEdVvDpFo6HUo=
 github.com/keboola/go-utils v1.4.0/go.mod h1:IopwJzFz2gh0Yj3fUbIe2eamRoDKzbXvjqFjQyw3ZdQ=
-github.com/keboola/go-utils v1.4.1 h1:9OcVRwLlDC7tF4Fa+1kq5YVo+ZQIDE5Fq3x92AqlTtQ=
-github.com/keboola/go-utils v1.4.1/go.mod h1:IopwJzFz2gh0Yj3fUbIe2eamRoDKzbXvjqFjQyw3ZdQ=
-github.com/keboola/keboola-sdk-go/v2 v2.15.0 h1:qebM1yJ4tng1wcd3Y1hJ74NvDM2dz8Q9JV4D2RZtZGo=
-github.com/keboola/keboola-sdk-go/v2 v2.15.0/go.mod h1:rNZ6G/UVpVICOLPhNn59jH+EBvkVo78BwRIIG0pMhA4=
-github.com/keboola/keboola-sdk-go/v2 v2.16.0 h1:/PfXAgoDNdp1R1MBIeZz7MiFe1xZk06v69zWAADEM1c=
-github.com/keboola/keboola-sdk-go/v2 v2.16.0/go.mod h1:Pg8CKPacZpqznN3ZFGtsFb17NTobpRWnN17Q5RjleGU=
 github.com/keboola/keboola-sdk-go/v2 v2.16.1-0.20260324062957-b46d754f75c2 h1:GwBtZle/Io0JpnXAc0i7hV2TTYkkYy7iG4nNKbuXh28=
 github.com/keboola/keboola-sdk-go/v2 v2.16.1-0.20260324062957-b46d754f75c2/go.mod h1:dLDyVUt6gMPGoXgON8yKh6+k4VEMlByXMqkK7rL1kuE=
 github.com/keboola/keboola-sdk-go/v2/transfer v1.0.0 h1:mjwUdS9W+0QDYycam20u0B3LSSEUpXFvHyH9Q5j6fwA=
