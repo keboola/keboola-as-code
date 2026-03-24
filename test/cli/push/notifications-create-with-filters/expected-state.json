@@ -1,0 +1,54 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "description": "",
+          "changeDescription": "%A",
+          "configuration": {},
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    }
+  ],
+  "notificationSubscriptions": [
+    {
+      "id": "%A",
+      "event": "job-processing-long",
+      "filters": [
+        {
+          "field": "branch.id",
+          "value": "%%TEST_BRANCH_MAIN_ID%%",
+          "operator": "=="
+        },
+        {
+          "field": "job.component.id",
+          "value": "ex-generic-v2",
+          "operator": "=="
+        },
+        {
+          "field": "job.configuration.id",
+          "value": "%%TEST_BRANCH_MAIN_CONFIG_EMPTY_ID%%",
+          "operator": "=="
+        },
+        {
+          "field": "durationOvertimePercentage",
+          "value": "0.75",
+          "operator": "\u003e="
+        }
+      ],
+      "recipient": {
+        "channel": "email",
+        "address": "alerts@example.com"
+      }
+    }
+  ]
+}

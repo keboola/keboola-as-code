@@ -1,0 +1,22 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "ex-generic-v2",
+          "name": "empty",
+          "description": "",
+          "changeDescription": "%A",
+          "configuration": {},
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}

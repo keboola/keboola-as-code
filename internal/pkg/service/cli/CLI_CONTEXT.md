@@ -2,6 +2,23 @@
 
 This document provides architectural context for the Keboola CLI service (`kbc`) located in `/internal/pkg/service/cli/`.
 
+## Notification Subscriptions
+
+The CLI supports managing notification subscriptions for configurations. Notifications are stored in `{config}/notifications/{subscription-id}/config.json` files and tracked in the manifest.
+
+**Key Features:**
+- Config-level notifications (branch-level not yet supported)
+- Events: job-failed, job-succeeded, job-warning, job-processing-long
+- Channels: email or webhook
+- Filters: Fine-grained control with operators (==, !=, >, <, >=, <=)
+- Full pull/push/sync support
+
+**Operations:**
+- `pull`: Load notifications from API → save to local files
+- `push`: Create/delete notifications (no update API - delete + create)
+- Manifest tracks subscription IDs for sync
+
+
 ## Overview
 
 The CLI provides a command-line interface for managing Keboola projects as code. It enables:
