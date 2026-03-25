@@ -50,15 +50,9 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		return errors.Errorf("could not list buckets: %w", err)
 	}
 
-	// Load workspace credentials
-	workspace, err := d.KeboolaProjectAPI().GetSandboxWorkspaceInstanceRequest(o.Workspace.ID).Send(ctx)
-	if err != nil {
-		return errors.Errorf("could not load workspace credentials: %w", err)
-	}
-
 	targetUpper := strings.ToUpper(o.TargetName)
-	host := workspace.Host
-	if workspace.Type == keboola.SandboxWorkspaceTypeSnowflake {
+	host := o.Workspace.Host
+	if o.Workspace.Type == keboola.SandboxWorkspaceTypeSnowflake {
 		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
 	}
 
@@ -66,17 +60,17 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	var envContent strings.Builder
 	envVars := make(map[string]string)
 
-	envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = workspace.Type.String()
-	envVars[fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper)] = workspace.Details.Connection.Schema
-	envVars[fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper)] = workspace.Details.Connection.Warehouse
-	envVars[fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper)] = workspace.Details.Connection.Database
+	envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = o.Workspace.Type.String()
+	envVars[fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper)] = o.Workspace.Details.Connection.Schema
+	envVars[fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper)] = o.Workspace.Details.Connection.Warehouse
+	envVars[fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper)] = o.Workspace.Details.Connection.Database
 
 	linkedBucketEnvsMap := make(map[string]string) // Store env var name -> value
 	for _, bucket := range o.Buckets {
 		if bucket.LinkedProjectID != 0 {
 			envVarName := bucket.DatabaseEnv
 			if _, exists := linkedBucketEnvsMap[envVarName]; !exists {
-				stackPrefix, _, _ := strings.Cut(workspace.Details.Connection.Database, "_") // SAPI_..., KEBOOLA_..., etc.
+				stackPrefix, _, _ := strings.Cut(o.Workspace.Details.Connection.Database, "_") // SAPI_..., KEBOOLA_..., etc.
 				envVarValue := fmt.Sprintf("%s_%d", stackPrefix, bucket.LinkedProjectID)
 				linkedBucketEnvsMap[envVarName] = envVarValue
 				envVars[envVarName] = envVarValue
@@ -84,14 +78,14 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		}
 	}
 	envVars[fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper)] = host
-	envVars[fmt.Sprintf("DBT_KBC_%s_USER", targetUpper)] = workspace.User
+	envVars[fmt.Sprintf("DBT_KBC_%s_USER", targetUpper)] = o.Workspace.User
 	// Only add private key if key-pair authentication was explicitly requested
 	// This ensures password-only workspaces don't get a private key in .env.local
 	if o.UseKeyPair && len(o.PrivateKey) > 0 {
 		envVars[fmt.Sprintf("DBT_KBC_%s_PRIVATE_KEY", targetUpper)] = o.PrivateKey
 	}
-	if len(workspace.Password) > 0 {
-		envVars[fmt.Sprintf("DBT_KBC_%s_PASSWORD", targetUpper)] = workspace.Password
+	if len(o.Workspace.Password) > 0 {
+		envVars[fmt.Sprintf("DBT_KBC_%s_PASSWORD", targetUpper)] = o.Workspace.Password
 	}
 
 	// Format KEY=VALUE pairs

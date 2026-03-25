@@ -1,7 +1,9 @@
 package deleteworkspace
 
 import (
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
@@ -44,11 +46,61 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return errors.Errorf("cannot get default branch: %w", err)
 			}
 
-			// Options
-			allWorkspaces, err := d.KeboolaProjectAPI().ListSandboxWorkspaces(cmd.Context(), branch.ID)
-			if err != nil {
+			// Fetch Python/R sandbox workspaces, SQL editor sessions, and sandbox configs in parallel.
+			var pyRWorkspaces []*keboola.SandboxWorkspaceWithConfig
+			var sessions []*keboola.EditorSession
+			var sandboxConfigs []*keboola.Config
+
+			grp, grpCtx := errgroup.WithContext(cmd.Context())
+			grp.Go(func() error {
+				var e error
+				pyRWorkspaces, e = d.KeboolaProjectAPI().ListSandboxWorkspaces(grpCtx, branch.ID)
+				return e
+			})
+			grp.Go(func() error {
+				result, e := d.KeboolaProjectAPI().ListEditorSessionsRequest().Send(grpCtx)
+				if e != nil {
+					return e
+				}
+				sessions = *result
+				return nil
+			})
+			grp.Go(func() error {
+				result, e := d.KeboolaProjectAPI().ListSandboxWorkspaceConfigRequest(branch.ID).Send(grpCtx)
+				if e != nil {
+					return e
+				}
+				sandboxConfigs = *result
+				return nil
+			})
+			if err := grp.Wait(); err != nil {
 				return err
 			}
+
+			// Build config name map for editor session name lookup.
+			configNameMap := make(map[string]string)
+			for _, c := range sandboxConfigs {
+				configNameMap[c.ID.String()] = c.Name
+			}
+
+			// Build combined list: Python/R workspaces + SQL editor sessions.
+			// For editor sessions, SandboxWorkspace.ID stores the EditorSessionID for later deletion.
+			allWorkspaces := make([]*keboola.SandboxWorkspaceWithConfig, 0, len(pyRWorkspaces)+len(sessions))
+			allWorkspaces = append(allWorkspaces, pyRWorkspaces...)
+			for _, s := range sessions {
+				name := configNameMap[s.ConfigurationID]
+				allWorkspaces = append(allWorkspaces, &keboola.SandboxWorkspaceWithConfig{
+					Config: &keboola.Config{
+						ConfigKey: keboola.ConfigKey{ID: keboola.ConfigID(s.ConfigurationID)},
+						Name:      name,
+					},
+					SandboxWorkspace: &keboola.SandboxWorkspace{
+						ID:   keboola.SandboxWorkspaceID(s.ID),
+						Type: keboola.SandboxWorkspaceType(s.BackendType),
+					},
+				})
+			}
+
 			sandbox, err := d.Dialogs().AskWorkspace(allWorkspaces, f.WorkspaceID)
 			if err != nil {
 				return err

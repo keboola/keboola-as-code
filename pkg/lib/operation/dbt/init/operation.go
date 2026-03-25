@@ -2,6 +2,7 @@ package init
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -10,7 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/crypto"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/profile"
@@ -50,34 +50,32 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("dbt init timeout"))
 	defer cancel()
 
-	// Optionally generate Snowflake key-pair
-	var privateKeyPEM string
-	var publicKeyPEM string
-	if o.UseKeyPair {
-		if privateKeyPEM, publicKeyPEM, err = crypto.GenerateRSAKeyPairPEM(); err != nil {
-			return errors.Errorf("cannot generate key-pair: %w", err)
-		}
-	}
-
-	// Create workspace
+	// Create SQL workspace via editor session — backend is determined by the project config.
 	d.Logger().Info(ctx, `Creating a new workspace, please wait.`)
-	createOpts := make([]keboola.CreateSandboxWorkspaceOption, 0)
-	if o.UseKeyPair {
-		// Pass public key to enable key-pair authentication in the workspace
-		createOpts = append(createOpts, keboola.WithPublicKey(publicKeyPEM))
-	}
-	w, err := d.KeboolaProjectAPI().CreateSandboxWorkspace(
-		ctx,
-		branch.ID,
-		o.WorkspaceName,
-		keboola.SandboxWorkspaceTypeSnowflake,
-		createOpts...,
-	)
+	session, err := d.KeboolaProjectAPI().CreateEditorSession(ctx, branch.ID, o.WorkspaceName)
 	if err != nil {
 		return errors.Errorf("cannot create workspace: %w", err)
 	}
 	d.Logger().Infof(ctx, `Created the new workspace "%s".`, o.WorkspaceName)
-	workspace := w.SandboxWorkspace
+
+	// Create fresh credentials for the storage workspace to get connection details + private key.
+	workspaceIDUint, err := strconv.ParseUint(session.EditorSession.WorkspaceID, 10, 64)
+	if err != nil {
+		return errors.Errorf("cannot parse workspace ID %q: %w", session.EditorSession.WorkspaceID, err)
+	}
+	storageWS, err := d.KeboolaProjectAPI().StorageWorkspaceCreateCredentialsRequest(branch.ID, workspaceIDUint).Send(ctx)
+	if err != nil {
+		return errors.Errorf("cannot fetch workspace credentials: %w", err)
+	}
+
+	// Build SandboxWorkspace from StorageWorkspace for env generation.
+	workspace := sandboxWorkspaceFromStorage(storageWS, keboola.SandboxWorkspaceType(storageWS.StorageWorkspaceDetails.Backend))
+
+	// Determine private key from the freshly created credentials.
+	privateKey := ""
+	if o.UseKeyPair && storageWS.StorageWorkspaceDetails.PrivateKey != nil {
+		privateKey = *storageWS.StorageWorkspaceDetails.PrivateKey
+	}
 
 	// List buckets
 	buckets, err := listbuckets.Run(ctx, listbuckets.Options{
@@ -112,7 +110,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 		BranchKey:  o.BranchKey,
 		TargetName: o.TargetName,
 		Workspace:  workspace,
-		PrivateKey: privateKeyPEM,
+		PrivateKey: privateKey,
 		UseKeyPair: o.UseKeyPair,
 		Buckets:    buckets,
 	}, d)
@@ -121,4 +119,25 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	}
 
 	return nil
+}
+
+// sandboxWorkspaceFromStorage constructs a SandboxWorkspace from StorageWorkspace details,
+// used for dbt env generation when credentials come from an editor session.
+func sandboxWorkspaceFromStorage(sw *keboola.StorageWorkspace, wsType keboola.SandboxWorkspaceType) *keboola.SandboxWorkspace {
+	deref := func(s *string) string {
+		if s == nil {
+			return ""
+		}
+		return *s
+	}
+	details := &keboola.SandboxWorkspaceDetails{}
+	details.Connection.Database = deref(sw.StorageWorkspaceDetails.Database)
+	details.Connection.Schema = deref(sw.StorageWorkspaceDetails.Schema)
+	details.Connection.Warehouse = deref(sw.StorageWorkspaceDetails.Warehouse)
+	return &keboola.SandboxWorkspace{
+		Type:    wsType,
+		Host:    deref(sw.StorageWorkspaceDetails.Host),
+		User:    deref(sw.StorageWorkspaceDetails.User),
+		Details: details,
+	}
 }

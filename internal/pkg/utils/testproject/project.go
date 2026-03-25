@@ -448,41 +448,11 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 
 	for _, fixture := range sandboxes {
 		wg.Go(func() {
-			opts := make([]keboola.CreateSandboxWorkspaceOption, 0)
-			if keboola.SandboxWorkspaceSupportsSizes(fixture.Type) && len(fixture.Size) > 0 {
-				opts = append(opts, keboola.WithSize(fixture.Size))
-			}
-
-			// Generate key-pair if requested
-			var privateKeyPEM string
-			if fixture.UseKeyPair {
-				var publicKeyPEM string
-				var err error
-				if privateKeyPEM, publicKeyPEM, err = crypto.GenerateRSAKeyPairPEM(); err != nil {
-					errs.Append(errors.Errorf("could not generate key-pair for sandbox \"%s\": %w", fixture.Name, err))
-					return
-				}
-				// Pass public key to enable key-pair authentication in the workspace
-				opts = append(opts, keboola.WithPublicKey(publicKeyPEM))
-			}
-
 			p.logf("▶ Sandbox \"%s\"...", fixture.Name)
-			sandbox, err := p.keboolaProjectAPI.CreateSandboxWorkspace(
-				ctx,
-				defaultBranchID,
-				fixture.Name,
-				fixture.Type,
-				opts...,
-			)
-			if err != nil {
-				errs.Append(errors.Errorf("could not create sandbox \"%s\": %w", fixture.Name, err))
-				return
-			}
-			p.logf("✔️ Sandbox \"%s\"(%s).", sandbox.Config.Name, sandbox.Config.ID)
-			p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), sandbox.Config.ID.String())
-			// Store private key in environment variable if key-pair authentication was used
-			if len(privateKeyPEM) > 0 {
-				p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_PRIVATE_KEY", fixture.Name), privateKeyPEM)
+			if keboola.SandboxWorkspaceSupportsSizes(fixture.Type) {
+				p.createPythonRSandbox(ctx, defaultBranchID, fixture, errs)
+			} else {
+				p.createSQLEditorSession(ctx, defaultBranchID, fixture, errs)
 			}
 		})
 	}
@@ -493,6 +463,48 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 	}
 
 	return nil
+}
+
+func (p *Project) createPythonRSandbox(ctx context.Context, branchID keboola.BranchID, fixture *fixtures.Sandbox, errs errors.MultiError) {
+	opts := make([]keboola.CreateSandboxWorkspaceOption, 0)
+	if len(fixture.Size) > 0 {
+		opts = append(opts, keboola.WithSize(fixture.Size))
+	}
+
+	var privateKeyPEM string
+	if fixture.UseKeyPair {
+		var publicKeyPEM string
+		var err error
+		if privateKeyPEM, publicKeyPEM, err = crypto.GenerateRSAKeyPairPEM(); err != nil {
+			errs.Append(errors.Errorf("could not generate key-pair for sandbox \"%s\": %w", fixture.Name, err))
+			return
+		}
+		opts = append(opts, keboola.WithPublicKey(publicKeyPEM))
+	}
+
+	sandbox, err := p.keboolaProjectAPI.CreateSandboxWorkspace(ctx, branchID, fixture.Name, fixture.Type, opts...)
+	if err != nil {
+		errs.Append(errors.Errorf("could not create sandbox \"%s\": %w", fixture.Name, err))
+		return
+	}
+	p.logf("✔️ Sandbox \"%s\"(%s).", sandbox.Config.Name, sandbox.Config.ID)
+	p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), sandbox.Config.ID.String())
+	if len(privateKeyPEM) > 0 {
+		p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_PRIVATE_KEY", fixture.Name), privateKeyPEM)
+	}
+}
+
+func (p *Project) createSQLEditorSession(ctx context.Context, branchID keboola.BranchID, fixture *fixtures.Sandbox, errs errors.MultiError) {
+	session, err := p.keboolaProjectAPI.CreateEditorSession(ctx, branchID, fixture.Name)
+	if err != nil {
+		errs.Append(errors.Errorf("could not create editor session \"%s\": %w", fixture.Name, err))
+		return
+	}
+	p.logf("✔️ Editor session \"%s\"(%s).", session.Config.Name, session.Config.ID)
+	p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), session.Config.ID.String())
+	if fixture.UseKeyPair && len(session.EditorSession.SnowflakePrivateKey) > 0 {
+		p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_PRIVATE_KEY", fixture.Name), session.EditorSession.SnowflakePrivateKey)
+	}
 }
 
 // createDefaultBranchRequest creates a request for the default branch.

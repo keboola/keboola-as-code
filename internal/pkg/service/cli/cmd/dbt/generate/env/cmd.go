@@ -3,6 +3,7 @@ package env
 import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
@@ -51,19 +52,62 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return errors.Errorf("cannot get default branch: %w", err)
 			}
 
-			// Get all Snowflake workspaces for the dialog
-			allWorkspaces, err := d.KeboolaProjectAPI().ListSandboxWorkspaces(cmd.Context(), branch.ID)
-			if err != nil {
+			// Fetch Python/R sandbox workspaces, SQL editor sessions, and sandbox configs in parallel.
+			var pyRWorkspaces []*keboola.SandboxWorkspaceWithConfig
+			var sessions []*keboola.EditorSession
+			var sandboxConfigs []*keboola.Config
+
+			grp, grpCtx := errgroup.WithContext(cmd.Context())
+			grp.Go(func() error {
+				var e error
+				pyRWorkspaces, e = d.KeboolaProjectAPI().ListSandboxWorkspaces(grpCtx, branch.ID)
+				return e
+			})
+			grp.Go(func() error {
+				result, e := d.KeboolaProjectAPI().ListEditorSessionsRequest().Send(grpCtx)
+				if e != nil {
+					return e
+				}
+				sessions = *result
+				return nil
+			})
+			grp.Go(func() error {
+				result, e := d.KeboolaProjectAPI().ListSandboxWorkspaceConfigRequest(branch.ID).Send(grpCtx)
+				if e != nil {
+					return e
+				}
+				sandboxConfigs = *result
+				return nil
+			})
+			if err := grp.Wait(); err != nil {
 				return err
 			}
-			snowflakeWorkspaces := make([]*keboola.SandboxWorkspaceWithConfig, 0)
-			for _, w := range allWorkspaces {
-				if w.Config.ComponentID == keboola.SandboxWorkspacesComponent {
-					snowflakeWorkspaces = append(snowflakeWorkspaces, w)
-				}
+
+			// Build config name map for editor session name lookup.
+			configNameMap := make(map[string]string)
+			for _, c := range sandboxConfigs {
+				configNameMap[c.ID.String()] = c.Name
 			}
 
-			opts, err := AskGenerateEnv(branch.BranchKey, d.Dialogs(), snowflakeWorkspaces, f, p.BaseScope().Environment())
+			// Build combined workspace list: Python/R + SQL editor sessions.
+			// For SQL sessions, SandboxWorkspace.ID stores the EditorSessionID for credential lookup.
+			allWorkspaces := make([]*keboola.SandboxWorkspaceWithConfig, 0, len(pyRWorkspaces)+len(sessions))
+			allWorkspaces = append(allWorkspaces, pyRWorkspaces...)
+			for _, s := range sessions {
+				name := configNameMap[s.ConfigurationID]
+				allWorkspaces = append(allWorkspaces, &keboola.SandboxWorkspaceWithConfig{
+					Config: &keboola.Config{
+						ConfigKey: keboola.ConfigKey{ID: keboola.ConfigID(s.ConfigurationID)},
+						Name:      name,
+					},
+					SandboxWorkspace: &keboola.SandboxWorkspace{
+						ID:   keboola.SandboxWorkspaceID(s.ID),
+						Type: keboola.SandboxWorkspaceType(s.BackendType),
+					},
+				})
+			}
+
+			opts, err := AskGenerateEnv(cmd.Context(), branch.BranchKey, branch.ID, d.Dialogs(), allWorkspaces, sessions, f, p.BaseScope().Environment(), d.KeboolaProjectAPI())
 			if err != nil {
 				return err
 			}

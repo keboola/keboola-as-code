@@ -37,58 +37,27 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("workspace creation timeout"))
 	defer cancel()
 
-	opts := make([]keboola.CreateSandboxWorkspaceOption, 0)
-	if len(o.Size) > 0 {
-		opts = append(opts, keboola.WithSize(o.Size))
-	}
-
 	logger.Info(ctx, `Creating a new workspace, please wait.`)
-	// Create workspace by API
-	w, err := d.KeboolaProjectAPI().CreateSandboxWorkspace(
-		ctx,
-		branch.ID,
-		o.Name,
-		o.Type,
-		opts...,
-	)
-	if err != nil {
-		return errors.Errorf("cannot create workspace: %w", err)
-	}
 
-	workspace := w.SandboxWorkspace
-
-	logger.Infof(ctx, `Created the new workspace "%s" (%s).`, o.Name, w.Config.ID)
-	switch workspace.Type {
-	case keboola.SandboxWorkspaceTypeSnowflake:
-		logger.Infof(
-			ctx,
-			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s\n  Warehouse: %s",
-			workspace.Host,
-			workspace.User,
-			workspace.Password,
-			workspace.Details.Connection.Database,
-			workspace.Details.Connection.Schema,
-			workspace.Details.Connection.Warehouse,
-		)
-	case keboola.SandboxWorkspaceTypeBigQuery:
-		logger.Infof(
-			ctx,
-			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s",
-			workspace.Host,
-			workspace.User,
-			workspace.Password,
-			workspace.Details.Connection.Database,
-			workspace.Details.Connection.Schema,
-		)
-	case keboola.SandboxWorkspaceTypePython:
-		fallthrough
-	case keboola.SandboxWorkspaceTypeR:
-		logger.Infof(
-			ctx,
-			"Credentials:\n  Host: %s\n  Password: %s",
-			workspace.Host,
-			workspace.Password,
-		)
+	if keboola.SandboxWorkspaceSupportsSizes(o.Type) {
+		// Python/R workspace
+		opts := make([]keboola.CreateSandboxWorkspaceOption, 0)
+		if len(o.Size) > 0 {
+			opts = append(opts, keboola.WithSize(o.Size))
+		}
+		w, err := d.KeboolaProjectAPI().CreateSandboxWorkspace(ctx, branch.ID, o.Name, o.Type, opts...)
+		if err != nil {
+			return errors.Errorf("cannot create workspace: %w", err)
+		}
+		logger.Infof(ctx, `Created the new workspace "%s" (%s).`, o.Name, w.Config.ID)
+		logger.Infof(ctx, "Credentials:\n  Host: %s\n  Password: %s", w.SandboxWorkspace.Host, w.SandboxWorkspace.Password)
+	} else {
+		// SQL workspace (Snowflake/BigQuery) — backend determined by project config
+		session, err := d.KeboolaProjectAPI().CreateEditorSession(ctx, branch.ID, o.Name)
+		if err != nil {
+			return errors.Errorf("cannot create workspace: %w", err)
+		}
+		logger.Infof(ctx, `Created the new workspace "%s" (%s).`, o.Name, session.Config.ID)
 	}
 
 	return nil

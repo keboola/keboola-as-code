@@ -1,10 +1,5 @@
 Workspace "foo"
 ID: %s
 Type: snowflake
-Credentials:
-  Host: %s
-  User: %s
-  Password: %s
-  Database: %s
-  Schema: %s
-  Warehouse: %s
+Database: %s
+Schema: %s

@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -29,14 +30,64 @@ func Run(ctx context.Context, d dependencies) (err error) {
 	}
 
 	logger.Info(ctx, "Loading workspaces, please wait.")
-	workspaces, err := d.KeboolaProjectAPI().ListSandboxWorkspaces(ctx, branch.ID)
-	if err != nil {
+
+	// Fetch Python/R sandbox workspaces, SQL editor sessions, and sandbox configs in parallel.
+	var pyRWorkspaces []*keboola.SandboxWorkspaceWithConfig
+	var sessions []*keboola.EditorSession
+	var sandboxConfigs []*keboola.Config
+
+	grp, grpCtx := errgroup.WithContext(ctx)
+	grp.Go(func() error {
+		var e error
+		pyRWorkspaces, e = d.KeboolaProjectAPI().ListSandboxWorkspaces(grpCtx, branch.ID)
+		return e
+	})
+	grp.Go(func() error {
+		result, e := d.KeboolaProjectAPI().ListEditorSessionsRequest().Send(grpCtx)
+		if e != nil {
+			return e
+		}
+		sessions = *result
+		return nil
+	})
+	grp.Go(func() error {
+		result, e := d.KeboolaProjectAPI().ListSandboxWorkspaceConfigRequest(branch.ID).Send(grpCtx)
+		if e != nil {
+			return e
+		}
+		sandboxConfigs = *result
+		return nil
+	})
+	if err := grp.Wait(); err != nil {
 		return err
 	}
-	sort.Slice(workspaces, func(i, j int) bool { return workspaces[i].Config.Name < workspaces[j].Config.Name })
+
+	// Build config name map for editor session name lookup.
+	configNameMap := make(map[string]string)
+	for _, c := range sandboxConfigs {
+		configNameMap[c.ID.String()] = c.Name
+	}
+
+	// Build combined list: Python/R workspaces + SQL editor sessions.
+	all := make([]*keboola.SandboxWorkspaceWithConfig, 0, len(pyRWorkspaces)+len(sessions))
+	all = append(all, pyRWorkspaces...)
+	for _, s := range sessions {
+		name := configNameMap[s.ConfigurationID]
+		all = append(all, &keboola.SandboxWorkspaceWithConfig{
+			Config: &keboola.Config{
+				ConfigKey: keboola.ConfigKey{ID: keboola.ConfigID(s.ConfigurationID)},
+				Name:      name,
+			},
+			SandboxWorkspace: &keboola.SandboxWorkspace{
+				Type: keboola.SandboxWorkspaceType(s.BackendType),
+			},
+		})
+	}
+
+	sort.Slice(all, func(i, j int) bool { return all[i].Config.Name < all[j].Config.Name })
 
 	logger.Info(ctx, "Found workspaces:")
-	for _, workspace := range workspaces {
+	for _, workspace := range all {
 		if keboola.SandboxWorkspaceSupportsSizes(workspace.SandboxWorkspace.Type) {
 			logger.Infof(ctx, "  %s (ID: %s, Type: %s, Size: %s)", workspace.Config.Name, workspace.Config.ID, workspace.SandboxWorkspace.Type, workspace.SandboxWorkspace.Size)
 		} else {
