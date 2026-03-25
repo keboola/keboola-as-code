@@ -30,6 +30,7 @@ type entry struct {
 	autoRestartEnabled bool
 	upstreamTarget     *url.URL // pre-parsed; nil when appsProxy.upstreamUrl absent/invalid
 	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
+	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
 }
 
 // StateWatcher watches App CRDs in Kubernetes and provides a local cache of app states.
@@ -72,10 +73,10 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 	})
 
 	lw := &cache.ListWatch{
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			return client.Resource(AppGVR()).Namespace(namespace).List(ctx, opts)
 		},
-		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			return client.Resource(AppGVR()).Namespace(namespace).Watch(ctx, opts)
 		},
 	}
@@ -117,12 +118,24 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 }
 
 // GetState returns the cached AppInfo for the app. Returns (AppInfo{}, false) if not yet cached.
+// If the E2B access token is missing but a secret name is known, it attempts to load the token lazily.
 func (w *StateWatcher) GetState(appID api.AppID) (AppInfo, bool) {
 	v, ok := w.apps.Load(appID)
 	if !ok {
 		return AppInfo{}, false
 	}
 	e := v.(entry)
+
+	// Lazy-load E2B token: the Secret may not have existed when the App CRD event was processed.
+	if e.e2bAccessToken == "" && e.e2bSecretName != "" {
+		token, err := w.loadSecretToken(context.Background(), e.e2bSecretName)
+		if err == nil && token != "" {
+			e.e2bAccessToken = token
+			w.apps.Store(appID, e)
+			w.logger.Infof(context.Background(), "App %s: lazy-loaded E2B access token from secret %q", appID, e.e2bSecretName)
+		}
+	}
+
 	return AppInfo{
 		ActualState:        e.state,
 		AutoRestartEnabled: e.autoRestartEnabled,
@@ -199,11 +212,13 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 	}
 
 	var e2bAccessToken string
+	var e2bSecretName string
 	if appObj.Spec.Runtime.Backend.Type == BackendTypeE2BSandbox {
-		if secretName := appObj.Status.E2BSandbox.AccessTokenSecretName; secretName != "" {
-			token, err := w.loadSecretToken(ctx, secretName)
+		e2bSecretName = appObj.Status.E2BSandbox.AccessTokenSecretName
+		if e2bSecretName != "" {
+			token, err := w.loadSecretToken(ctx, e2bSecretName)
 			if err != nil {
-				w.logger.Warnf(ctx, "App CRD %q (appID=%s): failed to load E2B access token from secret %q: %s", k8sName, appObj.Spec.AppID, secretName, err)
+				w.logger.Warnf(ctx, "App CRD %q (appID=%s): failed to load E2B access token from secret %q: %s", k8sName, appObj.Spec.AppID, e2bSecretName, err)
 			} else {
 				e2bAccessToken = token
 			}
@@ -217,6 +232,7 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 		autoRestartEnabled: autoRestartEnabled,
 		upstreamTarget:     upstreamTarget,
 		e2bAccessToken:     e2bAccessToken,
+		e2bSecretName:      e2bSecretName,
 	})
 	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v upstreamTarget=%v", k8sName, appID, appObj.Status.CurrentState, autoRestartEnabled, upstreamTarget != nil)
 }
