@@ -50,14 +50,13 @@ type Manager struct {
 }
 
 type AppUpstream struct {
-	manager        *Manager
-	app            api.AppConfig
-	target         *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
-	e2bAccessToken string   // E2B access token; empty for non-E2B apps
-	handler        *chain.Chain
-	wsHandler      *chain.Chain
-	cancelWs       context.CancelCauseFunc
-	activeWsCount  atomic.Int64
+	manager       *Manager
+	app           api.AppConfig
+	target        *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
+	handler       *chain.Chain
+	wsHandler     *chain.Chain
+	cancelWs      context.CancelCauseFunc
+	activeWsCount atomic.Int64
 }
 
 type dependencies interface {
@@ -123,16 +122,18 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 	_, span := m.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.NewUpstream")
 	defer span.End(&err)
 
-	// Resolve target URL and E2B token at creation time; immutable after this point.
+	// Resolve target URL at creation time; immutable after this point.
 	var target *url.URL
-	var e2bAccessToken string
 	if info, ok := m.stateWatcher.GetState(app.ID); ok {
 		target = info.UpstreamTarget // pre-parsed by watcher on CRD event; may be nil
-		e2bAccessToken = info.E2BAccessToken
 	}
 
 	// Create reverse proxy
-	upstream = &AppUpstream{manager: m, app: app, target: target, e2bAccessToken: e2bAccessToken}
+	upstream = &AppUpstream{
+		manager: m,
+		app:     app,
+		target:  target,
+	}
 	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
 	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
 
@@ -215,9 +216,11 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 			}
 
 			// Inject E2B access token for E2B sandbox apps.
-			r.Out.Header.Del("e2b-traffic-access-token") // ensure old token is not forwarded if it was removed from the app config
-			if u.e2bAccessToken != "" {
-				r.Out.Header.Set("e2b-traffic-access-token", u.e2bAccessToken)
+			// Always fetch the latest token from the state watcher to handle
+			// secret recreation (updates propagate asynchronously).
+			r.Out.Header.Del("e2b-traffic-access-token")
+			if token := u.manager.E2BAccessToken(u.app.ID); token != "" {
+				r.Out.Header.Set("e2b-traffic-access-token", token)
 			}
 		},
 		Transport:    u.manager.transport,
