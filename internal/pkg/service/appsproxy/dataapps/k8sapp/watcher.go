@@ -217,9 +217,7 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 		e2bSecretName = appObj.Status.E2BSandbox.AccessTokenSecretName
 		if e2bSecretName != "" {
 			token, err := w.loadSecretToken(ctx, e2bSecretName)
-			if err != nil {
-				w.logger.Warnf(ctx, "App CRD %q (appID=%s): failed to load E2B access token from secret %q: %s", k8sName, appObj.Spec.AppID, e2bSecretName, err)
-			} else {
+			if err == nil {
 				e2bAccessToken = token
 			}
 		}
