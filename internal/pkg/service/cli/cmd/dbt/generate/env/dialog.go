@@ -57,7 +57,7 @@ func AskGenerateEnv(
 	}
 
 	// SQL workspace (Snowflake/BigQuery) — fetch StorageWorkspace credentials via the editor session.
-	// workspace.SandboxWorkspace.ID holds the EditorSessionID; find the matching session for WorkspaceID.
+	// Find the editor session for this workspace by matching ConfigurationID.
 	var matchedSession *keboola.EditorSession
 	for _, s := range sessions {
 		if s.ConfigurationID == workspace.Config.ID.String() {
@@ -66,7 +66,7 @@ func AskGenerateEnv(
 		}
 	}
 	if matchedSession == nil {
-		return genenv.Options{}, errors.Errorf(`no active editor session found for workspace "%s"`, workspace.Config.ID)
+		return genenv.Options{}, errors.Errorf(`no active editor session found for workspace %q`, workspace.Config.Name)
 	}
 
 	workspaceIDUint, err := strconv.ParseUint(matchedSession.WorkspaceID, 10, 64)
@@ -74,6 +74,8 @@ func AskGenerateEnv(
 		return genenv.Options{}, errors.Errorf("cannot parse workspace ID %q: %w", matchedSession.WorkspaceID, err)
 	}
 
+	// StorageWorkspaceCreateCredentialsRequest creates new credentials on each call,
+	// which rotates any previously issued credentials for this workspace.
 	storageWS, err := api.StorageWorkspaceCreateCredentialsRequest(branchID, workspaceIDUint).Send(ctx)
 	if err != nil {
 		return genenv.Options{}, errors.Errorf("cannot fetch workspace credentials: %w", err)

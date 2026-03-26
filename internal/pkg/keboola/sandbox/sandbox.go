@@ -109,6 +109,8 @@ func WithSize(v string) CreateSandboxWorkspaceOption {
 }
 
 // WithPublicKey configures keypair authentication with the given public key PEM.
+// Note: loginType is set to "snowflake-person-keypair"; BigQuery workspaces use a
+// different auth mechanism and should not use this option.
 func WithPublicKey(v string) CreateSandboxWorkspaceOption {
 	return func(p *createParams) {
 		p.PublicKey = v

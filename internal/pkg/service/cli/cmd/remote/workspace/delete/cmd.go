@@ -95,7 +95,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				})
 			}
 
-			sandbox, err := d.Dialogs().AskWorkspace(allWorkspaces, f.WorkspaceID)
+			ws, err := d.Dialogs().AskWorkspace(allWorkspaces, f.WorkspaceID)
 			if err != nil {
 				return err
 			}
@@ -103,7 +103,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			// Send cmd successful/failed event
 			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "remote-workspace-delete")
 
-			return deleteOp.Run(cmd.Context(), d, branch.ID, sandbox)
+			return deleteOp.Run(cmd.Context(), d, branch.ID, ws)
 		},
 	}
 
