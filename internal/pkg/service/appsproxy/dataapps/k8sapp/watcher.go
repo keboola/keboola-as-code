@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"sync"
 
+	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,12 +36,12 @@ type entry struct {
 
 // StateWatcher watches App CRDs in Kubernetes and provides a local cache of app states.
 type StateWatcher struct {
-	client    dynamic.Interface
-	namespace string
-	logger    log.Logger
-	hasSynced cache.InformerSynced
-	// apps: AppID → entry
-	apps sync.Map
+	client         dynamic.Interface
+	namespace      string
+	logger         log.Logger
+	hasSynced      cache.InformerSynced
+	apps           sync.Map           // AppID → entry
+	tokenLoadGroup singleflight.Group // coalesces concurrent lazy-load K8s API calls per secret
 }
 
 type dependencies interface {
@@ -127,10 +128,15 @@ func (w *StateWatcher) GetState(appID api.AppID) (AppInfo, bool) {
 	e := v.(entry)
 
 	// Lazy-load E2B token: the Secret may not have existed when the App CRD event was processed.
+	// a singleflight coalesces concurrent requests for the same secret into a single K8s API call.
 	if e.e2bAccessToken == "" && e.e2bSecretName != "" {
-		token, err := w.loadSecretToken(context.Background(), e.e2bSecretName)
-		if err == nil && token != "" {
-			e.e2bAccessToken = token
+		token, err, _ := w.tokenLoadGroup.Do(e.e2bSecretName, func() (any, error) {
+			return w.loadSecretToken(context.Background(), e.e2bSecretName)
+		})
+		if err != nil {
+			w.logger.Warnf(context.Background(), "App %s: failed to lazy-load E2B access token from secret %q: %s", appID, e.e2bSecretName, err)
+		} else if t, ok := token.(string); t != "" && ok {
+			e.e2bAccessToken = t
 			w.apps.Store(appID, e)
 			w.logger.Infof(context.Background(), "App %s: lazy-loaded E2B access token from secret %q", appID, e.e2bSecretName)
 		}
