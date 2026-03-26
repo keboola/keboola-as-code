@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -19,8 +20,8 @@ import (
 type Options struct {
 	BranchKey  keboola.BranchKey
 	TargetName string
-	Workspace  *keboola.SandboxWorkspace
-	PrivateKey string
+	Workspace  *sandbox.SandboxWorkspace
+	PrivateKey string               //nolint:gosec
 	UseKeyPair bool                 // Whether key-pair authentication was requested (only add private key if true)
 	Buckets    []listbuckets.Bucket // optional, set if the buckets have been loaded in a parent command
 }

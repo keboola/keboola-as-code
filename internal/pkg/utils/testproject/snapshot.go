@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 )
@@ -138,13 +139,13 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		return req.SendOrErr(ctx)
 	})
 
-	workspacesMap := make(map[string]*keboola.SandboxWorkspace)
+	workspacesMap := make(map[string]*sandbox.SandboxWorkspace)
 	grp.Go(func() error {
 		defaultBranch, err := p.DefaultBranch()
 		if err != nil {
 			return err
 		}
-		workspaces, err := p.keboolaProjectAPI.ListSandboxWorkspaces(ctx, defaultBranch.ID)
+		workspaces, err := sandbox.ListSandboxWorkspaces(ctx, p.keboolaProjectAPI, defaultBranch.ID)
 		if err != nil {
 			return err
 		}
@@ -307,7 +308,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 			}
 
 			// Python/R: fall back to sandbox workspace instance lookup
-			sandboxID, err := keboola.GetSandboxWorkspaceID(config.ToAPI().Config)
+			sandboxID, err := sandbox.GetSandboxWorkspaceID(config.ToAPI().Config)
 			if err != nil {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE ID NOT SET"})
 				continue

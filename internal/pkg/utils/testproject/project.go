@@ -25,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/crypto"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
@@ -466,9 +467,9 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 }
 
 func (p *Project) createPythonRSandbox(ctx context.Context, branchID keboola.BranchID, fixture *fixtures.Sandbox, errs errors.MultiError) {
-	opts := make([]keboola.CreateSandboxWorkspaceOption, 0)
+	opts := make([]sandbox.CreateSandboxWorkspaceOption, 0)
 	if len(fixture.Size) > 0 {
-		opts = append(opts, keboola.WithSize(fixture.Size))
+		opts = append(opts, sandbox.WithSize(fixture.Size))
 	}
 
 	var privateKeyPEM string
@@ -479,16 +480,16 @@ func (p *Project) createPythonRSandbox(ctx context.Context, branchID keboola.Bra
 			errs.Append(errors.Errorf("could not generate key-pair for sandbox \"%s\": %w", fixture.Name, err))
 			return
 		}
-		opts = append(opts, keboola.WithPublicKey(publicKeyPEM))
+		opts = append(opts, sandbox.WithPublicKey(publicKeyPEM))
 	}
 
-	sandbox, err := p.keboolaProjectAPI.CreateSandboxWorkspace(ctx, branchID, fixture.Name, fixture.Type, opts...)
+	ws, err := sandbox.CreateSandboxWorkspace(ctx, p.keboolaProjectAPI, branchID, fixture.Name, fixture.Type, opts...)
 	if err != nil {
 		errs.Append(errors.Errorf("could not create sandbox \"%s\": %w", fixture.Name, err))
 		return
 	}
-	p.logf("✔️ Sandbox \"%s\"(%s).", sandbox.Config.Name, sandbox.Config.ID)
-	p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), sandbox.Config.ID.String())
+	p.logf("✔️ Sandbox \"%s\"(%s).", ws.Config.Name, ws.Config.ID)
+	p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), ws.Config.ID.String())
 	if len(privateKeyPEM) > 0 {
 		p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_PRIVATE_KEY", fixture.Name), privateKeyPEM)
 	}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -123,18 +124,18 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 
 // sandboxWorkspaceFromStorage constructs a SandboxWorkspace from StorageWorkspace details,
 // used for dbt env generation when credentials come from an editor session.
-func sandboxWorkspaceFromStorage(sw *keboola.StorageWorkspace, wsType keboola.SandboxWorkspaceType) *keboola.SandboxWorkspace {
+func sandboxWorkspaceFromStorage(sw *keboola.StorageWorkspace, wsType keboola.SandboxWorkspaceType) *sandbox.SandboxWorkspace {
 	deref := func(s *string) string {
 		if s == nil {
 			return ""
 		}
 		return *s
 	}
-	details := &keboola.SandboxWorkspaceDetails{}
+	details := &sandbox.SandboxWorkspaceDetails{}
 	details.Connection.Database = deref(sw.StorageWorkspaceDetails.Database)
 	details.Connection.Schema = deref(sw.StorageWorkspaceDetails.Schema)
 	details.Connection.Warehouse = deref(sw.StorageWorkspaceDetails.Warehouse)
-	return &keboola.SandboxWorkspace{
+	return &sandbox.SandboxWorkspace{
 		Type:    wsType,
 		Host:    deref(sw.StorageWorkspaceDetails.Host),
 		User:    deref(sw.StorageWorkspaceDetails.User),

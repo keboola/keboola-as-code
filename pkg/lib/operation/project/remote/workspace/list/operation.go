@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -32,14 +33,14 @@ func Run(ctx context.Context, d dependencies) (err error) {
 	logger.Info(ctx, "Loading workspaces, please wait.")
 
 	// Fetch Python/R sandbox workspaces, SQL editor sessions, and sandbox configs in parallel.
-	var pyRWorkspaces []*keboola.SandboxWorkspaceWithConfig
+	var pyRWorkspaces []*sandbox.SandboxWorkspaceWithConfig
 	var sessions []*keboola.EditorSession
 	var sandboxConfigs []*keboola.Config
 
 	grp, grpCtx := errgroup.WithContext(ctx)
 	grp.Go(func() error {
 		var e error
-		pyRWorkspaces, e = d.KeboolaProjectAPI().ListSandboxWorkspaces(grpCtx, branch.ID)
+		pyRWorkspaces, e = sandbox.ListSandboxWorkspaces(grpCtx, d.KeboolaProjectAPI(), branch.ID)
 		return e
 	})
 	grp.Go(func() error {
@@ -69,16 +70,16 @@ func Run(ctx context.Context, d dependencies) (err error) {
 	}
 
 	// Build combined list: Python/R workspaces + SQL editor sessions.
-	all := make([]*keboola.SandboxWorkspaceWithConfig, 0, len(pyRWorkspaces)+len(sessions))
+	all := make([]*sandbox.SandboxWorkspaceWithConfig, 0, len(pyRWorkspaces)+len(sessions))
 	all = append(all, pyRWorkspaces...)
 	for _, s := range sessions {
 		name := configNameMap[s.ConfigurationID]
-		all = append(all, &keboola.SandboxWorkspaceWithConfig{
+		all = append(all, &sandbox.SandboxWorkspaceWithConfig{
 			Config: &keboola.Config{
 				ConfigKey: keboola.ConfigKey{ID: keboola.ConfigID(s.ConfigurationID)},
 				Name:      name,
 			},
-			SandboxWorkspace: &keboola.SandboxWorkspace{
+			SandboxWorkspace: &sandbox.SandboxWorkspace{
 				Type: keboola.SandboxWorkspaceType(s.BackendType),
 			},
 		})

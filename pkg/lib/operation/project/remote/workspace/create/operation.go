@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -41,16 +42,15 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	if keboola.SandboxWorkspaceSupportsSizes(o.Type) {
 		// Python/R workspace
-		opts := make([]keboola.CreateSandboxWorkspaceOption, 0)
+		opts := make([]sandbox.CreateSandboxWorkspaceOption, 0)
 		if len(o.Size) > 0 {
-			opts = append(opts, keboola.WithSize(o.Size))
+			opts = append(opts, sandbox.WithSize(o.Size))
 		}
-		w, err := d.KeboolaProjectAPI().CreateSandboxWorkspace(ctx, branch.ID, o.Name, o.Type, opts...)
+		w, err := sandbox.CreateSandboxWorkspace(ctx, d.KeboolaProjectAPI(), branch.ID, o.Name, o.Type, opts...)
 		if err != nil {
 			return errors.Errorf("cannot create workspace: %w", err)
 		}
 		logger.Infof(ctx, `Created the new workspace "%s" (%s).`, o.Name, w.Config.ID)
-		logger.Infof(ctx, "Credentials:\n  Host: %s\n  Password: %s", w.SandboxWorkspace.Host, w.SandboxWorkspace.Password)
 	} else {
 		// SQL workspace (Snowflake/BigQuery) — backend determined by project config
 		session, err := d.KeboolaProjectAPI().CreateEditorSession(ctx, branch.ID, o.Name)

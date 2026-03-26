@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	kenv "github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	genenv "github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
@@ -19,7 +20,7 @@ func AskGenerateEnv(
 	branchKey keboola.BranchKey,
 	branchID keboola.BranchID,
 	d *dialog.Dialogs,
-	allWorkspaces []*keboola.SandboxWorkspaceWithConfig,
+	allWorkspaces []*sandbox.SandboxWorkspaceWithConfig,
 	sessions []*keboola.EditorSession,
 	f Flags,
 	envs kenv.Provider,
@@ -49,7 +50,7 @@ func AskGenerateEnv(
 		return genenv.Options{
 			BranchKey:  branchKey,
 			TargetName: targetName,
-			Workspace:  workspace.SandboxWorkspace,
+			Workspace:  workspace.SandboxWorkspace, // already *sandbox.SandboxWorkspace
 			UseKeyPair: useKeyPair,
 			PrivateKey: privateKey,
 		}, nil
@@ -96,18 +97,18 @@ func AskGenerateEnv(
 }
 
 // sandboxWorkspaceFromStorage constructs a SandboxWorkspace from StorageWorkspace details.
-func sandboxWorkspaceFromStorage(sw *keboola.StorageWorkspace, wsType keboola.SandboxWorkspaceType) *keboola.SandboxWorkspace {
+func sandboxWorkspaceFromStorage(sw *keboola.StorageWorkspace, wsType keboola.SandboxWorkspaceType) *sandbox.SandboxWorkspace {
 	deref := func(s *string) string {
 		if s == nil {
 			return ""
 		}
 		return *s
 	}
-	details := &keboola.SandboxWorkspaceDetails{}
+	details := &sandbox.SandboxWorkspaceDetails{}
 	details.Connection.Database = deref(sw.StorageWorkspaceDetails.Database)
 	details.Connection.Schema = deref(sw.StorageWorkspaceDetails.Schema)
 	details.Connection.Warehouse = deref(sw.StorageWorkspaceDetails.Warehouse)
-	return &keboola.SandboxWorkspace{
+	return &sandbox.SandboxWorkspace{
 		Type:    wsType,
 		Host:    deref(sw.StorageWorkspaceDetails.Host),
 		User:    deref(sw.StorageWorkspaceDetails.User),

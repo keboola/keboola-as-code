@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -38,7 +39,7 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 	}
 
 	// Check if this is a Python/R workspace (has parameters.id) or a SQL editor session.
-	_, wsIDErr := keboola.GetSandboxWorkspaceID(config)
+	_, wsIDErr := sandbox.GetSandboxWorkspaceID(config)
 	if wsIDErr != nil {
 		// SQL workspace — find the editor session linked to this config.
 		sessions, e := d.KeboolaProjectAPI().ListEditorSessionsRequest().Send(ctx)
@@ -56,7 +57,7 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 	}
 
 	// Python/R workspace
-	workspace, err := d.KeboolaProjectAPI().GetSandboxWorkspace(ctx, branch.ID, configID)
+	workspace, err := sandbox.GetSandboxWorkspace(ctx, d.KeboolaProjectAPI(), branch.ID, configID)
 	if err != nil {
 		return err
 	}

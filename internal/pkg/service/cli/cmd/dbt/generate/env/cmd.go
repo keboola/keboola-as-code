@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -53,14 +54,14 @@ func Command(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Fetch Python/R sandbox workspaces, SQL editor sessions, and sandbox configs in parallel.
-			var pyRWorkspaces []*keboola.SandboxWorkspaceWithConfig
+			var pyRWorkspaces []*sandbox.SandboxWorkspaceWithConfig
 			var sessions []*keboola.EditorSession
 			var sandboxConfigs []*keboola.Config
 
 			grp, grpCtx := errgroup.WithContext(cmd.Context())
 			grp.Go(func() error {
 				var e error
-				pyRWorkspaces, e = d.KeboolaProjectAPI().ListSandboxWorkspaces(grpCtx, branch.ID)
+				pyRWorkspaces, e = sandbox.ListSandboxWorkspaces(grpCtx, d.KeboolaProjectAPI(), branch.ID)
 				return e
 			})
 			grp.Go(func() error {
@@ -91,16 +92,16 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 			// Build combined workspace list: Python/R + SQL editor sessions.
 			// For SQL sessions, SandboxWorkspace.ID stores the EditorSessionID for credential lookup.
-			allWorkspaces := make([]*keboola.SandboxWorkspaceWithConfig, 0, len(pyRWorkspaces)+len(sessions))
+			allWorkspaces := make([]*sandbox.SandboxWorkspaceWithConfig, 0, len(pyRWorkspaces)+len(sessions))
 			allWorkspaces = append(allWorkspaces, pyRWorkspaces...)
 			for _, s := range sessions {
 				name := configNameMap[s.ConfigurationID]
-				allWorkspaces = append(allWorkspaces, &keboola.SandboxWorkspaceWithConfig{
+				allWorkspaces = append(allWorkspaces, &sandbox.SandboxWorkspaceWithConfig{
 					Config: &keboola.Config{
 						ConfigKey: keboola.ConfigKey{ID: keboola.ConfigID(s.ConfigurationID)},
 						Name:      name,
 					},
-					SandboxWorkspace: &keboola.SandboxWorkspace{
+					SandboxWorkspace: &sandbox.SandboxWorkspace{
 						ID:   keboola.SandboxWorkspaceID(s.ID),
 						Type: keboola.SandboxWorkspaceType(s.BackendType),
 					},
