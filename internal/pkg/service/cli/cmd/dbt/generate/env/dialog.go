@@ -79,7 +79,7 @@ func AskGenerateEnv(
 		return genenv.Options{}, errors.Errorf("cannot fetch workspace credentials: %w", err)
 	}
 
-	sandboxWS := sandboxWorkspaceFromStorage(storageWS, keboola.SandboxWorkspaceType(matchedSession.BackendType))
+	sandboxWS := sandbox.WorkspaceFromStorage(storageWS, keboola.SandboxWorkspaceType(matchedSession.BackendType))
 
 	// Use server-provided private key for SQL workspaces when available.
 	if len(privateKey) == 0 && storageWS.StorageWorkspaceDetails.PrivateKey != nil && len(*storageWS.StorageWorkspaceDetails.PrivateKey) > 0 {
@@ -94,24 +94,4 @@ func AskGenerateEnv(
 		UseKeyPair: useKeyPair,
 		PrivateKey: privateKey,
 	}, nil
-}
-
-// sandboxWorkspaceFromStorage constructs a SandboxWorkspace from StorageWorkspace details.
-func sandboxWorkspaceFromStorage(sw *keboola.StorageWorkspace, wsType keboola.SandboxWorkspaceType) *sandbox.SandboxWorkspace {
-	deref := func(s *string) string {
-		if s == nil {
-			return ""
-		}
-		return *s
-	}
-	details := &sandbox.SandboxWorkspaceDetails{}
-	details.Connection.Database = deref(sw.StorageWorkspaceDetails.Database)
-	details.Connection.Schema = deref(sw.StorageWorkspaceDetails.Schema)
-	details.Connection.Warehouse = deref(sw.StorageWorkspaceDetails.Warehouse)
-	return &sandbox.SandboxWorkspace{
-		Type:    wsType,
-		Host:    deref(sw.StorageWorkspaceDetails.Host),
-		User:    deref(sw.StorageWorkspaceDetails.User),
-		Details: details,
-	}
 }

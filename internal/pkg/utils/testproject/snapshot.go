@@ -145,7 +145,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		if err != nil {
 			return err
 		}
-		workspaces, err := sandbox.ListSandboxWorkspaces(ctx, p.keboolaProjectAPI, defaultBranch.ID)
+		workspaces, _, err := sandbox.ListSandboxWorkspaces(ctx, p.keboolaProjectAPI, defaultBranch.ID)
 		if err != nil {
 			return err
 		}

@@ -47,15 +47,16 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return errors.Errorf("cannot get default branch: %w", err)
 			}
 
-			// Fetch Python/R sandbox workspaces, SQL editor sessions, and sandbox configs in parallel.
+			// Fetch Python/R workspaces and editor sessions in parallel.
+			// ListSandboxWorkspaces also returns all sandbox configs, so no separate fetch is needed.
 			var pyRWorkspaces []*sandbox.SandboxWorkspaceWithConfig
+			var allConfigs []*keboola.Config
 			var sessions []*keboola.EditorSession
-			var sandboxConfigs []*keboola.Config
 
 			grp, grpCtx := errgroup.WithContext(cmd.Context())
 			grp.Go(func() error {
 				var e error
-				pyRWorkspaces, e = sandbox.ListSandboxWorkspaces(grpCtx, d.KeboolaProjectAPI(), branch.ID)
+				pyRWorkspaces, allConfigs, e = sandbox.ListSandboxWorkspaces(grpCtx, d.KeboolaProjectAPI(), branch.ID)
 				return e
 			})
 			grp.Go(func() error {
@@ -66,21 +67,13 @@ func Command(p dependencies.Provider) *cobra.Command {
 				sessions = *result
 				return nil
 			})
-			grp.Go(func() error {
-				result, e := d.KeboolaProjectAPI().ListSandboxWorkspaceConfigRequest(branch.ID).Send(grpCtx)
-				if e != nil {
-					return e
-				}
-				sandboxConfigs = *result
-				return nil
-			})
 			if err := grp.Wait(); err != nil {
 				return err
 			}
 
 			// Build config name map for editor session name lookup.
 			configNameMap := make(map[string]string)
-			for _, c := range sandboxConfigs {
+			for _, c := range allConfigs {
 				configNameMap[c.ID.String()] = c.Name
 			}
 

@@ -93,6 +93,10 @@ func (p createParams) toMap() map[string]any {
 	if len(p.ImageVersion) > 0 {
 		m["imageVersion"] = p.ImageVersion
 	}
+	if len(p.PublicKey) > 0 {
+		m["publicKey"] = p.PublicKey
+		m["loginType"] = p.LoginType
+	}
 	return m
 }
 
@@ -217,12 +221,13 @@ func GetSandboxWorkspace(
 }
 
 // ListSandboxWorkspaces fetches Python/R workspaces for a branch in parallel with configs,
-// joining by DataScienceApp.ConfigID.
+// joining by DataScienceApp.ConfigID. It also returns all sandbox configs so callers
+// can look up SQL workspace names without a second API call.
 func ListSandboxWorkspaces(
 	ctx context.Context,
 	api *keboola.AuthorizedAPI,
 	branchID keboola.BranchID,
-) ([]*SandboxWorkspaceWithConfig, error) {
+) ([]*SandboxWorkspaceWithConfig, []*keboola.Config, error) {
 	var configs []*keboola.Config
 	var apps []*keboola.DataScienceApp
 	wg := &sync.WaitGroup{}
@@ -257,7 +262,7 @@ func ListSandboxWorkspaces(
 
 	wg.Wait()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	appsByConfigID := make(map[string]*keboola.DataScienceApp, len(apps))
@@ -276,7 +281,28 @@ func ListSandboxWorkspaces(
 			Config:           config,
 		})
 	}
-	return out, nil
+	return out, configs, nil
+}
+
+// WorkspaceFromStorage constructs a SandboxWorkspace from StorageWorkspace credentials,
+// used when credentials come from an editor session (SQL workspaces).
+func WorkspaceFromStorage(sw *keboola.StorageWorkspace, wsType keboola.SandboxWorkspaceType) *SandboxWorkspace {
+	deref := func(s *string) string {
+		if s == nil {
+			return ""
+		}
+		return *s
+	}
+	details := &SandboxWorkspaceDetails{}
+	details.Connection.Database = deref(sw.StorageWorkspaceDetails.Database)
+	details.Connection.Schema = deref(sw.StorageWorkspaceDetails.Schema)
+	details.Connection.Warehouse = deref(sw.StorageWorkspaceDetails.Warehouse)
+	return &SandboxWorkspace{
+		Type:    wsType,
+		Host:    deref(sw.StorageWorkspaceDetails.Host),
+		User:    deref(sw.StorageWorkspaceDetails.User),
+		Details: details,
+	}
 }
 
 func dataScienceAppToWorkspace(app *keboola.DataScienceApp) *SandboxWorkspace {

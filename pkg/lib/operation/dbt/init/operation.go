@@ -70,7 +70,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	}
 
 	// Build SandboxWorkspace from StorageWorkspace for env generation.
-	workspace := sandboxWorkspaceFromStorage(storageWS, keboola.SandboxWorkspaceType(storageWS.StorageWorkspaceDetails.Backend))
+	workspace := sandbox.WorkspaceFromStorage(storageWS, keboola.SandboxWorkspaceType(storageWS.StorageWorkspaceDetails.Backend))
 
 	// Determine private key from the freshly created credentials.
 	privateKey := ""
@@ -120,25 +120,4 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	}
 
 	return nil
-}
-
-// sandboxWorkspaceFromStorage constructs a SandboxWorkspace from StorageWorkspace details,
-// used for dbt env generation when credentials come from an editor session.
-func sandboxWorkspaceFromStorage(sw *keboola.StorageWorkspace, wsType keboola.SandboxWorkspaceType) *sandbox.SandboxWorkspace {
-	deref := func(s *string) string {
-		if s == nil {
-			return ""
-		}
-		return *s
-	}
-	details := &sandbox.SandboxWorkspaceDetails{}
-	details.Connection.Database = deref(sw.StorageWorkspaceDetails.Database)
-	details.Connection.Schema = deref(sw.StorageWorkspaceDetails.Schema)
-	details.Connection.Warehouse = deref(sw.StorageWorkspaceDetails.Warehouse)
-	return &sandbox.SandboxWorkspace{
-		Type:    wsType,
-		Host:    deref(sw.StorageWorkspaceDetails.Host),
-		User:    deref(sw.StorageWorkspaceDetails.User),
-		Details: details,
-	}
 }
