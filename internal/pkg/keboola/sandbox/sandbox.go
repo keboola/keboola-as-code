@@ -307,9 +307,10 @@ func WorkspaceFromStorage(sw *keboola.StorageWorkspace, wsType keboola.SandboxWo
 
 func dataScienceAppToWorkspace(app *keboola.DataScienceApp) *SandboxWorkspace {
 	return &SandboxWorkspace{
-		ID:   keboola.SandboxWorkspaceID(app.ID),
-		Type: keboola.SandboxWorkspaceType(app.Type),
-		Size: app.Size,
-		URL:  app.URL,
+		ID:      keboola.SandboxWorkspaceID(app.ID),
+		Type:    keboola.SandboxWorkspaceType(app.Type),
+		Size:    app.Size,
+		URL:     app.URL,
+		Details: &SandboxWorkspaceDetails{}, // always non-nil; fields are empty for Python/R
 	}
 }

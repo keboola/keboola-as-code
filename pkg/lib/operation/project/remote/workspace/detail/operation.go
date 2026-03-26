@@ -69,7 +69,9 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 		logger.Infof(ctx, `Size: %s`, w.Size)
 	}
 
-	logger.Infof(ctx, "Credentials:\n  Host: %s\n  Password: %s", w.Host, w.Password)
+	if w.Host != "" || w.Password != "" {
+		logger.Infof(ctx, "Credentials:\n  Host: %s\n  Password: %s", w.Host, w.Password)
+	}
 
 	return nil
 }
