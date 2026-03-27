@@ -39,12 +39,10 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 	}
 
 	// Check if this is a Python/R workspace (has parameters.id) or a SQL editor session.
+	// GetNested returns an error when an intermediate path key is missing, so treat
+	// both err != nil and !found the same way: fall through to editor-session lookup.
 	wsID, found, err := config.Content.GetNested("parameters.id")
-	if err != nil {
-		return err
-	}
-
-	if !found {
+	if err != nil || !found {
 		// SQL workspace — find the editor session linked to this config.
 		sessions, e := d.KeboolaProjectAPI().ListEditorSessionsRequest().Send(ctx)
 		if e != nil {
