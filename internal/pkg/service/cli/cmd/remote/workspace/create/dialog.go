@@ -1,26 +1,13 @@
 package create
 
 import (
-	"strings"
-
-	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
 )
-
-// sandboxWorkspaceTypesToStrings converts a slice of SandboxWorkspaceType to []string.
-// This helper function is needed because the SDK returns custom types that need to be converted to strings.
-func sandboxWorkspaceTypesToStrings(types []keboola.SandboxWorkspaceType) []string {
-	result := make([]string, len(types))
-	for i, typ := range types {
-		result[i] = string(typ)
-	}
-	return result
-}
 
 func AskCreateWorkspace(d *dialog.Dialogs, f Flags) (create.CreateOptions, error) {
 	opts := create.CreateOptions{}
@@ -37,7 +24,7 @@ func AskCreateWorkspace(d *dialog.Dialogs, f Flags) (create.CreateOptions, error
 	}
 	opts.Type = typ
 
-	if keboola.SandboxWorkspaceSupportsSizes(typ) {
+	if workspace.WorkspaceSupportsSizes(typ) {
 		size, err := askWorkspaceSize(d, f.Size)
 		if err != nil {
 			return opts, err
@@ -63,41 +50,53 @@ func askWorkspaceName(d *dialog.Dialogs, workspaceName configmap.Value[string]) 
 	}
 }
 
-func askWorkspaceType(d *dialog.Dialogs, workspaceType configmap.Value[string]) (keboola.SandboxWorkspaceType, error) {
+func askWorkspaceType(d *dialog.Dialogs, workspaceType configmap.Value[string]) (workspace.WorkspaceType, error) {
 	if workspaceType.IsSet() {
 		typ := workspaceType.Value
-		// Convert the string to SandboxWorkspaceType for map lookup
-		if !keboola.SandboxWorkspaceTypesMap()[keboola.SandboxWorkspaceType(typ)] {
-			return "", errors.Errorf("invalid workspace type, must be one of: %s", strings.Join(sandboxWorkspaceTypesToStrings(keboola.SandboxWorkspaceTypesOrdered()), ", "))
+		if !workspace.WorkspaceTypesMap()[typ] {
+			return "", errors.Errorf("invalid workspace type, must be one of: %s",
+				formatList(workspace.WorkspaceTypesOrdered()))
 		}
-		return keboola.SandboxWorkspaceType(typ), nil
+		return typ, nil
 	} else {
 		v, ok := d.Select(&prompt.Select{
 			Label:   "Select a type for the new workspace",
-			Options: sandboxWorkspaceTypesToStrings(keboola.SandboxWorkspaceTypesOrdered()),
+			Options: workspace.WorkspaceTypesOrdered(),
 		})
 		if !ok {
 			return "", errors.New("missing workspace type, please specify it")
 		}
-		return keboola.SandboxWorkspaceType(v), nil
+		return v, nil
 	}
 }
 
 func askWorkspaceSize(d *dialog.Dialogs, workspaceSize configmap.Value[string]) (string, error) {
 	if workspaceSize.IsSet() {
 		size := workspaceSize.Value
-		if !keboola.SandboxWorkspaceSizesMap()[size] {
-			return "", errors.Errorf("invalid workspace size, must be one of: %s", strings.Join(keboola.SandboxWorkspaceSizesOrdered(), ", "))
+		if !workspace.WorkspaceSizesMap()[size] {
+			return "", errors.Errorf("invalid workspace size, must be one of: %s",
+				formatList(workspace.WorkspaceSizesOrdered()))
 		}
 		return size, nil
 	} else {
 		v, ok := d.Select(&prompt.Select{
 			Label:   "Select a size for the new workspace",
-			Options: keboola.SandboxWorkspaceSizesOrdered(),
+			Options: workspace.WorkspaceSizesOrdered(),
 		})
 		if !ok {
 			return "", errors.New("missing workspace size, please specify it")
 		}
 		return v, nil
 	}
+}
+
+func formatList(items []string) string {
+	result := ""
+	for i, item := range items {
+		if i > 0 {
+			result += ", "
+		}
+		result += item
+	}
+	return result
 }

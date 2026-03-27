@@ -331,7 +331,7 @@ func sandboxFromConfig(
 ) *fixtures.Sandbox {
 	// SQL: check editor sessions first.
 	if session, found := editorSessionsMap[key.ID.String()]; found {
-		return &fixtures.Sandbox{Name: config.Name, Type: keboola.SandboxWorkspaceType(session.BackendType)}
+		return &fixtures.Sandbox{Name: config.Name, Type: string(session.BackendType)}
 	}
 
 	// Python/R: look up DataScienceApp via parameters.id stored in config content.
@@ -345,7 +345,7 @@ func sandboxFromConfig(
 	}
 
 	if app, found := workspacesMap[wsIDStr]; found {
-		return &fixtures.Sandbox{Name: config.Name, Type: keboola.SandboxWorkspaceType(app.Type), Size: app.Size}
+		return &fixtures.Sandbox{Name: config.Name, Type: string(app.Type), Size: app.Size}
 	}
 	return &fixtures.Sandbox{Name: "SANDBOX INSTANCE NOT FOUND"}
 }

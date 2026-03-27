@@ -18,7 +18,7 @@ import (
 
 // WorkspaceDetails holds the connection details for a workspace used in dbt env generation.
 type WorkspaceDetails struct {
-	Type      keboola.SandboxWorkspaceType
+	Type      string // workspace type string, e.g. "snowflake", "python"
 	Host      string
 	User      string
 	Password  string //nolint:gosec
@@ -65,13 +65,13 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	targetUpper := strings.ToUpper(o.TargetName)
 	host := o.Workspace.Host
-	if o.Workspace.Type == keboola.SandboxWorkspaceTypeSnowflake {
+	if o.Workspace.Type == "snowflake" {
 		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
 	}
 
 	envVars := make(map[string]string)
 
-	envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = o.Workspace.Type.String()
+	envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = o.Workspace.Type
 	envVars[fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper)] = o.Workspace.Schema
 	envVars[fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper)] = o.Workspace.Warehouse
 	envVars[fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper)] = o.Workspace.Database

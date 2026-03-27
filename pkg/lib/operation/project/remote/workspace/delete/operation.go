@@ -32,8 +32,8 @@ func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspa
 	logger.Infof(ctx, `Deleting the workspace "%s" (%s), please wait.`, workspace.Config.Name, workspace.Config.ID)
 
 	if workspace.App != nil {
-		// Python/R workspace: run delete queue job, then delete the config.
-		err = deletePyRWorkspace(ctx, d.KeboolaProjectAPI(), branchID, workspace.Config.ID, keboola.SandboxWorkspaceID(workspace.App.ID))
+		// Python/R workspace: delete via DataScience sandbox endpoint, then delete the config.
+		err = deletePyRWorkspace(ctx, d.KeboolaProjectAPI(), branchID, workspace.Config.ID, workspace.App.ID)
 	} else {
 		// SQL workspace (Snowflake/BigQuery) — Session.ID is the EditorSessionID.
 		err = d.KeboolaProjectAPI().DeleteEditorSession(ctx, branchID, workspace.Config.ID, workspace.Session.ID)
@@ -46,9 +46,9 @@ func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspa
 	return nil
 }
 
-// deletePyRWorkspace runs the sandbox delete queue job then removes the config.
-func deletePyRWorkspace(ctx context.Context, api *keboola.AuthorizedAPI, branchID keboola.BranchID, configID keboola.ConfigID, workspaceID keboola.SandboxWorkspaceID) error {
-	if _, err := api.DeleteSandboxWorkspaceJobRequest(workspaceID).Send(ctx); err != nil {
+// deletePyRWorkspace deletes the DataScience sandbox instance then removes the config.
+func deletePyRWorkspace(ctx context.Context, api *keboola.AuthorizedAPI, branchID keboola.BranchID, configID keboola.ConfigID, appID keboola.DataScienceAppID) error {
+	if _, err := api.DeleteDataScienceSandboxRequest(appID).Send(ctx); err != nil {
 		return err
 	}
 	_, err := api.DeleteSandboxWorkspaceConfigRequest(branchID, configID).Send(ctx)

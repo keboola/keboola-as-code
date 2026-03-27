@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	wsinfo "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 )
 
 type dependencies interface {
@@ -71,7 +72,7 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 	}
 
 	logger.Infof(ctx, "Workspace \"%s\"\nID: %s\nType: %s", config.Name, config.ID, app.Type)
-	if keboola.SandboxWorkspaceSupportsSizes(keboola.SandboxWorkspaceType(app.Type)) {
+	if wsinfo.WorkspaceSupportsSizes(string(app.Type)) {
 		logger.Infof(ctx, `Size: %s`, app.Size)
 	}
 	if app.URL != "" {

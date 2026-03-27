@@ -77,7 +77,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 		return *s
 	}
 	workspace := env.WorkspaceDetails{
-		Type:        keboola.SandboxWorkspaceType(storageWS.StorageWorkspaceDetails.Backend),
+		Type:        string(storageWS.StorageWorkspaceDetails.Backend),
 		Host:        deref(storageWS.StorageWorkspaceDetails.Host),
 		User:        deref(storageWS.StorageWorkspaceDetails.User),
 		Database:    deref(storageWS.StorageWorkspaceDetails.Database),

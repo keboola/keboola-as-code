@@ -25,10 +25,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/crypto"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
+	wsinfo "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 )
 
 type Project struct {
@@ -449,7 +449,7 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 	for _, fixture := range sandboxes {
 		wg.Go(func() {
 			p.logf("▶ Sandbox \"%s\"...", fixture.Name)
-			if keboola.SandboxWorkspaceSupportsSizes(fixture.Type) {
+			if wsinfo.WorkspaceSupportsSizes(fixture.Type) {
 				p.createPythonRSandbox(ctx, defaultBranchID, fixture, errs)
 			} else {
 				p.createSQLEditorSession(ctx, defaultBranchID, fixture, errs)
@@ -466,50 +466,26 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 }
 
 func (p *Project) createPythonRSandbox(ctx context.Context, branchID keboola.BranchID, fixture *fixtures.Sandbox, errs errors.MultiError) {
-	var privateKeyPEM string
-	params := map[string]any{
-		"task":                 "create",
-		"type":                 fixture.Type,
-		"shared":               false,
-		"expirationAfterHours": uint64(0),
-	}
-	if len(fixture.Size) > 0 {
-		params["size"] = fixture.Size
-	}
-	if fixture.UseKeyPair {
-		var publicKeyPEM string
-		var err error
-		if privateKeyPEM, publicKeyPEM, err = crypto.GenerateRSAKeyPairPEM(); err != nil {
-			errs.Append(errors.Errorf("could not generate key-pair for sandbox \"%s\": %w", fixture.Name, err))
-			return
-		}
-		params["publicKey"] = publicKeyPEM
-		params["loginType"] = "snowflake-person-keypair"
-	}
-
-	emptyConfig, err := p.keboolaProjectAPI.CreateSandboxWorkspaceConfigRequest(branchID, fixture.Name).Send(ctx)
+	config, err := p.keboolaProjectAPI.CreateSandboxWorkspaceConfigRequest(branchID, fixture.Name).Send(ctx)
 	if err != nil {
 		errs.Append(errors.Errorf("could not create sandbox config \"%s\": %w", fixture.Name, err))
 		return
 	}
 
-	createReq := p.keboolaProjectAPI.NewCreateJobRequest(keboola.SandboxWorkspacesComponent).
-		WithConfig(emptyConfig.ID).
-		WithConfigData(map[string]any{"parameters": params}).
-		Build().
-		WithOnSuccess(func(ctx context.Context, result *keboola.QueueJob) error {
-			return p.keboolaProjectAPI.WaitForQueueJob(ctx, result.ID)
-		})
-	if _, err = request.NewAPIRequest(request.NoResult{}, createReq).Send(ctx); err != nil {
+	_, err = p.keboolaProjectAPI.CreateDataScienceSandboxRequest(keboola.CreateDataScienceSandboxPayload{
+		Type:            keboola.DataScienceAppType(fixture.Type),
+		ConfigurationID: string(config.ID),
+		ComponentID:     string(keboola.SandboxWorkspacesComponent),
+		BranchID:        branchID.String(),
+		Size:            keboola.DataScienceSandboxSize(fixture.Size),
+	}).Send(ctx)
+	if err != nil {
 		errs.Append(errors.Errorf("could not create sandbox \"%s\": %w", fixture.Name, err))
 		return
 	}
 
-	p.logf("✔️ Sandbox \"%s\"(%s).", fixture.Name, emptyConfig.ID)
-	p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), emptyConfig.ID.String())
-	if len(privateKeyPEM) > 0 {
-		p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_PRIVATE_KEY", fixture.Name), privateKeyPEM)
-	}
+	p.logf("✔️ Sandbox \"%s\"(%s).", fixture.Name, config.ID)
+	p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), config.ID.String())
 }
 
 func (p *Project) createSQLEditorSession(ctx context.Context, branchID keboola.BranchID, fixture *fixtures.Sandbox, errs errors.MultiError) {

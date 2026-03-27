@@ -82,7 +82,7 @@ func AskGenerateEnv(
 	}
 
 	ws := genenv.WorkspaceDetails{
-		Type:        keboola.SandboxWorkspaceType(matchedSession.BackendType),
+		Type:        string(matchedSession.BackendType),
 		Host:        deref(storageWS.StorageWorkspaceDetails.Host),
 		User:        deref(storageWS.StorageWorkspaceDetails.User),
 		Database:    deref(storageWS.StorageWorkspaceDetails.Database),
