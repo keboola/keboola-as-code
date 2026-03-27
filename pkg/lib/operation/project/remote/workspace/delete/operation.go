@@ -6,10 +6,10 @@ import (
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	wsinfo "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 )
 
 type dependencies interface {
@@ -18,10 +18,9 @@ type dependencies interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
 }
 
-// Run deletes a workspace. For Python/R workspaces, it uses the sandbox delete API.
-// For SQL (Snowflake/BigQuery) workspaces created via editor sessions, workspace.SandboxWorkspace.ID
-// holds the EditorSessionID and deletion goes through the editor session API.
-func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspace *sandbox.SandboxWorkspaceWithConfig) (err error) {
+// Run deletes a workspace. For Python/R workspaces it runs a delete queue job then removes the config.
+// For SQL workspaces it calls DeleteEditorSession.
+func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspace *wsinfo.WorkspaceWithConfig) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.workspace.delete")
 	defer span.End(&err)
 
@@ -32,12 +31,12 @@ func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspa
 
 	logger.Infof(ctx, `Deleting the workspace "%s" (%s), please wait.`, workspace.Config.Name, workspace.Config.ID)
 
-	if keboola.SandboxWorkspaceSupportsSizes(workspace.SandboxWorkspace.Type) {
-		// Python/R workspace
-		err = sandbox.DeleteSandboxWorkspace(ctx, d.KeboolaProjectAPI(), branchID, workspace.Config.ID, workspace.SandboxWorkspace.ID)
+	if workspace.App != nil {
+		// Python/R workspace: run delete queue job, then delete the config.
+		err = deletePyRWorkspace(ctx, d.KeboolaProjectAPI(), branchID, workspace.Config.ID, keboola.SandboxWorkspaceID(workspace.App.ID))
 	} else {
-		// SQL workspace (Snowflake/BigQuery) — SandboxWorkspace.ID stores the EditorSessionID
-		err = d.KeboolaProjectAPI().DeleteEditorSession(ctx, branchID, workspace.Config.ID, keboola.EditorSessionID(workspace.SandboxWorkspace.ID))
+		// SQL workspace (Snowflake/BigQuery) — Session.ID is the EditorSessionID.
+		err = d.KeboolaProjectAPI().DeleteEditorSession(ctx, branchID, workspace.Config.ID, workspace.Session.ID)
 	}
 	if err != nil {
 		return err
@@ -45,4 +44,13 @@ func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspa
 
 	logger.Infof(ctx, "Delete done.")
 	return nil
+}
+
+// deletePyRWorkspace runs the sandbox delete queue job then removes the config.
+func deletePyRWorkspace(ctx context.Context, api *keboola.AuthorizedAPI, branchID keboola.BranchID, configID keboola.ConfigID, workspaceID keboola.SandboxWorkspaceID) error {
+	if _, err := api.DeleteSandboxWorkspaceJobRequest(workspaceID).Send(ctx); err != nil {
+		return err
+	}
+	_, err := api.DeleteSandboxWorkspaceConfigRequest(branchID, configID).Send(ctx)
+	return err
 }

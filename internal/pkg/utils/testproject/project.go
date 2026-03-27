@@ -25,7 +25,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/crypto"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
@@ -467,12 +466,16 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 }
 
 func (p *Project) createPythonRSandbox(ctx context.Context, branchID keboola.BranchID, fixture *fixtures.Sandbox, errs errors.MultiError) {
-	opts := make([]sandbox.CreateSandboxWorkspaceOption, 0)
-	if len(fixture.Size) > 0 {
-		opts = append(opts, sandbox.WithSize(fixture.Size))
-	}
-
 	var privateKeyPEM string
+	params := map[string]any{
+		"task":                 "create",
+		"type":                 fixture.Type,
+		"shared":               false,
+		"expirationAfterHours": uint64(0),
+	}
+	if len(fixture.Size) > 0 {
+		params["size"] = fixture.Size
+	}
 	if fixture.UseKeyPair {
 		var publicKeyPEM string
 		var err error
@@ -480,16 +483,30 @@ func (p *Project) createPythonRSandbox(ctx context.Context, branchID keboola.Bra
 			errs.Append(errors.Errorf("could not generate key-pair for sandbox \"%s\": %w", fixture.Name, err))
 			return
 		}
-		opts = append(opts, sandbox.WithPublicKey(publicKeyPEM))
+		params["publicKey"] = publicKeyPEM
+		params["loginType"] = "snowflake-person-keypair"
 	}
 
-	ws, err := sandbox.CreateSandboxWorkspace(ctx, p.keboolaProjectAPI, branchID, fixture.Name, fixture.Type, opts...)
+	emptyConfig, err := p.keboolaProjectAPI.CreateSandboxWorkspaceConfigRequest(branchID, fixture.Name).Send(ctx)
 	if err != nil {
+		errs.Append(errors.Errorf("could not create sandbox config \"%s\": %w", fixture.Name, err))
+		return
+	}
+
+	createReq := p.keboolaProjectAPI.NewCreateJobRequest(keboola.SandboxWorkspacesComponent).
+		WithConfig(emptyConfig.ID).
+		WithConfigData(map[string]any{"parameters": params}).
+		Build().
+		WithOnSuccess(func(ctx context.Context, result *keboola.QueueJob) error {
+			return p.keboolaProjectAPI.WaitForQueueJob(ctx, result.ID)
+		})
+	if _, err = request.NewAPIRequest(request.NoResult{}, createReq).Send(ctx); err != nil {
 		errs.Append(errors.Errorf("could not create sandbox \"%s\": %w", fixture.Name, err))
 		return
 	}
-	p.logf("✔️ Sandbox \"%s\"(%s).", ws.Config.Name, ws.Config.ID)
-	p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), ws.Config.ID.String())
+
+	p.logf("✔️ Sandbox \"%s\"(%s).", fixture.Name, emptyConfig.ID)
+	p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), emptyConfig.ID.String())
 	if len(privateKeyPEM) > 0 {
 		p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_PRIVATE_KEY", fixture.Name), privateKeyPEM)
 	}

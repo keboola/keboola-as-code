@@ -3,12 +3,13 @@ package deleteworkspace
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	wsinfo "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 	deleteOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/delete"
+	listOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/list"
 )
 
 type Flags struct {
@@ -45,10 +46,49 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return errors.Errorf("cannot get default branch: %w", err)
 			}
 
-			allWorkspaces, _, err := sandbox.ListAllWorkspaces(cmd.Context(), d.KeboolaProjectAPI(), branch.ID)
-			if err != nil {
+			// Fetch Python/R workspaces and editor sessions in parallel.
+			var pyRWorkspaces []*wsinfo.WorkspaceWithConfig
+			var allConfigs []*keboola.Config
+			var sessions []*keboola.EditorSession
+
+			grp, grpCtx := errgroup.WithContext(cmd.Context())
+			grp.Go(func() error {
+				var e error
+				pyRWorkspaces, allConfigs, e = listOp.ListPyRWorkspaces(grpCtx, d.KeboolaProjectAPI(), branch.ID)
+				return e
+			})
+			grp.Go(func() error {
+				result, e := d.KeboolaProjectAPI().ListEditorSessionsRequest().Send(grpCtx)
+				if e != nil {
+					return e
+				}
+				sessions = *result
+				return nil
+			})
+			if err := grp.Wait(); err != nil {
 				return err
 			}
+
+			// Build config name map for editor session name lookup.
+			configNameMap := make(map[string]string)
+			for _, c := range allConfigs {
+				configNameMap[c.ID.String()] = c.Name
+			}
+
+			// Build combined list: Python/R workspaces + SQL editor sessions.
+			allWorkspaces := make([]*wsinfo.WorkspaceWithConfig, 0, len(pyRWorkspaces)+len(sessions))
+			allWorkspaces = append(allWorkspaces, pyRWorkspaces...)
+			for _, s := range sessions {
+				name := configNameMap[s.ConfigurationID]
+				allWorkspaces = append(allWorkspaces, &wsinfo.WorkspaceWithConfig{
+					Config: &keboola.Config{
+						ConfigKey: keboola.ConfigKey{ID: keboola.ConfigID(s.ConfigurationID)},
+						Name:      name,
+					},
+					Session: s,
+				})
+			}
+
 
 			ws, err := d.Dialogs().AskWorkspace(allWorkspaces, f.WorkspaceID)
 			if err != nil {
