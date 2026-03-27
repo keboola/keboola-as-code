@@ -1,0 +1,14 @@
+WARN	Warning:
+- Validation failed:
+  - Config "main/extractor/keboola.ex-db-mysql/with-rows/config.json" doesn't match schema:
+    - "db": missing properties "port", "user", "#password"
+WARN
+WARN	Please correct the problems listed above.
+WARN	Push operation is only possible when project is valid.
+WARN	Warning:
+- Validation failed:
+  - Config "main/extractor/keboola.ex-db-mysql/with-rows/config.json" doesn't match schema:
+    - "db": missing properties "port", "user", "#password"
+WARN
+WARN	Please correct the problems listed above.
+WARN	Push operation is only possible when project is valid.
