@@ -1,0 +1,8 @@
+Warning:
+- Validation failed:
+  - Config "main/extractor/keboola.ex-db-mysql/with-rows/config.json" doesn't match schema:
+    - "db": missing properties "port", "user", "#password"
+
+The project has been pulled, but it is not in a valid state.
+Please correct the problems listed above.
+Push will proceed with warnings for configs already accepted by the server.
