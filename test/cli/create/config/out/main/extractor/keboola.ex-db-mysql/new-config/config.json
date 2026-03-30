@@ -1,1 +1,41 @@
-{}
+{
+  "parameters": {
+    "db": {
+      "#password": "",
+      "database": "",
+      "host": "",
+      "initQueries": [
+        ""
+      ],
+      "networkCompression": false,
+      "port": 0,
+      "ssh": {
+        "#privateKey": "",
+        "enabled": false,
+        "keys": {
+          "#private": "",
+          "public": ""
+        },
+        "localPort": 0,
+        "remoteHost": "",
+        "remotePort": 0,
+        "sshHost": "",
+        "sshPort": 22,
+        "user": ""
+      },
+      "ssl": {
+        "#ca": "",
+        "#cert": "",
+        "#key": "",
+        "ca": "",
+        "cert": "",
+        "cipher": "",
+        "enabled": false,
+        "ignoreCertificateCn": false,
+        "verifyServerCert": false
+      },
+      "transactionIsolationLevel": "",
+      "user": ""
+    }
+  }
+}

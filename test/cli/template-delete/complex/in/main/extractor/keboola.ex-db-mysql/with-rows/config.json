@@ -2,7 +2,9 @@
   "parameters": {
     "db": {
       "#password": "KBC::ProjectSecure%s",
-      "host": "mysql.example.com"
+      "host": "mysql.example.com",
+      "port": 3306,
+      "user": "root"
     }
   }
 }

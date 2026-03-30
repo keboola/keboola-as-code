@@ -2,7 +2,9 @@
   "parameters": {
     "db": {
       "host": "mysql.example.com",
-      "#password": "{{ vault.test_pass }}"
+      "#password": "{{ vault.test_pass }}",
+      "port": 3306,
+      "user": "root"
     }
   }
 }

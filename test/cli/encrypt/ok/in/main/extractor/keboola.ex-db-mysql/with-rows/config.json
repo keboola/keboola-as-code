@@ -2,7 +2,10 @@
   "parameters": {
     "db": {
       "host": "mysql.example.com",
-      "#passwd": ""
+      "#passwd": "",
+      "port": 3306,
+      "user": "root",
+      "#password": ""
     }
   }
 }
