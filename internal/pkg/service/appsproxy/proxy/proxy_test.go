@@ -1862,7 +1862,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(api.AppID("123"))
+					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
 					return ok && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -1881,7 +1881,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(api.AppID("123"))
+					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
 					return ok && info.ActualState == k8sapp.AppActualStateRunning
 				}, 5*time.Second, 50*time.Millisecond)
 
@@ -1908,7 +1908,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(api.AppID("123"))
+					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
 					return ok && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -1952,7 +1952,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(api.AppID("oidc"))
+					info, ok := watcher.GetState(t.Context(), api.AppID("oidc"))
 					return ok && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -2017,7 +2017,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(api.AppID("oidc"))
+					info, ok := watcher.GetState(t.Context(), api.AppID("oidc"))
 					return ok && info.ActualState == k8sapp.AppActualStateRunning
 				}, 5*time.Second, 50*time.Millisecond)
 
@@ -2041,7 +2041,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(api.AppID("oidc"))
+					info, ok := watcher.GetState(t.Context(), api.AppID("oidc"))
 					return ok && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -2380,7 +2380,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(api.AppID("123"))
+					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
 					return ok && !info.AutoRestartEnabled
 				}, 5*time.Second, 50*time.Millisecond)
 			},

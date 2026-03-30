@@ -75,7 +75,7 @@ func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResu
 	// Create a new handler, if needed (config changed, upstreamUrl changed, or E2B token changed)
 	var currentURL string
 	var currentToken string
-	if info, ok := m.upstreamManager.AppInfo(result.AppID); ok {
+	if info, ok := m.upstreamManager.AppInfo(ctx, result.AppID); ok {
 		if info.UpstreamTarget != nil {
 			currentURL = info.UpstreamTarget.String()
 		}

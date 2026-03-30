@@ -120,7 +120,7 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 
 // GetState returns the cached AppInfo for the app. Returns (AppInfo{}, false) if not yet cached.
 // If the E2B access token is missing but a secret name is known, it attempts to load the token lazily.
-func (w *StateWatcher) GetState(appID api.AppID) (AppInfo, bool) {
+func (w *StateWatcher) GetState(ctx context.Context, appID api.AppID) (AppInfo, bool) {
 	v, ok := w.apps.Load(appID)
 	if !ok {
 		return AppInfo{}, false
@@ -131,14 +131,14 @@ func (w *StateWatcher) GetState(appID api.AppID) (AppInfo, bool) {
 	// a singleflight coalesces concurrent requests for the same secret into a single K8s API call.
 	if e.e2bAccessToken == "" && e.e2bSecretName != "" {
 		token, err, _ := w.tokenLoadGroup.Do(e.e2bSecretName, func() (any, error) {
-			return w.loadSecretToken(context.Background(), e.e2bSecretName)
+			return w.loadSecretToken(ctx, e.e2bSecretName)
 		})
 		if err != nil {
-			w.logger.Warnf(context.Background(), "App %s: failed to lazy-load E2B access token from secret %q: %s", appID, e.e2bSecretName, err)
+			w.logger.Warnf(ctx, "App %s: failed to lazy-load E2B access token from secret %q: %s", appID, e.e2bSecretName, err)
 		} else if t, ok := token.(string); t != "" && ok {
 			e.e2bAccessToken = t
 			w.apps.Store(appID, e)
-			w.logger.Infof(context.Background(), "App %s: lazy-loaded E2B access token from secret %q", appID, e.e2bSecretName)
+			w.logger.Infof(ctx, "App %s: lazy-loaded E2B access token from secret %q", appID, e.e2bSecretName)
 		}
 	}
 

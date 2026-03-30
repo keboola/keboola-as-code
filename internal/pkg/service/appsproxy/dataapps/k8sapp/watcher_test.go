@@ -86,7 +86,7 @@ func TestStateWatcher_GetState_UnknownWhenEmpty(t *testing.T) {
 	fakeClient := newFakeClient()
 	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
 
-	info, ok := watcher.GetState(api.AppID("app-123"))
+	info, ok := watcher.GetState(t.Context(), api.AppID("app-123"))
 	assert.False(t, ok)
 	assert.Empty(t, info.ActualState)
 }
@@ -107,7 +107,7 @@ func TestStateWatcher_GetState_AfterCacheSync(t *testing.T) {
 	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
 
 	assert.Eventually(t, func() bool {
-		info, ok := watcher.GetState(api.AppID("app-123"))
+		info, ok := watcher.GetState(t.Context(), api.AppID("app-123"))
 		return ok && info.ActualState == k8sapp.AppActualStateStopped
 	}, 5*time.Second, 50*time.Millisecond)
 }
@@ -128,7 +128,7 @@ func TestStateWatcher_WakeupApp(t *testing.T) {
 
 	// Wait for the informer to cache the object.
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(api.AppID("app-123"))
+		_, ok := watcher.GetState(t.Context(), api.AppID("app-123"))
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -180,7 +180,7 @@ func TestStateWatcher_GetState_UpstreamTarget(t *testing.T) {
 	var info k8sapp.AppInfo
 	assert.Eventually(t, func() bool {
 		var ok bool
-		info, ok = watcher.GetState(api.AppID("app-123"))
+		info, ok = watcher.GetState(t.Context(), api.AppID("app-123"))
 		return ok && info.UpstreamTarget != nil
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -205,11 +205,11 @@ func TestStateWatcher_GetState_UpstreamTarget_AbsentWhenMissing(t *testing.T) {
 	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
 
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(api.AppID("app-123"))
+		_, ok := watcher.GetState(t.Context(), api.AppID("app-123"))
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
-	info, ok := watcher.GetState(api.AppID("app-123"))
+	info, ok := watcher.GetState(t.Context(), api.AppID("app-123"))
 	require.True(t, ok)
 	assert.Nil(t, info.UpstreamTarget)
 }
@@ -271,7 +271,7 @@ func TestStateWatcher_GetState_E2BAccessToken(t *testing.T) {
 	var info k8sapp.AppInfo
 	assert.Eventually(t, func() bool {
 		var ok bool
-		info, ok = watcher.GetState(api.AppID("app-e2b"))
+		info, ok = watcher.GetState(t.Context(), api.AppID("app-e2b"))
 		return ok && info.E2BAccessToken != ""
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -294,11 +294,11 @@ func TestStateWatcher_GetState_E2BAccessToken_MissingSecret(t *testing.T) {
 	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
 
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(api.AppID("app-e2b"))
+		_, ok := watcher.GetState(t.Context(), api.AppID("app-e2b"))
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
-	info, ok := watcher.GetState(api.AppID("app-e2b"))
+	info, ok := watcher.GetState(t.Context(), api.AppID("app-e2b"))
 	require.True(t, ok)
 	assert.Empty(t, info.E2BAccessToken)
 }
@@ -319,11 +319,11 @@ func TestStateWatcher_GetState_NonE2BApp_NoToken(t *testing.T) {
 	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
 
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(api.AppID("app-regular"))
+		_, ok := watcher.GetState(t.Context(), api.AppID("app-regular"))
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
-	info, ok := watcher.GetState(api.AppID("app-regular"))
+	info, ok := watcher.GetState(t.Context(), api.AppID("app-regular"))
 	require.True(t, ok)
 	assert.Empty(t, info.E2BAccessToken)
 }
