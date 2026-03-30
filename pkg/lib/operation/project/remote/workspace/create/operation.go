@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -60,34 +59,24 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	return nil
 }
 
-// createPyRWorkspace creates a Python/R workspace: creates the sandboxes config, then runs
-// the creation queue job and waits for it to complete.
+// createPyRWorkspace creates a Python/R workspace: creates the sandboxes config, then calls
+// the DataScience sandbox service to provision the instance.
 func createPyRWorkspace(ctx context.Context, api *keboola.AuthorizedAPI, branchID keboola.BranchID, name string, wsType workspace.WorkspaceType, size string) (keboola.ConfigID, error) {
-	emptyConfig, err := api.CreateSandboxWorkspaceConfigRequest(branchID, name).Send(ctx)
+	config, err := api.CreateSandboxWorkspaceConfigRequest(branchID, name).Send(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	params := map[string]any{
-		"task":                 "create",
-		"type":                 wsType,
-		"shared":               false,
-		"expirationAfterHours": uint64(0),
-	}
-	if len(size) > 0 {
-		params["size"] = size
-	}
-
-	req := api.NewCreateJobRequest(keboola.SandboxWorkspacesComponent).
-		WithConfig(emptyConfig.ID).
-		WithConfigData(map[string]any{"parameters": params}).
-		Build().
-		WithOnSuccess(func(ctx context.Context, result *keboola.QueueJob) error {
-			return api.WaitForQueueJob(ctx, result.ID)
-		})
-	if _, err = request.NewAPIRequest(request.NoResult{}, req).Send(ctx); err != nil {
+	_, err = api.CreateDataScienceSandboxRequest(keboola.CreateDataScienceSandboxPayload{
+		Type:            keboola.DataScienceAppType(wsType),
+		ConfigurationID: string(config.ID),
+		ComponentID:     string(keboola.SandboxWorkspacesComponent),
+		BranchID:        branchID.String(),
+		Size:            keboola.DataScienceSandboxSize(size),
+	}).Send(ctx)
+	if err != nil {
 		return "", err
 	}
 
-	return emptyConfig.ID, nil
+	return config.ID, nil
 }

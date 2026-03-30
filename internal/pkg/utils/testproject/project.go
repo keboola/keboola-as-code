@@ -472,23 +472,14 @@ func (p *Project) createPythonRSandbox(ctx context.Context, branchID keboola.Bra
 		return
 	}
 
-	params := map[string]any{
-		"task":                 "create",
-		"type":                 fixture.Type,
-		"shared":               false,
-		"expirationAfterHours": uint64(0),
-	}
-	if fixture.Size != "" {
-		params["size"] = fixture.Size
-	}
-	req := p.keboolaProjectAPI.NewCreateJobRequest(keboola.SandboxWorkspacesComponent).
-		WithConfig(config.ID).
-		WithConfigData(map[string]any{"parameters": params}).
-		Build().
-		WithOnSuccess(func(ctx context.Context, result *keboola.QueueJob) error {
-			return p.keboolaProjectAPI.WaitForQueueJob(ctx, result.ID)
-		})
-	if _, err = request.NewAPIRequest(request.NoResult{}, req).Send(ctx); err != nil {
+	_, err = p.keboolaProjectAPI.CreateDataScienceSandboxRequest(keboola.CreateDataScienceSandboxPayload{
+		Type:            keboola.DataScienceAppType(fixture.Type),
+		ConfigurationID: string(config.ID),
+		ComponentID:     string(keboola.SandboxWorkspacesComponent),
+		BranchID:        branchID.String(),
+		Size:            keboola.DataScienceSandboxSize(fixture.Size),
+	}).Send(ctx)
+	if err != nil {
 		errs.Append(errors.Errorf("could not create sandbox \"%s\": %w", fixture.Name, err))
 		return
 	}

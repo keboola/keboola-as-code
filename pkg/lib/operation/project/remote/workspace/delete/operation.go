@@ -46,9 +46,9 @@ func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspa
 	return nil
 }
 
-// deletePyRWorkspace runs the sandbox delete queue job then removes the config.
+// deletePyRWorkspace deletes the DataScience sandbox instance then removes the config.
 func deletePyRWorkspace(ctx context.Context, api *keboola.AuthorizedAPI, branchID keboola.BranchID, configID keboola.ConfigID, appID keboola.DataScienceAppID) error {
-	if _, err := api.DeleteSandboxWorkspaceJobRequest(keboola.SandboxWorkspaceID(appID)).Send(ctx); err != nil {
+	if _, err := api.DeleteDataScienceSandboxRequest(appID).Send(ctx); err != nil {
 		return err
 	}
 	_, err := api.DeleteSandboxWorkspaceConfigRequest(branchID, configID).Send(ctx)
