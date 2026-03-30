@@ -2,7 +2,9 @@
   "parameters": {
     "db": {
       "#password": "##KBC_SECRET_PASSWORD##",
-      "host": "host"
+      "host": "host",
+      "port": 3306,
+      "user": "root"
     }
   }
 }

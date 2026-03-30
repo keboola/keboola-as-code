@@ -1,1 +1,21 @@
-{}
+{
+  "parameters": {
+    "advancedMode": false,
+    "columns": [
+      ""
+    ],
+    "enabled": false,
+    "id": 0,
+    "incremental": false,
+    "incrementalFetchingColumn": "",
+    "incrementalFetchingLimit": 0,
+    "name": "",
+    "outputTable": "",
+    "primaryKey": [
+      ""
+    ],
+    "query": "",
+    "table": "",
+    "tables": []
+  }
+}

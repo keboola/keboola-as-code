@@ -1,9 +1,9 @@
 package env
 
 import (
-	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -51,19 +51,12 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return errors.Errorf("cannot get default branch: %w", err)
 			}
 
-			// Get all Snowflake workspaces for the dialog
-			allWorkspaces, err := d.KeboolaProjectAPI().ListSandboxWorkspaces(cmd.Context(), branch.ID)
+			allWorkspaces, sessions, err := sandbox.ListAllWorkspaces(cmd.Context(), d.KeboolaProjectAPI(), branch.ID)
 			if err != nil {
 				return err
 			}
-			snowflakeWorkspaces := make([]*keboola.SandboxWorkspaceWithConfig, 0)
-			for _, w := range allWorkspaces {
-				if w.Config.ComponentID == keboola.SandboxWorkspacesComponent {
-					snowflakeWorkspaces = append(snowflakeWorkspaces, w)
-				}
-			}
 
-			opts, err := AskGenerateEnv(branch.BranchKey, d.Dialogs(), snowflakeWorkspaces, f, p.BaseScope().Environment())
+			opts, err := AskGenerateEnv(cmd.Context(), branch.BranchKey, branch.ID, d.Dialogs(), allWorkspaces, sessions, f, p.BaseScope().Environment(), d.KeboolaProjectAPI())
 			if err != nil {
 				return err
 			}

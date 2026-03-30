@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 )
@@ -138,17 +139,32 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		return req.SendOrErr(ctx)
 	})
 
-	workspacesMap := make(map[string]*keboola.SandboxWorkspace)
+	workspacesMap := make(map[string]*sandbox.SandboxWorkspace)
 	grp.Go(func() error {
-		req := p.keboolaProjectAPI.
-			ListSandboxWorkspaceInstancesRequest().
-			WithOnSuccess(func(ctx context.Context, result *[]*keboola.SandboxWorkspace) error {
-				for _, sandbox := range *result {
-					workspacesMap[sandbox.ID.String()] = sandbox
-				}
-				return nil
-			})
-		return req.SendOrErr(ctx)
+		defaultBranch, err := p.DefaultBranch()
+		if err != nil {
+			return err
+		}
+		workspaces, _, err := sandbox.ListSandboxWorkspaces(ctx, p.keboolaProjectAPI, defaultBranch.ID)
+		if err != nil {
+			return err
+		}
+		for _, w := range workspaces {
+			workspacesMap[w.SandboxWorkspace.ID.String()] = w.SandboxWorkspace
+		}
+		return nil
+	})
+
+	editorSessionsMap := make(map[string]*keboola.EditorSession) // key: ConfigurationID
+	grp.Go(func() error {
+		sessions, err := p.keboolaProjectAPI.ListEditorSessionsRequest().Send(ctx)
+		if err != nil {
+			return err
+		}
+		for _, s := range *sessions {
+			editorSessionsMap[s.ConfigurationID] = s
+		}
+		return nil
 	})
 
 	// Storage Buckets
@@ -283,9 +299,16 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	}
 
 	// Join sandbox instances with config name
-	for _, config := range configsMap {
+	for key, config := range configsMap {
 		if config.ComponentID == keboola.SandboxWorkspacesComponent {
-			sandboxID, err := keboola.GetSandboxWorkspaceID(config.ToAPI().Config)
+			// SQL (Snowflake/BigQuery): check editor sessions first
+			if session, found := editorSessionsMap[key.ID.String()]; found {
+				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: config.Name, Type: keboola.SandboxWorkspaceType(session.BackendType)})
+				continue
+			}
+
+			// Python/R: fall back to sandbox workspace instance lookup
+			sandboxID, err := sandbox.GetSandboxWorkspaceID(config.ToAPI().Config)
 			if err != nil {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE ID NOT SET"})
 				continue

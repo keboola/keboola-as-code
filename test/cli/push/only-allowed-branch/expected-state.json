@@ -118,7 +118,10 @@
           "configuration": {
             "parameters": {
               "db": {
-                "host": "mysql.example.com"
+                "host": "mysql.example.com",
+                "port": 3306,
+                "user": "root",
+                "#password": "%s"
               }
             }
           },

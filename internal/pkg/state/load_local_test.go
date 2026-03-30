@@ -381,6 +381,18 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 										Key:   "host",
 										Value: "mysql.example.com",
 									},
+									{
+										Key:   "port",
+										Value: float64(3306),
+									},
+									{
+										Key:   "user",
+										Value: "root",
+									},
+									{
+										Key:   "#password",
+										Value: "",
+									},
 								}),
 							},
 						}),

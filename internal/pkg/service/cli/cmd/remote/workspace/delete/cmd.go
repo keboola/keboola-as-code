@@ -3,6 +3,7 @@ package deleteworkspace
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -44,12 +45,12 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return errors.Errorf("cannot get default branch: %w", err)
 			}
 
-			// Options
-			allWorkspaces, err := d.KeboolaProjectAPI().ListSandboxWorkspaces(cmd.Context(), branch.ID)
+			allWorkspaces, _, err := sandbox.ListAllWorkspaces(cmd.Context(), d.KeboolaProjectAPI(), branch.ID)
 			if err != nil {
 				return err
 			}
-			sandbox, err := d.Dialogs().AskWorkspace(allWorkspaces, f.WorkspaceID)
+
+			ws, err := d.Dialogs().AskWorkspace(allWorkspaces, f.WorkspaceID)
 			if err != nil {
 				return err
 			}
@@ -57,7 +58,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			// Send cmd successful/failed event
 			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "remote-workspace-delete")
 
-			return deleteOp.Run(cmd.Context(), d, branch.ID, sandbox)
+			return deleteOp.Run(cmd.Context(), d, branch.ID, ws)
 		},
 	}
 

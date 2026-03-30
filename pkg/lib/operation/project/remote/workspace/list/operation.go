@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -29,14 +30,16 @@ func Run(ctx context.Context, d dependencies) (err error) {
 	}
 
 	logger.Info(ctx, "Loading workspaces, please wait.")
-	workspaces, err := d.KeboolaProjectAPI().ListSandboxWorkspaces(ctx, branch.ID)
+
+	all, _, err := sandbox.ListAllWorkspaces(ctx, d.KeboolaProjectAPI(), branch.ID)
 	if err != nil {
 		return err
 	}
-	sort.Slice(workspaces, func(i, j int) bool { return workspaces[i].Config.Name < workspaces[j].Config.Name })
+
+	sort.Slice(all, func(i, j int) bool { return all[i].Config.Name < all[j].Config.Name })
 
 	logger.Info(ctx, "Found workspaces:")
-	for _, workspace := range workspaces {
+	for _, workspace := range all {
 		if keboola.SandboxWorkspaceSupportsSizes(workspace.SandboxWorkspace.Type) {
 			logger.Infof(ctx, "  %s (ID: %s, Type: %s, Size: %s)", workspace.Config.Name, workspace.Config.ID, workspace.SandboxWorkspace.Type, workspace.SandboxWorkspace.Size)
 		} else {

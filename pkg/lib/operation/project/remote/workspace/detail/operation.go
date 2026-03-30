@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -31,7 +32,32 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 	ctx, cancel := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("workspace details timeout"))
 	defer cancel()
 
-	workspace, err := d.KeboolaProjectAPI().GetSandboxWorkspace(ctx, branch.ID, configID)
+	// Fetch the sandbox config to determine workspace type.
+	config, err := d.KeboolaProjectAPI().GetSandboxWorkspaceConfigRequest(branch.ID, configID).Send(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Check if this is a Python/R workspace (has parameters.id) or a SQL editor session.
+	_, wsIDErr := sandbox.GetSandboxWorkspaceID(config)
+	if wsIDErr != nil {
+		// SQL workspace — find the editor session linked to this config.
+		sessions, e := d.KeboolaProjectAPI().ListEditorSessionsRequest().Send(ctx)
+		if e != nil {
+			return e
+		}
+		for _, s := range *sessions {
+			if s.ConfigurationID == configID.String() {
+				logger.Infof(ctx, "Workspace \"%s\"\nID: %s\nType: %s\nDatabase: %s\nSchema: %s",
+					config.Name, configID, s.BackendType, s.WorkspaceDatabase, s.WorkspaceSchema)
+				return nil
+			}
+		}
+		return errors.Errorf(`no active editor session found for workspace "%s"`, configID)
+	}
+
+	// Python/R workspace
+	workspace, err := sandbox.GetSandboxWorkspace(ctx, d.KeboolaProjectAPI(), branch.ID, configID)
 	if err != nil {
 		return err
 	}
@@ -43,37 +69,8 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 		logger.Infof(ctx, `Size: %s`, w.Size)
 	}
 
-	switch w.Type {
-	case keboola.SandboxWorkspaceTypeSnowflake:
-		logger.Infof(
-			ctx,
-			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s\n  Warehouse: %s",
-			w.Host,
-			w.User,
-			w.Password,
-			w.Details.Connection.Database,
-			w.Details.Connection.Schema,
-			w.Details.Connection.Warehouse,
-		)
-	case keboola.SandboxWorkspaceTypeBigQuery:
-		logger.Infof(
-			ctx,
-			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s",
-			w.Host,
-			w.User,
-			w.Password,
-			w.Details.Connection.Database,
-			w.Details.Connection.Schema,
-		)
-	case keboola.SandboxWorkspaceTypePython:
-		fallthrough
-	case keboola.SandboxWorkspaceTypeR:
-		logger.Infof(
-			ctx,
-			"Credentials:\n  Host: %s\n  Password: %s",
-			w.Host,
-			w.Password,
-		)
+	if w.Host != "" || w.Password != "" {
+		logger.Infof(ctx, "Credentials:\n  Host: %s\n  Password: %s", w.Host, w.Password)
 	}
 
 	return nil
