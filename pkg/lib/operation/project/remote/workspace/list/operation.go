@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
