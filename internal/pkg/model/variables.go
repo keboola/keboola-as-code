@@ -183,7 +183,7 @@ func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Obje
 		// Multiple variablesFor relations exist on the variables config (shared across consumers).
 		// Pass 2 validation will detect and warn about the duplicates; skip linking here to avoid
 		// a redundant error before the cleanup runs.
-		return nil, nil, nil
+		return nil, nil, nil //nolint:nilerr
 	}
 	if variablesForRaw == nil {
 		return nil, nil, errors.NewNestedError(
