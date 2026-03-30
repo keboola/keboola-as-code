@@ -595,14 +595,17 @@ func (r *ConfigRow) GetContent() *orderedmap.OrderedMap {
 }
 
 // ParentKey - config parent can be modified via Relations, for example variables config is embedded in another config.
+// If multiple relation-defined parents exist (e.g. a shared keboola.variables config referenced by more than one
+// consumer), the relations error is ignored and the config falls back to its structural parent (branch). The
+// duplicate-relations validation in AfterRemoteOperation logs a warning and removes the extra relations; until that
+// cleanup runs, PathsGenerator must not crash so that remote state loading can complete.
 func (c *Config) ParentKey() (Key, error) {
-	if parentKey, err := c.Relations.ParentKey(c.Key()); err != nil {
-		return nil, err
-	} else if parentKey != nil {
+	parentKey, err := c.Relations.ParentKey(c.Key())
+	if err == nil && parentKey != nil {
 		return parentKey, nil
 	}
 
-	// No parent defined via "Relations" -> parent is branch
+	// No relation-defined parent (or multiple parents — treat as no parent) -> parent is branch.
 	return c.ConfigKey.ParentKey()
 }
 

@@ -29,35 +29,44 @@ Keboola's Storage API allows a variables config to be referenced by more than on
 
 ## The `multiple parents` guard
 
-`Relations.ParentKey()` (`internal/pkg/model/relation.go:66`) collects all relations that define a parent key. If more than one is found it returns a fatal error:
+`Relations.ParentKey()` (`internal/pkg/model/relation.go:66`) collects all relations that define a parent key. If more than one is found it returns an error:
 
 ```
 unexpected state: multiple parents defined by "relations" in <config desc>
 ```
 
-This guard exists to protect the CLI sync engine: without it, path generation would be ambiguous and the local directory structure would be corrupted.
+This guard exists to detect invalid state in the relation graph.
 
-## The ordering bug that broke Templates
+## Config.ParentKey() and PathsGenerator
 
-The relation mapper (`internal/pkg/mapper/relations/link.go`) processes objects in `AfterRemoteOperation` and `AfterLocalOperation`. It also validates them in the same loop iteration (link → validate per object). This is order-dependent:
+`Config.ParentKey()` (`internal/pkg/model/object.go`) calls `Relations.ParentKey()` to find the relation-defined parent. If that returns an error (multiple parents) or nil (no parent), it falls back to the structural parent — the branch.
 
-1. If the variables config Y is iterated **before** its consumers X and Z, `validateRelations(Y)` runs when Y has zero `variablesFor` relations — nothing to clean up.
+`PathsGenerator.doUpdate()` (`internal/pkg/state/local/paths.go`) calls `object.ParentKey()` on every loaded object to build local directory paths. With the branch-fallback in `Config.ParentKey()`, a variables config that has multiple `variablesFor` relations is placed at the branch root (e.g. `main/variables/`) rather than inside any specific parent folder. This is non-fatal: PathsGenerator can complete and remote state loading succeeds.
+
+## The ordering issue
+
+The relation mapper (`internal/pkg/mapper/relations/link.go`) processes objects in `AfterRemoteOperation` and `AfterLocalOperation`. It links and validates each object in a single pass:
+
+```
+for each object:
+    linkRelations(object)    // adds other-side relations to OTHER objects
+    validateRelations(object) // validates THIS object's relations
+```
+
+This is order-dependent. If the variables config Y is iterated **before** its consumers X and Z:
+
+1. `validateRelations(Y)` runs when Y has zero `variablesFor` relations — nothing to clean up.
 2. Later iterations for X and Z call `linkRelations`, which adds `VariablesForRelation` entries to Y.
-3. After the mapper loop, `PathsGenerator.Invoke()` (called in `remote/manager.go`) calls `Y.ParentKey()`, finds two parents, and returns the fatal error.
+3. Y ends up with two `variablesFor` relations in the loaded remote state.
+4. `PathsGenerator.doUpdate()` calls `Y.ParentKey()` — before the branch-fallback fix this was a fatal error.
 
-CLI `pull` was unaffected in practice because the API happened to return consumer configs before variables configs, making consumers iterated first. The Templates service load path had a different iteration order and hit the bug.
+CLI `pull` was unaffected in practice because the API happened to return consumer configs before variables configs, making consumers iterated first. The Templates service load path had a different iteration order and triggered step 3-4.
 
-## The fix: two-pass link and validate
+## The fix: branch fallback in Config.ParentKey()
 
-`AfterRemoteOperation` and `AfterLocalOperation` were refactored into two explicit passes:
+`Config.ParentKey()` was changed to ignore the "multiple parents" error from `Relations.ParentKey()` and fall back to the branch (structural parent) instead of propagating the error. This makes PathsGenerator non-fatal for shared-variables configs regardless of iteration order.
 
-**Pass 1 — link all objects**
-Run `linkRelations` for every loaded object. This creates all other-side relations (including adding `variablesFor` entries to every variables config) before any validation happens.
-
-**Pass 2 — validate all objects**
-Run `validateRelations` for every loaded object. With the complete relation graph now in place, duplicates are correctly detected, removed, and logged as warnings — regardless of the order objects appear in the API response.
-
-This makes behaviour order-independent: both CLI and the Templates service emit a warning and continue when a variables config has multiple parents, instead of crashing. No new flags or special-casing were required.
+The `validateRelations` function still detects the duplicate `variablesFor` relations and logs a warning. In CLI `pull`, this warning fires correctly when consumers are iterated before the variables config (the API's typical return order). In the Templates service load path the warning may fire differently (or not at all for the duplicate, depending on iteration order), but Templates is only reading remote state — it never generates a local directory hierarchy — so the warning is not critical there.
 
 ## Why this is warning-only, not a hard error
 
@@ -69,8 +78,9 @@ Templates only reads remote state to discover existing configs and apply templat
 
 | File | Role |
 |---|---|
-| `internal/pkg/mapper/relations/link.go` | Two-pass AfterRemoteOperation / AfterLocalOperation |
+| `internal/pkg/model/object.go` | `Config.ParentKey()` — branch fallback when multiple relation parents |
 | `internal/pkg/model/relation.go` | `Relations.ParentKey()`, `OneToXRelations()` |
+| `internal/pkg/mapper/relations/link.go` | Single-pass AfterRemoteOperation / AfterLocalOperation |
 | `internal/pkg/model/variables.go` | `VariablesForRelation`, `VariablesFromRelation` definitions |
 | `internal/pkg/state/remote/manager.go` | Sequencing of AfterRemoteOperation → PathsGenerator |
 | `test/cli/pull/variables-used-twice/` | E2E test covering the shared-variables warning |
