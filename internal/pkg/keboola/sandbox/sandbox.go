@@ -1,7 +1,7 @@
 // Package sandbox provides Python/R workspace types and operations that were removed
-// from keboola-sdk-go v2.17.1-0.20260326112115-8a6ce0872c8a. The SDK now exposes
-// DataScienceApp for listing/fetching workspaces; this package bridges the gap for
-// existing callers without requiring a full migration.
+// from keboola-sdk-go v2.18.0. The SDK now exposes DataScienceApp for listing/fetching
+// workspaces; this package bridges the gap for existing callers without requiring a
+// full migration.
 package sandbox
 
 import (
@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -284,6 +285,59 @@ func ListSandboxWorkspaces(
 		})
 	}
 	return out, configs, nil
+}
+
+// ListAllWorkspaces fetches Python/R workspaces and SQL editor sessions in parallel,
+// returning a combined list and the raw sessions (needed by callers that look up credentials).
+func ListAllWorkspaces(
+	ctx context.Context,
+	api *keboola.AuthorizedAPI,
+	branchID keboola.BranchID,
+) ([]*SandboxWorkspaceWithConfig, []*keboola.EditorSession, error) {
+	var pyRWorkspaces []*SandboxWorkspaceWithConfig
+	var allConfigs []*keboola.Config
+	var sessions []*keboola.EditorSession
+
+	grp, grpCtx := errgroup.WithContext(ctx)
+	grp.Go(func() error {
+		var e error
+		pyRWorkspaces, allConfigs, e = ListSandboxWorkspaces(grpCtx, api, branchID)
+		return e
+	})
+	grp.Go(func() error {
+		result, e := api.ListEditorSessionsRequest().Send(grpCtx)
+		if e != nil {
+			return e
+		}
+		sessions = *result
+		return nil
+	})
+	if err := grp.Wait(); err != nil {
+		return nil, nil, err
+	}
+
+	configNameMap := make(map[string]string)
+	for _, c := range allConfigs {
+		configNameMap[c.ID.String()] = c.Name
+	}
+
+	all := make([]*SandboxWorkspaceWithConfig, 0, len(pyRWorkspaces)+len(sessions))
+	all = append(all, pyRWorkspaces...)
+	for _, s := range sessions {
+		name := configNameMap[s.ConfigurationID]
+		all = append(all, &SandboxWorkspaceWithConfig{
+			Config: &keboola.Config{
+				ConfigKey: keboola.ConfigKey{ID: keboola.ConfigID(s.ConfigurationID)},
+				Name:      name,
+			},
+			SandboxWorkspace: &SandboxWorkspace{
+				ID:   keboola.SandboxWorkspaceID(s.ID),
+				Type: keboola.SandboxWorkspaceType(s.BackendType),
+			},
+		})
+	}
+
+	return all, sessions, nil
 }
 
 // WorkspaceFromStorage constructs a SandboxWorkspace from StorageWorkspace credentials,
