@@ -19,7 +19,7 @@ const (
 
 // WorkspaceSupportsSizes reports whether the given workspace type supports size selection.
 func WorkspaceSupportsSizes(typ WorkspaceType) bool {
-	return keboola.DataScienceSandboxSupportsSizes(keboola.DataScienceAppType(typ))
+	return keboola.SandboxWorkspaceSupportsSizes(keboola.SandboxWorkspaceType(typ))
 }
 
 // WorkspaceTypesOrdered returns all workspace types in a stable display order.
@@ -38,21 +38,12 @@ func WorkspaceTypesMap() map[WorkspaceType]bool {
 
 // WorkspaceSizesOrdered returns sandbox sizes in ascending order.
 func WorkspaceSizesOrdered() []string {
-	sizes := keboola.DataScienceSandboxSizesOrdered()
-	result := make([]string, len(sizes))
-	for i, s := range sizes {
-		result[i] = string(s)
-	}
-	return result
+	return keboola.SandboxWorkspaceSizesOrdered()
 }
 
 // WorkspaceSizesMap returns the set of valid sandbox sizes.
 func WorkspaceSizesMap() map[string]bool {
-	m := make(map[string]bool)
-	for _, s := range keboola.DataScienceSandboxSizesOrdered() {
-		m[string(s)] = true
-	}
-	return m
+	return keboola.SandboxWorkspaceSizesMap()
 }
 
 // WorkspaceWithConfig pairs a workspace instance with its keboola.sandboxes component config.
