@@ -180,7 +180,10 @@ func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Obje
 	variablesConfig := variablesConfigRaw.(*Config)
 	variablesForRaw, err := variablesConfig.Relations.GetOneByType(VariablesForRelType)
 	if err != nil {
-		return nil, nil, errors.PrefixErrorf(err, "invalid %s", variablesConfig.Desc())
+		// Multiple variablesFor relations exist on the variables config (shared across consumers).
+		// Pass 2 validation will detect and warn about the duplicates; skip linking here to avoid
+		// a redundant error before the cleanup runs.
+		return nil, nil, nil
 	}
 	if variablesForRaw == nil {
 		return nil, nil, errors.NewNestedError(

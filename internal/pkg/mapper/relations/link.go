@@ -12,9 +12,27 @@ import (
 func (m *relationsMapper) AfterLocalOperation(ctx context.Context, changes *model.LocalChanges) error {
 	errs := errors.NewMultiError()
 	allObjects := m.state.LocalObjects()
-	for _, objectState := range changes.Loaded() {
-		if err := m.linkAndValidateRelations(objectState.LocalState(), allObjects); err != nil {
-			errs.Append(err)
+	loaded := changes.Loaded()
+
+	// Pass 1: link all objects so every other-side relation exists before validation.
+	// Processing link and validate in a single loop would cause order-dependent behaviour:
+	// a variables config iterated before its consumers would be validated before the consumer
+	// linking steps add VariablesForRelation entries to it, leaving duplicates undetected until
+	// PathsGenerator runs and hits a fatal "multiple parents" error.
+	for _, objectState := range loaded {
+		if o, ok := objectState.LocalState().(model.ObjectWithRelations); ok {
+			if err := m.linkRelations(o, allObjects); err != nil {
+				errs.Append(err)
+			}
+		}
+	}
+
+	// Pass 2: validate all objects now that the relation graph is complete.
+	for _, objectState := range loaded {
+		if o, ok := objectState.LocalState().(model.ObjectWithRelations); ok {
+			if err := m.validateRelations(o); err != nil {
+				errs.Append(errors.PrefixErrorf(err, "invalid %s", objectState.LocalState().Desc()))
+			}
 		}
 	}
 
@@ -30,9 +48,24 @@ func (m *relationsMapper) AfterLocalOperation(ctx context.Context, changes *mode
 func (m *relationsMapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	errs := errors.NewMultiError()
 	allObjects := m.state.RemoteObjects()
-	for _, objectState := range changes.Loaded() {
-		if err := m.linkAndValidateRelations(objectState.RemoteState(), allObjects); err != nil {
-			errs.Append(err)
+	loaded := changes.Loaded()
+
+	// Pass 1: link all objects so every other-side relation exists before validation.
+	// See AfterLocalOperation for the reasoning behind the two-pass approach.
+	for _, objectState := range loaded {
+		if o, ok := objectState.RemoteState().(model.ObjectWithRelations); ok {
+			if err := m.linkRelations(o, allObjects); err != nil {
+				errs.Append(err)
+			}
+		}
+	}
+
+	// Pass 2: validate all objects now that the relation graph is complete.
+	for _, objectState := range loaded {
+		if o, ok := objectState.RemoteState().(model.ObjectWithRelations); ok {
+			if err := m.validateRelations(o); err != nil {
+				errs.Append(errors.PrefixErrorf(err, "invalid %s", objectState.RemoteState().Desc()))
+			}
 		}
 	}
 
@@ -42,19 +75,6 @@ func (m *relationsMapper) AfterRemoteOperation(ctx context.Context, changes *mod
 	}
 
 	return nil
-}
-
-func (m *relationsMapper) linkAndValidateRelations(object model.Object, allObjects model.Objects) error {
-	errs := errors.NewMultiError()
-	if o, ok := object.(model.ObjectWithRelations); ok {
-		if err := m.linkRelations(o, allObjects); err != nil {
-			errs.Append(err)
-		}
-		if err := m.validateRelations(o); err != nil {
-			errs.Append(errors.PrefixErrorf(err, "invalid %s", object.Desc()))
-		}
-	}
-	return errs.ErrorOrNil()
 }
 
 // lintRelations finds the other side of the relation and create a corresponding relation on the other side.
