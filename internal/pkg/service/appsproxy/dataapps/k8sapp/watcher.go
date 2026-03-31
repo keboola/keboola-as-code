@@ -2,10 +2,12 @@ package k8sapp
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/url"
 	"sync"
 
+	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // entry stores the K8s object name and last observed state for an app.
@@ -27,16 +30,18 @@ type entry struct {
 	state              AppActualState
 	autoRestartEnabled bool
 	upstreamTarget     *url.URL // pre-parsed; nil when appsProxy.upstreamUrl absent/invalid
+	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
+	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
 }
 
 // StateWatcher watches App CRDs in Kubernetes and provides a local cache of app states.
 type StateWatcher struct {
-	client    dynamic.Interface
-	namespace string
-	logger    log.Logger
-	hasSynced cache.InformerSynced
-	// apps: AppID → entry
-	apps sync.Map
+	client         dynamic.Interface
+	namespace      string
+	logger         log.Logger
+	hasSynced      cache.InformerSynced
+	apps           sync.Map           // AppID → entry
+	tokenLoadGroup singleflight.Group // coalesces concurrent lazy-load K8s API calls per secret
 }
 
 type dependencies interface {
@@ -69,10 +74,10 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 	})
 
 	lw := &cache.ListWatch{
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			return client.Resource(AppGVR()).Namespace(namespace).List(ctx, opts)
 		},
-		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			return client.Resource(AppGVR()).Namespace(namespace).Watch(ctx, opts)
 		},
 	}
@@ -114,16 +119,34 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 }
 
 // GetState returns the cached AppInfo for the app. Returns (AppInfo{}, false) if not yet cached.
+// If the E2B access token is missing but a secret name is known, it attempts to load the token lazily.
 func (w *StateWatcher) GetState(appID api.AppID) (AppInfo, bool) {
 	v, ok := w.apps.Load(appID)
 	if !ok {
 		return AppInfo{}, false
 	}
 	e := v.(entry)
+
+	// Lazy-load E2B token: the Secret may not have existed when the App CRD event was processed.
+	// a singleflight coalesces concurrent requests for the same secret into a single K8s API call.
+	if e.e2bAccessToken == "" && e.e2bSecretName != "" {
+		token, err, _ := w.tokenLoadGroup.Do(e.e2bSecretName, func() (any, error) {
+			return w.loadSecretToken(context.Background(), e.e2bSecretName)
+		})
+		if err != nil {
+			w.logger.Warnf(context.Background(), "App %s: failed to lazy-load E2B access token from secret %q: %s", appID, e.e2bSecretName, err)
+		} else if t, ok := token.(string); t != "" && ok {
+			e.e2bAccessToken = t
+			w.apps.Store(appID, e)
+			w.logger.Infof(context.Background(), "App %s: lazy-loaded E2B access token from secret %q", appID, e.e2bSecretName)
+		}
+	}
+
 	return AppInfo{
 		ActualState:        e.state,
 		AutoRestartEnabled: e.autoRestartEnabled,
 		UpstreamTarget:     e.upstreamTarget,
+		E2BAccessToken:     e.e2bAccessToken,
 	}, true
 }
 
@@ -194,12 +217,26 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 		}
 	}
 
+	var e2bAccessToken string
+	var e2bSecretName string
+	if appObj.Spec.Runtime.Backend.Type == BackendTypeE2BSandbox {
+		e2bSecretName = appObj.Status.E2BSandbox.AccessTokenSecretName
+		if e2bSecretName != "" {
+			token, err := w.loadSecretToken(ctx, e2bSecretName)
+			if err == nil {
+				e2bAccessToken = token
+			}
+		}
+	}
+
 	appID := api.AppID(appObj.Spec.AppID)
 	w.apps.Store(appID, entry{
 		k8sName:            k8sName,
 		state:              appObj.Status.CurrentState,
 		autoRestartEnabled: autoRestartEnabled,
 		upstreamTarget:     upstreamTarget,
+		e2bAccessToken:     e2bAccessToken,
+		e2bSecretName:      e2bSecretName,
 	})
 	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v upstreamTarget=%v", k8sName, appID, appObj.Status.CurrentState, autoRestartEnabled, upstreamTarget != nil)
 }
@@ -228,4 +265,33 @@ func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
 		}
 		return true
 	})
+}
+
+// loadSecretToken fetches a K8s Secret by name and returns the value of the "token" key.
+// The dynamic client returns Secret data values as base64-encoded strings.
+func (w *StateWatcher) loadSecretToken(ctx context.Context, secretName string) (string, error) {
+	obj, err := w.client.Resource(SecretGVR()).Namespace(w.namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	data, found, err := unstructured.NestedMap(obj.Object, "data")
+	if err != nil {
+		return "", errors.Errorf("secret %q: failed to read data field: %s", secretName, err)
+	}
+	if !found {
+		return "", errors.Errorf("secret %q has no data field", secretName)
+	}
+
+	token, ok := data["token"].(string)
+	if !ok || token == "" {
+		return "", errors.Errorf("secret %q has no \"token\" key in data", secretName)
+	}
+
+	tokenBytes, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return "", errors.Errorf("secret %q: failed to base64-decode token: %s", secretName, err)
+	}
+
+	return string(tokenBytes), nil
 }

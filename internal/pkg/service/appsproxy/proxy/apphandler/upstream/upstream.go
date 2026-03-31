@@ -108,6 +108,16 @@ func (m *Manager) UpstreamURL(appID api.AppID) string {
 	return info.UpstreamTarget.String()
 }
 
+// E2BAccessToken returns the E2B access token for appID from the K8s cache.
+// Returns "" when the app is not cached or is not an E2B sandbox.
+func (m *Manager) E2BAccessToken(appID api.AppID) string {
+	info, ok := m.stateWatcher.GetState(appID)
+	if !ok {
+		return ""
+	}
+	return info.E2BAccessToken
+}
+
 func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream *AppUpstream, err error) {
 	_, span := m.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.NewUpstream")
 	defer span.End(&err)
@@ -119,7 +129,11 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 	}
 
 	// Create reverse proxy
-	upstream = &AppUpstream{manager: m, app: app, target: target}
+	upstream = &AppUpstream{
+		manager: m,
+		app:     app,
+		target:  target,
+	}
 	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
 	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
 
@@ -199,6 +213,14 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 				r.Out.Header.Set("X-Forwarded-Proto", p)
 			} else if s := r.In.Header.Get("X-Forwarded-Scheme"); s != "" {
 				r.Out.Header.Set("X-Forwarded-Proto", s)
+			}
+
+			// Inject E2B access token for E2B sandbox apps.
+			// Always fetch the latest token from the state watcher to handle
+			// secret recreation (updates propagate asynchronously).
+			r.Out.Header.Del("e2b-traffic-access-token")
+			if token := u.manager.E2BAccessToken(u.app.ID); token != "" {
+				r.Out.Header.Set("e2b-traffic-access-token", token)
 			}
 		},
 		Transport:    u.manager.transport,

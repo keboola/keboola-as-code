@@ -86,7 +86,8 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	// avoiding a race with the watch channel setup.
 	scheme := runtime.NewScheme()
 	fakeClient := k8sfake.NewSimpleDynamicClientWithCustomListKinds(scheme, map[schema.GroupVersionResource]string{
-		k8sapp.AppGVR(): "AppList",
+		k8sapp.AppGVR():    "AppList",
+		k8sapp.SecretGVR(): "SecretList",
 	}, initialK8sObjects...)
 
 	// Validate config
