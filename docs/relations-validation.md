@@ -71,7 +71,7 @@ To avoid the duplicate, `NewOtherSideRelation` checks `len(GetByType(VariablesFo
 
 If the Loaded() order is `vars_config → values_row → consumer1 → consumer2`, then when `linkRelations(values_row)` runs in Pass 1, Y has zero `variablesFor` entries (consumers have not been processed yet). The `> 1` guard does not fire. `GetOneByType` returns `nil` (no relation found), and `NewOtherSideRelation` returns the "missing relation variablesFor" error — producing an extra warning in the output alongside the "found 2" warning from Pass 2.
 
-This double-warning is a pre-existing edge case. In practice it does not arise because consumer configs always appear in Loaded() before variables values rows (the Storage API returns consumers, and values rows are discovered via the consumer's `variablesValuesFrom` relations). The `> 1` guard eliminates the more common ordering issue; the remaining edge case is benign — both warnings correctly describe the malformed setup.
+This double-warning is a **known limitation of this fix**, not a pre-existing bug. Before this PR, the values-row-first ordering would have led to a different failure mode depending on whether consumers appeared later. The `> 1` guard eliminates the crash and the more common duplicate-warning case; this remaining ordering is accepted as a minor trade-off. In practice it does not arise because consumer configs always appear in `Loaded()` before their variables values rows (the Storage API returns consumers first, and values rows are discovered via the consumer's `variablesValuesFrom` relations). Both warnings correctly describe the malformed setup, so no data is lost.
 
 ## Why the ignore mapper excludes orphaned variables configs
 

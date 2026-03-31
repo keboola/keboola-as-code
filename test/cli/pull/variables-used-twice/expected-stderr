@@ -3,4 +3,3 @@ Warning:
   - Only one relation "variablesFor" expected, but found 2:
     - {"componentId":"ex-generic-v2","configId":"%s"}
     - {"componentId":"ex-generic-v2","configId":"%s"}
-

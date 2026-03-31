@@ -147,6 +147,17 @@ func TestRelationsMapperVariablesSharedAcrossConsumers(t *testing.T) {
 	allTxt := logger.AllMessagesTxt()
 	assert.Equal(t, 1, strings.Count(allTxt, `Only one relation "variablesFor" expected, but found 2`))
 	assert.Empty(t, logger.ErrorMessages())
+
+	// The > 1 guard in VariablesValuesForRelation.NewOtherSideRelation prevented
+	// linkRelations(valuesRow) from adding a VariablesValuesFromRelation to any consumer.
+	// consumer1 retains its original single VariablesValuesFromRelation (no duplicate was
+	// added from the values-row side), and consumer2 has none at all.
+	assert.Equal(t, 1, len(consumer1.Remote.Relations.GetByType(model.VariablesValuesFromRelType)))
+	assert.Empty(t, consumer2.Remote.Relations.GetByType(model.VariablesValuesFromRelType))
+
+	// AfterLocalOperation is structurally identical to AfterRemoteOperation (same two-pass
+	// logic). It is not re-tested here because the shared-variables scenario only arises
+	// from the remote API path, where object order is non-deterministic.
 }
 
 func TestRelationsMapperOtherSideMissing(t *testing.T) {

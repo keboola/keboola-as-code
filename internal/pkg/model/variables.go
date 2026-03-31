@@ -180,7 +180,9 @@ func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Obje
 	variablesConfig := variablesConfigRaw.(*Config)
 	// When the variables config temporarily holds multiple variablesFor relations (shared
 	// across consumers), skip linking here — Pass 2 validation will detect and warn about
-	// the duplicates and remove them.
+	// the duplicates and remove them. The variablesValuesFor relation on the row is
+	// intentionally left in place; the ignore mapper excludes the parent variables config
+	// (and this row transitively) after Pass 2 removes all variablesFor entries.
 	if len(variablesConfig.Relations.GetByType(VariablesForRelType)) > 1 {
 		return nil, nil, nil
 	}
