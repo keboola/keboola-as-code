@@ -152,7 +152,7 @@ func TestRelationsMapperVariablesSharedAcrossConsumers(t *testing.T) {
 	// linkRelations(valuesRow) from adding a VariablesValuesFromRelation to any consumer.
 	// consumer1 retains its original single VariablesValuesFromRelation (no duplicate was
 	// added from the values-row side), and consumer2 has none at all.
-	assert.Equal(t, 1, len(consumer1.Remote.Relations.GetByType(model.VariablesValuesFromRelType)))
+	assert.Len(t, consumer1.Remote.Relations.GetByType(model.VariablesValuesFromRelType), 1)
 	assert.Empty(t, consumer2.Remote.Relations.GetByType(model.VariablesValuesFromRelType))
 
 	// AfterLocalOperation is structurally identical to AfterRemoteOperation (same two-pass
