@@ -77,7 +77,7 @@ func (m *relationsMapper) AfterRemoteOperation(ctx context.Context, changes *mod
 	return nil
 }
 
-// lintRelations finds the other side of the relation and create a corresponding relation on the other side.
+// linkRelations finds the other side of the relation and create a corresponding relation on the other side.
 func (m *relationsMapper) linkRelations(object model.ObjectWithRelations, allObjects model.Objects) error {
 	errs := errors.NewMultiError()
 	relations := object.GetRelations()

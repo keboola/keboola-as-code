@@ -178,12 +178,15 @@ func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Obje
 		return nil, nil, errors.Errorf(`%s not found, referenced from %s, by relation "%s"`, variablesConfigKey.Desc(), relationDefinedOn.Desc(), t.Type())
 	}
 	variablesConfig := variablesConfigRaw.(*Config)
+	// When the variables config temporarily holds multiple variablesFor relations (shared
+	// across consumers), skip linking here — Pass 2 validation will detect and warn about
+	// the duplicates and remove them.
+	if len(variablesConfig.Relations.GetByType(VariablesForRelType)) > 1 {
+		return nil, nil, nil
+	}
 	variablesForRaw, err := variablesConfig.Relations.GetOneByType(VariablesForRelType)
 	if err != nil {
-		// Multiple variablesFor relations exist on the variables config (shared across consumers).
-		// Pass 2 validation will detect and warn about the duplicates; skip linking here to avoid
-		// a redundant error before the cleanup runs.
-		return nil, nil, nil //nolint:nilerr
+		return nil, nil, errors.PrefixErrorf(err, "invalid %s", variablesConfig.Desc())
 	}
 	if variablesForRaw == nil {
 		return nil, nil, errors.NewNestedError(

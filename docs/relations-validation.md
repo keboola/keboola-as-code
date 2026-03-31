@@ -8,7 +8,7 @@ In the Keboola platform, variable configs (`keboola.variables` component) belong
 my-transformation/
   variables/
     config.json         ← keboola.variables config
-    variables/
+    values/
       default/          ← variables values row
 ```
 
