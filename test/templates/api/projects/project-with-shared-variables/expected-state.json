@@ -8,31 +8,9 @@
       },
       "configs": [
         {
-          "componentId": "ex-generic-v2",
-          "name": "With Variables 1",
-          "description": "",
-          "configuration": {
-            "variables_id": "%s",
-            "variables_values_id": "%s"
-          },
-          "rows": [],
-          "isDisabled": false
-        },
-        {
-          "componentId": "ex-generic-v2",
-          "name": "With Variables 2",
-          "description": "",
-          "configuration": {
-            "variables_id": "%s",
-            "variables_values_id": "%s"
-          },
-          "rows": [],
-          "isDisabled": false
-        },
-        {
           "componentId": "keboola.variables",
           "name": "Variables",
-          "description": "",
+          "description": "test fixture",
           "configuration": {
             "variables": [
               {
@@ -44,7 +22,7 @@
           "rows": [
             {
               "name": "Default values",
-              "description": "",
+              "description": "test fixture",
               "isDisabled": false,
               "configuration": {
                 "values": [
@@ -56,6 +34,28 @@
               }
             }
           ],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "With Variables 1",
+          "description": "test fixture",
+          "configuration": {
+            "variables_id": "%s",
+            "variables_values_id": "%s"
+          },
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "With Variables 2",
+          "description": "test fixture",
+          "configuration": {
+            "variables_id": "%s",
+            "variables_values_id": "%s"
+          },
+          "rows": [],
           "isDisabled": false
         }
       ]
