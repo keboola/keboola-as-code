@@ -81,6 +81,15 @@ func DecodeValidateRequest(mux goahttp.Muxer, decoder func(*http.Request) goahtt
 	}
 }
 
+// EncodeForwardE2bWebhookResponse returns an encoder for responses returned by
+// the apps-proxy ForwardE2bWebhook endpoint.
+func EncodeForwardE2bWebhookResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		w.WriteHeader(http.StatusOK)
+		return nil
+	}
+}
+
 // marshalAppsproxyConfigurationToConfigurationResponseBody builds a value of
 // type *ConfigurationResponseBody from a value of type
 // *appsproxy.Configuration.

@@ -21,17 +21,18 @@ import (
 
 // Server lists the apps-proxy service endpoint HTTP handlers.
 type Server struct {
-	Mounts          []*MountPoint
-	APIRootIndex    http.Handler
-	APIVersionIndex http.Handler
-	HealthCheck     http.Handler
-	Validate        http.Handler
-	CORS            http.Handler
-	OpenapiJSON     http.Handler
-	OpenapiYaml     http.Handler
-	Openapi3JSON    http.Handler
-	Openapi3Yaml    http.Handler
-	SwaggerUI       http.Handler
+	Mounts            []*MountPoint
+	APIRootIndex      http.Handler
+	APIVersionIndex   http.Handler
+	HealthCheck       http.Handler
+	Validate          http.Handler
+	ForwardE2bWebhook http.Handler
+	CORS              http.Handler
+	OpenapiJSON       http.Handler
+	OpenapiYaml       http.Handler
+	Openapi3JSON      http.Handler
+	Openapi3Yaml      http.Handler
+	SwaggerUI         http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -90,10 +91,12 @@ func New(
 			{"APIVersionIndex", "GET", "/_proxy/api/v1"},
 			{"HealthCheck", "GET", "/_proxy/api/v1/health-check"},
 			{"Validate", "GET", "/_proxy/api/v1/validate"},
+			{"ForwardE2bWebhook", "POST", "/_proxy/api/v1/e2b-webhook"},
 			{"CORS", "OPTIONS", "/_proxy/api/"},
 			{"CORS", "OPTIONS", "/_proxy/api/v1"},
 			{"CORS", "OPTIONS", "/_proxy/api/v1/health-check"},
 			{"CORS", "OPTIONS", "/_proxy/api/v1/validate"},
+			{"CORS", "OPTIONS", "/_proxy/api/v1/e2b-webhook"},
 			{"CORS", "OPTIONS", "/_proxy/api/v1/documentation/openapi.json"},
 			{"CORS", "OPTIONS", "/_proxy/api/v1/documentation/openapi.yaml"},
 			{"CORS", "OPTIONS", "/_proxy/api/v1/documentation/openapi3.json"},
@@ -105,16 +108,17 @@ func New(
 			{"Serve openapi3.yaml", "GET", "/_proxy/api/v1/documentation/openapi3.yaml"},
 			{"Serve swagger-ui", "GET", "/_proxy/api/v1/documentation"},
 		},
-		APIRootIndex:    NewAPIRootIndexHandler(e.APIRootIndex, mux, decoder, encoder, errhandler, formatter),
-		APIVersionIndex: NewAPIVersionIndexHandler(e.APIVersionIndex, mux, decoder, encoder, errhandler, formatter),
-		HealthCheck:     NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
-		Validate:        NewValidateHandler(e.Validate, mux, decoder, encoder, errhandler, formatter),
-		CORS:            NewCORSHandler(),
-		OpenapiJSON:     http.FileServer(fileSystemOpenapiJSON),
-		OpenapiYaml:     http.FileServer(fileSystemOpenapiYaml),
-		Openapi3JSON:    http.FileServer(fileSystemOpenapi3JSON),
-		Openapi3Yaml:    http.FileServer(fileSystemOpenapi3Yaml),
-		SwaggerUI:       http.FileServer(fileSystemSwaggerUI),
+		APIRootIndex:      NewAPIRootIndexHandler(e.APIRootIndex, mux, decoder, encoder, errhandler, formatter),
+		APIVersionIndex:   NewAPIVersionIndexHandler(e.APIVersionIndex, mux, decoder, encoder, errhandler, formatter),
+		HealthCheck:       NewHealthCheckHandler(e.HealthCheck, mux, decoder, encoder, errhandler, formatter),
+		Validate:          NewValidateHandler(e.Validate, mux, decoder, encoder, errhandler, formatter),
+		ForwardE2bWebhook: NewForwardE2bWebhookHandler(e.ForwardE2bWebhook, mux, decoder, encoder, errhandler, formatter),
+		CORS:              NewCORSHandler(),
+		OpenapiJSON:       http.FileServer(fileSystemOpenapiJSON),
+		OpenapiYaml:       http.FileServer(fileSystemOpenapiYaml),
+		Openapi3JSON:      http.FileServer(fileSystemOpenapi3JSON),
+		Openapi3Yaml:      http.FileServer(fileSystemOpenapi3Yaml),
+		SwaggerUI:         http.FileServer(fileSystemSwaggerUI),
 	}
 }
 
@@ -127,6 +131,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.APIVersionIndex = m(s.APIVersionIndex)
 	s.HealthCheck = m(s.HealthCheck)
 	s.Validate = m(s.Validate)
+	s.ForwardE2bWebhook = m(s.ForwardE2bWebhook)
 	s.CORS = m(s.CORS)
 }
 
@@ -139,6 +144,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountAPIVersionIndexHandler(mux, h.APIVersionIndex)
 	MountHealthCheckHandler(mux, h.HealthCheck)
 	MountValidateHandler(mux, h.Validate)
+	MountForwardE2bWebhookHandler(mux, h.ForwardE2bWebhook)
 	MountCORSHandler(mux, h.CORS)
 	MountOpenapiJSON(mux, http.StripPrefix("/_proxy/api/v1/documentation", h.OpenapiJSON))
 	MountOpenapiYaml(mux, http.StripPrefix("/_proxy/api/v1/documentation", h.OpenapiYaml))
@@ -327,6 +333,53 @@ func NewValidateHandler(
 	})
 }
 
+// MountForwardE2bWebhookHandler configures the mux to serve the "apps-proxy"
+// service "ForwardE2bWebhook" endpoint.
+func MountForwardE2bWebhookHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleAppsProxyOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/_proxy/api/v1/e2b-webhook", f)
+}
+
+// NewForwardE2bWebhookHandler creates a HTTP handler which loads the HTTP
+// request and calls the "apps-proxy" service "ForwardE2bWebhook" endpoint.
+func NewForwardE2bWebhookHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		encodeResponse = EncodeForwardE2bWebhookResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "ForwardE2bWebhook")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "apps-proxy")
+		var err error
+		data := &appsproxy.ForwardE2bWebhookRequestData{Body: r.Body}
+		res, err := endpoint(ctx, data)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
 // appendFS is a custom implementation of fs.FS that appends a specified prefix
 // to the file paths before delegating the Open call to the underlying fs.FS.
 type appendFS struct {
@@ -387,6 +440,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/_proxy/api/v1", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/_proxy/api/v1/health-check", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/_proxy/api/v1/validate", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/_proxy/api/v1/e2b-webhook", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/_proxy/api/v1/documentation/openapi.json", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/_proxy/api/v1/documentation/openapi.yaml", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/_proxy/api/v1/documentation/openapi3.json", h.ServeHTTP)

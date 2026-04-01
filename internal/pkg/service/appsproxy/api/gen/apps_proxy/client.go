@@ -10,25 +10,28 @@ package appsproxy
 
 import (
 	"context"
+	"io"
 
 	goa "goa.design/goa/v3/pkg"
 )
 
 // Client is the "apps-proxy" service client.
 type Client struct {
-	APIRootIndexEndpoint    goa.Endpoint
-	APIVersionIndexEndpoint goa.Endpoint
-	HealthCheckEndpoint     goa.Endpoint
-	ValidateEndpoint        goa.Endpoint
+	APIRootIndexEndpoint      goa.Endpoint
+	APIVersionIndexEndpoint   goa.Endpoint
+	HealthCheckEndpoint       goa.Endpoint
+	ValidateEndpoint          goa.Endpoint
+	ForwardE2bWebhookEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "apps-proxy" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, validate goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, validate, forwardE2bWebhook goa.Endpoint) *Client {
 	return &Client{
-		APIRootIndexEndpoint:    aPIRootIndex,
-		APIVersionIndexEndpoint: aPIVersionIndex,
-		HealthCheckEndpoint:     healthCheck,
-		ValidateEndpoint:        validate,
+		APIRootIndexEndpoint:      aPIRootIndex,
+		APIVersionIndexEndpoint:   aPIVersionIndex,
+		HealthCheckEndpoint:       healthCheck,
+		ValidateEndpoint:          validate,
+		ForwardE2bWebhookEndpoint: forwardE2bWebhook,
 	}
 }
 
@@ -67,4 +70,11 @@ func (c *Client) Validate(ctx context.Context, p *ValidatePayload) (res *Validat
 		return
 	}
 	return ires.(*Validations), nil
+}
+
+// ForwardE2bWebhook calls the "ForwardE2bWebhook" endpoint of the "apps-proxy"
+// service.
+func (c *Client) ForwardE2bWebhook(ctx context.Context, req io.ReadCloser) (err error) {
+	_, err = c.ForwardE2bWebhookEndpoint(ctx, &ForwardE2bWebhookRequestData{Body: req})
+	return
 }
