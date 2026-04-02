@@ -81,7 +81,7 @@ func (s *service) ForwardE2bWebhook(ctx context.Context, deps dependencies.Publi
 		return errors.New("invalid or missing e2b-signature")
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, e2bWebhookForwardTimeout)
+	ctx, cancel := context.WithTimeoutCause(ctx, e2bWebhookForwardTimeout, errors.New("forwarding E2B webhook timed out"))
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, upstreamURL, strings.NewReader(string(bodyBytes)))
