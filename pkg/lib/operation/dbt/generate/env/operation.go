@@ -74,10 +74,19 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	envVars := make(map[string]string)
 
-	envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = o.Workspace.Type
-	envVars[fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper)] = o.Workspace.Schema
-	envVars[fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper)] = o.Workspace.Warehouse
-	envVars[fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper)] = o.Workspace.Database
+	// setVar writes a key=value pair only when value is non-empty.
+	// Python/R workspaces only populate Type; all Snowflake connection fields are absent.
+	// Omitting empty vars keeps .env.local clean and avoids confusing placeholder lines.
+	setVar := func(key, value string) {
+		if value != "" {
+			envVars[key] = value
+		}
+	}
+
+	setVar(fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper), o.Workspace.Type)
+	setVar(fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper), o.Workspace.Schema)
+	setVar(fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper), o.Workspace.Warehouse)
+	setVar(fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper), o.Workspace.Database)
 
 	linkedBucketEnvsMap := make(map[string]string)
 	for _, bucket := range o.Buckets {
@@ -91,8 +100,8 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 			}
 		}
 	}
-	envVars[fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper)] = host
-	envVars[fmt.Sprintf("DBT_KBC_%s_USER", targetUpper)] = o.Workspace.User
+	setVar(fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper), host)
+	setVar(fmt.Sprintf("DBT_KBC_%s_USER", targetUpper), o.Workspace.User)
 	if o.UseKeyPair && len(o.PrivateKey) > 0 {
 		envVars[fmt.Sprintf("DBT_KBC_%s_PRIVATE_KEY", targetUpper)] = o.PrivateKey
 	}

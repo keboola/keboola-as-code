@@ -42,7 +42,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			return profile.Run(cmd.Context(), profile.Options{TargetName: targetName}, d)
+			return profile.Run(cmd.Context(), profile.Options{TargetName: targetName, IncludeKeboolaTarget: true}, d)
 		},
 	}
 

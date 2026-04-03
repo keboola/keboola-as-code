@@ -109,10 +109,12 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 		return errors.Errorf("could not list buckets: %w", err)
 	}
 
-	// Generate profile
+	// Generate profile — always include the keboola_snowflake target because dbt init
+	// creates a Snowflake workspace with an editor session, making all keboola_ env vars available.
 	err = profile.Run(ctx, profile.Options{
-		TargetName: o.TargetName,
-		UseKeyPair: o.UseKeyPair,
+		TargetName:           o.TargetName,
+		UseKeyPair:           o.UseKeyPair,
+		IncludeKeboolaTarget: true,
 	}, d)
 	if err != nil {
 		return errors.Errorf("could not generate profile: %w", err)

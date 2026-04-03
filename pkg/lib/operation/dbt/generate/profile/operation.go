@@ -15,8 +15,9 @@ import (
 )
 
 type Options struct {
-	TargetName string
-	UseKeyPair bool
+	TargetName           string
+	UseKeyPair           bool
+	IncludeKeboolaTarget bool // whether to add the keboola_snowflake adapter target
 }
 
 type dependencies interface {
@@ -54,99 +55,110 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	// Set profile
 	targetUpper := strings.ToUpper(o.TargetName)
-	keboolaTargetName := "keboola_" + o.TargetName
+
+	// Build the outputs map starting with the direct-Snowflake target.
+	outputPairs := []orderedmap.Pair{
+		{
+			Key: o.TargetName,
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{
+					Key:   "account",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_ACCOUNT\") }}", targetUpper),
+				},
+				{
+					Key:   "database",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", targetUpper),
+				},
+				{
+					Key:   "schema",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_SCHEMA\") }}", targetUpper),
+				},
+				{
+					Key:   "type",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_TYPE\") }}", targetUpper),
+				},
+				{
+					Key:   "user",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_USER\") }}", targetUpper),
+				},
+				{
+					Key:   "warehouse",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WAREHOUSE\") }}", targetUpper),
+				},
+				// Auth: prefer key-pair, fallback to password
+				// dbt-snowflake accepts either `private_key` or `password`
+				{
+					Key: "private_key",
+					Value: func() string {
+						if o.UseKeyPair {
+							return fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PRIVATE_KEY\") }}", targetUpper)
+						}
+						return ""
+					}(),
+				},
+				{
+					Key:   "password",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PASSWORD\") }}", targetUpper),
+				},
+			}),
+		},
+	}
+
+	if o.IncludeKeboolaTarget {
+		// keboola_snowflake adapter target — uses Keboola Query Service instead of direct Snowflake access.
+		// Run with: dbt run --target keboola_{target_name}
+		//
+		// Empty-string defaults are provided so that dbt does not abort at startup when the
+		// keboola_ vars are absent (dbt evaluates all env_var() references at startup, not only
+		// those belonging to the active --target).
+		keboolaTargetName := "keboola_" + o.TargetName
+		outputPairs = append(outputPairs, orderedmap.Pair{
+			Key: keboolaTargetName,
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{
+					Key:   "type",
+					Value: "keboola_snowflake",
+				},
+				{
+					Key:   "base_url",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_BASE_URL\", \"\") }}", targetUpper),
+				},
+				{
+					Key:   "token",
+					Value: "{{ env_var(\"KEBOOLA_TOKEN\", \"\") }}",
+				},
+				{
+					Key:   "branch_id",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_BRANCH_ID\", \"\") }}", targetUpper),
+				},
+				{
+					Key:   "workspace_id",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WORKSPACE_ID\", \"\") }}", targetUpper),
+				},
+				{
+					Key:   "database",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", targetUpper),
+				},
+				{
+					Key:   "schema",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_SCHEMA\") }}", targetUpper),
+				},
+				{
+					Key:   "warehouse",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WAREHOUSE\") }}", targetUpper),
+				},
+			}),
+		})
+	}
+
 	profilesFile.Set(project.Profile(), orderedmap.FromPairs([]orderedmap.Pair{
 		{
 			Key:   "target",
 			Value: o.TargetName,
 		},
 		{
-			Key: "outputs",
-			Value: orderedmap.FromPairs([]orderedmap.Pair{
-				{
-					Key: o.TargetName,
-					Value: orderedmap.FromPairs([]orderedmap.Pair{
-						{
-							Key:   "account",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_ACCOUNT\") }}", targetUpper),
-						},
-						{
-							Key:   "database",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", targetUpper),
-						},
-						{
-							Key:   "schema",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_SCHEMA\") }}", targetUpper),
-						},
-						{
-							Key:   "type",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_TYPE\") }}", targetUpper),
-						},
-						{
-							Key:   "user",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_USER\") }}", targetUpper),
-						},
-						{
-							Key:   "warehouse",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WAREHOUSE\") }}", targetUpper),
-						},
-						// Auth: prefer key-pair, fallback to password
-						// dbt-snowflake accepts either `private_key` or `password`
-						{
-							Key: "private_key",
-							Value: func() string {
-								if o.UseKeyPair {
-									return fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PRIVATE_KEY\") }}", targetUpper)
-								}
-								return ""
-							}(),
-						},
-						{
-							Key:   "password",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PASSWORD\") }}", targetUpper),
-						},
-					}),
-				},
-				// keboola_snowflake adapter target — uses Keboola Query Service instead of direct Snowflake access.
-				// Run with: dbt run --target keboola_{target_name}
-				{
-					Key: keboolaTargetName,
-					Value: orderedmap.FromPairs([]orderedmap.Pair{
-						{
-							Key:   "type",
-							Value: "keboola_snowflake",
-						},
-						{
-							Key:   "base_url",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_BASE_URL\") }}", targetUpper),
-						},
-						{
-							Key:   "token",
-							Value: "{{ env_var(\"KEBOOLA_TOKEN\") }}",
-						},
-						{
-							Key:   "branch_id",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_BRANCH_ID\") }}", targetUpper),
-						},
-						{
-							Key:   "workspace_id",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WORKSPACE_ID\") }}", targetUpper),
-						},
-						{
-							Key:   "database",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", targetUpper),
-						},
-						{
-							Key:   "schema",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_SCHEMA\") }}", targetUpper),
-						},
-						{
-							Key:   "warehouse",
-							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WAREHOUSE\") }}", targetUpper),
-						},
-					}),
-				},
-			}),
+			Key:   "outputs",
+			Value: orderedmap.FromPairs(outputPairs),
 		},
 	}))
 

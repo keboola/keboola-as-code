@@ -25,10 +25,10 @@ Profile1:
       password: '{{ env_var("DBT_KBC_TARGET1_PASSWORD") }}'
     keboola_target1:
       type: keboola_snowflake
-      base_url: '{{ env_var("DBT_KBC_TARGET1_BASE_URL") }}'
-      token: '{{ env_var("KEBOOLA_TOKEN") }}'
-      branch_id: '{{ env_var("DBT_KBC_TARGET1_BRANCH_ID") }}'
-      workspace_id: '{{ env_var("DBT_KBC_TARGET1_WORKSPACE_ID") }}'
+      base_url: '{{ env_var("DBT_KBC_TARGET1_BASE_URL", "") }}'
+      token: '{{ env_var("KEBOOLA_TOKEN", "") }}'
+      branch_id: '{{ env_var("DBT_KBC_TARGET1_BRANCH_ID", "") }}'
+      workspace_id: '{{ env_var("DBT_KBC_TARGET1_WORKSPACE_ID", "") }}'
       database: '{{ env_var("DBT_KBC_TARGET1_DATABASE") }}'
       schema: '{{ env_var("DBT_KBC_TARGET1_SCHEMA") }}'
       warehouse: '{{ env_var("DBT_KBC_TARGET1_WAREHOUSE") }}'
