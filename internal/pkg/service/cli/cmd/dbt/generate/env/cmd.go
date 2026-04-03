@@ -76,4 +76,3 @@ func Command(p dependencies.Provider) *cobra.Command {
 
 	return cmd
 }
-
