@@ -8,6 +8,12 @@ replace github.com/oauth2-proxy/oauth2-proxy/v7 => github.com/keboola/go-oauth2-
 
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
+// Local fork of go.etcd.io/etcd/etcdctl/v3@v3.6.9 that migrates printer_table.go
+// to the tablewriter v1.1.3 API. The upstream version uses the removed v0.0.5 API
+// (SetHeader, SetAlignment, ALIGN_RIGHT), which conflicts with the v1.1.3 version
+// required by entgo.io/ent.
+replace go.etcd.io/etcd/etcdctl/v3 => ./third_party/etcd-etcdctl
+
 require (
 	ariga.io/atlas v1.1.0
 	entgo.io/ent v0.14.6

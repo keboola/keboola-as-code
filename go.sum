@@ -978,8 +978,6 @@ go.etcd.io/etcd/client/pkg/v3 v3.6.9 h1:T8nuk8Lz64C+Hzb0coBFLMSlVSQZBpAtFk46swdM
 go.etcd.io/etcd/client/pkg/v3 v3.6.9/go.mod h1:WEy3PpwbbEBVRdh1NVJYsuUe/8eyI21PNJRazeD8z/Y=
 go.etcd.io/etcd/client/v3 v3.6.9 h1:3X555hQXmhRr27O37wls53g68CpUiPOiHXrZfz2Al+o=
 go.etcd.io/etcd/client/v3 v3.6.9/go.mod h1:KO7H1HLYh1qaljuVZJQwBFk1lRce6pJzt+C81GEnrlM=
-go.etcd.io/etcd/etcdctl/v3 v3.6.9 h1:7dasIBems1Dpd6E89jHMVaOmydbWaoJBvlETb/tbvh0=
-go.etcd.io/etcd/etcdctl/v3 v3.6.9/go.mod h1:QuTgpEpGIlV5VFEtWcI3KIz1jMapAnUz85RnoTFU7dk=
 go.etcd.io/etcd/pkg/v3 v3.6.9 h1:k3LEWBVQHTtYYd/F1wG1vC/A5NxGYw8aoVgZIbn1sJ4=
 go.etcd.io/etcd/pkg/v3 v3.6.9/go.mod h1:gUV6SFKRWMJSGCAJ8EYGOlbQYTlP2RZtqxQYWKpgsKw=
 go.etcd.io/etcd/server/v3 v3.6.9 h1:4vDo2aJTm+wa9DZp+2IyvA1BqXVcLXv5FBe7sNeogxw=
