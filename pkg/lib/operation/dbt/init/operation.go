@@ -9,7 +9,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -24,6 +23,7 @@ type DbtInitOptions struct {
 	TargetName    string
 	WorkspaceName string
 	UseKeyPair    bool
+	BaseURL       string // Keboola Query Service base URL, e.g. "https://query.keboola.com"
 }
 
 type dependencies interface {
@@ -69,8 +69,24 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 		return errors.Errorf("cannot fetch workspace credentials: %w", err)
 	}
 
-	// Build SandboxWorkspace from StorageWorkspace for env generation.
-	workspace := sandbox.WorkspaceFromStorage(storageWS, keboola.SandboxWorkspaceType(storageWS.StorageWorkspaceDetails.Backend))
+	// Build WorkspaceDetails from StorageWorkspace credentials.
+	deref := func(s *string) string {
+		if s == nil {
+			return ""
+		}
+		return *s
+	}
+	workspace := env.WorkspaceDetails{
+		Type:        string(storageWS.StorageWorkspaceDetails.Backend),
+		Host:        deref(storageWS.StorageWorkspaceDetails.Host),
+		User:        deref(storageWS.StorageWorkspaceDetails.User),
+		Database:    deref(storageWS.StorageWorkspaceDetails.Database),
+		Schema:      deref(storageWS.StorageWorkspaceDetails.Schema),
+		Warehouse:   deref(storageWS.StorageWorkspaceDetails.Warehouse),
+		BaseURL:     o.BaseURL,
+		BranchID:    branch.ID,
+		WorkspaceID: session.EditorSession.WorkspaceID,
+	}
 
 	// Determine private key from the freshly created credentials.
 	privateKey := ""

@@ -46,11 +46,13 @@ func AskGenerateEnv(
 	useKeyPair := len(privateKey) > 0
 
 	if keboola.SandboxWorkspaceSupportsSizes(workspace.SandboxWorkspace.Type) {
-		// Python/R workspace — use credentials directly.
+		// Python/R workspace — credential fields are not available from the listing.
 		return genenv.Options{
 			BranchKey:  branchKey,
 			TargetName: targetName,
-			Workspace:  workspace.SandboxWorkspace, // already *sandbox.SandboxWorkspace
+			Workspace: genenv.WorkspaceDetails{
+				Type: string(workspace.SandboxWorkspace.Type),
+			},
 			UseKeyPair: useKeyPair,
 			PrivateKey: privateKey,
 		}, nil
@@ -81,7 +83,22 @@ func AskGenerateEnv(
 		return genenv.Options{}, errors.Errorf("cannot fetch workspace credentials: %w", err)
 	}
 
-	sandboxWS := sandbox.WorkspaceFromStorage(storageWS, keboola.SandboxWorkspaceType(matchedSession.BackendType))
+	deref := func(s *string) string {
+		if s == nil {
+			return ""
+		}
+		return *s
+	}
+	ws := genenv.WorkspaceDetails{
+		Type:        string(matchedSession.BackendType),
+		Host:        deref(storageWS.StorageWorkspaceDetails.Host),
+		User:        deref(storageWS.StorageWorkspaceDetails.User),
+		Database:    deref(storageWS.StorageWorkspaceDetails.Database),
+		Schema:      deref(storageWS.StorageWorkspaceDetails.Schema),
+		Warehouse:   deref(storageWS.StorageWorkspaceDetails.Warehouse),
+		BranchID:    branchID,
+		WorkspaceID: matchedSession.WorkspaceID,
+	}
 
 	// Use server-provided private key for SQL workspaces when available.
 	if len(privateKey) == 0 && storageWS.StorageWorkspaceDetails.PrivateKey != nil && len(*storageWS.StorageWorkspaceDetails.PrivateKey) > 0 {
@@ -92,7 +109,7 @@ func AskGenerateEnv(
 	return genenv.Options{
 		BranchKey:  branchKey,
 		TargetName: targetName,
-		Workspace:  sandboxWS,
+		Workspace:  ws,
 		UseKeyPair: useKeyPair,
 		PrivateKey: privateKey,
 	}, nil

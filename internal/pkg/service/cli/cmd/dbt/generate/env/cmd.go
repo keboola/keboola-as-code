@@ -1,6 +1,8 @@
 package env
 
 import (
+	"strings"
+
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
@@ -61,6 +63,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// Set BaseURL for keboola adapter vars (only written when WorkspaceID is also set).
+			opts.Workspace.BaseURL = baseURLFromHost(d.StorageAPIHost())
+
 			// Send cmd successful/failed event
 			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "dbt-generate-env")
 
@@ -71,4 +76,11 @@ func Command(p dependencies.Provider) *cobra.Command {
 	configmap.MustGenerateFlags(cmd.Flags(), DefaultFlags())
 
 	return cmd
+}
+
+// baseURLFromHost derives the Keboola Query Service URL from the Storage API host.
+// "https://connection.keboola.com" → "https://query.keboola.com"
+func baseURLFromHost(host string) string {
+	bare := strings.TrimPrefix(strings.TrimPrefix(host, "https://"), "http://")
+	return "https://query." + strings.TrimPrefix(bare, "connection.")
 }
