@@ -58,8 +58,13 @@ func AskGenerateEnv(
 		}, nil
 	}
 
-	// SQL workspace (Snowflake/BigQuery) — fetch StorageWorkspace credentials via the editor session.
-	// Find the editor session for this workspace by matching ConfigurationID.
+	// Phase 1 (keboola_snowflake profile): editor session coordinates are already available
+	// in the matched session (WorkspaceID, BranchID set below). No credential rotation needed.
+
+	// Phase 2 (direct-Snowflake profile): fetch storage workspace credentials — server
+	// generates a keypair, registers the public key with the workspace, and returns the
+	// private key together with all connection details (Host, User, DB, Schema, Warehouse).
+	// Password auth is deprecated; keypair is used instead.
 	var matchedSession *keboola.EditorSession
 	for _, s := range sessions {
 		if s.ConfigurationID == workspace.Config.ID.String() {
@@ -76,8 +81,6 @@ func AskGenerateEnv(
 		return genenv.Options{}, errors.Errorf("cannot parse workspace ID %q: %w", matchedSession.WorkspaceID, err)
 	}
 
-	// StorageWorkspaceCreateCredentialsRequest creates new credentials on each call,
-	// which rotates any previously issued credentials for this workspace.
 	storageWS, err := api.StorageWorkspaceCreateCredentialsRequest(branchID, workspaceIDUint).Send(ctx)
 	if err != nil {
 		return genenv.Options{}, errors.Errorf("cannot fetch workspace credentials: %w", err)
