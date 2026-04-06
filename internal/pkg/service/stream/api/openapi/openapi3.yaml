@@ -178,6 +178,11 @@ paths:
                                                       template:
                                                         language: jsonnet
                                                         content: body.foo + "-" + body.bar
+                                          jobTrigger:
+                                            componentId: keboola.ex-http
+                                            configId: "123456"
+                                            branchId: 0
+                                            configDataTemplate: '{ parameters: { url: Body("url") } }'
                                           version:
                                             number: 3
                                             hash: f43e93acd97eceb3
@@ -1022,6 +1027,11 @@ paths:
                                                   template:
                                                     language: jsonnet
                                                     content: body.foo + "-" + body.bar
+                                      jobTrigger:
+                                        componentId: keboola.ex-http
+                                        configId: "123456"
+                                        branchId: 0
+                                        configDataTemplate: '{ parameters: { url: Body("url") } }'
                                       version:
                                         number: 3
                                         hash: f43e93acd97eceb3
@@ -1131,6 +1141,11 @@ paths:
                                           template:
                                             language: jsonnet
                                             content: body.foo + "-" + body.bar
+                            jobTrigger:
+                                componentId: keboola.ex-http
+                                configId: "123456"
+                                branchId: 0
+                                configDataTemplate: '{ parameters: { url: Body("url") } }'
             responses:
                 "202":
                     description: Accepted response.
@@ -1334,6 +1349,11 @@ paths:
                                               template:
                                                 language: jsonnet
                                                 content: body.foo + "-" + body.bar
+                                jobTrigger:
+                                    componentId: keboola.ex-http
+                                    configId: "123456"
+                                    branchId: 0
+                                    configDataTemplate: '{ parameters: { url: Body("url") } }'
                                 version:
                                     number: 3
                                     hash: f43e93acd97eceb3
@@ -1453,6 +1473,11 @@ paths:
                                           template:
                                             language: jsonnet
                                             content: body.foo + "-" + body.bar
+                            jobTrigger:
+                                componentId: keboola.ex-http
+                                configId: "123456"
+                                branchId: 0
+                                configDataTemplate: '{ parameters: { url: Body("url") } }'
             responses:
                 "202":
                     description: Accepted response.
@@ -2438,6 +2463,11 @@ paths:
                                                   template:
                                                     language: jsonnet
                                                     content: body.foo + "-" + body.bar
+                                      jobTrigger:
+                                        componentId: keboola.ex-http
+                                        configId: "123456"
+                                        branchId: 0
+                                        configDataTemplate: '{ parameters: { url: Body("url") } }'
                                       version:
                                         number: 3
                                         hash: f43e93acd97eceb3
@@ -3090,6 +3120,8 @@ components:
                     maxLength: 4096
                 disabled:
                     $ref: '#/components/schemas/DisabledEntity'
+                jobTrigger:
+                    $ref: '#/components/schemas/JobTriggerSink'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -3122,6 +3154,7 @@ components:
                     example: table
                     enum:
                         - table
+                        - jobTrigger
                 version:
                     $ref: '#/components/schemas/Version'
             description: A mapping from imported data to a destination table.
@@ -3158,6 +3191,11 @@ components:
                               template:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
+                jobTrigger:
+                    componentId: keboola.ex-http
+                    configId: "123456"
+                    branchId: 0
+                    configDataTemplate: '{ parameters: { url: Body("url") } }'
                 version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -3302,6 +3340,11 @@ components:
                               template:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
+                  jobTrigger:
+                    componentId: keboola.ex-http
+                    configId: "123456"
+                    branchId: 0
+                    configDataTemplate: '{ parameters: { url: Body("url") } }'
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -3525,6 +3568,11 @@ components:
                                   template:
                                     language: jsonnet
                                     content: body.foo + "-" + body.bar
+                      jobTrigger:
+                        componentId: keboola.ex-http
+                        configId: "123456"
+                        branchId: 0
+                        configDataTemplate: '{ parameters: { url: Body("url") } }'
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -3714,6 +3762,11 @@ components:
                                   template:
                                     language: jsonnet
                                     content: body.foo + "-" + body.bar
+                      jobTrigger:
+                        componentId: keboola.ex-http
+                        configId: "123456"
+                        branchId: 0
+                        configDataTemplate: '{ parameters: { url: Body("url") } }'
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -3941,6 +3994,11 @@ components:
                                       template:
                                         language: jsonnet
                                         content: body.foo + "-" + body.bar
+                          jobTrigger:
+                            componentId: keboola.ex-http
+                            configId: "123456"
+                            branchId: 0
+                            configDataTemplate: '{ parameters: { url: Body("url") } }'
                           version:
                             number: 3
                             hash: f43e93acd97eceb3
@@ -4164,6 +4222,8 @@ components:
                     description: Description of the source.
                     example: The sink stores records to a table.
                     maxLength: 4096
+                jobTrigger:
+                    $ref: '#/components/schemas/JobTriggerSinkCreate'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -4189,6 +4249,7 @@ components:
                     example: table
                     enum:
                         - table
+                        - jobTrigger
             example:
                 branchId: default
                 sourceId: github-webhook-source
@@ -4221,6 +4282,11 @@ components:
                               template:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
+                jobTrigger:
+                    componentId: keboola.ex-http
+                    configId: "123456"
+                    branchId: 0
+                    configDataTemplate: '{ parameters: { url: Body("url") } }'
             required:
                 - branchId
                 - sourceId
@@ -4234,6 +4300,8 @@ components:
                     description: Description of the source.
                     example: The sink stores records to a table.
                     maxLength: 4096
+                jobTrigger:
+                    $ref: '#/components/schemas/JobTriggerSinkCreate'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -4253,6 +4321,7 @@ components:
                     example: table
                     enum:
                         - table
+                        - jobTrigger
             example:
                 sinkId: github-pr-table-sink
                 type: table
@@ -4283,6 +4352,11 @@ components:
                               template:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
+                jobTrigger:
+                    componentId: keboola.ex-http
+                    configId: "123456"
+                    branchId: 0
+                    configDataTemplate: '{ parameters: { url: Body("url") } }'
             required:
                 - type
                 - name
@@ -4564,6 +4638,107 @@ components:
                 url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
             required:
                 - url
+        JobTriggerSink:
+            type: object
+            properties:
+                branchId:
+                    type: integer
+                    description: ID of the branch on which the job runs. Use 0 for the default branch.
+                    example: 0
+                    format: int64
+                componentId:
+                    type: string
+                    description: ID of the component to run.
+                    example: keboola.ex-http
+                configDataTemplate:
+                    type: string
+                    description: |-
+                        Optional Jsonnet template evaluated against the incoming HTTP request.
+                        The template output must be a JSON object; it is passed as "configData" to the triggered job.
+                        This allows webhook payload fields to override runtime job parameters.
+                        Available functions: Body(), Header(), Ip(), Now() — same as in table column templates.
+                        If empty, the job runs with the component's default saved configuration.
+                    example: '{ parameters: { url: Body("url") } }'
+                configId:
+                    type: string
+                    description: ID of the component configuration to run.
+                    example: "123456"
+            description: Job trigger sink configuration for "type" = "jobTrigger". Each received record triggers a Keboola Queue job.
+            example:
+                componentId: keboola.ex-http
+                configId: "123456"
+                branchId: 0
+                configDataTemplate: '{ parameters: { url: Body("url") } }'
+            required:
+                - componentId
+                - configId
+                - branchId
+        JobTriggerSinkCreate:
+            type: object
+            properties:
+                branchId:
+                    type: integer
+                    description: ID of the branch on which the job runs. Use 0 for the default branch.
+                    example: 0
+                    format: int64
+                componentId:
+                    type: string
+                    description: ID of the component to run.
+                    example: keboola.ex-http
+                configDataTemplate:
+                    type: string
+                    description: |-
+                        Optional Jsonnet template evaluated against the incoming HTTP request.
+                        The template output must be a JSON object; it is passed as "configData" to the triggered job.
+                        This allows webhook payload fields to override runtime job parameters.
+                        Available functions: Body(), Header(), Ip(), Now() — same as in table column templates.
+                        If empty, the job runs with the component's default saved configuration.
+                    example: '{ parameters: { url: Body("url") } }'
+                configId:
+                    type: string
+                    description: ID of the component configuration to run.
+                    example: "123456"
+            description: Job trigger sink configuration for "type" = "jobTrigger". Each received record triggers a Keboola Queue job.
+            example:
+                componentId: keboola.ex-http
+                configId: "123456"
+                branchId: 0
+                configDataTemplate: '{ parameters: { url: Body("url") } }'
+            required:
+                - componentId
+                - configId
+                - branchId
+        JobTriggerSinkUpdate:
+            type: object
+            properties:
+                branchId:
+                    type: integer
+                    description: ID of the branch on which the job runs. Use 0 for the default branch.
+                    example: 0
+                    format: int64
+                componentId:
+                    type: string
+                    description: ID of the component to run.
+                    example: keboola.ex-http
+                configDataTemplate:
+                    type: string
+                    description: |-
+                        Optional Jsonnet template evaluated against the incoming HTTP request.
+                        The template output must be a JSON object; it is passed as "configData" to the triggered job.
+                        This allows webhook payload fields to override runtime job parameters.
+                        Available functions: Body(), Header(), Ip(), Now() — same as in table column templates.
+                        If empty, the job runs with the component's default saved configuration.
+                    example: '{ parameters: { url: Body("url") } }'
+                configId:
+                    type: string
+                    description: ID of the component configuration to run.
+                    example: "123456"
+            description: Job trigger sink configuration for "type" = "jobTrigger". Each received record triggers a Keboola Queue job.
+            example:
+                componentId: keboola.ex-http
+                configId: "123456"
+                branchId: 0
+                configDataTemplate: '{ parameters: { url: Body("url") } }'
         Level:
             type: object
             properties:
@@ -4942,6 +5117,8 @@ components:
                     maxLength: 4096
                 disabled:
                     $ref: '#/components/schemas/DisabledEntity'
+                jobTrigger:
+                    $ref: '#/components/schemas/JobTriggerSink'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -4972,6 +5149,7 @@ components:
                     example: table
                     enum:
                         - table
+                        - jobTrigger
                 version:
                     $ref: '#/components/schemas/Version'
             description: A mapping from imported data to a destination table.
@@ -5008,6 +5186,11 @@ components:
                               template:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
+                jobTrigger:
+                    componentId: keboola.ex-http
+                    configId: "123456"
+                    branchId: 0
+                    configDataTemplate: '{ parameters: { url: Body("url") } }'
                 version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -5433,6 +5616,11 @@ components:
                               template:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
+                  jobTrigger:
+                    componentId: keboola.ex-http
+                    configId: "123456"
+                    branchId: 0
+                    configDataTemplate: '{ parameters: { url: Body("url") } }'
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -5535,6 +5723,11 @@ components:
                                   template:
                                     language: jsonnet
                                     content: body.foo + "-" + body.bar
+                      jobTrigger:
+                        componentId: keboola.ex-http
+                        configId: "123456"
+                        branchId: 0
+                        configDataTemplate: '{ parameters: { url: Body("url") } }'
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -6371,6 +6564,8 @@ components:
                     description: Description of the source.
                     example: The sink stores records to a table.
                     maxLength: 4096
+                jobTrigger:
+                    $ref: '#/components/schemas/JobTriggerSinkUpdate'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -6396,6 +6591,7 @@ components:
                     example: table
                     enum:
                         - table
+                        - jobTrigger
             example:
                 branchId: default
                 sourceId: github-webhook-source
@@ -6429,6 +6625,11 @@ components:
                               template:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
+                jobTrigger:
+                    componentId: keboola.ex-http
+                    configId: "123456"
+                    branchId: 0
+                    configDataTemplate: '{ parameters: { url: Body("url") } }'
             required:
                 - branchId
                 - sourceId
@@ -6445,6 +6646,8 @@ components:
                     description: Description of the source.
                     example: The sink stores records to a table.
                     maxLength: 4096
+                jobTrigger:
+                    $ref: '#/components/schemas/JobTriggerSinkUpdate'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -6458,6 +6661,7 @@ components:
                     example: table
                     enum:
                         - table
+                        - jobTrigger
             example:
                 changeDescription: Renamed.
                 type: table
@@ -6488,6 +6692,11 @@ components:
                               template:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
+                jobTrigger:
+                    componentId: keboola.ex-http
+                    configId: "123456"
+                    branchId: 0
+                    configDataTemplate: '{ parameters: { url: Body("url") } }'
         UpdateSourceRequest:
             type: object
             properties:

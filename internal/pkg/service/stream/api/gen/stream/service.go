@@ -136,6 +136,7 @@ type AggregatedSink struct {
 	// Description of the source.
 	Description string
 	Table       *TableSink
+	JobTrigger  *JobTriggerSink
 	Version     *Version
 	Created     *CreatedEntity
 	Deleted     *DeletedEntity
@@ -228,6 +229,7 @@ type CreateSinkPayload struct {
 	// Description of the source.
 	Description *string
 	Table       *TableSinkCreate
+	JobTrigger  *JobTriggerSinkCreate
 }
 
 // CreateSourcePayload is the payload type of the stream service CreateSource
@@ -383,6 +385,63 @@ type GetTaskPayload struct {
 type HTTPSource struct {
 	// URL of the HTTP source. Contains secret used for authentication.
 	URL string
+}
+
+// Job trigger sink configuration for "type" = "jobTrigger". Each received
+// record triggers a Keboola Queue job.
+type JobTriggerSink struct {
+	// ID of the component to run.
+	ComponentID string
+	// ID of the component configuration to run.
+	ConfigID string
+	// ID of the branch on which the job runs. Use 0 for the default branch.
+	BranchID int
+	// Optional Jsonnet template evaluated against the incoming HTTP request.
+	// The template output must be a JSON object; it is passed as "configData" to
+	// the triggered job.
+	// This allows webhook payload fields to override runtime job parameters.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// If empty, the job runs with the component's default saved configuration.
+	ConfigDataTemplate *string
+}
+
+// Job trigger sink configuration for "type" = "jobTrigger". Each received
+// record triggers a Keboola Queue job.
+type JobTriggerSinkCreate struct {
+	// ID of the component to run.
+	ComponentID string
+	// ID of the component configuration to run.
+	ConfigID string
+	// ID of the branch on which the job runs. Use 0 for the default branch.
+	BranchID int
+	// Optional Jsonnet template evaluated against the incoming HTTP request.
+	// The template output must be a JSON object; it is passed as "configData" to
+	// the triggered job.
+	// This allows webhook payload fields to override runtime job parameters.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// If empty, the job runs with the component's default saved configuration.
+	ConfigDataTemplate *string
+}
+
+// Job trigger sink configuration for "type" = "jobTrigger". Each received
+// record triggers a Keboola Queue job.
+type JobTriggerSinkUpdate struct {
+	// ID of the component to run.
+	ComponentID *string
+	// ID of the component configuration to run.
+	ConfigID *string
+	// ID of the branch on which the job runs. Use 0 for the default branch.
+	BranchID *int
+	// Optional Jsonnet template evaluated against the incoming HTTP request.
+	// The template output must be a JSON object; it is passed as "configData" to
+	// the triggered job.
+	// This allows webhook payload fields to override runtime job parameters.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// If empty, the job runs with the component's default saved configuration.
+	ConfigDataTemplate *string
 }
 
 type Level struct {
@@ -565,6 +624,7 @@ type Sink struct {
 	// Description of the source.
 	Description string
 	Table       *TableSink
+	JobTrigger  *JobTriggerSink
 	Version     *Version
 	Created     *CreatedEntity
 	Deleted     *DeletedEntity
@@ -884,6 +944,7 @@ type UpdateSinkPayload struct {
 	// Description of the source.
 	Description *string
 	Table       *TableSinkUpdate
+	JobTrigger  *JobTriggerSinkUpdate
 }
 
 // UpdateSinkSettingsPayload is the payload type of the stream service

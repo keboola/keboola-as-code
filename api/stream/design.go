@@ -1126,7 +1126,7 @@ var Sinks = Type("Sinks", ArrayOf(Sink), func() {
 
 var SinkType = Type("SinkType", String, func() {
 	Meta("struct:field:type", "= definition.SinkType", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition")
-	Enum(definition.SinkTypeTable.String())
+	Enum(definition.SinkTypeTable.String(), definition.SinkTypeJobTrigger.String())
 	Example(definition.SinkTypeTable.String())
 })
 
@@ -1324,6 +1324,18 @@ var SinkFields = func(op OperationType) {
 		panic(errors.Errorf(`unexpected operation type "%v"`, op))
 	}
 
+	// Job trigger sub-definition
+	switch op {
+	case OpRead:
+		Attribute("jobTrigger", JobTriggerSink)
+	case OpCreate:
+		Attribute("jobTrigger", JobTriggerSinkCreateRequest)
+	case OpUpdate:
+		Attribute("jobTrigger", JobTriggerSinkUpdateRequest)
+	default:
+		panic(errors.Errorf(`unexpected operation type "%v"`, op))
+	}
+
 	// Required fields
 	switch op {
 	case OpRead:
@@ -1363,6 +1375,46 @@ var TableType = Type("TableType", String, func() {
 	Enum(definition.TableTypeKeboola.String())
 	Example(definition.TableTypeKeboola.String())
 })
+
+// Job Trigger Sink ----------------------------------------------------------------------------------------------------
+
+var JobTriggerSink = Type("JobTriggerSink", func() {
+	JobTriggerSinkFields()
+	Required("componentId", "configId", "branchId")
+})
+
+var JobTriggerSinkCreateRequest = Type("JobTriggerSinkCreate", func() {
+	JobTriggerSinkFields()
+	Required("componentId", "configId", "branchId")
+})
+
+var JobTriggerSinkUpdateRequest = Type("JobTriggerSinkUpdate", func() {
+	JobTriggerSinkFields()
+})
+
+var JobTriggerSinkFields = func() {
+	Description(fmt.Sprintf(`Job trigger sink configuration for "type" = "%s". Each received record triggers a Keboola Queue job.`, definition.SinkTypeJobTrigger))
+	Attribute("componentId", String, func() {
+		Description("ID of the component to run.")
+		Example("keboola.ex-http")
+	})
+	Attribute("configId", String, func() {
+		Description("ID of the component configuration to run.")
+		Example("123456")
+	})
+	Attribute("branchId", Int, func() {
+		Description("ID of the branch on which the job runs. Use 0 for the default branch.")
+		Example(0)
+	})
+	Attribute("configDataTemplate", String, func() {
+		Description(`Optional Jsonnet template evaluated against the incoming HTTP request.
+The template output must be a JSON object; it is passed as "configData" to the triggered job.
+This allows webhook payload fields to override runtime job parameters.
+Available functions: Body(), Header(), Ip(), Now() — same as in table column templates.
+If empty, the job runs with the component's default saved configuration.`)
+		Example(`{ parameters: { url: Body("url") } }`)
+	})
+}
 
 var TableID = Type("TableID", String, func() {
 	Example("in.c-bucket.table")
