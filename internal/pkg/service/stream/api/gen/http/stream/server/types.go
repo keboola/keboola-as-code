@@ -62,8 +62,9 @@ type CreateSinkRequestBody struct {
 	// Human readable name of the sink.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
-	Description *string                     `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	Table       *TableSinkCreateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Description *string                          `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	Table       *TableSinkCreateRequestBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	JobTrigger  *JobTriggerSinkCreateRequestBody `form:"jobTrigger,omitempty" json:"jobTrigger,omitempty" xml:"jobTrigger,omitempty"`
 }
 
 // UpdateSinkSettingsRequestBody is the type of the "stream" service
@@ -83,8 +84,9 @@ type UpdateSinkRequestBody struct {
 	// Human readable name of the sink.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
-	Description *string                     `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	Table       *TableSinkUpdateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Description *string                          `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	Table       *TableSinkUpdateRequestBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	JobTrigger  *JobTriggerSinkUpdateRequestBody `form:"jobTrigger,omitempty" json:"jobTrigger,omitempty" xml:"jobTrigger,omitempty"`
 }
 
 // APIVersionIndexResponseBody is the type of the "stream" service
@@ -391,6 +393,7 @@ type GetSinkResponseBody struct {
 	// Description of the source.
 	Description string                      `form:"description" json:"description" xml:"description"`
 	Table       *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	JobTrigger  *JobTriggerSinkResponseBody `form:"jobTrigger,omitempty" json:"jobTrigger,omitempty" xml:"jobTrigger,omitempty"`
 	Version     *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Created     *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Deleted     *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
@@ -1507,6 +1510,24 @@ type TableColumnTemplateResponseBody struct {
 	Content  string `form:"content" json:"content" xml:"content"`
 }
 
+// JobTriggerSinkResponseBody is used to define fields on response body types.
+type JobTriggerSinkResponseBody struct {
+	// ID of the component to run.
+	ComponentID string `form:"componentId" json:"componentId" xml:"componentId"`
+	// ID of the component configuration to run.
+	ConfigID string `form:"configId" json:"configId" xml:"configId"`
+	// ID of the branch on which the job runs. Use 0 for the default branch.
+	BranchID int `form:"branchId" json:"branchId" xml:"branchId"`
+	// Optional Jsonnet template evaluated against the incoming HTTP request.
+	// The template output must be a JSON object; it is passed as "configData" to
+	// the triggered job.
+	// This allows webhook payload fields to override runtime job parameters.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// If empty, the job runs with the component's default saved configuration.
+	ConfigDataTemplate *string `form:"configDataTemplate,omitempty" json:"configDataTemplate,omitempty" xml:"configDataTemplate,omitempty"`
+}
+
 // SinkResponseBody is used to define fields on response body types.
 type SinkResponseBody struct {
 	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
@@ -1519,6 +1540,7 @@ type SinkResponseBody struct {
 	// Description of the source.
 	Description string                      `form:"description" json:"description" xml:"description"`
 	Table       *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	JobTrigger  *JobTriggerSinkResponseBody `form:"jobTrigger,omitempty" json:"jobTrigger,omitempty" xml:"jobTrigger,omitempty"`
 	Version     *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Created     *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Deleted     *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
@@ -1599,6 +1621,7 @@ type AggregatedSinkResponseBody struct {
 	// Description of the source.
 	Description string                            `form:"description" json:"description" xml:"description"`
 	Table       *TableSinkResponseBody            `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	JobTrigger  *JobTriggerSinkResponseBody       `form:"jobTrigger,omitempty" json:"jobTrigger,omitempty" xml:"jobTrigger,omitempty"`
 	Version     *VersionResponseBody              `form:"version" json:"version" xml:"version"`
 	Created     *CreatedEntityResponseBody        `form:"created" json:"created" xml:"created"`
 	Deleted     *DeletedEntityResponseBody        `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
@@ -1659,11 +1682,49 @@ type TableColumnTemplateRequestBody struct {
 	Content  *string `form:"content,omitempty" json:"content,omitempty" xml:"content,omitempty"`
 }
 
+// JobTriggerSinkCreateRequestBody is used to define fields on request body
+// types.
+type JobTriggerSinkCreateRequestBody struct {
+	// ID of the component to run.
+	ComponentID *string `form:"componentId,omitempty" json:"componentId,omitempty" xml:"componentId,omitempty"`
+	// ID of the component configuration to run.
+	ConfigID *string `form:"configId,omitempty" json:"configId,omitempty" xml:"configId,omitempty"`
+	// ID of the branch on which the job runs. Use 0 for the default branch.
+	BranchID *int `form:"branchId,omitempty" json:"branchId,omitempty" xml:"branchId,omitempty"`
+	// Optional Jsonnet template evaluated against the incoming HTTP request.
+	// The template output must be a JSON object; it is passed as "configData" to
+	// the triggered job.
+	// This allows webhook payload fields to override runtime job parameters.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// If empty, the job runs with the component's default saved configuration.
+	ConfigDataTemplate *string `form:"configDataTemplate,omitempty" json:"configDataTemplate,omitempty" xml:"configDataTemplate,omitempty"`
+}
+
 // TableSinkUpdateRequestBody is used to define fields on request body types.
 type TableSinkUpdateRequestBody struct {
 	Type    *string                  `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	TableID *string                  `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
 	Mapping *TableMappingRequestBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
+}
+
+// JobTriggerSinkUpdateRequestBody is used to define fields on request body
+// types.
+type JobTriggerSinkUpdateRequestBody struct {
+	// ID of the component to run.
+	ComponentID *string `form:"componentId,omitempty" json:"componentId,omitempty" xml:"componentId,omitempty"`
+	// ID of the component configuration to run.
+	ConfigID *string `form:"configId,omitempty" json:"configId,omitempty" xml:"configId,omitempty"`
+	// ID of the branch on which the job runs. Use 0 for the default branch.
+	BranchID *int `form:"branchId,omitempty" json:"branchId,omitempty" xml:"branchId,omitempty"`
+	// Optional Jsonnet template evaluated against the incoming HTTP request.
+	// The template output must be a JSON object; it is passed as "configData" to
+	// the triggered job.
+	// This allows webhook payload fields to override runtime job parameters.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// If empty, the job runs with the component's default saved configuration.
+	ConfigDataTemplate *string `form:"configDataTemplate,omitempty" json:"configDataTemplate,omitempty" xml:"configDataTemplate,omitempty"`
 }
 
 // NewAPIVersionIndexResponseBody builds the HTTP response body from the result
@@ -2035,6 +2096,9 @@ func NewGetSinkResponseBody(res *stream.Sink) *GetSinkResponseBody {
 	}
 	if res.Table != nil {
 		body.Table = marshalStreamTableSinkToTableSinkResponseBody(res.Table)
+	}
+	if res.JobTrigger != nil {
+		body.JobTrigger = marshalStreamJobTriggerSinkToJobTriggerSinkResponseBody(res.JobTrigger)
 	}
 	if res.Version != nil {
 		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
@@ -3248,6 +3312,9 @@ func NewCreateSinkPayload(body *CreateSinkRequestBody, branchID string, sourceID
 	if body.Table != nil {
 		v.Table = unmarshalTableSinkCreateRequestBodyToStreamTableSinkCreate(body.Table)
 	}
+	if body.JobTrigger != nil {
+		v.JobTrigger = unmarshalJobTriggerSinkCreateRequestBodyToStreamJobTriggerSinkCreate(body.JobTrigger)
+	}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.StorageAPIToken = storageAPIToken
@@ -3340,6 +3407,9 @@ func NewUpdateSinkPayload(body *UpdateSinkRequestBody, branchID string, sourceID
 	}
 	if body.Table != nil {
 		v.Table = unmarshalTableSinkUpdateRequestBodyToStreamTableSinkUpdate(body.Table)
+	}
+	if body.JobTrigger != nil {
+		v.JobTrigger = unmarshalJobTriggerSinkUpdateRequestBodyToStreamJobTriggerSinkUpdate(body.JobTrigger)
 	}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
@@ -3593,8 +3663,8 @@ func ValidateCreateSinkRequestBody(body *CreateSinkRequestBody, errContext []str
 		}
 	}
 	if body.Type != nil {
-		if !(*body.Type == "table") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"table"}))
+		if !(*body.Type == "table" || *body.Type == "jobTrigger") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"table", "jobTrigger"}))
 		}
 	}
 	if body.Name != nil {
@@ -3614,6 +3684,11 @@ func ValidateCreateSinkRequestBody(body *CreateSinkRequestBody, errContext []str
 	}
 	if body.Table != nil {
 		if err2 := ValidateTableSinkCreateRequestBody(body.Table, append(errContext, "table")); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.JobTrigger != nil {
+		if err2 := ValidateJobTriggerSinkCreateRequestBody(body.JobTrigger, append(errContext, "jobTrigger")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -3638,8 +3713,8 @@ func ValidateUpdateSinkSettingsRequestBody(body *UpdateSinkSettingsRequestBody, 
 // UpdateSinkRequestBody
 func ValidateUpdateSinkRequestBody(body *UpdateSinkRequestBody, errContext []string) (err error) {
 	if body.Type != nil {
-		if !(*body.Type == "table") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"table"}))
+		if !(*body.Type == "table" || *body.Type == "jobTrigger") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"table", "jobTrigger"}))
 		}
 	}
 	if body.Name != nil {
@@ -3772,6 +3847,21 @@ func ValidateTableColumnTemplateRequestBody(body *TableColumnTemplateRequestBody
 		if utf8.RuneCountInString(*body.Content) > 4096 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "content"), "."), *body.Content, utf8.RuneCountInString(*body.Content), 4096, false))
 		}
+	}
+	return
+}
+
+// ValidateJobTriggerSinkCreateRequestBody runs the validations defined on
+// JobTriggerSinkCreateRequestBody
+func ValidateJobTriggerSinkCreateRequestBody(body *JobTriggerSinkCreateRequestBody, errContext []string) (err error) {
+	if body.ComponentID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("componentId", strings.Join(errContext, ".")))
+	}
+	if body.ConfigID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("configId", strings.Join(errContext, ".")))
+	}
+	if body.BranchID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("branchId", strings.Join(errContext, ".")))
 	}
 	return
 }
