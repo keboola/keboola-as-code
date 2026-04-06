@@ -11,7 +11,6 @@ Profile1:
       user: '{{ env_var("DBT_KBC_TARGET1_USER") }}'
       warehouse: '{{ env_var("DBT_KBC_TARGET1_WAREHOUSE") }}'
       private_key: '{{ env_var("DBT_KBC_TARGET1_PRIVATE_KEY") }}'
-      password: '{{ env_var("DBT_KBC_TARGET1_PASSWORD") }}'
     keboola_target1:
       type: keboola_snowflake
       base_url: '{{ env_var("DBT_KBC_TARGET1_BASE_URL", "") }}'

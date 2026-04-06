@@ -16,7 +16,6 @@ import (
 
 type Options struct {
 	TargetName           string
-	UseKeyPair           bool
 	IncludeKeboolaTarget bool // whether to add the keboola_snowflake adapter target
 }
 
@@ -85,20 +84,9 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 					Key:   "warehouse",
 					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WAREHOUSE\") }}", targetUpper),
 				},
-				// Auth: prefer key-pair, fallback to password
-				// dbt-snowflake accepts either `private_key` or `password`
 				{
-					Key: "private_key",
-					Value: func() string {
-						if o.UseKeyPair {
-							return fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PRIVATE_KEY\") }}", targetUpper)
-						}
-						return ""
-					}(),
-				},
-				{
-					Key:   "password",
-					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PASSWORD\") }}", targetUpper),
+					Key:   "private_key",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PRIVATE_KEY\") }}", targetUpper),
 				},
 			}),
 		},

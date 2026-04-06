@@ -22,12 +22,12 @@ type DbtInitOptions struct {
 	BranchKey     keboola.BranchKey
 	TargetName    string
 	WorkspaceName string
-	UseKeyPair    bool
 	BaseURL       string // Keboola Query Service base URL, e.g. "https://query.keboola.com"
 }
 
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
+	StorageAPIToken() keboola.Token
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
@@ -96,7 +96,7 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 
 	// Determine private key from the freshly created credentials.
 	privateKey := ""
-	if o.UseKeyPair && storageWS.StorageWorkspaceDetails.PrivateKey != nil {
+	if storageWS.StorageWorkspaceDetails.PrivateKey != nil {
 		privateKey = *storageWS.StorageWorkspaceDetails.PrivateKey
 	}
 
@@ -113,7 +113,6 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	// creates a Snowflake workspace with an editor session, making all keboola_ env vars available.
 	err = profile.Run(ctx, profile.Options{
 		TargetName:           o.TargetName,
-		UseKeyPair:           o.UseKeyPair,
 		IncludeKeboolaTarget: true,
 	}, d)
 	if err != nil {
@@ -136,7 +135,6 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 		TargetName: o.TargetName,
 		Workspace:  workspace,
 		PrivateKey: privateKey,
-		UseKeyPair: o.UseKeyPair,
 		Buckets:    buckets,
 	}, d)
 	if err != nil {

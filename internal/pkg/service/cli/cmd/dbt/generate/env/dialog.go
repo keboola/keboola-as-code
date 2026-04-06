@@ -43,8 +43,6 @@ func AskGenerateEnv(
 	privateKeyEnvVar := fmt.Sprintf("TEST_SANDBOX_%s_PRIVATE_KEY", normalizedName)
 	privateKey := envs.Get(privateKeyEnvVar)
 
-	useKeyPair := len(privateKey) > 0
-
 	if keboola.SandboxWorkspaceSupportsSizes(workspace.SandboxWorkspace.Type) {
 		// Python/R workspace — credential fields are not available from the listing.
 		return genenv.Options{
@@ -53,7 +51,6 @@ func AskGenerateEnv(
 			Workspace: genenv.WorkspaceDetails{
 				Type: string(workspace.SandboxWorkspace.Type),
 			},
-			UseKeyPair: useKeyPair,
 			PrivateKey: privateKey,
 		}, nil
 	}
@@ -106,14 +103,12 @@ func AskGenerateEnv(
 	// Use server-provided private key for SQL workspaces when available.
 	if len(privateKey) == 0 && storageWS.StorageWorkspaceDetails.PrivateKey != nil && len(*storageWS.StorageWorkspaceDetails.PrivateKey) > 0 {
 		privateKey = *storageWS.StorageWorkspaceDetails.PrivateKey
-		useKeyPair = true
 	}
 
 	return genenv.Options{
 		BranchKey:  branchKey,
 		TargetName: targetName,
 		Workspace:  ws,
-		UseKeyPair: useKeyPair,
 		PrivateKey: privateKey,
 	}, nil
 }
