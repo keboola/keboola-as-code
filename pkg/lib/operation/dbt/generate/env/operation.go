@@ -102,7 +102,19 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	setVar(fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper), host)
 	setVar(fmt.Sprintf("DBT_KBC_%s_USER", targetUpper), o.Workspace.User)
 	if len(o.PrivateKey) > 0 {
-		envVars[fmt.Sprintf("DBT_KBC_%s_PRIVATE_KEY", targetUpper)] = o.PrivateKey
+		// Write the private key to a separate file instead of inlining it in .env.local.
+		// Inline PEM keys contain real newlines which cannot be represented portably in
+		// dotenv format across bash, PowerShell, direnv, and dotenv libraries.
+		keyFileName := fmt.Sprintf(".dbt_private_key_%s.p8", strings.ToLower(o.TargetName))
+		keyFilePath := filesystem.Join(dbtProject.Fs().WorkingDir(), keyFileName)
+		keyFile := filesystem.NewRawFile(keyFilePath, o.PrivateKey).SetDescription("dbt private key")
+		if err := d.Fs().WriteFile(ctx, keyFile); err != nil {
+			return errors.Errorf("cannot write file \"%s\": %w", keyFilePath, err)
+		}
+		envVars[fmt.Sprintf("DBT_KBC_%s_PRIVATE_KEY_PATH", targetUpper)] = keyFileName
+		if err := addToGitignore(ctx, dbtProject.Fs(), keyFileName); err != nil {
+			return err
+		}
 	}
 
 	// Keboola adapter vars — written when the workspace was created via an editor session.
@@ -125,16 +137,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	var envContent strings.Builder
 	for _, k := range keys {
 		v := envVars[k]
-		if strings.Contains(v, "\n") || strings.Contains(v, "\r") {
-			// Use ANSI-C $'...' quoting: bash/zsh convert \n back to real newlines on source.
-			// Escape backslashes first, then single quotes, then normalize line endings.
-			v = strings.ReplaceAll(v, `\`, `\\`)
-			v = strings.ReplaceAll(v, "'", `\'`)
-			v = strings.ReplaceAll(v, "\r\n", `\n`)
-			v = strings.ReplaceAll(v, "\r", `\n`)
-			v = strings.ReplaceAll(v, "\n", `\n`)
-			v = "$'" + v + "'"
-		} else if strings.ContainsAny(v, " #\"'\\\t") {
+		if strings.ContainsAny(v, " #\"'\\\t") {
 			v = "\"" + strings.ReplaceAll(v, "\"", `\"`) + "\""
 		}
 		_, _ = fmt.Fprintf(&envContent, "%s=%s\n", k, v)
@@ -166,5 +169,32 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		l.Infof(ctx, "  have been generated: \"%s\"", strings.Join(linkedBucketEnvs, `", "`))
 	}
 
+	return nil
+}
+
+// addToGitignore appends entry to the project .gitignore if it is not already present.
+func addToGitignore(ctx context.Context, fs filesystem.Fs, entry string) error {
+	const gitignorePath = ".gitignore"
+	existing := ""
+	if fs.Exists(ctx, gitignorePath) {
+		f, err := fs.FileLoader().ReadRawFile(ctx, filesystem.NewFileDef(gitignorePath))
+		if err != nil {
+			return errors.Errorf("cannot read %s: %w", gitignorePath, err)
+		}
+		existing = f.Content
+	}
+	for _, line := range strings.Split(existing, "\n") {
+		if strings.TrimSpace(line) == entry {
+			return nil
+		}
+	}
+	updated := strings.TrimRight(existing, "\n")
+	if updated != "" {
+		updated += "\n"
+	}
+	updated += entry + "\n"
+	if err := fs.WriteFile(ctx, filesystem.NewRawFile(gitignorePath, updated).SetDescription(".gitignore")); err != nil {
+		return errors.Errorf("cannot write %s: %w", gitignorePath, err)
+	}
 	return nil
 }

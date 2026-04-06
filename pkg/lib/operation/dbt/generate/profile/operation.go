@@ -85,8 +85,8 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WAREHOUSE\") }}", targetUpper),
 				},
 				{
-					Key:   "private_key",
-					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PRIVATE_KEY\") }}", targetUpper),
+					Key:   "private_key_path",
+					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PRIVATE_KEY_PATH\") }}", targetUpper),
 				},
 			}),
 		},
