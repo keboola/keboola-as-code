@@ -21,7 +21,6 @@ type WorkspaceDetails struct {
 	Type      string // workspace type string, e.g. "snowflake", "python"
 	Host      string
 	User      string
-	Password  string //nolint:gosec
 	Database  string
 	Schema    string
 	Warehouse string
@@ -37,16 +36,16 @@ type Options struct {
 	TargetName string
 	Workspace  WorkspaceDetails
 	PrivateKey string               //nolint:gosec
-	UseKeyPair bool                 // Whether key-pair authentication was requested (only add private key if true)
 	Buckets    []listbuckets.Bucket // optional, set if the buckets have been loaded in a parent command
 }
 
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
+	StorageAPIToken() keboola.Token
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
-	Fs() filesystem.Fs // Add filesystem dependency
+	Fs() filesystem.Fs
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
@@ -102,11 +101,8 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 	setVar(fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper), host)
 	setVar(fmt.Sprintf("DBT_KBC_%s_USER", targetUpper), o.Workspace.User)
-	if o.UseKeyPair && len(o.PrivateKey) > 0 {
+	if len(o.PrivateKey) > 0 {
 		envVars[fmt.Sprintf("DBT_KBC_%s_PRIVATE_KEY", targetUpper)] = o.PrivateKey
-	}
-	if len(o.Workspace.Password) > 0 {
-		envVars[fmt.Sprintf("DBT_KBC_%s_PASSWORD", targetUpper)] = o.Workspace.Password
 	}
 
 	// Keboola adapter vars — written when the workspace was created via an editor session.
@@ -114,6 +110,9 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		envVars[fmt.Sprintf("DBT_KBC_%s_BASE_URL", targetUpper)] = o.Workspace.BaseURL
 		envVars[fmt.Sprintf("DBT_KBC_%s_BRANCH_ID", targetUpper)] = o.Workspace.BranchID.String()
 		envVars[fmt.Sprintf("DBT_KBC_%s_WORKSPACE_ID", targetUpper)] = o.Workspace.WorkspaceID
+		if token := d.StorageAPIToken().Token; token != "" {
+			envVars["KEBOOLA_TOKEN"] = token
+		}
 	}
 
 	// Sort keys for consistent output.
@@ -126,19 +125,17 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	var envContent strings.Builder
 	for _, k := range keys {
 		v := envVars[k]
-		// Normalize multiline/special values for dotenv compatibility:
-		// - Replace newlines and carriage returns by literal \n to keep a single line per var
-		// - Escape existing double quotes
-		// - Wrap in double quotes if any special characters present
-		hasSpecial := strings.ContainsAny(v, " #\"'\\\n\r\t")
 		if strings.Contains(v, "\n") || strings.Contains(v, "\r") {
-			v = strings.ReplaceAll(v, "\r\n", "\n")
-			v = strings.ReplaceAll(v, "\r", "\n")
-			v = strings.ReplaceAll(v, "\n", `\\n`)
-			hasSpecial = true
-		}
-		if hasSpecial {
-			v = "\"" + strings.ReplaceAll(v, "\"", `\\"`) + "\""
+			// Use ANSI-C $'...' quoting: bash/zsh convert \n back to real newlines on source.
+			// Escape backslashes first, then single quotes, then normalize line endings.
+			v = strings.ReplaceAll(v, `\`, `\\`)
+			v = strings.ReplaceAll(v, "'", `\'`)
+			v = strings.ReplaceAll(v, "\r\n", `\n`)
+			v = strings.ReplaceAll(v, "\r", `\n`)
+			v = strings.ReplaceAll(v, "\n", `\n`)
+			v = "$'" + v + "'"
+		} else if strings.ContainsAny(v, " #\"'\\\t") {
+			v = "\"" + strings.ReplaceAll(v, "\"", `\"`) + "\""
 		}
 		_, _ = fmt.Fprintf(&envContent, "%s=%s\n", k, v)
 	}
