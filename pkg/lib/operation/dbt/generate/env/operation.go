@@ -153,6 +153,9 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	var envContent strings.Builder
 	for _, k := range keys {
 		v := envVars[k]
+		// All values come from API responses (URLs, identifiers, connection strings).
+		// None should contain newlines; private keys are stored in a separate .p8 file.
+		// Double-quote values that contain shell-sensitive characters.
 		if strings.ContainsAny(v, " #\"'\\\t") {
 			v = "\"" + strings.ReplaceAll(v, "\"", `\"`) + "\""
 		}
