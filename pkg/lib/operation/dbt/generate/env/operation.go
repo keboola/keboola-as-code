@@ -3,6 +3,7 @@ package env
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
@@ -73,43 +74,58 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	envVars := make(map[string]string)
 
-	// setVar writes a key=value pair only when value is non-empty.
-	// Python/R workspaces only populate Type; all Snowflake connection fields are absent.
-	// Omitting empty vars keeps .env.local clean and avoids confusing placeholder lines.
-	setVar := func(key, value string) {
-		if value != "" {
-			envVars[key] = value
-		}
+	// Only write non-empty values: Python/R workspaces populate only Type;
+	// all Snowflake connection fields are absent and should not appear in .env.local.
+	if v := o.Workspace.Type; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = v
+	}
+	if v := o.Workspace.Schema; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper)] = v
+	}
+	if v := o.Workspace.Warehouse; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper)] = v
+	}
+	if v := o.Workspace.Database; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper)] = v
 	}
 
-	setVar(fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper), o.Workspace.Type)
-	setVar(fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper), o.Workspace.Schema)
-	setVar(fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper), o.Workspace.Warehouse)
-	setVar(fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper), o.Workspace.Database)
-
+	// Linked-bucket database vars — only applicable when Database is set (Snowflake workspaces).
 	linkedBucketEnvsMap := make(map[string]string)
-	for _, bucket := range o.Buckets {
-		if bucket.LinkedProjectID != 0 {
-			envVarName := bucket.DatabaseEnv
-			if _, exists := linkedBucketEnvsMap[envVarName]; !exists {
-				stackPrefix, _, _ := strings.Cut(o.Workspace.Database, "_") // SAPI_..., KEBOOLA_..., etc.
-				envVarValue := fmt.Sprintf("%s_%d", stackPrefix, bucket.LinkedProjectID)
-				linkedBucketEnvsMap[envVarName] = envVarValue
-				envVars[envVarName] = envVarValue
+	if o.Workspace.Database != "" {
+		for _, bucket := range o.Buckets {
+			if bucket.LinkedProjectID != 0 {
+				envVarName := bucket.DatabaseEnv
+				if _, exists := linkedBucketEnvsMap[envVarName]; !exists {
+					stackPrefix, _, _ := strings.Cut(o.Workspace.Database, "_") // SAPI_..., KEBOOLA_..., etc.
+					envVarValue := fmt.Sprintf("%s_%d", stackPrefix, bucket.LinkedProjectID)
+					linkedBucketEnvsMap[envVarName] = envVarValue
+					envVars[envVarName] = envVarValue
+				}
 			}
 		}
 	}
-	setVar(fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper), host)
-	setVar(fmt.Sprintf("DBT_KBC_%s_USER", targetUpper), o.Workspace.User)
+
+	if v := host; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper)] = v
+	}
+	if v := o.Workspace.User; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_USER", targetUpper)] = v
+	}
 	if len(o.PrivateKey) > 0 {
 		// Write the private key to a separate file instead of inlining it in .env.local.
 		// Inline PEM keys contain real newlines which cannot be represented portably in
 		// dotenv format across bash, PowerShell, direnv, and dotenv libraries.
 		keyFileName := fmt.Sprintf(".dbt_private_key_%s.p8", strings.ToLower(o.TargetName))
-		keyFilePath := filesystem.Join(dbtProject.Fs().WorkingDir(), keyFileName)
-		keyFile := filesystem.NewRawFile(keyFilePath, o.PrivateKey).SetDescription("dbt private key")
-		if err := d.Fs().WriteFile(ctx, keyFile); err != nil {
-			return errors.Errorf("cannot write file \"%s\": %w", keyFilePath, err)
+		fd, err := dbtProject.Fs().OpenFile(ctx, keyFileName, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+		if err != nil {
+			return errors.Errorf("cannot create file \"%s\": %w", keyFileName, err)
+		}
+		if _, err = fd.WriteString(o.PrivateKey); err != nil {
+			_ = fd.Close()
+			return errors.Errorf("cannot write file \"%s\": %w", keyFileName, err)
+		}
+		if err = fd.Close(); err != nil {
+			return errors.Errorf("cannot close file \"%s\": %w", keyFileName, err)
 		}
 		envVars[fmt.Sprintf("DBT_KBC_%s_PRIVATE_KEY_PATH", targetUpper)] = keyFileName
 		if err := addToGitignore(ctx, dbtProject.Fs(), keyFileName); err != nil {
@@ -141,6 +157,11 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 			v = "\"" + strings.ReplaceAll(v, "\"", `\"`) + "\""
 		}
 		_, _ = fmt.Fprintf(&envContent, "%s=%s\n", k, v)
+	}
+
+	// Ensure .env.local is gitignored — it contains KEBOOLA_TOKEN and other credentials.
+	if err := addToGitignore(ctx, dbtProject.Fs(), ".env.local"); err != nil {
+		return err
 	}
 
 	// Write to .env.local

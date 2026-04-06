@@ -83,26 +83,37 @@ func AskGenerateEnv(
 		return genenv.Options{}, errors.Errorf("cannot fetch workspace credentials: %w", err)
 	}
 
-	deref := func(s *string) string {
-		if s == nil {
-			return ""
-		}
-		return *s
+	details := storageWS.StorageWorkspaceDetails
+	host, user, database, schema, warehouse := "", "", "", "", ""
+	if details.Host != nil {
+		host = *details.Host
+	}
+	if details.User != nil {
+		user = *details.User
+	}
+	if details.Database != nil {
+		database = *details.Database
+	}
+	if details.Schema != nil {
+		schema = *details.Schema
+	}
+	if details.Warehouse != nil {
+		warehouse = *details.Warehouse
 	}
 	ws := genenv.WorkspaceDetails{
 		Type:        string(matchedSession.BackendType),
-		Host:        deref(storageWS.StorageWorkspaceDetails.Host),
-		User:        deref(storageWS.StorageWorkspaceDetails.User),
-		Database:    deref(storageWS.StorageWorkspaceDetails.Database),
-		Schema:      deref(storageWS.StorageWorkspaceDetails.Schema),
-		Warehouse:   deref(storageWS.StorageWorkspaceDetails.Warehouse),
+		Host:        host,
+		User:        user,
+		Database:    database,
+		Schema:      schema,
+		Warehouse:   warehouse,
 		BranchID:    branchID,
 		WorkspaceID: matchedSession.WorkspaceID,
 	}
 
 	// Use server-provided private key for SQL workspaces when available.
-	if len(privateKey) == 0 && storageWS.StorageWorkspaceDetails.PrivateKey != nil && len(*storageWS.StorageWorkspaceDetails.PrivateKey) > 0 {
-		privateKey = *storageWS.StorageWorkspaceDetails.PrivateKey
+	if len(privateKey) == 0 && details.PrivateKey != nil && len(*details.PrivateKey) > 0 {
+		privateKey = *details.PrivateKey
 	}
 
 	return genenv.Options{

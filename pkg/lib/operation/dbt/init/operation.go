@@ -76,19 +76,30 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	// Build WorkspaceDetails combining both phases:
 	// Phase 1 fields (keboola_snowflake profile): BaseURL, BranchID, WorkspaceID
 	// Phase 2 fields (direct-Snowflake profile):  Host, User, Database, Schema, Warehouse, PrivateKey
-	deref := func(s *string) string {
-		if s == nil {
-			return ""
-		}
-		return *s
+	details := storageWS.StorageWorkspaceDetails
+	host, user, database, schema, warehouse := "", "", "", "", ""
+	if details.Host != nil {
+		host = *details.Host
+	}
+	if details.User != nil {
+		user = *details.User
+	}
+	if details.Database != nil {
+		database = *details.Database
+	}
+	if details.Schema != nil {
+		schema = *details.Schema
+	}
+	if details.Warehouse != nil {
+		warehouse = *details.Warehouse
 	}
 	workspace := env.WorkspaceDetails{
-		Type:        string(storageWS.StorageWorkspaceDetails.Backend),
-		Host:        deref(storageWS.StorageWorkspaceDetails.Host),
-		User:        deref(storageWS.StorageWorkspaceDetails.User),
-		Database:    deref(storageWS.StorageWorkspaceDetails.Database),
-		Schema:      deref(storageWS.StorageWorkspaceDetails.Schema),
-		Warehouse:   deref(storageWS.StorageWorkspaceDetails.Warehouse),
+		Type:        string(details.Backend),
+		Host:        host,
+		User:        user,
+		Database:    database,
+		Schema:      schema,
+		Warehouse:   warehouse,
 		BaseURL:     o.BaseURL,
 		BranchID:    branch.ID,
 		WorkspaceID: session.EditorSession.WorkspaceID,
@@ -96,8 +107,8 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 
 	// Determine private key from the freshly created credentials.
 	privateKey := ""
-	if storageWS.StorageWorkspaceDetails.PrivateKey != nil {
-		privateKey = *storageWS.StorageWorkspaceDetails.PrivateKey
+	if details.PrivateKey != nil {
+		privateKey = *details.PrivateKey
 	}
 
 	// List buckets
