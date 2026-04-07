@@ -1,5 +1,5 @@
 {
   "statusCode": 400,
   "error": "stream.api.badRequest",
-  "message": "\"jobTrigger\" must be configured for the \"jobTrigger\" sink type"
+  "message": "\"jobTrigger\" must be configured for the \"jobTrigger\" sink type."
 }
