@@ -9,7 +9,6 @@ import "strings"
 // For non-standard hosts (no "connection." prefix) "query." is prepended to the bare host.
 // This is an intentional best-effort derivation — non-keboola.com hosts may produce
 // unexpected results (e.g. "my.custom.host" → "https://query.my.custom.host").
-// In that case pass --base-url explicitly to override.
 //
 // Examples:
 //

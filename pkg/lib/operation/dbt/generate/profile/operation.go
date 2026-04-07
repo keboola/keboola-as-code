@@ -125,6 +125,12 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 					Key:   "workspace_id",
 					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WORKSPACE_ID\", \"\") }}", targetUpper),
 				},
+				// database/schema/warehouse intentionally have no empty-string default:
+				// these vars are shared with the direct-Snowflake target and are always
+				// written to .env.local by "dbt generate env". They are never absent when
+				// the keboola_ target is used. Only keboola-specific vars (base_url, token,
+				// branch_id, workspace_id) need defaults because they are absent when the
+				// workspace was not created via an editor session.
 				{
 					Key:   "database",
 					Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", targetUpper),

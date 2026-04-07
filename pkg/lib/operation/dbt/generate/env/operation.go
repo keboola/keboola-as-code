@@ -120,12 +120,15 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		if err != nil {
 			return errors.Errorf("cannot create file \"%s\": %w", keyFileName, err)
 		}
-		if _, err = fd.WriteString(o.PrivateKey); err != nil {
-			_ = fd.Close()
-			return errors.Errorf("cannot write file \"%s\": %w", keyFileName, err)
+		// Write then close unconditionally — always close before checking errors
+		// so the descriptor is not leaked on write failure.
+		_, writeErr := fd.WriteString(o.PrivateKey)
+		closeErr := fd.Close()
+		if writeErr != nil {
+			return errors.Errorf("cannot write file \"%s\": %w", keyFileName, writeErr)
 		}
-		if err = fd.Close(); err != nil {
-			return errors.Errorf("cannot close file \"%s\": %w", keyFileName, err)
+		if closeErr != nil {
+			return errors.Errorf("cannot close file \"%s\": %w", keyFileName, closeErr)
 		}
 		envVars[fmt.Sprintf("DBT_KBC_%s_PRIVATE_KEY_PATH", targetUpper)] = keyFileName
 		if err := addToGitignore(ctx, dbtProject.Fs(), keyFileName); err != nil {
