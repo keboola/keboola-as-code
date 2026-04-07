@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/keboola/go-cloud-encrypt/pkg/cloudencrypt"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -26,8 +27,11 @@ type TokenFromContext func(ctx context.Context) (string, bool)
 
 // storedToken is the value stored in etcd under the token schema prefix.
 type storedToken struct {
-	// Token is the raw SAPI token string used to authenticate job trigger requests.
-	Token string `json:"token"`
+	// Token holds the plaintext SAPI token when the service runs without an Encryptor.
+	Token string `json:"token,omitempty"`
+	// EncryptedToken holds the encrypted form of Token when an Encryptor is configured.
+	// When this field is non-empty, Token is left blank.
+	EncryptedToken string `json:"encryptedToken,omitempty"`
 }
 
 // tokenSchema is the etcd prefix for per-sink SAPI tokens.
@@ -53,6 +57,7 @@ type Bridge struct {
 	statsSchema      statsSchema
 	publicAPI        *keboola.PublicAPI
 	tokenFromContext TokenFromContext
+	tokenEncryptor   *cloudencrypt.GenericEncryptor[string]
 }
 
 type bridgeDeps interface {
@@ -61,6 +66,7 @@ type bridgeDeps interface {
 	EtcdSerde() *serde.Serde
 	Plugins() *plugin.Plugins
 	KeboolaPublicAPI() *keboola.PublicAPI
+	Encryptor() cloudencrypt.Encryptor
 }
 
 // NewBridge creates a Bridge and registers plugin lifecycle hooks for job trigger sinks.
@@ -73,6 +79,9 @@ func NewBridge(d bridgeDeps, tokenFromContext TokenFromContext) *Bridge {
 		statsSchema:      newStatsSchema(d.EtcdSerde()),
 		publicAPI:        d.KeboolaPublicAPI(),
 		tokenFromContext: tokenFromContext,
+	}
+	if enc := d.Encryptor(); enc != nil {
+		b.tokenEncryptor = cloudencrypt.NewGenericEncryptor[string](enc)
 	}
 	b.registerPlugins(d.Plugins())
 	return b
@@ -87,12 +96,15 @@ func (b *Bridge) registerPlugins(plugins *plugin.Plugins) {
 		return b.storeToken(ctx, sink.SinkKey)
 	})
 
-	// Delete stored token when a job trigger sink is deactivated (deleted or disabled).
+	// Delete stored token and stats when a job trigger sink is deactivated (deleted or disabled).
 	plugins.Collection().OnSinkDeactivation(func(ctx context.Context, now time.Time, by definition.By, original, sink *definition.Sink) error {
 		if sink.Type != definition.SinkTypeJobTrigger {
 			return nil
 		}
-		return b.deleteToken(ctx, sink.SinkKey)
+		if err := b.deleteToken(ctx, sink.SinkKey); err != nil {
+			return err
+		}
+		return b.deleteStats(ctx, sink.SinkKey)
 	})
 }
 
@@ -109,7 +121,17 @@ func (b *Bridge) storeToken(ctx context.Context, sinkKey key.SinkKey) error {
 	}
 
 	b.logger.Debugf(ctx, "storing SAPI token for job trigger sink %s", sinkKey)
-	stored := storedToken{Token: token}
+	stored := storedToken{}
+	if b.tokenEncryptor != nil {
+		metadata := cloudencrypt.Metadata{"sink": sinkKey.String()}
+		ciphertext, err := b.tokenEncryptor.Encrypt(ctx, token, metadata)
+		if err != nil {
+			return errors.Errorf("cannot encrypt token for job trigger sink %s: %w", sinkKey, err)
+		}
+		stored.EncryptedToken = string(ciphertext)
+	} else {
+		stored.Token = token
+	}
 	if err := b.schema.forSink(sinkKey).Put(b.client, stored).Do(ctx).Err(); err != nil {
 		return errors.Errorf("cannot store token for job trigger sink %s: %w", sinkKey, err)
 	}
@@ -125,16 +147,40 @@ func (b *Bridge) deleteToken(ctx context.Context, sinkKey key.SinkKey) error {
 	return nil
 }
 
+// deleteStats removes the accumulated stats from etcd on sink deactivation.
+func (b *Bridge) deleteStats(ctx context.Context, sinkKey key.SinkKey) error {
+	b.logger.Debugf(ctx, "deleting stats for job trigger sink %s", sinkKey)
+	if err := b.statsSchema.forSink(sinkKey).Delete(b.client).Do(ctx).Err(); err != nil {
+		return errors.Errorf("cannot delete stats for job trigger sink %s: %w", sinkKey, err)
+	}
+	return nil
+}
+
 // APIForSink loads the stored token from etcd and returns an AuthorizedAPI for the sink.
 func (b *Bridge) APIForSink(ctx context.Context, sinkKey key.SinkKey) (*keboola.AuthorizedAPI, error) {
 	stored, err := b.schema.forSink(sinkKey).GetOrErr(b.client).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, errors.Errorf("cannot load token for job trigger sink %s: %w", sinkKey, err)
 	}
-	if stored.Token == "" {
+
+	var rawToken string
+	if stored.EncryptedToken != "" {
+		if b.tokenEncryptor == nil {
+			return nil, errors.Errorf("token for job trigger sink %s is encrypted but no encryptor is configured", sinkKey)
+		}
+		metadata := cloudencrypt.Metadata{"sink": sinkKey.String()}
+		rawToken, err = b.tokenEncryptor.Decrypt(ctx, []byte(stored.EncryptedToken), metadata)
+		if err != nil {
+			return nil, errors.Errorf("cannot decrypt token for job trigger sink %s: %w", sinkKey, err)
+		}
+	} else {
+		rawToken = stored.Token
+	}
+
+	if rawToken == "" {
 		return nil, errors.Errorf("empty token stored for job trigger sink %s", sinkKey)
 	}
-	return b.publicAPI.NewAuthorizedAPI(stored.Token, 3*time.Minute), nil
+	return b.publicAPI.NewAuthorizedAPI(rawToken, 3*time.Minute), nil
 }
 
 // AddStats merges the given deltas into the persisted stats for a job trigger sink.

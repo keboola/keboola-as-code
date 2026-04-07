@@ -79,6 +79,6 @@ task/%%TEST_KBC_PROJECT_ID%%/api.create.sink/%%TEST_DEFAULT_BRANCH_ID%%/my-sourc
 stream/job-trigger/token/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my-job-trigger-sink
 -----
 {
-  "token": "%s"
+  "encryptedToken": "%s"
 }
 >>>>>

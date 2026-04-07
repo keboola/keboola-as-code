@@ -72,6 +72,11 @@ func (p *Pipeline) WriteRecord(c recordctx.Context) (pipeline.WriteResult, error
 			return pipeline.WriteResult{Status: pipeline.RecordError},
 				errors.Errorf("job trigger configDataTemplate must produce a JSON object, got %q: %w", result, err)
 		}
+		if configData == nil {
+			p.failed.Add(1)
+			return pipeline.WriteResult{Status: pipeline.RecordError},
+				errors.Errorf("job trigger configDataTemplate must produce a JSON object, got null")
+		}
 		req = req.WithConfigData(configData)
 	}
 
