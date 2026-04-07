@@ -50,10 +50,10 @@ type K8s struct {
 
 // E2bWebhook configures the reverse-proxy endpoint that forwards E2B sandbox
 // lifecycle webhooks to the keboola-operator webhook server.
+// Signature verification is handled by the operator, not by the proxy.
 // When UpstreamURL is empty the endpoint is disabled.
 type E2bWebhook struct {
-	UpstreamURL     string `configKey:"upstreamUrl" configUsage:"Operator internal webhook URL (e.g. http://operator-svc.namespace.svc.cluster.local:19200/webhook/e2b). Empty disables the endpoint."`
-	SignatureSecret string `configKey:"signatureSecret" configUsage:"HMAC signature secret shared with E2B. Used to verify webhook requests before forwarding. Must match E2B_WEBHOOK_SECRET in the operator." sensitive:"true"`
+	UpstreamURL string `configKey:"upstreamUrl" configUsage:"Operator internal webhook URL (e.g. http://keboola-operator-e2b-webhook.keboola-operator.svc.cluster.local:19200/webhook/e2b). Empty disables the endpoint."`
 }
 
 func New() Config {

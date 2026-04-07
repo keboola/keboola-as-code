@@ -2,9 +2,6 @@ package service
 
 import (
 	"context"
-	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/base64"
 	"io"
 	"net/http"
 	"path"
@@ -69,16 +66,10 @@ func (s *service) ForwardE2bWebhook(ctx context.Context, deps dependencies.Publi
 		return errors.New("E2B webhook forwarding is not configured")
 	}
 
-	// Read the body so we can verify the signature before forwarding.
+	// Read the body so we can forward it to the operator.
 	bodyBytes, err := io.ReadAll(io.LimitReader(body, 1<<20)) // 1 MiB limit
 	if err != nil {
 		return errors.Errorf("failed to read request body: %w", err)
-	}
-
-	// Verify HMAC signature: base64NoPad(SHA-256(secret + body)).
-	signature := deps.Request().Header.Get("e2b-signature")
-	if !s.verifyE2bSignature(signature, bodyBytes) {
-		return errors.New("invalid or missing e2b-signature")
 	}
 
 	ctx, cancel := context.WithTimeoutCause(ctx, e2bWebhookForwardTimeout, errors.New("forwarding E2B webhook timed out"))
@@ -114,20 +105,4 @@ func (s *service) ForwardE2bWebhook(ctx context.Context, deps dependencies.Publi
 	}
 
 	return nil
-}
-
-// verifyE2bSignature verifies the E2B webhook HMAC signature.
-// Algorithm: base64NoPad(SHA-256(secret + body)).
-func (s *service) verifyE2bSignature(signature string, body []byte) bool {
-	secret := s.config.E2bWebhook.SignatureSecret
-	if secret == "" || signature == "" {
-		return false
-	}
-
-	hash := sha256.New()
-	hash.Write([]byte(secret))
-	hash.Write(body)
-	expected := base64.StdEncoding.WithPadding(base64.NoPadding).EncodeToString(hash.Sum(nil))
-
-	return subtle.ConstantTimeCompare([]byte(signature), []byte(expected)) == 1
 }

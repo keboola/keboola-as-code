@@ -1,8 +1,6 @@
 package proxy_test
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,16 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
-
-const testE2bSecret = "test-secret-that-is-at-least-32-chars!!"
-
-// computeE2bSignature computes e2b-signature for testing: base64NoPad(SHA-256(secret + body)).
-func computeE2bSignature(secret string, body []byte) string {
-	hash := sha256.New()
-	hash.Write([]byte(secret))
-	hash.Write(body)
-	return base64.StdEncoding.WithPadding(base64.NoPadding).EncodeToString(hash.Sum(nil))
-}
 
 func TestForwardE2bWebhook(t *testing.T) {
 	t.Parallel()
@@ -57,21 +45,19 @@ func TestForwardE2bWebhook(t *testing.T) {
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CsrfTokenSalt = "abc"
 	cfg.E2bWebhook.UpstreamURL = operatorServer.URL
-	cfg.E2bWebhook.SignatureSecret = testE2bSecret
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 
 	// Create proxy handler.
 	handler := proxy.NewHandler(ctx, d)
 
-	// Build a webhook request with valid signature and all e2b-* headers.
+	// Build a webhook request with all e2b-* headers.
 	webhookBody := `{"version":"v2","id":"evt-1","type":"sandbox.lifecycle.killed","sandboxId":"sb-123","sandboxTeamId":"team-1","sandboxTemplateId":"tmpl-1","timestamp":"2025-08-06T20:59:24Z"}`
-	signature := computeE2bSignature(testE2bSecret, []byte(webhookBody))
 
 	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/e2b-webhook", strings.NewReader(webhookBody))
 	req.Host = "hub.keboola.local"
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("e2b-signature", signature)
+	req.Header.Set("e2b-signature", "some-signature")
 	req.Header.Set("e2b-webhook-id", "wh-456")
 	req.Header.Set("e2b-delivery-id", "del-789")
 	req.Header.Set("e2b-signature-version", "v1")
@@ -88,7 +74,7 @@ func TestForwardE2bWebhook(t *testing.T) {
 	assert.Equal(t, webhookBody, receivedBody)
 
 	// Verify all e2b-* headers were forwarded.
-	assert.Equal(t, signature, receivedHeaders.Get("e2b-signature"))
+	assert.Equal(t, "some-signature", receivedHeaders.Get("e2b-signature"))
 	assert.Equal(t, "wh-456", receivedHeaders.Get("e2b-webhook-id"))
 	assert.Equal(t, "del-789", receivedHeaders.Get("e2b-delivery-id"))
 	assert.Equal(t, "v1", receivedHeaders.Get("e2b-signature-version"))
@@ -100,11 +86,9 @@ func TestForwardE2bWebhookInvalidSignature(t *testing.T) {
 
 	ctx := t.Context()
 
-	// Start a fake operator that should NOT be called.
-	operatorCalled := false
+	// Operator rejects requests with invalid signature.
 	operatorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		operatorCalled = true
-		w.WriteHeader(http.StatusOK)
+		http.Error(w, "invalid signature", http.StatusUnauthorized)
 	}))
 	defer operatorServer.Close()
 
@@ -112,13 +96,12 @@ func TestForwardE2bWebhookInvalidSignature(t *testing.T) {
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CsrfTokenSalt = "abc"
 	cfg.E2bWebhook.UpstreamURL = operatorServer.URL
-	cfg.E2bWebhook.SignatureSecret = testE2bSecret
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 
 	handler := proxy.NewHandler(ctx, d)
 
-	// Send request with WRONG signature.
+	// Send request with WRONG signature — proxy forwards it, operator rejects it.
 	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/e2b-webhook", strings.NewReader(`{"sandboxId":"sb-1"}`))
 	req.Host = "hub.keboola.local"
 	req.Header.Set("Content-Type", "application/json")
@@ -127,7 +110,6 @@ func TestForwardE2bWebhookInvalidSignature(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 
 	assert.NotEqual(t, http.StatusOK, rec.Code)
-	assert.False(t, operatorCalled, "request with invalid signature should not be forwarded")
 }
 
 func TestForwardE2bWebhookMissingSignature(t *testing.T) {
@@ -135,10 +117,9 @@ func TestForwardE2bWebhookMissingSignature(t *testing.T) {
 
 	ctx := t.Context()
 
-	operatorCalled := false
+	// Operator rejects requests without signature.
 	operatorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		operatorCalled = true
-		w.WriteHeader(http.StatusOK)
+		http.Error(w, "invalid signature", http.StatusUnauthorized)
 	}))
 	defer operatorServer.Close()
 
@@ -146,13 +127,12 @@ func TestForwardE2bWebhookMissingSignature(t *testing.T) {
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CsrfTokenSalt = "abc"
 	cfg.E2bWebhook.UpstreamURL = operatorServer.URL
-	cfg.E2bWebhook.SignatureSecret = testE2bSecret
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 
 	handler := proxy.NewHandler(ctx, d)
 
-	// Send request WITHOUT e2b-signature header.
+	// Send request WITHOUT e2b-signature header — proxy forwards it, operator rejects it.
 	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/e2b-webhook", strings.NewReader(`{}`))
 	req.Host = "hub.keboola.local"
 	req.Header.Set("Content-Type", "application/json")
@@ -160,7 +140,6 @@ func TestForwardE2bWebhookMissingSignature(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 
 	assert.NotEqual(t, http.StatusOK, rec.Code)
-	assert.False(t, operatorCalled, "request without e2b-signature should not be forwarded")
 }
 
 func TestForwardE2bWebhookDisabled(t *testing.T) {
@@ -201,18 +180,15 @@ func TestForwardE2bWebhookUpstreamError(t *testing.T) {
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CsrfTokenSalt = "abc"
 	cfg.E2bWebhook.UpstreamURL = operatorServer.URL
-	cfg.E2bWebhook.SignatureSecret = testE2bSecret
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 
 	handler := proxy.NewHandler(ctx, d)
 
-	// Send request with valid signature but operator returns error.
-	body := `{}`
-	signature := computeE2bSignature(testE2bSecret, []byte(body))
-	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/e2b-webhook", strings.NewReader(body))
+	// Send request — proxy forwards it, operator returns error.
+	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/e2b-webhook", strings.NewReader(`{}`))
 	req.Host = "hub.keboola.local"
-	req.Header.Set("e2b-signature", signature)
+	req.Header.Set("e2b-signature", "some-signature")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
