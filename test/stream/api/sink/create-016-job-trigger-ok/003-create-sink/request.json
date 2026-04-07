@@ -1,0 +1,17 @@
+{
+  "path": "/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-source/sinks",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "name": "My Job Trigger Sink",
+    "type": "jobTrigger",
+    "jobTrigger": {
+      "componentId": "keboola.ex-http",
+      "configId": "my-config-123",
+      "branchId": %%TEST_DEFAULT_BRANCH_ID%%
+    }
+  }
+}

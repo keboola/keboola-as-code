@@ -43,6 +43,16 @@ func (m *Mapper) NewSinkEntity(parent key.SourceKey, payload *api.CreateSinkPayl
 		} else {
 			return definition.Sink{}, err
 		}
+	case definition.SinkTypeJobTrigger:
+		if payload.JobTrigger == nil {
+			return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`"jobTrigger" must be configured for the "%s" sink type`, definition.SinkTypeJobTrigger))
+		}
+		entity.JobTrigger = &definition.JobTriggerSink{
+			ComponentID:        keboola.ComponentID(payload.JobTrigger.ComponentID),
+			ConfigID:           keboola.ConfigID(payload.JobTrigger.ConfigID),
+			BranchID:           keboola.BranchID(payload.JobTrigger.BranchID),
+			ConfigDataTemplate: ptrToStr(payload.JobTrigger.ConfigDataTemplate),
+		}
 	default:
 		return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, payload.Type.String()))
 	}
@@ -75,6 +85,24 @@ func (m *Mapper) UpdateSinkEntity(entity definition.Sink, payload *api.UpdateSin
 		if payload.Table != nil {
 			if err := m.updateTableSinkEntity(entity.Table, payload); err != nil {
 				return definition.Sink{}, err
+			}
+		}
+	case definition.SinkTypeJobTrigger:
+		if entity.JobTrigger == nil {
+			entity.JobTrigger = &definition.JobTriggerSink{}
+		}
+		if payload.JobTrigger != nil {
+			if payload.JobTrigger.ComponentID != nil {
+				entity.JobTrigger.ComponentID = keboola.ComponentID(*payload.JobTrigger.ComponentID)
+			}
+			if payload.JobTrigger.ConfigID != nil {
+				entity.JobTrigger.ConfigID = keboola.ConfigID(*payload.JobTrigger.ConfigID)
+			}
+			if payload.JobTrigger.BranchID != nil {
+				entity.JobTrigger.BranchID = keboola.BranchID(*payload.JobTrigger.BranchID)
+			}
+			if payload.JobTrigger.ConfigDataTemplate != nil {
+				entity.JobTrigger.ConfigDataTemplate = *payload.JobTrigger.ConfigDataTemplate
 			}
 		}
 	default:
@@ -166,6 +194,13 @@ func (m *Mapper) newTableSinkMappingEntity(payload *api.TableMapping) (entity ta
 	}
 
 	return entity, nil
+}
+
+func ptrToStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 func (m *Mapper) updateTableSinkEntity(entity *definition.TableSink, payload *api.UpdateSinkPayload) (err error) {

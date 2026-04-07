@@ -38,6 +38,10 @@ func (m *Mapper) NewSinkResponse(entity definition.Sink) (*api.Sink, error) {
 			return nil, err
 		}
 		out.Table = &tableResponse
+	case definition.SinkTypeJobTrigger:
+		if entity.JobTrigger != nil {
+			out.JobTrigger = m.newJobTriggerSinkResponse(entity.JobTrigger)
+		}
 	default:
 		return nil, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, out.Type.String()))
 	}
@@ -64,6 +68,18 @@ func (m *Mapper) NewSinksResponse(
 		Page:      page,
 		Sinks:     sinks,
 	}, nil
+}
+
+func (m *Mapper) newJobTriggerSinkResponse(entity *definition.JobTriggerSink) *api.JobTriggerSink {
+	out := &api.JobTriggerSink{
+		ComponentID: entity.ComponentID.String(),
+		ConfigID:    entity.ConfigID.String(),
+		BranchID:    int(entity.BranchID),
+	}
+	if entity.ConfigDataTemplate != "" {
+		out.ConfigDataTemplate = &entity.ConfigDataTemplate
+	}
+	return out
 }
 
 func (m *Mapper) newTableSinkResponse(entity *definition.TableSink) (out api.TableSink, err error) {
