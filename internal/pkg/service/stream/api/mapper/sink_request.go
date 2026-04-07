@@ -47,6 +47,14 @@ func (m *Mapper) NewSinkEntity(parent key.SourceKey, payload *api.CreateSinkPayl
 		if payload.JobTrigger == nil {
 			return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`"jobTrigger" must be configured for the "%s" sink type`, definition.SinkTypeJobTrigger))
 		}
+		if payload.JobTrigger.ConfigDataTemplate != nil && *payload.JobTrigger.ConfigDataTemplate != "" {
+			vm := m.jsonnetPool.Get()
+			validateErr := vm.Validate(*payload.JobTrigger.ConfigDataTemplate)
+			m.jsonnetPool.Put(vm)
+			if validateErr != nil {
+				return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`invalid "jobTrigger.configDataTemplate": %w`, validateErr))
+			}
+		}
 		entity.JobTrigger = &definition.JobTriggerSink{
 			ComponentID:        keboola.ComponentID(payload.JobTrigger.ComponentID),
 			ConfigID:           keboola.ConfigID(payload.JobTrigger.ConfigID),
@@ -54,7 +62,7 @@ func (m *Mapper) NewSinkEntity(parent key.SourceKey, payload *api.CreateSinkPayl
 			ConfigDataTemplate: ptrToStr(payload.JobTrigger.ConfigDataTemplate),
 		}
 	default:
-		return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, payload.Type.String()))
+		return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, entity.Type.String()))
 	}
 
 	return entity, nil
@@ -101,12 +109,18 @@ func (m *Mapper) UpdateSinkEntity(entity definition.Sink, payload *api.UpdateSin
 			if payload.JobTrigger.BranchID != nil {
 				entity.JobTrigger.BranchID = keboola.BranchID(*payload.JobTrigger.BranchID)
 			}
-			if payload.JobTrigger.ConfigDataTemplate != nil {
+			if payload.JobTrigger.ConfigDataTemplate != nil && *payload.JobTrigger.ConfigDataTemplate != "" {
+				vm := m.jsonnetPool.Get()
+				validateErr := vm.Validate(*payload.JobTrigger.ConfigDataTemplate)
+				m.jsonnetPool.Put(vm)
+				if validateErr != nil {
+					return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`invalid "jobTrigger.configDataTemplate": %w`, validateErr))
+				}
 				entity.JobTrigger.ConfigDataTemplate = *payload.JobTrigger.ConfigDataTemplate
 			}
 		}
 	default:
-		return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, payload.Type.String()))
+		return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, entity.Type.String()))
 	}
 
 	return entity, nil

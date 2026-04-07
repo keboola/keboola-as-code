@@ -39,9 +39,10 @@ func (m *Mapper) NewSinkResponse(entity definition.Sink) (*api.Sink, error) {
 		}
 		out.Table = &tableResponse
 	case definition.SinkTypeJobTrigger:
-		if entity.JobTrigger != nil {
-			out.JobTrigger = m.newJobTriggerSinkResponse(entity.JobTrigger)
+		if entity.JobTrigger == nil {
+			return nil, errors.Errorf(`sink %q has type "jobTrigger" but JobTrigger config is nil`, entity.SinkID)
 		}
+		out.JobTrigger = m.newJobTriggerSinkResponse(entity.JobTrigger)
 	default:
 		return nil, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, out.Type.String()))
 	}
