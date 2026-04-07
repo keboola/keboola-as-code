@@ -9,7 +9,7 @@ Profile1:
       type: '{{ env_var("DBT_KBC_TARGET1_TYPE") }}'
       user: '{{ env_var("DBT_KBC_TARGET1_USER") }}'
       warehouse: '{{ env_var("DBT_KBC_TARGET1_WAREHOUSE") }}'
-      private_key_path: '{{ env_var("DBT_KBC_TARGET1_PRIVATE_KEY_PATH") }}'
+      private_key_path: '{{ env_var("DBT_KBC_TARGET1_PRIVATE_KEY_PATH", "") }}'
     keboola_target1:
       type: keboola_snowflake
       base_url: '{{ env_var("DBT_KBC_TARGET1_BASE_URL", "") }}'

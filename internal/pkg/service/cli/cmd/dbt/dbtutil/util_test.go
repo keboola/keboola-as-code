@@ -18,6 +18,9 @@ func TestBaseURLFromHost(t *testing.T) {
 		{"https://my-stack.keboola.com", "https://query.my-stack.keboola.com"},
 	}
 	for _, tc := range cases {
-		assert.Equal(t, tc.want, dbtutil.BaseURLFromHost(tc.in), "input: %s", tc.in)
+		t.Run(tc.in, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.want, dbtutil.BaseURLFromHost(tc.in))
+		})
 	}
 }

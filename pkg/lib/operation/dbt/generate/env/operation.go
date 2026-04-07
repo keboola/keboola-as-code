@@ -69,7 +69,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	targetUpper := strings.ToUpper(o.TargetName)
 	host := o.Workspace.Host
 	if o.Workspace.Type == "snowflake" {
-		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
+		host = strings.ReplaceAll(host, ".snowflakecomputing.com", "")
 	}
 
 	envVars := make(map[string]string)
