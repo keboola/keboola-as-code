@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
@@ -42,12 +43,14 @@ func (v tokenSchema) forSink(k key.SinkKey) etcdop.KeyT[storedToken] {
 	return v.Key(k.String())
 }
 
-// Bridge manages the token lifecycle for job trigger sinks.
+// Bridge manages the token lifecycle and statistics for job trigger sinks.
 // It stores the project's SAPI token in etcd at sink activation and removes it on deactivation.
+// It also tracks triggered/failed job counts in etcd for each sink.
 type Bridge struct {
 	logger           log.Logger
 	client           etcd.KV
 	schema           tokenSchema
+	statsSchema      statsSchema
 	publicAPI        *keboola.PublicAPI
 	tokenFromContext TokenFromContext
 }
@@ -67,6 +70,7 @@ func NewBridge(d bridgeDeps, tokenFromContext TokenFromContext) *Bridge {
 		logger:           d.Logger().WithComponent("job-trigger.bridge"),
 		client:           d.EtcdClient(),
 		schema:           newTokenSchema(d.EtcdSerde()),
+		statsSchema:      newStatsSchema(d.EtcdSerde()),
 		publicAPI:        d.KeboolaPublicAPI(),
 		tokenFromContext: tokenFromContext,
 	}
@@ -131,4 +135,41 @@ func (b *Bridge) APIForSink(ctx context.Context, sinkKey key.SinkKey) (*keboola.
 		return nil, errors.Errorf("empty token stored for job trigger sink %s", sinkKey)
 	}
 	return b.publicAPI.NewAuthorizedAPI(stored.Token, 3*time.Minute), nil
+}
+
+// AddStats merges the given deltas into the persisted stats for a job trigger sink.
+// It uses a simple read-modify-write. Occasional concurrent writes from multiple source nodes
+// are acceptable — stats are approximate counters for user visibility.
+func (b *Bridge) AddStats(ctx context.Context, sinkKey key.SinkKey, triggered, failed uint64, firstAt, lastAt utctime.UTCTime) error {
+	statsKey := b.statsSchema.forSink(sinkKey)
+
+	current, err := statsKey.GetOrEmpty(b.client).Do(ctx).ResultOrErr()
+	if err != nil {
+		return errors.Errorf("cannot read stats for job trigger sink %s: %w", sinkKey, err)
+	}
+
+	current.TriggeredCount += triggered
+	current.FailedCount += failed
+	if !firstAt.IsZero() {
+		if current.FirstTriggeredAt.IsZero() || current.FirstTriggeredAt.After(firstAt) {
+			current.FirstTriggeredAt = firstAt
+		}
+		if lastAt.After(current.LastTriggeredAt) {
+			current.LastTriggeredAt = lastAt
+		}
+	}
+
+	if err := statsKey.Put(b.client, current).Do(ctx).Err(); err != nil {
+		return errors.Errorf("cannot save stats for job trigger sink %s: %w", sinkKey, err)
+	}
+	return nil
+}
+
+// Stats returns the current statistics for a job trigger sink.
+func (b *Bridge) Stats(ctx context.Context, sinkKey key.SinkKey) (SinkStats, error) {
+	stats, err := b.statsSchema.forSink(sinkKey).GetOrEmpty(b.client).Do(ctx).ResultOrErr()
+	if err != nil {
+		return SinkStats{}, errors.Errorf("cannot read stats for job trigger sink %s: %w", sinkKey, err)
+	}
+	return stats, nil
 }
