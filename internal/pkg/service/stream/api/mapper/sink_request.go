@@ -100,23 +100,8 @@ func (m *Mapper) UpdateSinkEntity(entity definition.Sink, payload *api.UpdateSin
 			entity.JobTrigger = &definition.JobTriggerSink{}
 		}
 		if payload.JobTrigger != nil {
-			if payload.JobTrigger.ComponentID != nil {
-				entity.JobTrigger.ComponentID = keboola.ComponentID(*payload.JobTrigger.ComponentID)
-			}
-			if payload.JobTrigger.ConfigID != nil {
-				entity.JobTrigger.ConfigID = keboola.ConfigID(*payload.JobTrigger.ConfigID)
-			}
-			if payload.JobTrigger.BranchID != nil {
-				entity.JobTrigger.BranchID = keboola.BranchID(*payload.JobTrigger.BranchID)
-			}
-			if payload.JobTrigger.ConfigDataTemplate != nil && *payload.JobTrigger.ConfigDataTemplate != "" {
-				vm := m.jsonnetPool.Get()
-				validateErr := vm.Validate(*payload.JobTrigger.ConfigDataTemplate)
-				m.jsonnetPool.Put(vm)
-				if validateErr != nil {
-					return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`invalid "jobTrigger.configDataTemplate": %w`, validateErr))
-				}
-				entity.JobTrigger.ConfigDataTemplate = *payload.JobTrigger.ConfigDataTemplate
+			if err := m.updateJobTriggerSinkEntity(entity.JobTrigger, payload.JobTrigger); err != nil {
+				return definition.Sink{}, err
 			}
 		}
 	default:
@@ -208,6 +193,28 @@ func (m *Mapper) newTableSinkMappingEntity(payload *api.TableMapping) (entity ta
 	}
 
 	return entity, nil
+}
+
+func (m *Mapper) updateJobTriggerSinkEntity(entity *definition.JobTriggerSink, payload *api.JobTriggerSinkUpdate) error {
+	if payload.ComponentID != nil {
+		entity.ComponentID = keboola.ComponentID(*payload.ComponentID)
+	}
+	if payload.ConfigID != nil {
+		entity.ConfigID = keboola.ConfigID(*payload.ConfigID)
+	}
+	if payload.BranchID != nil {
+		entity.BranchID = keboola.BranchID(*payload.BranchID)
+	}
+	if payload.ConfigDataTemplate != nil && *payload.ConfigDataTemplate != "" {
+		vm := m.jsonnetPool.Get()
+		validateErr := vm.Validate(*payload.ConfigDataTemplate)
+		m.jsonnetPool.Put(vm)
+		if validateErr != nil {
+			return svcerrors.NewBadRequestError(errors.Errorf(`invalid "jobTrigger.configDataTemplate": %w`, validateErr))
+		}
+		entity.ConfigDataTemplate = *payload.ConfigDataTemplate
+	}
+	return nil
 }
 
 func ptrToStr(s *string) string {
