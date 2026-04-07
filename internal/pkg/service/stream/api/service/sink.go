@@ -288,6 +288,12 @@ func (s *service) UpdateSinkSettings(ctx context.Context, d dependencies.SinkReq
 }
 
 func (s *service) SinkStatisticsTotal(ctx context.Context, d dependencies.SinkRequestScope, _ *api.SinkStatisticsTotalPayload) (*api.SinkStatisticsTotalResult, error) {
+	// Use sinkMustExist (not Sink().Get) so that missing source returns sourceNotFound
+	// rather than sinkNotFound — the hierarchy check runs source first.
+	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {
+		return nil, err
+	}
+
 	sink, err := s.definition.Sink().Get(d.SinkKey()).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
