@@ -121,7 +121,7 @@ func TestForwardE2bWebhookDisabled(t *testing.T) {
 	cfg := config.New()
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CsrfTokenSalt = "abc"
-	// cfg.E2bWebhook.UpstreamURL is empty — reverse proxy not mounted.
+	// cfg.E2BWebhook.UpstreamURL is empty — reverse proxy not mounted.
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 
