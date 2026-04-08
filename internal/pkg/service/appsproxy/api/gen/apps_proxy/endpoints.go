@@ -10,7 +10,6 @@ package appsproxy
 
 import (
 	"context"
-	"io"
 
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	goa "goa.design/goa/v3/pkg"
@@ -19,18 +18,10 @@ import (
 
 // Endpoints wraps the "apps-proxy" service endpoints.
 type Endpoints struct {
-	APIRootIndex      goa.Endpoint
-	APIVersionIndex   goa.Endpoint
-	HealthCheck       goa.Endpoint
-	Validate          goa.Endpoint
-	ForwardE2bWebhook goa.Endpoint
-}
-
-// ForwardE2bWebhookRequestData holds both the payload and the HTTP request
-// body reader of the "ForwardE2bWebhook" method.
-type ForwardE2bWebhookRequestData struct {
-	// Body streams the HTTP request body.
-	Body io.ReadCloser
+	APIRootIndex    goa.Endpoint
+	APIVersionIndex goa.Endpoint
+	HealthCheck     goa.Endpoint
+	Validate        goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "apps-proxy" service with endpoints.
@@ -38,11 +29,10 @@ func NewEndpoints(s Service) *Endpoints {
 	// Casting service to Auther interface
 	a := s.(Auther)
 	return &Endpoints{
-		APIRootIndex:      NewAPIRootIndexEndpoint(s),
-		APIVersionIndex:   NewAPIVersionIndexEndpoint(s),
-		HealthCheck:       NewHealthCheckEndpoint(s),
-		Validate:          NewValidateEndpoint(s, a.APIKeyAuth),
-		ForwardE2bWebhook: NewForwardE2bWebhookEndpoint(s),
+		APIRootIndex:    NewAPIRootIndexEndpoint(s),
+		APIVersionIndex: NewAPIVersionIndexEndpoint(s),
+		HealthCheck:     NewHealthCheckEndpoint(s),
+		Validate:        NewValidateEndpoint(s, a.APIKeyAuth),
 	}
 }
 
@@ -52,7 +42,6 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.APIVersionIndex = m(e.APIVersionIndex)
 	e.HealthCheck = m(e.HealthCheck)
 	e.Validate = m(e.Validate)
-	e.ForwardE2bWebhook = m(e.ForwardE2bWebhook)
 }
 
 // NewAPIRootIndexEndpoint returns an endpoint function that calls the method
@@ -99,15 +88,5 @@ func NewValidateEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.En
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.Validate(ctx, deps, p)
-	}
-}
-
-// NewForwardE2bWebhookEndpoint returns an endpoint function that calls the
-// method "ForwardE2bWebhook" of service "apps-proxy".
-func NewForwardE2bWebhookEndpoint(s Service) goa.Endpoint {
-	return func(ctx context.Context, req any) (any, error) {
-		ep := req.(*ForwardE2bWebhookRequestData)
-		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
-		return nil, s.ForwardE2bWebhook(ctx, deps, ep.Body)
 	}
 }

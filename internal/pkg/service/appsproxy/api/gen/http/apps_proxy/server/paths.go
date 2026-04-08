@@ -27,8 +27,3 @@ func HealthCheckAppsProxyPath() string {
 func ValidateAppsProxyPath() string {
 	return "/_proxy/api/v1/validate"
 }
-
-// ForwardE2bWebhookAppsProxyPath returns the URL path to the apps-proxy service ForwardE2bWebhook HTTP endpoint.
-func ForwardE2bWebhookAppsProxyPath() string {
-	return "/_proxy/api/v1/e2b-webhook"
-}
