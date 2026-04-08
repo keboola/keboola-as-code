@@ -3,33 +3,22 @@ package service
 import (
 	"context"
 	"io"
-	"net/http"
 	"path"
-	"strings"
-	"time"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/api/gen/apps_proxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const e2bWebhookForwardTimeout = 30 * time.Second
-
 type service struct {
-	config               config.Config
-	deps                 dependencies.ServiceScope
-	e2bWebhookHTTPClient *http.Client
+	config config.Config
+	deps   dependencies.ServiceScope
 }
 
 func New(ctx context.Context, d dependencies.ServiceScope) (Service, error) {
 	s := &service{
 		config: d.Config(),
 		deps:   d,
-		e2bWebhookHTTPClient: &http.Client{
-			Transport: d.UpstreamTransport(),
-			Timeout:   e2bWebhookForwardTimeout,
-		},
 	}
 
 	return s, nil
@@ -58,51 +47,9 @@ func (s *service) Validate(context.Context, dependencies.ProjectRequestScope, *V
 	return nil, nil
 }
 
-func (s *service) ForwardE2bWebhook(ctx context.Context, deps dependencies.PublicRequestScope, body io.ReadCloser) error {
-	defer body.Close()
-
-	upstreamURL := s.config.E2bWebhook.UpstreamURL
-	if upstreamURL == "" {
-		return errors.New("E2B webhook forwarding is not configured")
-	}
-
-	// Read the body so we can forward it to the operator.
-	bodyBytes, err := io.ReadAll(io.LimitReader(body, 1<<20)) // 1 MiB limit
-	if err != nil {
-		return errors.Errorf("failed to read request body: %w", err)
-	}
-
-	ctx, cancel := context.WithTimeoutCause(ctx, e2bWebhookForwardTimeout, errors.New("forwarding E2B webhook timed out"))
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, upstreamURL, strings.NewReader(string(bodyBytes)))
-	if err != nil {
-		return errors.Errorf("failed to create upstream request: %w", err)
-	}
-
-	// Forward all e2b-* headers from the original request unchanged.
-	// This includes e2b-signature, e2b-webhook-id, e2b-delivery-id, e2b-signature-version.
-	originalReq := deps.Request()
-	for name, values := range originalReq.Header {
-		if len(name) > 4 && strings.EqualFold(name[:4], "e2b-") {
-			for _, v := range values {
-				req.Header.Add(name, v)
-			}
-		}
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := s.e2bWebhookHTTPClient.Do(req)
-	if err != nil {
-		return errors.Errorf("failed to forward webhook to operator: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-		return errors.Errorf("operator returned status %d: %s", resp.StatusCode, string(respBody))
-	}
-
-	return nil
+// ForwardE2bWebhook is a stub to satisfy the generated Service interface.
+// The actual forwarding is handled by a reverse proxy mounted in server.go,
+// which takes priority over the Goa mux. This method is unreachable.
+func (s *service) ForwardE2bWebhook(context.Context, dependencies.PublicRequestScope, io.ReadCloser) error {
+	panic("unreachable: e2b-webhook is handled by the reverse proxy in server.go")
 }

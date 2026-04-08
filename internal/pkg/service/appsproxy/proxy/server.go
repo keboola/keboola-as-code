@@ -3,6 +3,8 @@ package proxy
 import (
 	"context"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"strings"
 	"time"
 
@@ -125,6 +127,19 @@ func NewHandler(ctx context.Context, d dependencies.ServiceScope) http.Handler {
 
 	// Register static assets
 	d.PageWriter().MountAssets(mux)
+
+	// Mount E2B webhook reverse proxy before the Goa API server.
+	// The Goa design still defines the endpoint for OpenAPI docs, but the actual
+	// request handling is done here. The service method is an unreachable stub.
+	if raw := d.Config().E2bWebhook.UpstreamURL; raw != "" {
+		target, err := url.Parse(raw)
+		if err == nil {
+			mux.Handle("/_proxy/api/v1/e2b-webhook", &httputil.ReverseProxy{
+				Rewrite:   func(r *httputil.ProxyRequest) { r.SetURL(target) },
+				Transport: d.UpstreamTransport(),
+			})
+		}
+	}
 
 	// Create service
 	svc, err := service.New(ctx, d)
