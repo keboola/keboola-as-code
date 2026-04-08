@@ -81,12 +81,12 @@ func TestForwardE2bWebhook(t *testing.T) {
 	assert.Equal(t, "application/json", receivedHeaders.Get("Content-Type"))
 }
 
-func TestForwardE2bWebhookInvalidSignature(t *testing.T) {
+func TestForwardE2bWebhookUpstreamError(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
 
-	// Operator rejects requests with invalid signature.
+	// Operator rejects requests with invalid/missing signature.
 	operatorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid signature", http.StatusUnauthorized)
 	}))
@@ -101,7 +101,6 @@ func TestForwardE2bWebhookInvalidSignature(t *testing.T) {
 
 	handler := proxy.NewHandler(ctx, d)
 
-	// Send request with WRONG signature — proxy forwards it, operator rejects it.
 	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/e2b-webhook", strings.NewReader(`{"sandboxId":"sb-1"}`))
 	req.Host = "hub.keboola.local"
 	req.Header.Set("Content-Type", "application/json")
@@ -109,37 +108,8 @@ func TestForwardE2bWebhookInvalidSignature(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	assert.NotEqual(t, http.StatusOK, rec.Code)
-}
-
-func TestForwardE2bWebhookMissingSignature(t *testing.T) {
-	t.Parallel()
-
-	ctx := t.Context()
-
-	// Operator rejects requests without signature.
-	operatorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "invalid signature", http.StatusUnauthorized)
-	}))
-	defer operatorServer.Close()
-
-	cfg := config.New()
-	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
-	cfg.CsrfTokenSalt = "abc"
-	cfg.E2bWebhook.UpstreamURL = operatorServer.URL
-
-	d, _ := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
-
-	handler := proxy.NewHandler(ctx, d)
-
-	// Send request WITHOUT e2b-signature header — proxy forwards it, operator rejects it.
-	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/e2b-webhook", strings.NewReader(`{}`))
-	req.Host = "hub.keboola.local"
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	assert.NotEqual(t, http.StatusOK, rec.Code)
+	// Reverse proxy propagates the upstream status code directly.
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 }
 
 func TestForwardE2bWebhookDisabled(t *testing.T) {
@@ -151,7 +121,7 @@ func TestForwardE2bWebhookDisabled(t *testing.T) {
 	cfg := config.New()
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CsrfTokenSalt = "abc"
-	// cfg.E2bWebhook.UpstreamURL is empty — forwarding disabled.
+	// cfg.E2bWebhook.UpstreamURL is empty — reverse proxy not mounted.
 
 	d, _ := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
 
@@ -162,35 +132,6 @@ func TestForwardE2bWebhookDisabled(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	assert.NotEqual(t, http.StatusOK, rec.Code)
-}
-
-func TestForwardE2bWebhookUpstreamError(t *testing.T) {
-	t.Parallel()
-
-	ctx := t.Context()
-
-	// Start a fake operator that returns 401.
-	operatorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "invalid signature", http.StatusUnauthorized)
-	}))
-	defer operatorServer.Close()
-
-	cfg := config.New()
-	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
-	cfg.CsrfTokenSalt = "abc"
-	cfg.E2bWebhook.UpstreamURL = operatorServer.URL
-
-	d, _ := proxyDependencies.NewMockedServiceScope(t, ctx, cfg, dependencies.WithRealHTTPClient())
-
-	handler := proxy.NewHandler(ctx, d)
-
-	// Send request — proxy forwards it, operator returns error.
-	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/e2b-webhook", strings.NewReader(`{}`))
-	req.Host = "hub.keboola.local"
-	req.Header.Set("e2b-signature", "some-signature")
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	assert.NotEqual(t, http.StatusOK, rec.Code)
+	// When disabled, the endpoint is not mounted — expect 404.
+	assert.Equal(t, http.StatusNotFound, rec.Code)
 }
