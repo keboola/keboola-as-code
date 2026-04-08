@@ -152,6 +152,19 @@ var _ = Service("apps-proxy", func() {
 			Response(StatusOK)
 		})
 	})
+
+	Method("ForwardE2bWebhook", func() {
+		Meta("openapi:summary", "Forward E2B sandbox lifecycle webhook to keboola-operator")
+		Description("Receives an E2B sandbox lifecycle webhook event and forwards it unchanged to the keboola-operator webhook server. All e2b-* headers (e2b-signature, e2b-webhook-id, e2b-delivery-id, e2b-signature-version) and the raw body are forwarded so the operator can verify the HMAC signature.")
+		NoSecurity()
+		Result(Empty)
+		HTTP(func() {
+			POST("e2b-webhook")
+			Meta("openapi:tag:appsproxy")
+			Response(StatusOK)
+			SkipRequestBodyEncodeDecode()
+		})
+	})
 })
 
 // Error -------------------------------------------------------------------------------------------------------

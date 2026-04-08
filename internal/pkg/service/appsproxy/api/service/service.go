@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"io"
 	"path"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/api/gen/apps_proxy"
@@ -44,4 +45,11 @@ func (s *service) HealthCheck(context.Context, dependencies.PublicRequestScope) 
 
 func (s *service) Validate(context.Context, dependencies.ProjectRequestScope, *ValidatePayload) (*Validations, error) {
 	return nil, nil
+}
+
+// ForwardE2bWebhook is a stub to satisfy the generated Service interface.
+// The actual forwarding is handled by a reverse proxy mounted in server.go,
+// which takes priority over the Goa mux. This method is unreachable.
+func (s *service) ForwardE2bWebhook(context.Context, dependencies.PublicRequestScope, io.ReadCloser) error {
+	panic("unreachable: e2b-webhook is handled by the reverse proxy in server.go")
 }

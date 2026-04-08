@@ -10,6 +10,7 @@ package appsproxy
 
 import (
 	"context"
+	"io"
 
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"goa.design/goa/v3/security"
@@ -26,6 +27,11 @@ type Service interface {
 	HealthCheck(context.Context, dependencies.PublicRequestScope) (res string, err error)
 	// Validation endpoint of OIDC authorization provider configuration.
 	Validate(context.Context, dependencies.ProjectRequestScope, *ValidatePayload) (res *Validations, err error)
+	// Receives an E2B sandbox lifecycle webhook event and forwards it unchanged to
+	// the keboola-operator webhook server. All e2b-* headers (e2b-signature,
+	// e2b-webhook-id, e2b-delivery-id, e2b-signature-version) and the raw body are
+	// forwarded so the operator can verify the HMAC signature.
+	ForwardE2bWebhook(context.Context, dependencies.PublicRequestScope, io.ReadCloser) (err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -48,7 +54,7 @@ const ServiceName = "apps-proxy"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [4]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "Validate"}
+var MethodNames = [5]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "Validate", "ForwardE2bWebhook"}
 
 // The configuration that is part of the auth providers section.
 type Configuration struct {

@@ -25,6 +25,7 @@ type Config struct {
 	SandboxesAPI     SandboxesAPI      `configKey:"sandboxesAPI"`
 	CsrfTokenSalt    string            `configKey:"csrfTokenSalt" configUsage:"Salt used for generating CSRF tokens" validate:"required" sensitive:"true"`
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
+	E2bWebhook       E2bWebhook        `configKey:"e2bWebhook"`
 }
 
 type API struct {
@@ -45,6 +46,14 @@ type Upstream struct {
 type K8s struct {
 	AppsNamespace string `configKey:"appsNamespace" configUsage:"Kubernetes namespace where apps (App CRDs) run." validate:"required"`
 	Kubeconfig    string `configKey:"kubeconfig" configUsage:"Path to kubeconfig file. Uses in-cluster config if empty."`
+}
+
+// E2bWebhook configures the reverse-proxy endpoint that forwards E2B sandbox
+// lifecycle webhooks to the keboola-operator webhook server.
+// Signature verification is handled by the operator, not by the proxy.
+// When UpstreamURL is empty the endpoint is disabled.
+type E2bWebhook struct {
+	UpstreamURL string `configKey:"upstreamUrl" configUsage:"Operator internal webhook URL (e.g. http://keboola-operator-e2b-webhook.keboola-operator.svc.cluster.local:19200/webhook/e2b). Empty disables the endpoint."`
 }
 
 func New() Config {
