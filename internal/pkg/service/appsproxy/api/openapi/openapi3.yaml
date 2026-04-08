@@ -79,16 +79,6 @@ paths:
             responses:
                 "200":
                     description: File downloaded
-    /_proxy/api/v1/e2b-webhook:
-        post:
-            tags:
-                - appsproxy
-            summary: Forward E2B sandbox lifecycle webhook to keboola-operator
-            description: Receives an E2B sandbox lifecycle webhook event and forwards it unchanged to the keboola-operator webhook server. All e2b-* headers (e2b-signature, e2b-webhook-id, e2b-delivery-id, e2b-signature-version) and the raw body are forwarded so the operator can verify the HMAC signature.
-            operationId: ForwardE2BWebhook
-            responses:
-                "200":
-                    description: OK response.
     /_proxy/api/v1/validate:
         get:
             tags:
