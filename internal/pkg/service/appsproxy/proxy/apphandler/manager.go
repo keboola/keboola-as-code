@@ -2,12 +2,15 @@ package apphandler
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
@@ -32,7 +35,7 @@ type appHandlerWrapper struct {
 	lock        *sync.Mutex
 	handler     http.Handler
 	cancel      context.CancelCauseFunc
-	upstreamURL string // appsProxy.upstreamUrl in effect when this handler was created
+	handlerHash string // hash of UpstreamTarget + E2BAccessToken; handler is recreated when it changes
 }
 
 type dependencies interface {
@@ -71,21 +74,15 @@ func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResu
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.AppID}, result.Err)
 	}
 
-	// Create a new handler, if needed (config changed or upstreamUrl changed).
-	// Note: E2B access token is not tracked here because the reverse proxy
-	// fetches the latest token from AppInfo on every request.
-	var currentURL string
-	if info, ok := m.upstreamManager.AppInfo(ctx, result.AppID); ok {
-		if info.UpstreamTarget != nil {
-			currentURL = info.UpstreamTarget.String()
-		}
-	}
-	if wrapper.handler == nil || result.Modified || wrapper.upstreamURL != currentURL {
+	// Create a new handler when config changed, upstream URL changed, or E2B token changed.
+	// Only a hash is stored so raw secrets don't linger in the wrapper.
+	currentHash := handlerHash(m.upstreamManager.AppInfo(ctx, result.AppID))
+	if wrapper.handler == nil || result.Modified || wrapper.handlerHash != currentHash {
 		if wrapper.cancel != nil {
 			wrapper.cancel(errors.New("configuration changed"))
 		}
 		wrapper.handler, wrapper.cancel = m.newHandler(ctx, result.AppConfig)
-		wrapper.upstreamURL = currentURL
+		wrapper.handlerHash = currentHash
 	}
 
 	return wrapper.handler
@@ -112,6 +109,21 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) (http.Handl
 	}
 
 	return handler, appUpstream.Cancel
+}
+
+// handlerHash computes a hash from the fields that require handler recreation when they change.
+// Only a hash is stored so raw secrets don't linger in the wrapper.
+func handlerHash(info k8sapp.AppInfo, ok bool) string {
+	if !ok {
+		return ""
+	}
+	h := sha256.New()
+	if info.UpstreamTarget != nil {
+		h.Write([]byte(info.UpstreamTarget.String()))
+	}
+	h.Write([]byte{0})
+	h.Write([]byte(info.E2BAccessToken))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func (m *Manager) newErrorHandler(ctx context.Context, app api.AppConfig, err error) http.Handler {
