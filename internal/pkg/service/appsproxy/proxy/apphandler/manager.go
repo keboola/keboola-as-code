@@ -29,11 +29,10 @@ type Manager struct {
 }
 
 type appHandlerWrapper struct {
-	lock           *sync.Mutex
-	handler        http.Handler
-	cancel         context.CancelCauseFunc
-	upstreamURL    string // appsProxy.upstreamUrl in effect when this handler was created
-	e2bAccessToken string // E2B access token in effect when this handler was created
+	lock        *sync.Mutex
+	handler     http.Handler
+	cancel      context.CancelCauseFunc
+	upstreamURL string // appsProxy.upstreamUrl in effect when this handler was created
 }
 
 type dependencies interface {
@@ -72,22 +71,21 @@ func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResu
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.AppID}, result.Err)
 	}
 
-	// Create a new handler, if needed (config changed, upstreamUrl changed, or E2B token changed)
+	// Create a new handler, if needed (config changed or upstreamUrl changed).
+	// Note: E2B access token is not tracked here because the reverse proxy
+	// fetches the latest token from AppInfo on every request.
 	var currentURL string
-	var currentToken string
 	if info, ok := m.upstreamManager.AppInfo(ctx, result.AppID); ok {
 		if info.UpstreamTarget != nil {
 			currentURL = info.UpstreamTarget.String()
 		}
-		currentToken = info.E2BAccessToken
 	}
-	if wrapper.handler == nil || result.Modified || wrapper.upstreamURL != currentURL || wrapper.e2bAccessToken != currentToken {
+	if wrapper.handler == nil || result.Modified || wrapper.upstreamURL != currentURL {
 		if wrapper.cancel != nil {
 			wrapper.cancel(errors.New("configuration changed"))
 		}
 		wrapper.handler, wrapper.cancel = m.newHandler(ctx, result.AppConfig)
 		wrapper.upstreamURL = currentURL
-		wrapper.e2bAccessToken = currentToken
 	}
 
 	return wrapper.handler
