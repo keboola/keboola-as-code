@@ -130,8 +130,9 @@ func (w *StateWatcher) GetState(ctx context.Context, appID api.AppID) (AppInfo, 
 	// Lazy-load E2B token: the Secret may not have existed when the App CRD event was processed.
 	// a singleflight coalesces concurrent requests for the same secret into a single K8s API call.
 	if e.e2bAccessToken == "" && e.e2bSecretName != "" {
+		fetchCtx := context.WithoutCancel(ctx)
 		token, err, _ := w.tokenLoadGroup.Do(e.e2bSecretName, func() (any, error) {
-			return w.loadSecretToken(ctx, e.e2bSecretName)
+			return w.loadSecretToken(fetchCtx, e.e2bSecretName)
 		})
 		if err != nil {
 			w.logger.Warnf(ctx, "App %s: failed to lazy-load E2B access token from secret %q: %s", appID, e.e2bSecretName, err)
