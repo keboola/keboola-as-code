@@ -98,24 +98,10 @@ func (m *Manager) Shutdown(ctx context.Context) {
 	m.wg.Wait()
 }
 
-// UpstreamURL returns the appsProxy.upstreamUrl string for appID from the K8s cache.
-// Returns "" when the app is not cached or the field is absent/invalid.
-func (m *Manager) UpstreamURL(appID api.AppID) string {
-	info, ok := m.stateWatcher.GetState(appID)
-	if !ok || info.UpstreamTarget == nil {
-		return ""
-	}
-	return info.UpstreamTarget.String()
-}
-
-// E2BAccessToken returns the E2B access token for appID from the K8s cache.
-// Returns "" when the app is not cached or is not an E2B sandbox.
-func (m *Manager) E2BAccessToken(appID api.AppID) string {
-	info, ok := m.stateWatcher.GetState(appID)
-	if !ok {
-		return ""
-	}
-	return info.E2BAccessToken
+// AppInfo returns the cached AppInfo for appID from the K8s cache in a single call.
+// Returns (AppInfo{}, false) when the app is not cached.
+func (m *Manager) AppInfo(ctx context.Context, appID api.AppID) (k8sapp.AppInfo, bool) {
+	return m.stateWatcher.GetState(ctx, appID)
 }
 
 func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream *AppUpstream, err error) {
@@ -124,7 +110,7 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 
 	// Resolve target URL at creation time; immutable after this point.
 	var target *url.URL
-	if info, ok := m.stateWatcher.GetState(app.ID); ok {
+	if info, ok := m.stateWatcher.GetState(ctx, app.ID); ok {
 		target = info.UpstreamTarget // pre-parsed by watcher on CRD event; may be nil
 	}
 
@@ -160,7 +146,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 
 	// K8s state pre-check: if we know the app is not running, handle it synchronously
 	// without attempting DNS/upstream. Falls through if state is unknown or Running.
-	if appInfo, ok := u.manager.stateWatcher.GetState(u.app.ID); ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
+	if appInfo, ok := u.manager.stateWatcher.GetState(ctx, u.app.ID); ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
 		switch {
 		case appInfo.ActualState == k8sapp.AppActualStateStarting:
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
@@ -219,8 +205,8 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 			// Always fetch the latest token from the state watcher to handle
 			// secret recreation (updates propagate asynchronously).
 			r.Out.Header.Del("e2b-traffic-access-token")
-			if token := u.manager.E2BAccessToken(u.app.ID); token != "" {
-				r.Out.Header.Set("e2b-traffic-access-token", token)
+			if info, ok := u.manager.AppInfo(r.Out.Context(), u.app.ID); ok && info.E2BAccessToken != "" {
+				r.Out.Header.Set("e2b-traffic-access-token", info.E2BAccessToken)
 			}
 		},
 		Transport:    u.manager.transport,

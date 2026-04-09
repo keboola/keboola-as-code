@@ -74,7 +74,7 @@ func TestManager_Wakeup(t *testing.T) {
 
 	// Wait for watcher cache to sync.
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(appID)
+		_, ok := watcher.GetState(ctx, appID)
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -122,7 +122,7 @@ func TestManager_Wakeup_Race(t *testing.T) {
 
 	// Wait for watcher cache to sync.
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(appID)
+		_, ok := watcher.GetState(ctx, appID)
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
