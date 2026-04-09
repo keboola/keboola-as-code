@@ -54,7 +54,7 @@ func TestForwardE2bWebhook(t *testing.T) {
 	// Build a webhook request with all e2b-* headers.
 	webhookBody := `{"version":"v2","id":"evt-1","type":"sandbox.lifecycle.killed","sandboxId":"sb-123","sandboxTeamId":"team-1","sandboxTemplateId":"tmpl-1","timestamp":"2025-08-06T20:59:24Z"}`
 
-	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/e2b-webhook", strings.NewReader(webhookBody))
+	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/webhook/e2b", strings.NewReader(webhookBody))
 	req.Host = "hub.keboola.local"
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("e2b-signature", "some-signature")
@@ -101,7 +101,7 @@ func TestForwardE2bWebhookUpstreamError(t *testing.T) {
 
 	handler := proxy.NewHandler(ctx, d)
 
-	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/e2b-webhook", strings.NewReader(`{"sandboxId":"sb-1"}`))
+	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/webhook/e2b", strings.NewReader(`{"sandboxId":"sb-1"}`))
 	req.Host = "hub.keboola.local"
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("e2b-signature", "invalid-signature")
@@ -127,7 +127,7 @@ func TestForwardE2bWebhookDisabled(t *testing.T) {
 
 	handler := proxy.NewHandler(ctx, d)
 
-	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/e2b-webhook", strings.NewReader(`{}`))
+	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/_proxy/api/v1/webhook/e2b", strings.NewReader(`{}`))
 	req.Host = "hub.keboola.local"
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)

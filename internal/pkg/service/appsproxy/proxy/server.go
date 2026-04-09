@@ -134,7 +134,7 @@ func NewHandler(ctx context.Context, d dependencies.ServiceScope) http.Handler {
 	if raw := d.Config().E2bWebhook.UpstreamURL; raw != "" {
 		target, err := url.Parse(raw)
 		if err == nil {
-			mux.Handle("/_proxy/api/v1/e2b-webhook", &httputil.ReverseProxy{
+			mux.Handle("/_proxy/api/v1/webhook/e2b", &httputil.ReverseProxy{
 				Rewrite:   func(r *httputil.ProxyRequest) { r.SetURL(target) },
 				Transport: d.UpstreamTransport(),
 			})
