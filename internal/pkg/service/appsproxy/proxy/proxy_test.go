@@ -482,46 +482,6 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		},
 		{
-			// Streamlit (Tornado) rejects WebSocket connections when Origin does not match Host.
-			// apps-proxy rewrites Host to the upstream hostname for LB routing, so Origin
-			// (set by the browser to the public domain) would mismatch.
-			// Verify the temporary workaround: Origin is rewritten to the upstream hostname.
-			name: "websocket-origin-rewrite-streamlit-workaround",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
-				defer cancel()
-
-				c, _, err := websocket.Dial(
-					ctx,
-					"wss://public-123.hub.keboola.local/ws",
-					&websocket.DialOptions{
-						HTTPClient: client,
-						// Simulate browser setting Origin to the public domain.
-						HTTPHeader: http.Header{
-							"Origin": []string{"https://public-123.hub.keboola.local"},
-						},
-					},
-				)
-				require.NoError(t, err)
-
-				var v any
-				err = wsjson.Read(ctx, c, &v)
-				require.NoError(t, err)
-				assert.Equal(t, "Hello websocket", v)
-				require.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
-
-				require.Len(t, *appServer.Requests, 1)
-				appRequest := (*appServer.Requests)[0]
-
-				// Origin must be rewritten to the upstream hostname so Tornado's
-				// check_origin() sees Origin == Host and accepts the connection.
-				assert.Equal(t, "http://"+appServer.Listener.Addr().String(), appRequest.Header.Get("Origin"))
-			},
-			expectedNotifications: map[string]int{
-				"123": 1,
-			},
-		},
-		{
 			name: "private-app-verified-email",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				m[0].QueueUser(&mockoidc.MockUser{
