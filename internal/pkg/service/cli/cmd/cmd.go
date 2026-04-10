@@ -373,7 +373,7 @@ func (root *RootCommand) printError(errRaw error) {
 		case errors.Is(err, dependencies.ErrMissingStorageAPIHost), errors.Is(err, dialog.ErrMissingStorageAPIHost):
 			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, StorageAPIHostOpt, env.NewNamingConvention(cmdconfig.ENVPrefix).FlagToEnv(StorageAPIHostOpt)))
 		case errors.Is(err, dependencies.ErrMissingStorageAPIToken), errors.Is(err, dialog.ErrMissingStorageAPIToken):
-			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, StorageAPITokenOpt, env.NewNamingConvention(cmdconfig.ENVPrefix).FlagToEnv(StorageAPIHostOpt)))
+			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, StorageAPITokenOpt, env.NewNamingConvention(cmdconfig.ENVPrefix).FlagToEnv(StorageAPITokenOpt)))
 		default:
 			modifiedErrs.Append(err)
 		}
