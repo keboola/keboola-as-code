@@ -43,21 +43,25 @@ func AskGenerateEnv(
 	privateKeyEnvVar := fmt.Sprintf("TEST_SANDBOX_%s_PRIVATE_KEY", normalizedName)
 	privateKey := envs.Get(privateKeyEnvVar)
 
-	useKeyPair := len(privateKey) > 0
-
 	if keboola.SandboxWorkspaceSupportsSizes(workspace.SandboxWorkspace.Type) {
-		// Python/R workspace — use credentials directly.
+		// Python/R workspace — credential fields are not available from the listing.
 		return genenv.Options{
 			BranchKey:  branchKey,
 			TargetName: targetName,
-			Workspace:  workspace.SandboxWorkspace, // already *sandbox.SandboxWorkspace
-			UseKeyPair: useKeyPair,
+			Workspace: genenv.WorkspaceDetails{
+				Type: string(workspace.SandboxWorkspace.Type),
+			},
 			PrivateKey: privateKey,
 		}, nil
 	}
 
-	// SQL workspace (Snowflake/BigQuery) — fetch StorageWorkspace credentials via the editor session.
-	// Find the editor session for this workspace by matching ConfigurationID.
+	// Phase 1 (keboola_snowflake profile): editor session coordinates are already available
+	// in the matched session (WorkspaceID, BranchID set below). No credential rotation needed.
+
+	// Phase 2 (direct-Snowflake profile): fetch storage workspace credentials — server
+	// generates a keypair, registers the public key with the workspace, and returns the
+	// private key together with all connection details (Host, User, DB, Schema, Warehouse).
+	// Password auth is deprecated; keypair is used instead.
 	var matchedSession *keboola.EditorSession
 	for _, s := range sessions {
 		if s.ConfigurationID == workspace.Config.ID.String() {
@@ -74,26 +78,48 @@ func AskGenerateEnv(
 		return genenv.Options{}, errors.Errorf("cannot parse workspace ID %q: %w", matchedSession.WorkspaceID, err)
 	}
 
-	// StorageWorkspaceCreateCredentialsRequest creates new credentials on each call,
-	// which rotates any previously issued credentials for this workspace.
 	storageWS, err := api.StorageWorkspaceCreateCredentialsRequest(branchID, workspaceIDUint).Send(ctx)
 	if err != nil {
 		return genenv.Options{}, errors.Errorf("cannot fetch workspace credentials: %w", err)
 	}
 
-	sandboxWS := sandbox.WorkspaceFromStorage(storageWS, keboola.SandboxWorkspaceType(matchedSession.BackendType))
+	details := storageWS.StorageWorkspaceDetails
+	host, user, database, schema, warehouse := "", "", "", "", ""
+	if details.Host != nil {
+		host = *details.Host
+	}
+	if details.User != nil {
+		user = *details.User
+	}
+	if details.Database != nil {
+		database = *details.Database
+	}
+	if details.Schema != nil {
+		schema = *details.Schema
+	}
+	if details.Warehouse != nil {
+		warehouse = *details.Warehouse
+	}
+	ws := genenv.WorkspaceDetails{
+		Type:        string(matchedSession.BackendType),
+		Host:        host,
+		User:        user,
+		Database:    database,
+		Schema:      schema,
+		Warehouse:   warehouse,
+		BranchID:    branchID,
+		WorkspaceID: matchedSession.WorkspaceID,
+	}
 
 	// Use server-provided private key for SQL workspaces when available.
-	if len(privateKey) == 0 && storageWS.StorageWorkspaceDetails.PrivateKey != nil && len(*storageWS.StorageWorkspaceDetails.PrivateKey) > 0 {
-		privateKey = *storageWS.StorageWorkspaceDetails.PrivateKey
-		useKeyPair = true
+	if len(privateKey) == 0 && details.PrivateKey != nil && len(*details.PrivateKey) > 0 {
+		privateKey = *details.PrivateKey
 	}
 
 	return genenv.Options{
 		BranchKey:  branchKey,
 		TargetName: targetName,
-		Workspace:  sandboxWS,
-		UseKeyPair: useKeyPair,
+		Workspace:  ws,
 		PrivateKey: privateKey,
 	}, nil
 }

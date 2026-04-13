@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/dbt/dbtutil"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -60,6 +61,9 @@ func Command(p dependencies.Provider) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// Set BaseURL for keboola adapter vars (only written when WorkspaceID is also set).
+			opts.Workspace.BaseURL = dbtutil.BaseURLFromHost(d.StorageAPIHost())
 
 			// Send cmd successful/failed event
 			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "dbt-generate-env")

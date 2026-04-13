@@ -9,7 +9,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -23,11 +22,12 @@ type DbtInitOptions struct {
 	BranchKey     keboola.BranchKey
 	TargetName    string
 	WorkspaceName string
-	UseKeyPair    bool
+	BaseURL       string // Keboola Query Service base URL, e.g. "https://query.keboola.com"
 }
 
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
+	StorageAPIToken() keboola.Token
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
@@ -51,7 +51,8 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeoutCause(ctx, 10*time.Minute, errors.New("dbt init timeout"))
 	defer cancel()
 
-	// Create SQL workspace via editor session — backend is determined by the project config.
+	// Phase 1: Create editor session — provides workspace coordinates for the keboola_snowflake
+	// dbt profile (WorkspaceID, BranchID, BaseURL). No credential rotation at this step.
 	d.Logger().Info(ctx, `Creating a new workspace, please wait.`)
 	session, err := d.KeboolaProjectAPI().CreateEditorSession(ctx, branch.ID, o.WorkspaceName)
 	if err != nil {
@@ -59,7 +60,10 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	}
 	d.Logger().Infof(ctx, `Created the new workspace "%s".`, o.WorkspaceName)
 
-	// Create fresh credentials for the storage workspace to get connection details + private key.
+	// Phase 2: Create storage workspace credentials — server generates a keypair, registers
+	// the public key with the workspace, and returns the private key together with all
+	// connection details (Host, User, Database, Schema, Warehouse). These fill the
+	// direct-Snowflake dbt profile. Password auth is deprecated; keypair is used instead.
 	workspaceIDUint, err := strconv.ParseUint(session.EditorSession.WorkspaceID, 10, 64)
 	if err != nil {
 		return errors.Errorf("cannot parse workspace ID %q: %w", session.EditorSession.WorkspaceID, err)
@@ -69,13 +73,42 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 		return errors.Errorf("cannot fetch workspace credentials: %w", err)
 	}
 
-	// Build SandboxWorkspace from StorageWorkspace for env generation.
-	workspace := sandbox.WorkspaceFromStorage(storageWS, keboola.SandboxWorkspaceType(storageWS.StorageWorkspaceDetails.Backend))
+	// Build WorkspaceDetails combining both phases:
+	// Phase 1 fields (keboola_snowflake profile): BaseURL, BranchID, WorkspaceID
+	// Phase 2 fields (direct-Snowflake profile):  Host, User, Database, Schema, Warehouse, PrivateKey
+	details := storageWS.StorageWorkspaceDetails
+	host, user, database, schema, warehouse := "", "", "", "", ""
+	if details.Host != nil {
+		host = *details.Host
+	}
+	if details.User != nil {
+		user = *details.User
+	}
+	if details.Database != nil {
+		database = *details.Database
+	}
+	if details.Schema != nil {
+		schema = *details.Schema
+	}
+	if details.Warehouse != nil {
+		warehouse = *details.Warehouse
+	}
+	workspace := env.WorkspaceDetails{
+		Type:        string(details.Backend),
+		Host:        host,
+		User:        user,
+		Database:    database,
+		Schema:      schema,
+		Warehouse:   warehouse,
+		BaseURL:     o.BaseURL,
+		BranchID:    branch.ID,
+		WorkspaceID: session.EditorSession.WorkspaceID,
+	}
 
 	// Determine private key from the freshly created credentials.
 	privateKey := ""
-	if o.UseKeyPair && storageWS.StorageWorkspaceDetails.PrivateKey != nil {
-		privateKey = *storageWS.StorageWorkspaceDetails.PrivateKey
+	if details.PrivateKey != nil {
+		privateKey = *details.PrivateKey
 	}
 
 	// List buckets
@@ -87,10 +120,11 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 		return errors.Errorf("could not list buckets: %w", err)
 	}
 
-	// Generate profile
+	// Generate profile — always include the keboola_snowflake target because dbt init
+	// creates a Snowflake workspace with an editor session, making all keboola_ env vars available.
 	err = profile.Run(ctx, profile.Options{
-		TargetName: o.TargetName,
-		UseKeyPair: o.UseKeyPair,
+		TargetName:           o.TargetName,
+		IncludeKeboolaTarget: true,
 	}, d)
 	if err != nil {
 		return errors.Errorf("could not generate profile: %w", err)
@@ -112,7 +146,6 @@ func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 		TargetName: o.TargetName,
 		Workspace:  workspace,
 		PrivateKey: privateKey,
-		UseKeyPair: o.UseKeyPair,
 		Buckets:    buckets,
 	}, d)
 	if err != nil {

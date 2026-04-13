@@ -3,6 +3,7 @@ package dbtinit
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/dbt/dbtutil"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -15,13 +16,10 @@ type Flags struct {
 	StorageAPIToken configmap.Value[string] `configKey:"storage-api-token" configShorthand:"t" configUsage:"storage API token from your project"`
 	TargetName      configmap.Value[string] `configKey:"target-name" configShorthand:"T" configUsage:"target name of the profile"`
 	WorkspaceName   configmap.Value[string] `configKey:"workspace-name" configShorthand:"W" configUsage:"name of workspace to create"`
-	KeyPair         configmap.Value[bool]   `configKey:"key-pair" configUsage:"use Snowflake key-pair authentication"`
 }
 
 func DefaultFlags() Flags {
-	return Flags{
-		KeyPair: configmap.NewValueWithOrigin(true, configmap.SetByDefault),
-	}
+	return Flags{}
 }
 
 func Command(p dependencies.Provider) *cobra.Command {
@@ -57,6 +55,7 @@ func Command(p dependencies.Provider) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			opts.BaseURL = dbtutil.BaseURLFromHost(d.StorageAPIHost())
 
 			// Send cmd successful/failed event
 			defer d.EventSender().SendCmdEvent(cmd.Context(), d.Clock().Now(), &cmdErr, "dbt-init")

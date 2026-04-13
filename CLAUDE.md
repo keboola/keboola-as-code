@@ -185,6 +185,7 @@ func processChildren(children []Child) {
 - **Deprecated functions** - Remove deprecated functions instead of keeping them; don't mark as deprecated if still needed
 - **Variables only used for logging** - Don't create variables solely for debug/info logging; inline or remove them
 - **Pseudo-version SDK dependencies** - Use tagged versions (e.g., `v2.12.0`) instead of pseudo-versions (e.g., `v2.9.1-0.20260109014800-d596b2c092e2`)
+- **Helper closures for nil-pointer dereferencing** - Don't create `deref`/`setVar`-style helper closures inside functions. Inline the nil-check directly using default-first assignment (set `""` then override if not nil). See "Default-first assignment" pattern.
 
 ### Go Naming Conventions
 - **No "Get" prefix for getters** - Use `Type()` not `GetType()`, `Name()` not `GetName()`, `Source()` not `GetSource()`

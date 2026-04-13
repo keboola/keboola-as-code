@@ -3,6 +3,7 @@ package env
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
@@ -10,28 +11,42 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/listbuckets"
 )
 
+// WorkspaceDetails holds the connection details for a workspace used in dbt env generation.
+type WorkspaceDetails struct {
+	Type      string // workspace type string, e.g. "snowflake", "python"
+	Host      string
+	User      string
+	Database  string
+	Schema    string
+	Warehouse string
+	// Fields for the keboola_snowflake dbt adapter (populated for SQL workspaces).
+	// When both BaseURL and WorkspaceID are set, DBT_KBC_{TARGET}_BASE_URL / _BRANCH_ID / _WORKSPACE_ID are written.
+	BaseURL     string // e.g. "https://query.keboola.com"
+	BranchID    keboola.BranchID
+	WorkspaceID string // numeric workspace ID from EditorSession
+}
+
 type Options struct {
 	BranchKey  keboola.BranchKey
 	TargetName string
-	Workspace  *sandbox.SandboxWorkspace
+	Workspace  WorkspaceDetails
 	PrivateKey string               //nolint:gosec
-	UseKeyPair bool                 // Whether key-pair authentication was requested (only add private key if true)
 	Buckets    []listbuckets.Bucket // optional, set if the buckets have been loaded in a parent command
 }
 
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
+	StorageAPIToken() keboola.Token
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
-	Fs() filesystem.Fs // Add filesystem dependency
+	Fs() filesystem.Fs
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
@@ -53,67 +68,106 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	targetUpper := strings.ToUpper(o.TargetName)
 	host := o.Workspace.Host
-	if o.Workspace.Type == keboola.SandboxWorkspaceTypeSnowflake {
-		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
+	if o.Workspace.Type == "snowflake" {
+		host = strings.ReplaceAll(host, ".snowflakecomputing.com", "")
 	}
 
-	// Prepare content for .env.local
-	var envContent strings.Builder
 	envVars := make(map[string]string)
 
-	envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = o.Workspace.Type.String()
-	envVars[fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper)] = o.Workspace.Details.Connection.Schema
-	envVars[fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper)] = o.Workspace.Details.Connection.Warehouse
-	envVars[fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper)] = o.Workspace.Details.Connection.Database
+	// Only write non-empty values: Python/R workspaces populate only Type;
+	// all Snowflake connection fields are absent and should not appear in .env.local.
+	if v := o.Workspace.Type; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_TYPE", targetUpper)] = v
+	}
+	if v := o.Workspace.Schema; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_SCHEMA", targetUpper)] = v
+	}
+	if v := o.Workspace.Warehouse; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_WAREHOUSE", targetUpper)] = v
+	}
+	if v := o.Workspace.Database; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_DATABASE", targetUpper)] = v
+	}
 
-	linkedBucketEnvsMap := make(map[string]string) // Store env var name -> value
-	for _, bucket := range o.Buckets {
-		if bucket.LinkedProjectID != 0 {
-			envVarName := bucket.DatabaseEnv
-			if _, exists := linkedBucketEnvsMap[envVarName]; !exists {
-				stackPrefix, _, _ := strings.Cut(o.Workspace.Details.Connection.Database, "_") // SAPI_..., KEBOOLA_..., etc.
-				envVarValue := fmt.Sprintf("%s_%d", stackPrefix, bucket.LinkedProjectID)
-				linkedBucketEnvsMap[envVarName] = envVarValue
-				envVars[envVarName] = envVarValue
+	// Linked-bucket database vars — only applicable when Database is set (Snowflake workspaces).
+	linkedBucketEnvsMap := make(map[string]string)
+	if o.Workspace.Database != "" {
+		for _, bucket := range o.Buckets {
+			if bucket.LinkedProjectID != 0 {
+				envVarName := bucket.DatabaseEnv
+				if _, exists := linkedBucketEnvsMap[envVarName]; !exists {
+					stackPrefix, _, _ := strings.Cut(o.Workspace.Database, "_") // SAPI_..., KEBOOLA_..., etc.
+					envVarValue := fmt.Sprintf("%s_%d", stackPrefix, bucket.LinkedProjectID)
+					linkedBucketEnvsMap[envVarName] = envVarValue
+					envVars[envVarName] = envVarValue
+				}
 			}
 		}
 	}
-	envVars[fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper)] = host
-	envVars[fmt.Sprintf("DBT_KBC_%s_USER", targetUpper)] = o.Workspace.User
-	// Only add private key if key-pair authentication was explicitly requested
-	// This ensures password-only workspaces don't get a private key in .env.local
-	if o.UseKeyPair && len(o.PrivateKey) > 0 {
-		envVars[fmt.Sprintf("DBT_KBC_%s_PRIVATE_KEY", targetUpper)] = o.PrivateKey
+
+	if v := host; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_ACCOUNT", targetUpper)] = v
 	}
-	if len(o.Workspace.Password) > 0 {
-		envVars[fmt.Sprintf("DBT_KBC_%s_PASSWORD", targetUpper)] = o.Workspace.Password
+	if v := o.Workspace.User; v != "" {
+		envVars[fmt.Sprintf("DBT_KBC_%s_USER", targetUpper)] = v
+	}
+	if len(o.PrivateKey) > 0 {
+		// Write the private key to a separate file instead of inlining it in .env.local.
+		// Inline PEM keys contain real newlines which cannot be represented portably in
+		// dotenv format across bash, PowerShell, direnv, and dotenv libraries.
+		keyFileName := fmt.Sprintf(".dbt_private_key_%s.p8", strings.ToLower(o.TargetName))
+		fd, err := dbtProject.Fs().OpenFile(ctx, keyFileName, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+		if err != nil {
+			return errors.Errorf("cannot create file \"%s\": %w", keyFileName, err)
+		}
+		// Write then close unconditionally — always close before checking errors
+		// so the descriptor is not leaked on write failure.
+		_, writeErr := fd.WriteString(o.PrivateKey)
+		closeErr := fd.Close()
+		if writeErr != nil {
+			return errors.Errorf("cannot write file \"%s\": %w", keyFileName, writeErr)
+		}
+		if closeErr != nil {
+			return errors.Errorf("cannot close file \"%s\": %w", keyFileName, closeErr)
+		}
+		envVars[fmt.Sprintf("DBT_KBC_%s_PRIVATE_KEY_PATH", targetUpper)] = keyFileName
+		if err := addToGitignore(ctx, dbtProject.Fs(), keyFileName); err != nil {
+			return err
+		}
 	}
 
-	// Format KEY=VALUE pairs
-	// Sort keys for consistent order
+	// Keboola adapter vars — written when the workspace was created via an editor session.
+	if len(o.Workspace.BaseURL) > 0 && len(o.Workspace.WorkspaceID) > 0 {
+		envVars[fmt.Sprintf("DBT_KBC_%s_BASE_URL", targetUpper)] = o.Workspace.BaseURL
+		envVars[fmt.Sprintf("DBT_KBC_%s_BRANCH_ID", targetUpper)] = o.Workspace.BranchID.String()
+		envVars[fmt.Sprintf("DBT_KBC_%s_WORKSPACE_ID", targetUpper)] = o.Workspace.WorkspaceID
+		if token := d.StorageAPIToken().Token; token != "" {
+			envVars["KEBOOLA_TOKEN"] = token
+		}
+	}
+
+	// Sort keys for consistent output.
 	keys := make([]string, 0, len(envVars))
 	for k := range envVars {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
+	var envContent strings.Builder
 	for _, k := range keys {
 		v := envVars[k]
-		// Normalize multiline/special values for dotenv compatibility:
-		// - Replace newlines and carriage returns by literal \n to keep a single line per var
-		// - Escape existing double quotes
-		// - Wrap in double quotes if any special characters present
-		hasSpecial := strings.ContainsAny(v, " #\"'\\\n\r\t")
-		if strings.Contains(v, "\n") || strings.Contains(v, "\r") {
-			v = strings.ReplaceAll(v, "\r\n", "\n")
-			v = strings.ReplaceAll(v, "\r", "\n")
-			v = strings.ReplaceAll(v, "\n", `\\n`)
-			hasSpecial = true
-		}
-		if hasSpecial {
-			v = "\"" + strings.ReplaceAll(v, "\"", `\\"`) + "\""
+		// All values come from API responses (URLs, identifiers, connection strings).
+		// None should contain newlines; private keys are stored in a separate .p8 file.
+		// Double-quote values that contain shell-sensitive characters.
+		if strings.ContainsAny(v, " #\"'\\\t") {
+			v = "\"" + strings.ReplaceAll(v, "\"", `\"`) + "\""
 		}
 		_, _ = fmt.Fprintf(&envContent, "%s=%s\n", k, v)
+	}
+
+	// Ensure .env.local is gitignored — it contains KEBOOLA_TOKEN and other credentials.
+	if err := addToGitignore(ctx, dbtProject.Fs(), ".env.local"); err != nil {
+		return err
 	}
 
 	// Write to .env.local
@@ -142,5 +196,32 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		l.Infof(ctx, "  have been generated: \"%s\"", strings.Join(linkedBucketEnvs, `", "`))
 	}
 
+	return nil
+}
+
+// addToGitignore appends entry to the project .gitignore if it is not already present.
+func addToGitignore(ctx context.Context, fs filesystem.Fs, entry string) error {
+	const gitignorePath = ".gitignore"
+	existing := ""
+	if fs.Exists(ctx, gitignorePath) {
+		f, err := fs.FileLoader().ReadRawFile(ctx, filesystem.NewFileDef(gitignorePath))
+		if err != nil {
+			return errors.Errorf("cannot read %s: %w", gitignorePath, err)
+		}
+		existing = f.Content
+	}
+	for _, line := range strings.Split(existing, "\n") {
+		if strings.TrimSpace(line) == entry {
+			return nil
+		}
+	}
+	updated := strings.TrimRight(existing, "\n")
+	if updated != "" {
+		updated += "\n"
+	}
+	updated += entry + "\n"
+	if err := fs.WriteFile(ctx, filesystem.NewRawFile(gitignorePath, updated).SetDescription(".gitignore")); err != nil {
+		return errors.Errorf("cannot write %s: %w", gitignorePath, err)
+	}
 	return nil
 }
