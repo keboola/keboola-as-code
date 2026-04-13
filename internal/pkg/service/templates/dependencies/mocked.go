@@ -2,11 +2,8 @@ package dependencies
 
 import (
 	"context"
-	"fmt"
 	"net/url"
-	"os"
 	"path"
-	"path/filepath"
 	"reflect"
 	"runtime"
 	"testing"
@@ -14,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -37,14 +33,9 @@ func NewMockedAPIScope(tb testing.TB, ctx context.Context, cfg config.Config, op
 
 	// Prepare test repository with templates, instead of default repositories, to prevent loading of all production templates.
 	if reflect.DeepEqual(cfg.Repositories, config.DefaultRepositories()) {
-		tmpDir := tb.TempDir()
 		_, filename, _, _ := runtime.Caller(0)
-		srcFs, err := aferofs.NewLocalFs(path.Dir(filename))
-		require.NoError(tb, err)
-		require.NoError(tb, aferofs.CopyFs2Fs(srcFs, filesystem.Join("git_test", "repository"), nil, tmpDir))
-		require.NoError(tb, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
 		cfg.Repositories = []model.TemplateRepository{{
-			Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main",
+			Type: model.RepositoryTypeDir, Name: "keboola", URL: filesystem.Join(path.Dir(filename), "git_test", "repository"),
 		}}
 	}
 
