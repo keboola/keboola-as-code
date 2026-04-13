@@ -4,13 +4,13 @@ import (
 	"context"
 	"net/url"
 	"path"
-	"path/filepath"
 	"reflect"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -35,7 +35,7 @@ func NewMockedAPIScope(tb testing.TB, ctx context.Context, cfg config.Config, op
 	if reflect.DeepEqual(cfg.Repositories, config.DefaultRepositories()) {
 		_, filename, _, _ := runtime.Caller(0)
 		cfg.Repositories = []model.TemplateRepository{{
-			Type: model.RepositoryTypeDir, Name: "keboola", URL: filepath.Join(path.Dir(filename), "git_test", "repository"),
+			Type: model.RepositoryTypeDir, Name: "keboola", URL: filesystem.Join(path.Dir(filename), "git_test", "repository"),
 		}}
 	}
 
