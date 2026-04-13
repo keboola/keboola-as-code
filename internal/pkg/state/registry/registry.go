@@ -346,8 +346,16 @@ func (s *Registry) Set(objectState model.ObjectState) error {
 	}
 
 	if objectState.GetRelativePath() != "" {
-		if err := s.namingRegistry.Attach(key, objectState.GetAbsPath()); err != nil {
-			return err
+		absPath := objectState.GetAbsPath()
+		// Only register in the naming registry when the parent path has been resolved.
+		// Objects with an unresolved parent path (parentPathSet=false) have a partial
+		// Path() that equals just their RelativePath, which causes false collisions
+		// between rows from different configs that share the same row name.
+		// Such objects are registered once their path is fully generated later.
+		if absPath.IsParentPathSet() {
+			if err := s.namingRegistry.Attach(key, absPath); err != nil {
+				return err
+			}
 		}
 	}
 
