@@ -272,6 +272,78 @@ func TestIgnoreBranch(t *testing.T) {
 	}
 }
 
+// TestRegistrySet_RowsWithSameRelativeNameUnresolvedParent is a regression test
+// for PSGO-233: kbc pull --force crashed with a false naming collision when two
+// config rows from different configs shared the same relative path name.
+//
+// Root cause: manifest.Load(ignoreErrors=true) swallows a SetRecords() error,
+// leaving some rows with parentPathSet=false. registry.Set() then called
+// naming.Attach() with the partial Path() ("rows/besc-json-export" instead of
+// the full path), causing a spurious collision between unrelated rows.
+func TestRegistrySet_RowsWithSameRelativeNameUnresolvedParent(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	reg := New(knownpaths.NewNop(ctx), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
+
+	// Neither row has its parent path set (parentPathSet=false, zero value of bool).
+	// AbsPath{RelativePath: "..."} leaves parentPath="" and parentPathSet=false.
+	row1 := &ConfigRowState{
+		ConfigRowManifest: &ConfigRowManifest{
+			ConfigRowKey: ConfigRowKey{
+				BranchID: 80, ComponentID: "keboola.wr-azure-event-hub",
+				ConfigID: "1783940", ID: "2052339",
+			},
+			Paths: Paths{AbsPath: AbsPath{RelativePath: "rows/besc-json-export"}},
+		},
+		Remote: &ConfigRow{Name: "besc-json-export"},
+	}
+	row2 := &ConfigRowState{
+		ConfigRowManifest: &ConfigRowManifest{
+			ConfigRowKey: ConfigRowKey{
+				BranchID: 80, ComponentID: "keboola.wr-azure-event-hub",
+				ConfigID: "1783960", ID: "2405343",
+			},
+			Paths: Paths{AbsPath: AbsPath{RelativePath: "rows/besc-json-export"}},
+		},
+		Remote: &ConfigRow{Name: "besc-json-export"},
+	}
+
+	require.NoError(t, reg.Set(row1), "first row with unresolved parent path should not error")
+	require.NoError(t, reg.Set(row2), "second row with same relative name but different config should not error")
+	assert.Len(t, reg.ConfigRows(), 2)
+}
+
+// TestRegistrySet_RowWithResolvedParentIsAttached verifies that rows whose
+// parent path IS resolved still get registered in the naming registry (no regression).
+func TestRegistrySet_RowWithResolvedParentIsAttached(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	reg := New(knownpaths.NewNop(ctx), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
+
+	row := &ConfigRowState{
+		ConfigRowManifest: &ConfigRowManifest{
+			ConfigRowKey: ConfigRowKey{
+				BranchID: 80, ComponentID: "keboola.wr-azure-event-hub",
+				ConfigID: "1783940", ID: "2052339",
+			},
+			Paths: Paths{
+				AbsPath: NewAbsPath(
+					"80-dev/keboola.wr-azure-event-hub/config-1783940",
+					"rows/besc-json-export",
+				),
+			},
+		},
+		Remote: &ConfigRow{Name: "besc-json-export"},
+	}
+
+	require.NoError(t, reg.Set(row))
+
+	// Row with a resolved parent must be reachable via GetByPath.
+	found, ok := reg.GetByPath("80-dev/keboola.wr-azure-event-hub/config-1783940/rows/besc-json-export")
+	require.True(t, ok)
+	assert.Equal(t, row, found)
+}
+
 func newTestState(t *testing.T, paths *knownpaths.Paths) *Registry {
 	t.Helper()
 	registry := New(paths, naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
