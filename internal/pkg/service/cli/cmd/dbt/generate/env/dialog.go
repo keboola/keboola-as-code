@@ -9,10 +9,10 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	kenv "github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	genenv "github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
+	wsinfo "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 )
 
 func AskGenerateEnv(
@@ -20,8 +20,7 @@ func AskGenerateEnv(
 	branchKey keboola.BranchKey,
 	branchID keboola.BranchID,
 	d *dialog.Dialogs,
-	allWorkspaces []*sandbox.SandboxWorkspaceWithConfig,
-	sessions []*keboola.EditorSession,
+	allWorkspaces []*wsinfo.WorkspaceWithConfig,
 	f Flags,
 	envs kenv.Provider,
 	api *keboola.AuthorizedAPI,
@@ -42,32 +41,26 @@ func AskGenerateEnv(
 	normalizedName := strings.ToUpper(strings.NewReplacer(" ", "_", "-", "_").Replace(workspaceName))
 	privateKeyEnvVar := fmt.Sprintf("TEST_SANDBOX_%s_PRIVATE_KEY", normalizedName)
 	privateKey := envs.Get(privateKeyEnvVar)
-
 	useKeyPair := len(privateKey) > 0
 
-	if keboola.SandboxWorkspaceSupportsSizes(workspace.SandboxWorkspace.Type) {
-		// Python/R workspace — use credentials directly.
+	if workspace.App != nil {
+		// Python/R workspace — credential fields are not available from the listing.
 		return genenv.Options{
 			BranchKey:  branchKey,
 			TargetName: targetName,
-			Workspace:  workspace.SandboxWorkspace, // already *sandbox.SandboxWorkspace
+			Workspace: genenv.WorkspaceDetails{
+				Type: workspace.Type(),
+			},
 			UseKeyPair: useKeyPair,
 			PrivateKey: privateKey,
 		}, nil
 	}
 
 	// SQL workspace (Snowflake/BigQuery) — fetch StorageWorkspace credentials via the editor session.
-	// Find the editor session for this workspace by matching ConfigurationID.
-	var matchedSession *keboola.EditorSession
-	for _, s := range sessions {
-		if s.ConfigurationID == workspace.Config.ID.String() {
-			matchedSession = s
-			break
-		}
-	}
-	if matchedSession == nil {
+	if workspace.Session == nil {
 		return genenv.Options{}, errors.Errorf(`no active editor session found for workspace %q`, workspace.Config.Name)
 	}
+	matchedSession := workspace.Session
 
 	workspaceIDUint, err := strconv.ParseUint(matchedSession.WorkspaceID, 10, 64)
 	if err != nil {
@@ -81,7 +74,23 @@ func AskGenerateEnv(
 		return genenv.Options{}, errors.Errorf("cannot fetch workspace credentials: %w", err)
 	}
 
-	sandboxWS := sandbox.WorkspaceFromStorage(storageWS, keboola.SandboxWorkspaceType(matchedSession.BackendType))
+	deref := func(s *string) string {
+		if s == nil {
+			return ""
+		}
+		return *s
+	}
+
+	ws := genenv.WorkspaceDetails{
+		Type:        string(matchedSession.BackendType),
+		Host:        deref(storageWS.StorageWorkspaceDetails.Host),
+		User:        deref(storageWS.StorageWorkspaceDetails.User),
+		Database:    deref(storageWS.StorageWorkspaceDetails.Database),
+		Schema:      deref(storageWS.StorageWorkspaceDetails.Schema),
+		Warehouse:   deref(storageWS.StorageWorkspaceDetails.Warehouse),
+		BranchID:    branchID,
+		WorkspaceID: matchedSession.WorkspaceID,
+	}
 
 	// Use server-provided private key for SQL workspaces when available.
 	if len(privateKey) == 0 && storageWS.StorageWorkspaceDetails.PrivateKey != nil && len(*storageWS.StorageWorkspaceDetails.PrivateKey) > 0 {
@@ -92,7 +101,7 @@ func AskGenerateEnv(
 	return genenv.Options{
 		BranchKey:  branchKey,
 		TargetName: targetName,
-		Workspace:  sandboxWS,
+		Workspace:  ws,
 		UseKeyPair: useKeyPair,
 		PrivateKey: privateKey,
 	}, nil

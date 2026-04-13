@@ -6,10 +6,10 @@ import (
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	wsinfo "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 )
 
 type dependencies interface {
@@ -39,8 +39,10 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 	}
 
 	// Check if this is a Python/R workspace (has parameters.id) or a SQL editor session.
-	_, wsIDErr := sandbox.GetSandboxWorkspaceID(config)
-	if wsIDErr != nil {
+	// GetNested returns an error when an intermediate path key is missing, so treat
+	// both err != nil and !found the same way: fall through to editor-session lookup.
+	wsID, found, err := config.Content.GetNested("parameters.id")
+	if err != nil || !found {
 		// SQL workspace — find the editor session linked to this config.
 		sessions, e := d.KeboolaProjectAPI().ListEditorSessionsRequest().Send(ctx)
 		if e != nil {
@@ -56,21 +58,23 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 		return errors.Errorf(`no active editor session found for workspace "%s"`, configID)
 	}
 
-	// Python/R workspace
-	workspace, err := sandbox.GetSandboxWorkspace(ctx, d.KeboolaProjectAPI(), branch.ID, configID)
+	// Python/R workspace — fetch DataScienceApp for credentials.
+	workspaceIDStr, ok := wsID.(string)
+	if !ok {
+		return errors.Errorf("config.parameters.id is not a string")
+	}
+
+	app, err := d.KeboolaProjectAPI().GetDataScienceAppRequest(keboola.DataScienceAppID(workspaceIDStr)).Send(ctx)
 	if err != nil {
 		return err
 	}
 
-	c, w := workspace.Config, workspace.SandboxWorkspace
-
-	logger.Infof(ctx, "Workspace \"%s\"\nID: %s\nType: %s", c.Name, c.ID, w.Type)
-	if keboola.SandboxWorkspaceSupportsSizes(w.Type) {
-		logger.Infof(ctx, `Size: %s`, w.Size)
+	logger.Infof(ctx, "Workspace \"%s\"\nID: %s\nType: %s", config.Name, config.ID, app.Type)
+	if wsinfo.WorkspaceSupportsSizes(string(app.Type)) {
+		logger.Infof(ctx, `Size: %s`, app.Size)
 	}
-
-	if w.Host != "" || w.Password != "" {
-		logger.Infof(ctx, "Credentials:\n  Host: %s\n  Password: %s", w.Host, w.Password)
+	if app.URL != "" {
+		logger.Infof(ctx, "URL: %s", app.URL)
 	}
 
 	return nil

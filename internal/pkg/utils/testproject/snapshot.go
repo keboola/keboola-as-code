@@ -14,9 +14,9 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
+	wslist "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/list"
 )
 
 // NewSnapshot - to validate final project state in tests.
@@ -139,18 +139,20 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		return req.SendOrErr(ctx)
 	})
 
-	workspacesMap := make(map[string]*sandbox.SandboxWorkspace)
+	workspacesMap := make(map[string]*keboola.DataScienceApp)
 	grp.Go(func() error {
 		defaultBranch, err := p.DefaultBranch()
 		if err != nil {
 			return err
 		}
-		workspaces, _, err := sandbox.ListSandboxWorkspaces(ctx, p.keboolaProjectAPI, defaultBranch.ID)
+		workspaces, _, err := wslist.ListPyRWorkspaces(ctx, p.keboolaProjectAPI, defaultBranch.ID)
 		if err != nil {
 			return err
 		}
 		for _, w := range workspaces {
-			workspacesMap[w.SandboxWorkspace.ID.String()] = w.SandboxWorkspace
+			if w.App != nil {
+				workspacesMap[string(w.App.ID)] = w.App
+			}
 		}
 		return nil
 	})
@@ -300,26 +302,10 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Join sandbox instances with config name
 	for key, config := range configsMap {
-		if config.ComponentID == keboola.SandboxWorkspacesComponent {
-			// SQL (Snowflake/BigQuery): check editor sessions first
-			if session, found := editorSessionsMap[key.ID.String()]; found {
-				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: config.Name, Type: keboola.SandboxWorkspaceType(session.BackendType)})
-				continue
-			}
-
-			// Python/R: fall back to sandbox workspace instance lookup
-			sandboxID, err := sandbox.GetSandboxWorkspaceID(config.ToAPI().Config)
-			if err != nil {
-				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE ID NOT SET"})
-				continue
-			}
-
-			if sandbox, found := workspacesMap[sandboxID.String()]; found {
-				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: config.Name, Type: sandbox.Type, Size: sandbox.Size})
-			} else {
-				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE NOT FOUND"})
-			}
+		if config.ComponentID != keboola.SandboxWorkspacesComponent {
+			continue
 		}
+		snapshot.Sandboxes = append(snapshot.Sandboxes, sandboxFromConfig(key, config, editorSessionsMap, workspacesMap))
 	}
 
 	// Sort by name
@@ -333,6 +319,35 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	reflecthelper.SortByName(snapshot.Sandboxes)
 
 	return snapshot, nil
+}
+
+// sandboxFromConfig converts a keboola.sandboxes config to a fixtures.Sandbox snapshot entry.
+// SQL (Snowflake/BigQuery) workspaces are identified by their editor session; Python/R by parameters.id.
+func sandboxFromConfig(
+	key keboola.ConfigKey,
+	config *fixtures.Config,
+	editorSessionsMap map[string]*keboola.EditorSession,
+	workspacesMap map[string]*keboola.DataScienceApp,
+) *fixtures.Sandbox {
+	// SQL: check editor sessions first.
+	if session, found := editorSessionsMap[key.ID.String()]; found {
+		return &fixtures.Sandbox{Name: config.Name, Type: string(session.BackendType)}
+	}
+
+	// Python/R: look up DataScienceApp via parameters.id stored in config content.
+	wsID, found, err := config.ToAPI().Content.GetNested("parameters.id")
+	if err != nil || !found {
+		return &fixtures.Sandbox{Name: "SANDBOX INSTANCE ID NOT SET"}
+	}
+	wsIDStr, ok := wsID.(string)
+	if !ok {
+		return &fixtures.Sandbox{Name: "SANDBOX INSTANCE ID NOT SET"}
+	}
+
+	if app, found := workspacesMap[wsIDStr]; found {
+		return &fixtures.Sandbox{Name: config.Name, Type: string(app.Type), Size: app.Size}
+	}
+	return &fixtures.Sandbox{Name: "SANDBOX INSTANCE NOT FOUND"}
 }
 
 func normalizeChangeDesc(str string) string {

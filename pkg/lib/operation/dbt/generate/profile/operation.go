@@ -54,6 +54,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	// Set profile
 	targetUpper := strings.ToUpper(o.TargetName)
+	keboolaTargetName := "keboola_" + o.TargetName
 	profilesFile.Set(project.Profile(), orderedmap.FromPairs([]orderedmap.Pair{
 		{
 			Key:   "target",
@@ -103,6 +104,45 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 						{
 							Key:   "password",
 							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PASSWORD\") }}", targetUpper),
+						},
+					}),
+				},
+				// keboola_snowflake adapter target — uses Keboola Query Service instead of direct Snowflake access.
+				// Run with: dbt run --target keboola_{target_name}
+				{
+					Key: keboolaTargetName,
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
+						{
+							Key:   "type",
+							Value: "keboola_snowflake",
+						},
+						{
+							Key:   "base_url",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_BASE_URL\") }}", targetUpper),
+						},
+						{
+							Key:   "token",
+							Value: "{{ env_var(\"KEBOOLA_TOKEN\") }}",
+						},
+						{
+							Key:   "branch_id",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_BRANCH_ID\") }}", targetUpper),
+						},
+						{
+							Key:   "workspace_id",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WORKSPACE_ID\") }}", targetUpper),
+						},
+						{
+							Key:   "database",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", targetUpper),
+						},
+						{
+							Key:   "schema",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_SCHEMA\") }}", targetUpper),
+						},
+						{
+							Key:   "warehouse",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WAREHOUSE\") }}", targetUpper),
 						},
 					}),
 				},

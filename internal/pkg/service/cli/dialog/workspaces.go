@@ -3,13 +3,13 @@ package dialog
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	wsinfo "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 )
 
-func (p *Dialogs) AskWorkspace(allWorkspaces []*sandbox.SandboxWorkspaceWithConfig, id configmap.Value[string]) (*sandbox.SandboxWorkspaceWithConfig, error) {
+func (p *Dialogs) AskWorkspace(allWorkspaces []*wsinfo.WorkspaceWithConfig, id configmap.Value[string]) (*wsinfo.WorkspaceWithConfig, error) {
 	if id.IsSet() {
 		workspaceID := id.Value
 		for _, w := range allWorkspaces {

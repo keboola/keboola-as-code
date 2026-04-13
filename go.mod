@@ -43,7 +43,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-cloud-encrypt v0.0.0-20250422071622-41a5d5547c43
 	github.com/keboola/go-utils v1.4.0
-	github.com/keboola/keboola-sdk-go/v2 v2.18.0
+	github.com/keboola/keboola-sdk-go/v2 v2.17.1-0.20260326212557-482d079b522e
 	github.com/keboola/keboola-sdk-go/v2/transfer v1.0.0
 	github.com/klauspost/compress v1.18.4
 	github.com/klauspost/pgzip v1.2.6
@@ -316,7 +316,7 @@ require (
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 // indirect
-	github.com/hashicorp/go-multierror v1.1.1
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.23.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect

@@ -6,15 +6,15 @@ import (
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/keboola/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	workspace "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 )
 
 type CreateOptions struct {
 	Name string
-	Type keboola.SandboxWorkspaceType
+	Type workspace.WorkspaceType
 	Size string
 }
 
@@ -40,17 +40,13 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	logger.Info(ctx, `Creating a new workspace, please wait.`)
 
-	if keboola.SandboxWorkspaceSupportsSizes(o.Type) {
-		// Python/R workspace
-		opts := make([]sandbox.CreateSandboxWorkspaceOption, 0)
-		if len(o.Size) > 0 {
-			opts = append(opts, sandbox.WithSize(o.Size))
-		}
-		w, err := sandbox.CreateSandboxWorkspace(ctx, d.KeboolaProjectAPI(), branch.ID, o.Name, o.Type, opts...)
+	if workspace.WorkspaceSupportsSizes(o.Type) {
+		// Python/R workspace: create config then call DataScience sandbox endpoint.
+		configID, err := createPyRWorkspace(ctx, d.KeboolaProjectAPI(), branch.ID, o.Name, o.Type, o.Size)
 		if err != nil {
 			return errors.Errorf("cannot create workspace: %w", err)
 		}
-		logger.Infof(ctx, `Created the new workspace "%s" (%s).`, o.Name, w.Config.ID)
+		logger.Infof(ctx, `Created the new workspace "%s" (%s).`, o.Name, configID)
 	} else {
 		// SQL workspace (Snowflake/BigQuery) — backend determined by project config
 		session, err := d.KeboolaProjectAPI().CreateEditorSession(ctx, branch.ID, o.Name)
@@ -61,4 +57,26 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	}
 
 	return nil
+}
+
+// createPyRWorkspace creates a Python/R workspace: creates the sandboxes config, then calls
+// the DataScience sandbox service to provision the instance.
+func createPyRWorkspace(ctx context.Context, api *keboola.AuthorizedAPI, branchID keboola.BranchID, name string, wsType workspace.WorkspaceType, size string) (keboola.ConfigID, error) {
+	config, err := api.CreateSandboxWorkspaceConfigRequest(branchID, name).Send(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = api.CreateDataScienceSandboxRequest(keboola.CreateDataScienceSandboxPayload{
+		Type:            keboola.DataScienceAppType(wsType),
+		ConfigurationID: string(config.ID),
+		ComponentID:     string(keboola.SandboxWorkspacesComponent),
+		BranchID:        branchID.String(),
+		Size:            keboola.DataScienceSandboxSize(size),
+	}).Send(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return config.ID, nil
 }
