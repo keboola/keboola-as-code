@@ -1,0 +1,64 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "keboola.variables",
+          "name": "Variables",
+          "description": "test fixture",
+          "configuration": {
+            "variables": [
+              {
+                "name": "foo",
+                "type": "string"
+              }
+            ]
+          },
+          "rows": [
+            {
+              "name": "Default values",
+              "description": "test fixture",
+              "isDisabled": false,
+              "configuration": {
+                "values": [
+                  {
+                    "name": "foo",
+                    "value": "bar"
+                  }
+                ]
+              }
+            }
+          ],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "With Variables 1",
+          "description": "test fixture",
+          "configuration": {
+            "variables_id": "%s",
+            "variables_values_id": "%s"
+          },
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "With Variables 2",
+          "description": "test fixture",
+          "configuration": {
+            "variables_id": "%s",
+            "variables_values_id": "%s"
+          },
+          "rows": [],
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}

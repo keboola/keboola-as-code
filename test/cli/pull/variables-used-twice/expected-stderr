@@ -3,6 +3,3 @@ Warning:
   - Only one relation "variablesFor" expected, but found 2:
     - {"componentId":"ex-generic-v2","configId":"%s"}
     - {"componentId":"ex-generic-v2","configId":"%s"}
-- Missing relation "variablesFor" in config "branch:%s/component:keboola.variables/config:%s":
-  - Referenced from config row "branch:%s/component:keboola.variables/config:%s/row:%s".
-  - By relation "variablesValuesFor".
