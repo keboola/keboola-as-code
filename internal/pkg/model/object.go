@@ -595,15 +595,16 @@ func (r *ConfigRow) GetContent() *orderedmap.OrderedMap {
 }
 
 // ParentKey - config parent can be modified via Relations, e.g. variables config embedded in another config.
-// When multiple relation-defined parents exist (shared variables config), fall back to the structural
-// parent (branch). The two-pass validator emits a warning and the ignore mapper excludes the config;
-// this fallback prevents PathsGenerator from crashing if those steps fail to catch every edge case.
+// When Relations.ParentKey returns an error it means multiple relation-defined parents exist (a variables
+// config shared by more than one consumer). In that case fall back to the structural parent (branch).
+// Other error kinds from Relations.ParentKey cannot occur here because individual relation errors require
+// a non-ConfigKey source, but c.Key() is always a ConfigKey.
 func (c *Config) ParentKey() (Key, error) {
 	parentKey, err := c.Relations.ParentKey(c.Key())
 	if err == nil && parentKey != nil {
 		return parentKey, nil
 	}
-	// No parent defined via "Relations" (or multiple parents — fall back to structural parent).
+	// No parent defined via "Relations", or multiple parents — fall back to structural parent (branch).
 	return c.ConfigKey.ParentKey()
 }
 
