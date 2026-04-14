@@ -41,6 +41,17 @@
         },
         {
           "componentId": "ex-generic-v2",
+          "name": "With Variables 1",
+          "description": "test fixture",
+          "configuration": {
+            "variables_id": "%s",
+            "variables_values_id": "%s"
+          },
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
           "name": "With Variables From Template",
           "description": "test fixture",
           "configuration": {
@@ -54,17 +65,6 @@
             "KBC.KAC.templates.repository": "keboola",
             "KBC.KAC.templates.templateId": "my-template-id"
           },
-          "isDisabled": false
-        },
-        {
-          "componentId": "ex-generic-v2",
-          "name": "With Variables 1",
-          "description": "test fixture",
-          "configuration": {
-            "variables_id": "%s",
-            "variables_values_id": "%s"
-          },
-          "rows": [],
           "isDisabled": false
         }
       ]
