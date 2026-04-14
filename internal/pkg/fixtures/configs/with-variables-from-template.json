@@ -1,0 +1,16 @@
+{
+  "componentId": "ex-generic-v2",
+  "name": "With Variables From Template",
+  "configuration": {
+    "variables_id": "%%TEST_CONFIG_WITH_VARIABLES_FROM_TEMPLATE_VARIABLES_ID%%",
+    "variables_values_id": "%%TEST_CONFIG_WITH_VARIABLES_FROM_TEMPLATE_VARIABLES_VALUES_ID%%"
+  },
+  "rows": [],
+  "metadata": {
+    "KBC.KAC.templates.configId": "{\"idInTemplate\":\"with-variables-from-template\"}",
+    "KBC.KAC.templates.instanceId": "inst-001",
+    "KBC.KAC.templates.repository": "keboola",
+    "KBC.KAC.templates.templateId": "my-template-id"
+  },
+  "isDisabled": false
+}
