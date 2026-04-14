@@ -595,19 +595,17 @@ func (r *ConfigRow) GetContent() *orderedmap.OrderedMap {
 }
 
 // ParentKey - config parent can be modified via Relations, e.g. variables config embedded in another config.
-// When Relations.ParentKey returns ErrMultipleParents (a shared variables config), fall back to the
-// structural parent (branch). VariablesForRelation is only ever constructed by
-// VariablesFromRelation.NewOtherSideRelation, which hard-codes ComponentID: keboola.VariablesComponentID,
-// so neither checkDefinedOn guard can trigger in practice. All other errors are propagated.
+// When a keboola.variables config is shared by multiple consumers (ErrMultipleParents), fall back to the
+// structural parent (branch). All other errors are propagated.
 func (c *Config) ParentKey() (Key, error) {
 	parentKey, err := c.Relations.ParentKey(c.Key())
 	if err == nil && parentKey != nil {
 		return parentKey, nil
 	}
-	if err != nil && !errors.Is(err, ErrMultipleParents) {
+	if err != nil && (!errors.Is(err, ErrMultipleParents) || c.ComponentID != keboola.VariablesComponentID) {
 		return nil, err
 	}
-	// No relation-defined parent, or multiple parents (shared variables config) —
+	// No relation-defined parent, or shared variables config with multiple consumers —
 	// fall back to the structural parent (branch).
 	return c.ConfigKey.ParentKey()
 }
