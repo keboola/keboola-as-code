@@ -43,36 +43,63 @@ func (r *Records) SetRecords(records []model.ObjectManifest) error {
 	// Clear
 	r.all = orderedmap.New()
 
-	// Track records
+	// Track records (only adds to r.all; parent-path resolution happens below).
+	// Do not return early on error: successfully tracked records must still have
+	// their parent paths resolved, otherwise they are left with parentPathSet=false
+	// which causes panics during subsequent state loading.
 	errs := errors.NewMultiError()
 	for _, record := range records {
 		if err := r.trackRecord(record); err != nil {
 			errs.Append(err)
 		}
 	}
-	if errs.Len() > 0 {
-		return errs
-	}
 
-	// Resolve parent paths, we can do it when all the records are loaded.
+	// Resolve parent paths — possible only after all records are loaded.
 	// Collect errors and delete failed records instead of aborting early.
 	// This prevents records with an unresolved parent path (parentPathSet=false)
 	// from remaining in the map and causing panics during subsequent state loading.
-	errs = errors.NewMultiError()
-	for _, key := range r.all.Keys() {
+	//
+	// Use a snapshot copy of the keys: orderedmap.Keys() returns the live internal
+	// slice, and slices.Delete (Go 1.22+) zeroes freed tail elements, so iterating
+	// over the live slice while deleting would silently skip later entries.
+	for _, key := range append([]string{}, r.all.Keys()...) {
 		v, found := r.all.Get(key)
 		if !found {
-			continue // defensive: already removed in this pass
+			continue // unreachable today; guard against future cascading deletion
 		}
 		record := v.(model.ObjectManifest)
 		if err := r.PersistRecord(record); err != nil {
 			errs.Append(err)
-			// Delete the failed record so it cannot remain with parentPathSet=false.
-			// Dependent children (rows/configs) will also fail their own PersistRecord
-			// call because their parent is now gone, and will be deleted in the same pass.
 			r.DeleteByKey(record.Key())
 		}
 	}
+
+	// Cascading cleanup: when a child was persisted before its parent (possible
+	// when parentage is determined by Relations.ParentKey), and the parent was
+	// deleted above, the child remains with a stale path. Re-run until stable.
+	for {
+		removed := false
+		for _, key := range append([]string{}, r.all.Keys()...) {
+			v, found := r.all.Get(key)
+			if !found {
+				continue
+			}
+			record := v.(model.ObjectManifest)
+			parentKey, err := record.ParentKey()
+			if err != nil || parentKey == nil {
+				continue // branch-level records or invalid relations — skip
+			}
+			if _, parentFound := r.GetRecord(parentKey); !parentFound {
+				errs.Append(errors.Errorf("orphaned record %s: parent not found", record.Desc()))
+				r.DeleteByKey(record.Key())
+				removed = true
+			}
+		}
+		if !removed {
+			break
+		}
+	}
+
 	return errs.ErrorOrNil()
 }
 

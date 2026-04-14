@@ -43,8 +43,12 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Get local project
-			prj, _, err := d.LocalProject(cmd.Context(), false)
+			// Get local project.
+			// Use ignoreErrors=true so that an inconsistent manifest (e.g. a scheduler
+			// whose orchestrator parent was never pulled) does not block diff.
+			// SetRecords() deletes any orphaned records, so no record is left with an
+			// unresolved parent path. A warning is logged by manifest.Load() in this case.
+			prj, _, err := d.LocalProject(cmd.Context(), true)
 			if err != nil {
 				return err
 			}

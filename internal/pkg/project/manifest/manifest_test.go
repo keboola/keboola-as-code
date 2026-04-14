@@ -181,7 +181,12 @@ func TestManifestCyclicDependency(t *testing.T) {
 	manifest, err := Load(ctx, log.NewNopLogger(), fs, env.Empty(), false)
 	assert.Nil(t, manifest)
 	require.Error(t, err)
-	assert.Equal(t, "invalid manifest:\n- a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())
+	// Config 111 is removed due to the cyclic dependency. Config 222 (whose parent
+	// is config 111) is then also detected as having a missing parent and removed.
+	assert.Equal(t, "invalid manifest:"+
+		"\n- a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\""+
+		"\n- manifest record for config \"branch:123/component:keboola.variables/config:111\" not found, referenced from config \"branch:123/component:keboola.variables/config:222\"",
+		err.Error())
 }
 
 func TestManifest_AllowTargetENV(t *testing.T) {

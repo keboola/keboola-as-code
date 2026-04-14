@@ -125,7 +125,8 @@ func Load(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Pro
 		// (e.g. a scheduler config whose orchestrator was never pulled).
 		// Orphaned records are deleted by SetRecords, so no record is left with
 		// an unresolved parent path.
-		logger.Warnf(ctx, "Manifest loaded with warnings (some records were skipped): %s\nRun `kbc pull --force` to fully reset the local state, or add the affected configs to .kbcignore.", err)
+		logger.Warnf(ctx, "Manifest loaded with warnings (some records were skipped): %s", err)
+		logger.Warnf(ctx, "Run `kbc pull --force` to fully reset the local state, or add the affected configs to .kbcignore.")
 	}
 
 	// Return
