@@ -54,15 +54,26 @@ func (r *Records) SetRecords(records []model.ObjectManifest) error {
 		return errs
 	}
 
-	// Resolve parent paths, we can do it when all the records are loaded
+	// Resolve parent paths, we can do it when all the records are loaded.
+	// Collect errors and delete failed records instead of aborting early.
+	// This prevents records with an unresolved parent path (parentPathSet=false)
+	// from remaining in the map and causing panics during subsequent state loading.
+	errs = errors.NewMultiError()
 	for _, key := range r.all.Keys() {
-		record, _ := r.all.Get(key)
-		if err := r.PersistRecord(record.(model.ObjectManifest)); err != nil {
-			return err
+		v, found := r.all.Get(key)
+		if !found {
+			continue // defensive: already removed in this pass
+		}
+		record := v.(model.ObjectManifest)
+		if err := r.PersistRecord(record); err != nil {
+			errs.Append(err)
+			// Delete the failed record so it cannot remain with parentPathSet=false.
+			// Dependent children (rows/configs) will also fail their own PersistRecord
+			// call because their parent is now gone, and will be deleted in the same pass.
+			r.DeleteByKey(record.Key())
 		}
 	}
-
-	return nil
+	return errs.ErrorOrNil()
 }
 
 func (r *Records) SortBy() string {

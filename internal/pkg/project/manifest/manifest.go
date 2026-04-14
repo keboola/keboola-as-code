@@ -116,8 +116,16 @@ func Load(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Pro
 	m.repositories = content.Templates.Repositories
 
 	// Set records
-	if err := m.SetRecords(content.records()); err != nil && !ignoreErrors {
-		return nil, InvalidManifestError{errors.PrefixError(err, "invalid manifest")}
+	if err := m.SetRecords(content.records()); err != nil {
+		if !ignoreErrors {
+			return nil, InvalidManifestError{errors.PrefixError(err, "invalid manifest")}
+		}
+		// Log a warning so the user knows some records were skipped.
+		// This happens when a config's parent config is missing from the manifest
+		// (e.g. a scheduler config whose orchestrator was never pulled).
+		// Orphaned records are deleted by SetRecords, so no record is left with
+		// an unresolved parent path.
+		logger.Warnf(ctx, "Manifest loaded with warnings (some records were skipped): %s\nRun `kbc pull --force` to fully reset the local state, or add the affected configs to .kbcignore.", err)
 	}
 
 	// Return
