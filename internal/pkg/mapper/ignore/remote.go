@@ -63,9 +63,11 @@ func (m *ignoreMapper) isIgnoredConfig(ctx context.Context, config *model.Config
 	if config.ComponentID == keboola.VariablesComponentID {
 		variablesForRels := config.Relations.GetByType(model.VariablesForRelType)
 
-		// Ignore if shared across multiple consumers — cannot be embedded under a single
-		// parent. The two-pass relation validator should remove these; this is a safety net
-		// for the Templates API where object iteration order exposes an edge case.
+		// Ignore if shared across multiple consumers — cannot be embedded under a single parent.
+		// Normally the two-pass relations mapper removes all VariablesForRelType entries when
+		// duplicates are detected (leaving len == 0, caught by the unattached check below).
+		// This guard fires only when the variables config was absent from the loaded batch in
+		// which consumer relations were linked, so the dedup pass never ran for it.
 		if len(variablesForRels) > 1 {
 			m.logger.Debugf(ctx, "Ignored %s shared by %d consumers", config.Desc(), len(variablesForRels))
 			return true

@@ -24,6 +24,10 @@ const (
 	UsedInRowInputMappingRelType    = RelationType(`usedInRowInputMapping`)
 )
 
+// ErrMultipleParents is returned by Relations.ParentKey when more than one relation
+// defines a parent key for the same object.
+var ErrMultipleParents = errors.New(`multiple parents defined by "relations"`)
+
 // OneToXRelations gets relations that can be defined on an object only once.
 func OneToXRelations() []RelationType {
 	return []RelationType{
@@ -80,7 +84,7 @@ func (v Relations) ParentKey(source Key) (Key, error) {
 
 	// Multiple parents are forbidden
 	if len(parents) > 1 {
-		return nil, errors.Errorf(`unexpected state: multiple parents defined by "relations" in %s`, source.Desc())
+		return nil, errors.Errorf(`unexpected state in %s: %w`, source.Desc(), ErrMultipleParents)
 	}
 
 	return nil, nil
