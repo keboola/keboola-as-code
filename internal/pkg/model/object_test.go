@@ -109,6 +109,23 @@ func TestConfig_ParentKey_MultipleParentsFallsBackToBranch(t *testing.T) {
 	assert.Equal(t, BranchKey{ID: 1}, parentKey)
 }
 
+func TestConfig_ParentKey_MultipleParentsPropagatesForNonVariables(t *testing.T) {
+	t.Parallel()
+	// SchedulerForRelation.checkDefinedOn only requires a ConfigKey (no component-ID check),
+	// so two entries on the same config reach the multi-parents sentinel without being
+	// rejected by a component guard first.
+	cfg := &Config{
+		ConfigKey: ConfigKey{BranchID: 1, ComponentID: keboola.SchedulerComponentID, ID: "3"},
+		Relations: Relations{
+			&SchedulerForRelation{ComponentID: "ex-generic-v2", ConfigID: "1"},
+			&SchedulerForRelation{ComponentID: "ex-generic-v2", ConfigID: "2"},
+		},
+	}
+	_, err := cfg.ParentKey()
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrMultipleParents)
+}
+
 func TestBranchMetadata_DeleteTemplateUsage(t *testing.T) {
 	t.Parallel()
 

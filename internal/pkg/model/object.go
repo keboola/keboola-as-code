@@ -602,11 +602,14 @@ func (c *Config) ParentKey() (Key, error) {
 	if err == nil && parentKey != nil {
 		return parentKey, nil
 	}
-	if err != nil && (!errors.Is(err, ErrMultipleParents) || c.ComponentID != keboola.VariablesComponentID) {
+	if err != nil {
+		if errors.Is(err, ErrMultipleParents) && c.ComponentID == keboola.VariablesComponentID {
+			// Shared variables config with multiple consumers — fall back to structural parent.
+			return c.ConfigKey.ParentKey()
+		}
 		return nil, err
 	}
-	// No relation-defined parent, or shared variables config with multiple consumers —
-	// fall back to the structural parent (branch).
+	// No relation-defined parent — fall back to the structural parent (branch).
 	return c.ConfigKey.ParentKey()
 }
 
