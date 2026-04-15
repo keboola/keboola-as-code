@@ -1,2 +1,2 @@
-Manifest loaded with warnings (some records were skipped): %s
-Run `kbc pull --force` to fully reset the local state, or add the affected configs to .kbcignore.
+Manifest loaded with warnings (some records were skipped):
+  - %s

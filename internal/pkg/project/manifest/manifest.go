@@ -24,6 +24,20 @@ const (
 	BranchIDOverrideENV  = "KBC_BRANCH_ID"
 )
 
+// loadHintKey is a context key carrying an additional hint to log alongside the
+// "manifest loaded with warnings" warning when ignoreErrors=true. Set it with
+// WithLoadHint so that commands (push, diff) can provide context-appropriate
+// remediation advice without baking command-specific text into this package.
+type loadHintKey struct{}
+
+// WithLoadHint returns a copy of ctx that carries an additional hint message.
+// The message is logged as a second Warn line when manifest.Load encounters
+// errors and ignoreErrors=true. Pull --force does NOT set a hint so the user
+// is not told to run pull --force while they are already doing so.
+func WithLoadHint(ctx context.Context, hint string) context.Context {
+	return context.WithValue(ctx, loadHintKey{}, hint)
+}
+
 type InvalidManifestError struct {
 	error
 }
@@ -125,8 +139,18 @@ func Load(ctx context.Context, logger log.Logger, fs filesystem.Fs, envs env.Pro
 		// (e.g. a scheduler config whose orchestrator was never pulled).
 		// Orphaned records are deleted by SetRecords, so no record is left with
 		// an unresolved parent path.
-		logger.Warnf(ctx, "Manifest loaded with warnings (some records were skipped): %s", err)
-		logger.Warnf(ctx, "Run `kbc pull --force` to fully reset the local state, or add the affected configs to .kbcignore.")
+		logger.Warn(ctx, "Manifest loaded with warnings (some records were skipped):")
+		var multi errors.MultiError
+		if errors.As(err, &multi) {
+			for _, e := range multi.WrappedErrors() {
+				logger.Warnf(ctx, "  - %s", e)
+			}
+		} else {
+			logger.Warnf(ctx, "  - %s", err)
+		}
+		if hint, _ := ctx.Value(loadHintKey{}).(string); hint != "" {
+			logger.Warn(ctx, hint)
+		}
 	}
 
 	// Return

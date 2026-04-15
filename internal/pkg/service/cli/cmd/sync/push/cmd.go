@@ -3,6 +3,7 @@ package push
 import (
 	"github.com/spf13/cobra"
 
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -50,7 +51,12 @@ func Command(p dependencies.Provider) *cobra.Command {
 			// whose orchestrator parent was never pulled) does not block push.
 			// SetRecords() deletes any orphaned records, so no record is left with an
 			// unresolved parent path. A warning is logged by manifest.Load() in this case.
-			prj, _, err := d.LocalProject(cmd.Context(), true)
+			// NOTE: if the orphaned configs still exist in remote, running push --force
+			// will schedule them for remote deletion (they are absent from local state).
+			ctx := projectManifest.WithLoadHint(cmd.Context(),
+				"Orphaned records are excluded from the push. Running `push --force` may delete them from remote. "+
+					"Run `kbc pull --force` to reset local state, or add the affected configs to .kbcignore.")
+			prj, _, err := d.LocalProject(ctx, true)
 			if err != nil {
 				return err
 			}
