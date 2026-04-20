@@ -1,0 +1,73 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true,
+        "metadata": {
+          "KBC.KAC.templates.instances": "[{\"instanceId\":\"inst-001\",\"instanceName\":\"Inst 001\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.2.3\",\"created\":{\"date\":\"2022-01-01T07:00:00Z\",\"tokenId\":\"123\"},\"updated\":{\"date\":\"2022-01-01T07:00:00Z\",\"tokenId\":\"123\"}}]"
+        }
+      },
+      "configs": [
+        {
+          "componentId": "keboola.variables",
+          "name": "Variables",
+          "description": "test fixture",
+          "configuration": {
+            "variables": [
+              {
+                "name": "foo",
+                "type": "string"
+              }
+            ]
+          },
+          "rows": [
+            {
+              "name": "Default values",
+              "description": "test fixture",
+              "isDisabled": false,
+              "configuration": {
+                "values": [
+                  {
+                    "name": "foo",
+                    "value": "bar"
+                  }
+                ]
+              }
+            }
+          ],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "With Variables 1",
+          "description": "test fixture",
+          "configuration": {
+            "variables_id": "%s",
+            "variables_values_id": "%s"
+          },
+          "rows": [],
+          "isDisabled": false
+        },
+        {
+          "componentId": "ex-generic-v2",
+          "name": "With Variables From Template",
+          "description": "test fixture",
+          "configuration": {
+            "variables_id": "%s",
+            "variables_values_id": "%s"
+          },
+          "rows": [],
+          "metadata": {
+            "KBC.KAC.templates.configId": "{\"idInTemplate\":\"with-variables-from-template\"}",
+            "KBC.KAC.templates.instanceId": "inst-001",
+            "KBC.KAC.templates.repository": "keboola",
+            "KBC.KAC.templates.templateId": "my-template-id"
+          },
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}

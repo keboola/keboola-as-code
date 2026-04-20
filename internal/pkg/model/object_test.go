@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -92,6 +93,37 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 			MainConfig:     &TemplateMainConfig{ConfigID: "7890", ComponentID: "foo.bar"},
 		},
 	}, usages)
+}
+
+func TestConfig_ParentKey_MultipleParentsFallsBackToBranch(t *testing.T) {
+	t.Parallel()
+	cfg := &Config{
+		ConfigKey: ConfigKey{BranchID: 1, ComponentID: keboola.VariablesComponentID, ID: "3"},
+		Relations: Relations{
+			&VariablesForRelation{ComponentID: "ex-generic-v2", ConfigID: "1"},
+			&VariablesForRelation{ComponentID: "ex-generic-v2", ConfigID: "2"},
+		},
+	}
+	parentKey, err := cfg.ParentKey()
+	require.NoError(t, err)
+	assert.Equal(t, BranchKey{ID: 1}, parentKey)
+}
+
+func TestConfig_ParentKey_MultipleParentsPropagatesForNonVariables(t *testing.T) {
+	t.Parallel()
+	// SchedulerForRelation.checkDefinedOn only requires a ConfigKey (no component-ID check),
+	// so two entries on the same config reach the multi-parents sentinel without being
+	// rejected by a component guard first.
+	cfg := &Config{
+		ConfigKey: ConfigKey{BranchID: 1, ComponentID: keboola.SchedulerComponentID, ID: "3"},
+		Relations: Relations{
+			&SchedulerForRelation{ComponentID: "ex-generic-v2", ConfigID: "1"},
+			&SchedulerForRelation{ComponentID: "ex-generic-v2", ConfigID: "2"},
+		},
+	}
+	_, err := cfg.ParentKey()
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrMultipleParents)
 }
 
 func TestBranchMetadata_DeleteTemplateUsage(t *testing.T) {

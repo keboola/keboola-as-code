@@ -62,6 +62,55 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	}, state.All())
 }
 
+func TestIgnoreMapper_AfterRemoteOperation_Variables_SharedByMultipleConsumers(t *testing.T) {
+	t.Parallel()
+	state, d := createStateWithMapper(t)
+	logger := d.DebugLogger()
+
+	// Consumer 1
+	consumer1Key := model.ConfigKey{BranchID: 1, ComponentID: "ex-generic-v2", ID: "1"}
+	consumer1 := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{ConfigKey: consumer1Key},
+		Remote:         &model.Config{ConfigKey: consumer1Key},
+	}
+	require.NoError(t, state.Set(consumer1))
+
+	// Consumer 2
+	consumer2Key := model.ConfigKey{BranchID: 1, ComponentID: "ex-generic-v2", ID: "2"}
+	consumer2 := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{ConfigKey: consumer2Key},
+		Remote:         &model.Config{ConfigKey: consumer2Key},
+	}
+	require.NoError(t, state.Set(consumer2))
+
+	// Shared variables config with two VariablesForRelation entries — simulates the case
+	// where the relations mapper's two-pass dedup did not run for this config (it was absent
+	// from the loaded batch when consumer relations were linked).
+	sharedVarsKey := model.ConfigKey{BranchID: 1, ComponentID: keboola.VariablesComponentID, ID: "3"}
+	sharedVars := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{ConfigKey: sharedVarsKey},
+		Remote: &model.Config{
+			ConfigKey: sharedVarsKey,
+			Relations: model.Relations{
+				&model.VariablesForRelation{ComponentID: consumer1Key.ComponentID, ConfigID: consumer1Key.ID},
+				&model.VariablesForRelation{ComponentID: consumer2Key.ComponentID, ConfigID: consumer2Key.ID},
+			},
+		},
+	}
+	require.NoError(t, state.Set(sharedVars))
+
+	// Invoke
+	changes := model.NewRemoteChanges()
+	changes.AddLoaded(consumer1)
+	changes.AddLoaded(consumer2)
+	changes.AddLoaded(sharedVars)
+	require.NoError(t, state.Mapper().AfterRemoteOperation(t.Context(), changes))
+	logger.AssertJSONMessages(t, `{"level":"debug","message":"Ignored config \"branch:1/component:keboola.variables/config:3\" shared by 2 consumers"}`)
+
+	// Shared variables config is removed; consumers remain
+	assert.Equal(t, []model.ObjectState{consumer1, consumer2}, state.All())
+}
+
 func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 	t.Parallel()
 	state, d := createStateWithMapper(t)
