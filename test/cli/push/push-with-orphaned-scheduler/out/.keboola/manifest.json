@@ -37,20 +37,5 @@
       "path": "main"
     }
   ],
-  "configurations": [
-    {
-      "branchId": %%TEST_BRANCH_MAIN_ID%%,
-      "componentId": "keboola.scheduler",
-      "id": "456",
-      "path": "schedules/schedule1",
-      "relations": [
-        {
-          "componentId": "ex-generic-v2",
-          "configId": "123",
-          "type": "schedulerFor"
-        }
-      ],
-      "rows": []
-    }
-  ]
+  "configurations": []
 }

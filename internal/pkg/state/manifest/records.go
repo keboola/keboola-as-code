@@ -34,10 +34,16 @@ func NewRecords(sortBy string) *Records {
 
 func (r *Records) SetRecords(records []model.ObjectManifest) error {
 	r.loaded = false
+	orphaned := false
 	defer func() {
-		// Track if manifest was changed after load
+		// Track if manifest was changed after load.
+		// If records were dropped (orphaned), the in-memory state diverges from
+		// the manifest file on disk — preserve changed=true so callers (e.g. push)
+		// can detect this and save the cleaned manifest to silence future warnings.
 		r.loaded = true
-		r.changed = false
+		if !orphaned {
+			r.changed = false
+		}
 	}()
 
 	// Clear
@@ -66,6 +72,8 @@ func (r *Records) SetRecords(records []model.ObjectManifest) error {
 		if err := r.PersistRecord(record); err != nil {
 			errs.Append(err)
 			r.DeleteByKey(record.Key())
+			orphaned = true
+			r.changed = true // explicit: DeleteByKey only propagates changed for persisted records
 		}
 	}
 
