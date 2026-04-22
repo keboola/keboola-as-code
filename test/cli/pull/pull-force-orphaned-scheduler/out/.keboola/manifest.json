@@ -58,6 +58,13 @@
         }
       ],
       "rows": []
+    },
+    {
+      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "componentId": "ex-generic-v2",
+      "id": "%%TEST_BRANCH_MAIN_CONFIG_WITHOUT_ROWS_ID%%",
+      "path": "extractor/ex-generic-v2/without-rows",
+      "rows": []
     }
   ]
 }
