@@ -1,5 +1,20 @@
 {
   "parameters": {
-    "action": ""
+    "db": {
+      "#privateKey": "",
+      "account": "",
+      "database": "",
+      "driver": "",
+      "host": "",
+      "loginType": "",
+      "port": 443,
+      "region": "",
+      "role": "",
+      "schema": "",
+      "ssoLoginAvailable": false,
+      "user": "",
+      "warehouse": "",
+      "workspaceId": 0
+    }
   }
 }
