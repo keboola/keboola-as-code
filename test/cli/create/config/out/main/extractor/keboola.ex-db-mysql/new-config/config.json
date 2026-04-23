@@ -10,7 +10,6 @@
       "networkCompression": false,
       "port": 0,
       "ssh": {
-        "#privateKey": "",
         "enabled": false,
         "keys": {
           "#private": "",

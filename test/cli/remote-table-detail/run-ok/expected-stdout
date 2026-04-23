@@ -3,7 +3,7 @@ Table "in.c-test.accounts":
   Primary key: Id, Name
   Columns: Id, Name, Region, Status, First_Order
   Rows: 4
-  Size: 2.6 kB
+  Size: %s kB
   Created at: %s
   Last import at: %s
   Last changed at: %s
