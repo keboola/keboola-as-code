@@ -91,7 +91,7 @@ require (
 	go.uber.org/zap v1.27.1
 	goa.design/goa/v3 v3.24.3
 	goa.design/plugins/v3 v3.24.3
-	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
+	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
 	golang.org/x/sync v0.20.0
 	google.golang.org/grpc v1.80.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
@@ -181,13 +181,13 @@ require (
 	go.uber.org/atomic v1.11.0
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.50.0
-	golang.org/x/mod v0.34.0 // indirect
-	golang.org/x/net v0.52.0
+	golang.org/x/mod v0.35.0 // indirect
+	golang.org/x/net v0.53.0
 	golang.org/x/sys v0.43.0
 	golang.org/x/term v0.42.0
 	golang.org/x/text v0.36.0
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.43.0
+	golang.org/x/tools v0.44.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/ini.v1 v1.67.0 // indirect
@@ -388,9 +388,9 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.37.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.1 // indirect
 	gocloud.dev v0.44.0 // indirect
-	golang.org/x/image v0.35.0 // indirect
-	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/perf v0.0.0-20260112171951-5abaabe9f1bd // indirect
+	golang.org/x/image v0.39.0 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
+	golang.org/x/perf v0.0.0-20260409210113-8e83ce0f7b1c // indirect
 	google.golang.org/api v0.257.0 // indirect
 	google.golang.org/genproto v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260120221211-b8f7ae30c516 // indirect
