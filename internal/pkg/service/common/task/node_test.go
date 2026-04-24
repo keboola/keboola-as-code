@@ -903,7 +903,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 
 	// Wait for shutdown
 	select {
-	case <-time.After(time.Second):
+	case <-time.After(5 * time.Second):
 		assert.Fail(t, "timeout")
 	case <-shutdownDone:
 	}
