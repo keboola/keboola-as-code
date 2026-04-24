@@ -45,7 +45,7 @@ require (
 	github.com/keboola/go-utils v1.4.0
 	github.com/keboola/keboola-sdk-go/v2 v2.18.0
 	github.com/keboola/keboola-sdk-go/v2/transfer v1.0.0
-	github.com/klauspost/compress v1.18.4
+	github.com/klauspost/compress v1.18.5
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kylelemons/godebug v1.1.0
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
@@ -70,8 +70,8 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
-	github.com/valyala/fasthttp v1.69.0
-	github.com/valyala/fastjson v1.6.7
+	github.com/valyala/fasthttp v1.70.0
+	github.com/valyala/fastjson v1.6.10
 	github.com/writeas/go-strip-markdown/v2 v2.1.1
 	github.com/xtaci/kcp-go/v5 v5.6.67
 	go.etcd.io/etcd/api/v3 v3.6.7
@@ -236,7 +236,7 @@ require (
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/air-verse/air v1.62.0 // indirect
 	github.com/alecthomas/chroma v0.10.0 // indirect
-	github.com/andybalholm/brotli v1.2.0 // indirect
+	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/apex/log v1.9.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.0 // indirect
