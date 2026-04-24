@@ -83,7 +83,7 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 	}
 
 	informer := cache.NewSharedIndexInformer(
-		lw,
+		cache.ToListWatcherWithWatchListSemantics(lw, client),
 		&unstructured.Unstructured{},
 		0, // No resync — rely on watch events only.
 		cache.Indexers{},
