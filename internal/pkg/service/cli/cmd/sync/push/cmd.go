@@ -3,9 +3,11 @@ package push
 import (
 	"github.com/spf13/cobra"
 
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
+	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -45,16 +47,45 @@ func Command(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Get local project
-			prj, _, err := d.LocalProject(cmd.Context(), false)
+			// Get local project.
+			// Use ignoreErrors=true so that an inconsistent manifest (e.g. a scheduler
+			// whose orchestrator parent was never pulled) does not block push.
+			// SetRecords() deletes any orphaned records, so no record is left with an
+			// unresolved parent path. A warning is logged by manifest.Load() in this case.
+			// NOTE: if the orphaned configs still exist in remote, running kbc push --force
+			// will schedule them for remote deletion (they are absent from local state).
+			hint := "Orphaned records are excluded from the push. Running `kbc push --force` may delete them from remote. " +
+				"Run `kbc pull --force` to reset local state."
+			if f.Force.Value {
+				hint = "Orphaned records are excluded from the push. " +
+					"With --force, these configs will be deleted from remote if they still exist there. " +
+					"Run `kbc pull --force` to reset local state first."
+			}
+			ctx := projectManifest.WithLoadHint(cmd.Context(), hint)
+			prj, _, err := d.LocalProject(ctx, true)
 			if err != nil {
 				return err
 			}
+
+			// Snapshot IsChanged() before LoadState to capture only orphan-cleanup changes.
+			// LoadState and push.Run do not modify the manifest (push is remote-only),
+			// so any post-snapshot IsChanged() would only be from orphan cleanup.
+			orphansCleaned := prj.ProjectManifest().IsChanged()
 
 			// Load project state
 			projectState, err := prj.LoadState(cmd.Context(), loadState.PushOptions(), d)
 			if err != nil {
 				return err
+			}
+
+			// If orphaned records were dropped during manifest load, the in-memory state
+			// diverges from the manifest file on disk. Save the cleaned manifest now so
+			// the warning does not recur on every subsequent push/diff invocation.
+			// Skip when --dry-run: that flag promises no local side effects.
+			if orphansCleaned && !f.DryRun.Value {
+				if _, err = saveManifest.Run(cmd.Context(), projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+					return err
+				}
 			}
 
 			// Change description - optional arg

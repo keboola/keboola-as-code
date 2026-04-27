@@ -1,0 +1,3 @@
+Manifest loaded with warnings (some records were skipped):
+  - %s
+Run `kbc push` to clean up the manifest, or `kbc pull --force` to reset local state.

@@ -34,35 +34,73 @@ func NewRecords(sortBy string) *Records {
 
 func (r *Records) SetRecords(records []model.ObjectManifest) error {
 	r.loaded = false
+	orphaned := false
 	defer func() {
-		// Track if manifest was changed after load
+		// Track if manifest was changed after load.
+		// If records were dropped (orphaned), the in-memory state diverges from
+		// the manifest file on disk — preserve changed=true so callers (e.g. push)
+		// can detect this and save the cleaned manifest to silence future warnings.
 		r.loaded = true
-		r.changed = false
+		if !orphaned {
+			r.changed = false
+		}
 	}()
 
 	// Clear
 	r.all = orderedmap.New()
 
-	// Track records
+	// Track records (only adds to r.all; parent-path resolution happens below).
+	// Do not return early on error: successfully tracked records must still have
+	// their parent paths resolved, otherwise they are left with parentPathSet=false
+	// which causes panics during subsequent state loading.
 	errs := errors.NewMultiError()
 	for _, record := range records {
 		if err := r.trackRecord(record); err != nil {
 			errs.Append(err)
-		}
-	}
-	if errs.Len() > 0 {
-		return errs
-	}
-
-	// Resolve parent paths, we can do it when all the records are loaded
-	for _, key := range r.all.Keys() {
-		record, _ := r.all.Get(key)
-		if err := r.PersistRecord(record.(model.ObjectManifest)); err != nil {
-			return err
+			orphaned = true
 		}
 	}
 
-	return nil
+	// Resolve parent paths — snapshot keys first: orderedmap.Keys() returns the live slice, mutated by DeleteByKey.
+	// Child-before-parent ordering is safe: if a parent's PersistRecord fails, the cascade loop removes its children.
+	for _, key := range append([]string{}, r.all.Keys()...) {
+		v, found := r.all.Get(key)
+		if !found {
+			continue
+		}
+		record := v.(model.ObjectManifest)
+		if err := r.PersistRecord(record); err != nil {
+			errs.Append(err)
+			r.DeleteByKey(record.Key())
+			orphaned = true
+			r.changed = true // explicit: DeleteByKey only propagates changed for persisted records
+		}
+	}
+
+	// Cascade: re-run until stable, detaching orphaned children whose parent was just removed.
+	for {
+		removed := false
+		for _, key := range append([]string{}, r.all.Keys()...) {
+			v, found := r.all.Get(key)
+			if !found {
+				continue
+			}
+			record := v.(model.ObjectManifest)
+			if _, err := r.GetParent(record); err != nil {
+				// Intentionally not appended to errs: this is a cascade effect of a
+				// parent already removed above. The root cause is already in errs.
+				r.naming.Detach(record.Key()) // must detach: PersistRecord already attached it
+				r.DeleteByKey(record.Key())   // r.changed implicit: records are persisted, unlike the PersistRecord failure path above
+				removed = true
+				orphaned = true
+			}
+		}
+		if !removed {
+			break
+		}
+	}
+
+	return errs.ErrorOrNil()
 }
 
 func (r *Records) SortBy() string {
