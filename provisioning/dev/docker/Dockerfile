@@ -1,4 +1,4 @@
-FROM golang:1.26.1
+FROM golang:1.26.2
 
 ENV HOME=/my-home
 ENV GOCACHE=/tmp/cache/go
@@ -13,9 +13,9 @@ RUN apt-get update && apt-get install --no-install-recommends --yes zip unzip na
 ENV EDITOR=nano
 
 # Install Protobuf
-RUN curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v30.2/protoc-30.2-linux-x86_64.zip && \
-    unzip protoc-30.2-linux-x86_64.zip -d /usr/local && \
-    rm -f protoc-30.2-linux-x86_64.zip
+RUN curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v34.1/protoc-34.1-linux-x86_64.zip && \
+    unzip protoc-34.1-linux-x86_64.zip -d /usr/local && \
+    rm -f protoc-34.1-linux-x86_64.zip
 
 # Download toxiproxy
 RUN curl -L https://github.com/Shopify/toxiproxy/releases/download/v2.12.0/toxiproxy-server-linux-amd64 -o /usr/local/bin/toxiproxy-server

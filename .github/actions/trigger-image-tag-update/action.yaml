@@ -29,9 +29,9 @@ runs:
   steps:
     - name: Generate a token
       id: app-token
-      uses: actions/create-github-app-token@v1.11.0
+      uses: actions/create-github-app-token@v3.1.1
       with:
-        app-id: "1032801"
+        client-id: "1032801"
         private-key: ${{ inputs.github-app-private-key }}
         owner: ${{ github.repository_owner }}
         repositories: "kbc-stacks"

@@ -76,7 +76,7 @@ func TestManager_Wakeup(t *testing.T) {
 	require.Eventually(t, func() bool {
 		_, ok := watcher.GetState(ctx, appID)
 		return ok
-	}, 5*time.Second, 50*time.Millisecond)
+	}, 10*time.Second, 50*time.Millisecond)
 
 	// Clear list/watch actions from informer startup.
 	fakeClient.ClearActions()

@@ -56,12 +56,18 @@ func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) etcdclient.Config 
 		t.Fatalf(`etcd endpoint env "%s" is not set`, envPrefix+"ENDPOINT")
 	}
 
+	// Create the cleanup client now, while etcd is known to be reachable.
+	// Creating a new client inside t.Cleanup races with other cleanups that cancel
+	// contexts or close gRPC connections, causing "use of closed network connection".
+	cleanupCtx, cleanupCancel := context.WithCancelCause(context.Background())
+	cleanupClient := clientForTest(t, cleanupCtx, cfg)
+
 	t.Cleanup(func() {
-		ctx, cancel := context.WithCancelCause(context.Background())
-		client := clientForTest(t, ctx, cfg)
-		_, err := client.Delete(ctx, "", etcd.WithFromKey())
-		cancel(errors.Wrap(err, "cannot clear etcd after test"))
-		if err != nil {
+		defer cleanupCancel(nil)
+		defer func() { _ = cleanupClient.Close() }()
+		deleteCtx, deleteCancel := context.WithTimeoutCause(context.Background(), 30*time.Second, errors.New("etcd delete timeout"))
+		defer deleteCancel()
+		if _, err := cleanupClient.Delete(deleteCtx, "", etcd.WithFromKey()); err != nil {
 			t.Fatalf(`cannot clear etcd after test: %s`, err)
 		}
 	})
@@ -117,8 +123,10 @@ func clientForTest(t testOrBenchmark, ctx context.Context, cfg etcdclient.Config
 		}),
 	)
 
-	// Create etcd client
-	etcdClient, err := etcd.New(etcd.Config{
+	// Create etcd client, with retries for transient failures.
+	// Under heavy parallel test load, gRPC occasionally returns "use of closed
+	// network connection" during dial when a concurrent client is being torn down.
+	etcdClientCfg := etcd.Config{
 		Context:              ctx,
 		Endpoints:            []string{cfg.Endpoint},
 		DialTimeout:          15 * time.Second,
@@ -128,7 +136,12 @@ func clientForTest(t testOrBenchmark, ctx context.Context, cfg etcdclient.Config
 		Password:             cfg.Password, // optional
 		Logger:               logger,
 		DialOptions:          dialOpts,
-	})
+	}
+	etcdClient, err := etcd.New(etcdClientCfg)
+	for attempt := 1; err != nil && attempt < 5; attempt++ {
+		time.Sleep(time.Duration(attempt) * 200 * time.Millisecond)
+		etcdClient, err = etcd.New(etcdClientCfg)
+	}
 	if err != nil {
 		t.Fatalf("cannot create etcd client: %s, %s", err, debug.Stack())
 	}

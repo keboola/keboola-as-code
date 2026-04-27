@@ -8,7 +8,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: docker/build-push-action@v6
+    - uses: docker/build-push-action@v7
       with:
         context: ${{ github.workspace }}/build/package/linux/${{ inputs.type }}
         file: ${{ github.workspace }}/build/package/linux/${{ inputs.type }}/Dockerfile

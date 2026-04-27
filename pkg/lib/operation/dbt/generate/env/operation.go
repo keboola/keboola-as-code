@@ -210,7 +210,7 @@ func addToGitignore(ctx context.Context, fs filesystem.Fs, entry string) error {
 		}
 		existing = f.Content
 	}
-	for _, line := range strings.Split(existing, "\n") {
+	for line := range strings.SplitSeq(existing, "\n") {
 		if strings.TrimSpace(line) == entry {
 			return nil
 		}
