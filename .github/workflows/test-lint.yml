@@ -38,7 +38,7 @@ jobs:
           cache-s3-bucket: ${{ vars.CACHE_S3_BUCKET }}
 
       - name: Check links in Markdown files
-        uses: lycheeverse/lychee-action@v2.7.0
+        uses: lycheeverse/lychee-action@v2.8.0
         with:
           fail: true
           args: |
@@ -47,6 +47,7 @@ jobs:
             --accept 200..=299,429
             --exclude-path 'vendor'
             --exclude-path 'test'
+            --exclude-path 'third_party'
             --exclude '^http://localhost.*'
             --exclude '^https://app.datadoghq.eu/.*'
             --exclude '^https://community.chocolatey.org/.*'
