@@ -156,6 +156,11 @@ func TestRenameAllPlan_StatelessParentSkipped(t *testing.T) {
 	plan, err := NewPlan(projectState.State())
 	require.NoError(t, err)
 
+	// The fixture produces 3 legitimate rename actions (branch, mysql config, mysql row).
+	// Asserting the count ensures the plan is not vacuously empty — an empty plan would
+	// make the loop below a no-op and the NotEqual assertions would never fire.
+	require.Len(t, plan.actions, 3, "plan must contain the fixture's legitimate rename actions")
+
 	for _, action := range plan.actions {
 		assert.NotEqual(t, action.Manifest.Key(), orchKey)
 		assert.NotEqual(t, action.Manifest.Key(), schedulerKey)
