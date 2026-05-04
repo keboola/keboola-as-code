@@ -67,6 +67,13 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 		return nil
 	}
 
+	// Orphaned manifest entries have no local or remote state; skip them so
+	// LocalOrRemoteState() does not panic and they are excluded from rename.
+	if !objectState.HasLocalState() && !objectState.HasRemoteState() {
+		g.processed[objectState.Key().String()] = true
+		return nil
+	}
+
 	// Detect cyclic relations
 	if origin != nil && objectState.Key().String() == origin.String() {
 		return errors.Errorf(`a cyclic relation was found when generating path to %s`, origin.Desc())
@@ -91,6 +98,12 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 		parent := g.state.MustGet(parentKey)
 		if err := g.doUpdate(parent, origin); err != nil {
 			return err
+		}
+
+		// Skip if the parent is stateless — its path cannot be resolved.
+		if !parent.HasLocalState() && !parent.HasRemoteState() {
+			g.processed[objectState.Key().String()] = true
+			return nil
 		}
 
 		// Set new parent path
