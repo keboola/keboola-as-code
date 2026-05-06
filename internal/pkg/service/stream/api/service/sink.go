@@ -19,7 +19,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
+	jobtriggersink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/jobtriggersink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -286,8 +288,25 @@ func (s *service) UpdateSinkSettings(ctx context.Context, d dependencies.SinkReq
 }
 
 func (s *service) SinkStatisticsTotal(ctx context.Context, d dependencies.SinkRequestScope, _ *api.SinkStatisticsTotalPayload) (*api.SinkStatisticsTotalResult, error) {
+	// Use sinkMustExist (not Sink().Get) so that missing source returns sourceNotFound
+	// rather than sinkNotFound — the hierarchy check runs source first.
 	if err := s.sinkMustExist(ctx, d.SinkKey()); err != nil {
 		return nil, err
+	}
+
+	sink, err := s.definition.Sink().Get(d.SinkKey()).Do(ctx).ResultOrErr()
+	if err != nil {
+		return nil, err
+	}
+
+	// Job trigger sinks don't use the local storage statistics system.
+	// Their stats (triggered/failed counts) are tracked separately in etcd via the bridge.
+	if sink.Type == definition.SinkTypeJobTrigger {
+		jtStats, err := d.JobTriggerBridge().Stats(ctx, d.SinkKey())
+		if err != nil {
+			return nil, err
+		}
+		return s.mapper.NewSinkStatisticsTotalResponse(jobTriggerStatsToAggregated(jtStats)), nil
 	}
 
 	stats, err := d.StatisticsRepository().SinkStats(ctx, d.SinkKey())
@@ -591,4 +610,21 @@ func compareSinkFiles(a, b *api.SinkFile) int {
 	}
 
 	return 0
+}
+
+// jobTriggerStatsToAggregated converts SinkStats (job trigger counters) to the statistics.Aggregated
+// type used by the stats API response mapper. Triggered jobs appear in the Target level;
+// failed triggers are surfaced in the Total level's RecordsCount only.
+func jobTriggerStatsToAggregated(s jobtriggersink.SinkStats) statistics.Aggregated {
+	target := statistics.Value{
+		RecordsCount:  s.TriggeredCount,
+		FirstRecordAt: s.FirstTriggeredAt,
+		LastRecordAt:  s.LastTriggeredAt,
+	}
+	total := statistics.Value{
+		RecordsCount:  s.TriggeredCount + s.FailedCount,
+		FirstRecordAt: s.FirstTriggeredAt,
+		LastRecordAt:  s.LastTriggeredAt,
+	}
+	return statistics.Aggregated{Target: target, Total: total}
 }

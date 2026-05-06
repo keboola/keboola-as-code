@@ -52,6 +52,8 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
+	jobTriggerSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/jobtriggersink"
+	kaiAgentSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/kaiagentsink"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
@@ -74,6 +76,9 @@ const (
 	SourceRequestScopeCtxKey  = ctxKey("SourceRequestScope")
 	SinkRequestScopeCtxKey    = ctxKey("SinkRequestScope")
 	KeboolaProjectAPICtxKey   = ctxKey("KeboolaAuthorizedAPI")
+	// KeboolaTokenCtxKey stores the raw keboola.Token (including token string) for the authenticated project.
+	// Used by sink lifecycle hooks that need the token string (e.g., job trigger sink token storage).
+	KeboolaTokenCtxKey = ctxKey("KeboolaToken")
 )
 
 type ServiceScope interface {
@@ -89,6 +94,8 @@ type ServiceScope interface {
 	AggregationRepository() *aggregationRepo.Repository
 	KeboolaSinkBridge() *keboolaSinkBridge.Bridge
 	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
+	JobTriggerBridge() *jobTriggerSink.Bridge
+	KaiAgentBridge() *kaiAgentSink.Bridge
 	WatchTelemetryInterval() time.Duration
 }
 

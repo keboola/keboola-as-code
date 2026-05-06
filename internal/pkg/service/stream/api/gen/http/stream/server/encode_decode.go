@@ -3859,6 +3859,42 @@ func unmarshalTableColumnTemplateRequestBodyToStreamTableColumnTemplate(v *Table
 	return res
 }
 
+// unmarshalJobTriggerSinkCreateRequestBodyToStreamJobTriggerSinkCreate builds
+// a value of type *stream.JobTriggerSinkCreate from a value of type
+// *JobTriggerSinkCreateRequestBody.
+func unmarshalJobTriggerSinkCreateRequestBodyToStreamJobTriggerSinkCreate(v *JobTriggerSinkCreateRequestBody) *stream.JobTriggerSinkCreate {
+	if v == nil {
+		return nil
+	}
+	res := &stream.JobTriggerSinkCreate{
+		ComponentID:        *v.ComponentID,
+		ConfigID:           *v.ConfigID,
+		BranchID:           *v.BranchID,
+		ConfigDataTemplate: v.ConfigDataTemplate,
+	}
+
+	return res
+}
+
+// unmarshalKaiAgentSinkCreateRequestBodyToStreamKaiAgentSinkCreate builds a
+// value of type *stream.KaiAgentSinkCreate from a value of type
+// *KaiAgentSinkCreateRequestBody.
+func unmarshalKaiAgentSinkCreateRequestBodyToStreamKaiAgentSinkCreate(v *KaiAgentSinkCreateRequestBody) *stream.KaiAgentSinkCreate {
+	if v == nil {
+		return nil
+	}
+	res := &stream.KaiAgentSinkCreate{
+		Mode:               *v.Mode,
+		ChatID:             v.ChatID,
+		MessageTemplate:    v.MessageTemplate,
+		BranchID:           v.BranchID,
+		SuggestionsContext: v.SuggestionsContext,
+		DataTemplate:       v.DataTemplate,
+	}
+
+	return res
+}
+
 // marshalStreamTableSinkToTableSinkResponseBody builds a value of type
 // *TableSinkResponseBody from a value of type *stream.TableSink.
 func marshalStreamTableSinkToTableSinkResponseBody(v *stream.TableSink) *TableSinkResponseBody {
@@ -3928,6 +3964,40 @@ func marshalStreamTableColumnTemplateToTableColumnTemplateResponseBody(v *stream
 	return res
 }
 
+// marshalStreamJobTriggerSinkToJobTriggerSinkResponseBody builds a value of
+// type *JobTriggerSinkResponseBody from a value of type *stream.JobTriggerSink.
+func marshalStreamJobTriggerSinkToJobTriggerSinkResponseBody(v *stream.JobTriggerSink) *JobTriggerSinkResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &JobTriggerSinkResponseBody{
+		ComponentID:        v.ComponentID,
+		ConfigID:           v.ConfigID,
+		BranchID:           v.BranchID,
+		ConfigDataTemplate: v.ConfigDataTemplate,
+	}
+
+	return res
+}
+
+// marshalStreamKaiAgentSinkToKaiAgentSinkResponseBody builds a value of type
+// *KaiAgentSinkResponseBody from a value of type *stream.KaiAgentSink.
+func marshalStreamKaiAgentSinkToKaiAgentSinkResponseBody(v *stream.KaiAgentSink) *KaiAgentSinkResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &KaiAgentSinkResponseBody{
+		Mode:               v.Mode,
+		ChatID:             v.ChatID,
+		MessageTemplate:    v.MessageTemplate,
+		BranchID:           v.BranchID,
+		SuggestionsContext: v.SuggestionsContext,
+		DataTemplate:       v.DataTemplate,
+	}
+
+	return res
+}
+
 // marshalStreamSinkToSinkResponseBody builds a value of type *SinkResponseBody
 // from a value of type *stream.Sink.
 func marshalStreamSinkToSinkResponseBody(v *stream.Sink) *SinkResponseBody {
@@ -3942,6 +4012,12 @@ func marshalStreamSinkToSinkResponseBody(v *stream.Sink) *SinkResponseBody {
 	}
 	if v.Table != nil {
 		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)
+	}
+	if v.JobTrigger != nil {
+		res.JobTrigger = marshalStreamJobTriggerSinkToJobTriggerSinkResponseBody(v.JobTrigger)
+	}
+	if v.KaiAgent != nil {
+		res.KaiAgent = marshalStreamKaiAgentSinkToKaiAgentSinkResponseBody(v.KaiAgent)
 	}
 	if v.Version != nil {
 		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
@@ -3977,6 +4053,42 @@ func unmarshalTableSinkUpdateRequestBodyToStreamTableSinkUpdate(v *TableSinkUpda
 	}
 	if v.Mapping != nil {
 		res.Mapping = unmarshalTableMappingRequestBodyToStreamTableMapping(v.Mapping)
+	}
+
+	return res
+}
+
+// unmarshalJobTriggerSinkUpdateRequestBodyToStreamJobTriggerSinkUpdate builds
+// a value of type *stream.JobTriggerSinkUpdate from a value of type
+// *JobTriggerSinkUpdateRequestBody.
+func unmarshalJobTriggerSinkUpdateRequestBodyToStreamJobTriggerSinkUpdate(v *JobTriggerSinkUpdateRequestBody) *stream.JobTriggerSinkUpdate {
+	if v == nil {
+		return nil
+	}
+	res := &stream.JobTriggerSinkUpdate{
+		ComponentID:        v.ComponentID,
+		ConfigID:           v.ConfigID,
+		BranchID:           v.BranchID,
+		ConfigDataTemplate: v.ConfigDataTemplate,
+	}
+
+	return res
+}
+
+// unmarshalKaiAgentSinkUpdateRequestBodyToStreamKaiAgentSinkUpdate builds a
+// value of type *stream.KaiAgentSinkUpdate from a value of type
+// *KaiAgentSinkUpdateRequestBody.
+func unmarshalKaiAgentSinkUpdateRequestBodyToStreamKaiAgentSinkUpdate(v *KaiAgentSinkUpdateRequestBody) *stream.KaiAgentSinkUpdate {
+	if v == nil {
+		return nil
+	}
+	res := &stream.KaiAgentSinkUpdate{
+		Mode:               v.Mode,
+		ChatID:             v.ChatID,
+		MessageTemplate:    v.MessageTemplate,
+		BranchID:           v.BranchID,
+		SuggestionsContext: v.SuggestionsContext,
+		DataTemplate:       v.DataTemplate,
 	}
 
 	return res
@@ -4108,6 +4220,12 @@ func marshalStreamAggregatedSinkToAggregatedSinkResponseBody(v *stream.Aggregate
 	}
 	if v.Table != nil {
 		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)
+	}
+	if v.JobTrigger != nil {
+		res.JobTrigger = marshalStreamJobTriggerSinkToJobTriggerSinkResponseBody(v.JobTrigger)
+	}
+	if v.KaiAgent != nil {
+		res.KaiAgent = marshalStreamKaiAgentSinkToKaiAgentSinkResponseBody(v.KaiAgent)
 	}
 	if v.Version != nil {
 		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)

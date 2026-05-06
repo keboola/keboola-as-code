@@ -62,8 +62,10 @@ type CreateSinkRequestBody struct {
 	// Human readable name of the sink.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
-	Description *string                     `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	Table       *TableSinkCreateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Description *string                          `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	Table       *TableSinkCreateRequestBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	JobTrigger  *JobTriggerSinkCreateRequestBody `form:"jobTrigger,omitempty" json:"jobTrigger,omitempty" xml:"jobTrigger,omitempty"`
+	KaiAgent    *KaiAgentSinkCreateRequestBody   `form:"kaiAgent,omitempty" json:"kaiAgent,omitempty" xml:"kaiAgent,omitempty"`
 }
 
 // UpdateSinkSettingsRequestBody is the type of the "stream" service
@@ -83,8 +85,10 @@ type UpdateSinkRequestBody struct {
 	// Human readable name of the sink.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
-	Description *string                     `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	Table       *TableSinkUpdateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Description *string                          `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	Table       *TableSinkUpdateRequestBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	JobTrigger  *JobTriggerSinkUpdateRequestBody `form:"jobTrigger,omitempty" json:"jobTrigger,omitempty" xml:"jobTrigger,omitempty"`
+	KaiAgent    *KaiAgentSinkUpdateRequestBody   `form:"kaiAgent,omitempty" json:"kaiAgent,omitempty" xml:"kaiAgent,omitempty"`
 }
 
 // APIVersionIndexResponseBody is the type of the "stream" service
@@ -391,6 +395,8 @@ type GetSinkResponseBody struct {
 	// Description of the source.
 	Description string                      `form:"description" json:"description" xml:"description"`
 	Table       *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	JobTrigger  *JobTriggerSinkResponseBody `form:"jobTrigger,omitempty" json:"jobTrigger,omitempty" xml:"jobTrigger,omitempty"`
+	KaiAgent    *KaiAgentSinkResponseBody   `form:"kaiAgent,omitempty" json:"kaiAgent,omitempty" xml:"kaiAgent,omitempty"`
 	Version     *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Created     *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Deleted     *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
@@ -1507,6 +1513,49 @@ type TableColumnTemplateResponseBody struct {
 	Content  string `form:"content" json:"content" xml:"content"`
 }
 
+// JobTriggerSinkResponseBody is used to define fields on response body types.
+type JobTriggerSinkResponseBody struct {
+	// ID of the component to run.
+	ComponentID string `form:"componentId" json:"componentId" xml:"componentId"`
+	// ID of the component configuration to run.
+	ConfigID string `form:"configId" json:"configId" xml:"configId"`
+	// ID of the branch on which the job runs. Use 0 for the default branch.
+	BranchID int `form:"branchId" json:"branchId" xml:"branchId"`
+	// Optional Jsonnet template evaluated against the incoming HTTP request.
+	// The template output must be a JSON object; it is passed as "configData" to
+	// the triggered job.
+	// This allows webhook payload fields to override runtime job parameters.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// If empty, the job runs with the component's default saved configuration.
+	ConfigDataTemplate *string `form:"configDataTemplate,omitempty" json:"configDataTemplate,omitempty" xml:"configDataTemplate,omitempty"`
+}
+
+// KaiAgentSinkResponseBody is used to define fields on response body types.
+type KaiAgentSinkResponseBody struct {
+	// Selects the kai-agent endpoint: "chat" (POST /api/chat) or "suggestions"
+	// (POST /api/suggestions).
+	Mode string `form:"mode" json:"mode" xml:"mode"`
+	// Optional fixed UUID used as the chat ID for "chat" mode. When empty a new
+	// UUID is generated per record.
+	ChatID *string `form:"chatId,omitempty" json:"chatId,omitempty" xml:"chatId,omitempty"`
+	// Optional Jsonnet template for "chat" mode. Its output (a plain string)
+	// becomes the message text.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// When empty the raw request body is sent as the message text.
+	MessageTemplate *string `form:"messageTemplate,omitempty" json:"messageTemplate,omitempty" xml:"messageTemplate,omitempty"`
+	// Optional Keboola branch ID forwarded to the chat for context ("chat" mode
+	// only). 0 means no branch.
+	BranchID *int `form:"branchId,omitempty" json:"branchId,omitempty" xml:"branchId,omitempty"`
+	// UI context for "suggestions" mode. Required when mode = "suggestions".
+	SuggestionsContext *string `form:"suggestionsContext,omitempty" json:"suggestionsContext,omitempty" xml:"suggestionsContext,omitempty"`
+	// Optional Jsonnet template for "suggestions" mode. Its output (a JSON object)
+	// is passed as the "data" field.
+	// When empty the full parsed JSON body is forwarded as-is.
+	DataTemplate *string `form:"dataTemplate,omitempty" json:"dataTemplate,omitempty" xml:"dataTemplate,omitempty"`
+}
+
 // SinkResponseBody is used to define fields on response body types.
 type SinkResponseBody struct {
 	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
@@ -1519,6 +1568,8 @@ type SinkResponseBody struct {
 	// Description of the source.
 	Description string                      `form:"description" json:"description" xml:"description"`
 	Table       *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	JobTrigger  *JobTriggerSinkResponseBody `form:"jobTrigger,omitempty" json:"jobTrigger,omitempty" xml:"jobTrigger,omitempty"`
+	KaiAgent    *KaiAgentSinkResponseBody   `form:"kaiAgent,omitempty" json:"kaiAgent,omitempty" xml:"kaiAgent,omitempty"`
 	Version     *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Created     *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Deleted     *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
@@ -1599,6 +1650,8 @@ type AggregatedSinkResponseBody struct {
 	// Description of the source.
 	Description string                            `form:"description" json:"description" xml:"description"`
 	Table       *TableSinkResponseBody            `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	JobTrigger  *JobTriggerSinkResponseBody       `form:"jobTrigger,omitempty" json:"jobTrigger,omitempty" xml:"jobTrigger,omitempty"`
+	KaiAgent    *KaiAgentSinkResponseBody         `form:"kaiAgent,omitempty" json:"kaiAgent,omitempty" xml:"kaiAgent,omitempty"`
 	Version     *VersionResponseBody              `form:"version" json:"version" xml:"version"`
 	Created     *CreatedEntityResponseBody        `form:"created" json:"created" xml:"created"`
 	Deleted     *DeletedEntityResponseBody        `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
@@ -1659,11 +1712,99 @@ type TableColumnTemplateRequestBody struct {
 	Content  *string `form:"content,omitempty" json:"content,omitempty" xml:"content,omitempty"`
 }
 
+// JobTriggerSinkCreateRequestBody is used to define fields on request body
+// types.
+type JobTriggerSinkCreateRequestBody struct {
+	// ID of the component to run.
+	ComponentID *string `form:"componentId,omitempty" json:"componentId,omitempty" xml:"componentId,omitempty"`
+	// ID of the component configuration to run.
+	ConfigID *string `form:"configId,omitempty" json:"configId,omitempty" xml:"configId,omitempty"`
+	// ID of the branch on which the job runs. Use 0 for the default branch.
+	BranchID *int `form:"branchId,omitempty" json:"branchId,omitempty" xml:"branchId,omitempty"`
+	// Optional Jsonnet template evaluated against the incoming HTTP request.
+	// The template output must be a JSON object; it is passed as "configData" to
+	// the triggered job.
+	// This allows webhook payload fields to override runtime job parameters.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// If empty, the job runs with the component's default saved configuration.
+	ConfigDataTemplate *string `form:"configDataTemplate,omitempty" json:"configDataTemplate,omitempty" xml:"configDataTemplate,omitempty"`
+}
+
+// KaiAgentSinkCreateRequestBody is used to define fields on request body types.
+type KaiAgentSinkCreateRequestBody struct {
+	// Selects the kai-agent endpoint: "chat" (POST /api/chat) or "suggestions"
+	// (POST /api/suggestions).
+	Mode *string `form:"mode,omitempty" json:"mode,omitempty" xml:"mode,omitempty"`
+	// Optional fixed UUID used as the chat ID for "chat" mode. When empty a new
+	// UUID is generated per record.
+	ChatID *string `form:"chatId,omitempty" json:"chatId,omitempty" xml:"chatId,omitempty"`
+	// Optional Jsonnet template for "chat" mode. Its output (a plain string)
+	// becomes the message text.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// When empty the raw request body is sent as the message text.
+	MessageTemplate *string `form:"messageTemplate,omitempty" json:"messageTemplate,omitempty" xml:"messageTemplate,omitempty"`
+	// Optional Keboola branch ID forwarded to the chat for context ("chat" mode
+	// only). 0 means no branch.
+	BranchID *int `form:"branchId,omitempty" json:"branchId,omitempty" xml:"branchId,omitempty"`
+	// UI context for "suggestions" mode. Required when mode = "suggestions".
+	SuggestionsContext *string `form:"suggestionsContext,omitempty" json:"suggestionsContext,omitempty" xml:"suggestionsContext,omitempty"`
+	// Optional Jsonnet template for "suggestions" mode. Its output (a JSON object)
+	// is passed as the "data" field.
+	// When empty the full parsed JSON body is forwarded as-is.
+	DataTemplate *string `form:"dataTemplate,omitempty" json:"dataTemplate,omitempty" xml:"dataTemplate,omitempty"`
+}
+
 // TableSinkUpdateRequestBody is used to define fields on request body types.
 type TableSinkUpdateRequestBody struct {
 	Type    *string                  `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	TableID *string                  `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
 	Mapping *TableMappingRequestBody `form:"mapping,omitempty" json:"mapping,omitempty" xml:"mapping,omitempty"`
+}
+
+// JobTriggerSinkUpdateRequestBody is used to define fields on request body
+// types.
+type JobTriggerSinkUpdateRequestBody struct {
+	// ID of the component to run.
+	ComponentID *string `form:"componentId,omitempty" json:"componentId,omitempty" xml:"componentId,omitempty"`
+	// ID of the component configuration to run.
+	ConfigID *string `form:"configId,omitempty" json:"configId,omitempty" xml:"configId,omitempty"`
+	// ID of the branch on which the job runs. Use 0 for the default branch.
+	BranchID *int `form:"branchId,omitempty" json:"branchId,omitempty" xml:"branchId,omitempty"`
+	// Optional Jsonnet template evaluated against the incoming HTTP request.
+	// The template output must be a JSON object; it is passed as "configData" to
+	// the triggered job.
+	// This allows webhook payload fields to override runtime job parameters.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// If empty, the job runs with the component's default saved configuration.
+	ConfigDataTemplate *string `form:"configDataTemplate,omitempty" json:"configDataTemplate,omitempty" xml:"configDataTemplate,omitempty"`
+}
+
+// KaiAgentSinkUpdateRequestBody is used to define fields on request body types.
+type KaiAgentSinkUpdateRequestBody struct {
+	// Selects the kai-agent endpoint: "chat" (POST /api/chat) or "suggestions"
+	// (POST /api/suggestions).
+	Mode *string `form:"mode,omitempty" json:"mode,omitempty" xml:"mode,omitempty"`
+	// Optional fixed UUID used as the chat ID for "chat" mode. When empty a new
+	// UUID is generated per record.
+	ChatID *string `form:"chatId,omitempty" json:"chatId,omitempty" xml:"chatId,omitempty"`
+	// Optional Jsonnet template for "chat" mode. Its output (a plain string)
+	// becomes the message text.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// When empty the raw request body is sent as the message text.
+	MessageTemplate *string `form:"messageTemplate,omitempty" json:"messageTemplate,omitempty" xml:"messageTemplate,omitempty"`
+	// Optional Keboola branch ID forwarded to the chat for context ("chat" mode
+	// only). 0 means no branch.
+	BranchID *int `form:"branchId,omitempty" json:"branchId,omitempty" xml:"branchId,omitempty"`
+	// UI context for "suggestions" mode. Required when mode = "suggestions".
+	SuggestionsContext *string `form:"suggestionsContext,omitempty" json:"suggestionsContext,omitempty" xml:"suggestionsContext,omitempty"`
+	// Optional Jsonnet template for "suggestions" mode. Its output (a JSON object)
+	// is passed as the "data" field.
+	// When empty the full parsed JSON body is forwarded as-is.
+	DataTemplate *string `form:"dataTemplate,omitempty" json:"dataTemplate,omitempty" xml:"dataTemplate,omitempty"`
 }
 
 // NewAPIVersionIndexResponseBody builds the HTTP response body from the result
@@ -2035,6 +2176,12 @@ func NewGetSinkResponseBody(res *stream.Sink) *GetSinkResponseBody {
 	}
 	if res.Table != nil {
 		body.Table = marshalStreamTableSinkToTableSinkResponseBody(res.Table)
+	}
+	if res.JobTrigger != nil {
+		body.JobTrigger = marshalStreamJobTriggerSinkToJobTriggerSinkResponseBody(res.JobTrigger)
+	}
+	if res.KaiAgent != nil {
+		body.KaiAgent = marshalStreamKaiAgentSinkToKaiAgentSinkResponseBody(res.KaiAgent)
 	}
 	if res.Version != nil {
 		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
@@ -3248,6 +3395,12 @@ func NewCreateSinkPayload(body *CreateSinkRequestBody, branchID string, sourceID
 	if body.Table != nil {
 		v.Table = unmarshalTableSinkCreateRequestBodyToStreamTableSinkCreate(body.Table)
 	}
+	if body.JobTrigger != nil {
+		v.JobTrigger = unmarshalJobTriggerSinkCreateRequestBodyToStreamJobTriggerSinkCreate(body.JobTrigger)
+	}
+	if body.KaiAgent != nil {
+		v.KaiAgent = unmarshalKaiAgentSinkCreateRequestBodyToStreamKaiAgentSinkCreate(body.KaiAgent)
+	}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.StorageAPIToken = storageAPIToken
@@ -3340,6 +3493,12 @@ func NewUpdateSinkPayload(body *UpdateSinkRequestBody, branchID string, sourceID
 	}
 	if body.Table != nil {
 		v.Table = unmarshalTableSinkUpdateRequestBodyToStreamTableSinkUpdate(body.Table)
+	}
+	if body.JobTrigger != nil {
+		v.JobTrigger = unmarshalJobTriggerSinkUpdateRequestBodyToStreamJobTriggerSinkUpdate(body.JobTrigger)
+	}
+	if body.KaiAgent != nil {
+		v.KaiAgent = unmarshalKaiAgentSinkUpdateRequestBodyToStreamKaiAgentSinkUpdate(body.KaiAgent)
 	}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
@@ -3593,8 +3752,8 @@ func ValidateCreateSinkRequestBody(body *CreateSinkRequestBody, errContext []str
 		}
 	}
 	if body.Type != nil {
-		if !(*body.Type == "table") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"table"}))
+		if !(*body.Type == "table" || *body.Type == "jobTrigger" || *body.Type == "kaiAgent") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"table", "jobTrigger", "kaiAgent"}))
 		}
 	}
 	if body.Name != nil {
@@ -3614,6 +3773,16 @@ func ValidateCreateSinkRequestBody(body *CreateSinkRequestBody, errContext []str
 	}
 	if body.Table != nil {
 		if err2 := ValidateTableSinkCreateRequestBody(body.Table, append(errContext, "table")); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.JobTrigger != nil {
+		if err2 := ValidateJobTriggerSinkCreateRequestBody(body.JobTrigger, append(errContext, "jobTrigger")); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.KaiAgent != nil {
+		if err2 := ValidateKaiAgentSinkCreateRequestBody(body.KaiAgent, append(errContext, "kaiAgent")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -3638,8 +3807,8 @@ func ValidateUpdateSinkSettingsRequestBody(body *UpdateSinkSettingsRequestBody, 
 // UpdateSinkRequestBody
 func ValidateUpdateSinkRequestBody(body *UpdateSinkRequestBody, errContext []string) (err error) {
 	if body.Type != nil {
-		if !(*body.Type == "table") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"table"}))
+		if !(*body.Type == "table" || *body.Type == "jobTrigger" || *body.Type == "kaiAgent") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"table", "jobTrigger", "kaiAgent"}))
 		}
 	}
 	if body.Name != nil {
@@ -3659,6 +3828,11 @@ func ValidateUpdateSinkRequestBody(body *UpdateSinkRequestBody, errContext []str
 	}
 	if body.Table != nil {
 		if err2 := ValidateTableSinkUpdateRequestBody(body.Table, append(errContext, "table")); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.KaiAgent != nil {
+		if err2 := ValidateKaiAgentSinkUpdateRequestBody(body.KaiAgent, append(errContext, "kaiAgent")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -3776,6 +3950,40 @@ func ValidateTableColumnTemplateRequestBody(body *TableColumnTemplateRequestBody
 	return
 }
 
+// ValidateJobTriggerSinkCreateRequestBody runs the validations defined on
+// JobTriggerSinkCreateRequestBody
+func ValidateJobTriggerSinkCreateRequestBody(body *JobTriggerSinkCreateRequestBody, errContext []string) (err error) {
+	if body.ComponentID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("componentId", strings.Join(errContext, ".")))
+	}
+	if body.ConfigID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("configId", strings.Join(errContext, ".")))
+	}
+	if body.BranchID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("branchId", strings.Join(errContext, ".")))
+	}
+	return
+}
+
+// ValidateKaiAgentSinkCreateRequestBody runs the validations defined on
+// KaiAgentSinkCreateRequestBody
+func ValidateKaiAgentSinkCreateRequestBody(body *KaiAgentSinkCreateRequestBody, errContext []string) (err error) {
+	if body.Mode == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("mode", strings.Join(errContext, ".")))
+	}
+	if body.Mode != nil {
+		if !(*body.Mode == "chat" || *body.Mode == "suggestions") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "mode"), "."), *body.Mode, []any{"chat", "suggestions"}))
+		}
+	}
+	if body.SuggestionsContext != nil {
+		if !(*body.SuggestionsContext == "dashboard" || *body.SuggestionsContext == "job-detail" || *body.SuggestionsContext == "configuration-detail") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "suggestionsContext"), "."), *body.SuggestionsContext, []any{"dashboard", "job-detail", "configuration-detail"}))
+		}
+	}
+	return
+}
+
 // ValidateTableSinkUpdateRequestBody runs the validations defined on
 // TableSinkUpdateRequestBody
 func ValidateTableSinkUpdateRequestBody(body *TableSinkUpdateRequestBody, errContext []string) (err error) {
@@ -3787,6 +3995,22 @@ func ValidateTableSinkUpdateRequestBody(body *TableSinkUpdateRequestBody, errCon
 	if body.Mapping != nil {
 		if err2 := ValidateTableMappingRequestBody(body.Mapping, append(errContext, "mapping")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateKaiAgentSinkUpdateRequestBody runs the validations defined on
+// KaiAgentSinkUpdateRequestBody
+func ValidateKaiAgentSinkUpdateRequestBody(body *KaiAgentSinkUpdateRequestBody, errContext []string) (err error) {
+	if body.Mode != nil {
+		if !(*body.Mode == "chat" || *body.Mode == "suggestions") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "mode"), "."), *body.Mode, []any{"chat", "suggestions"}))
+		}
+	}
+	if body.SuggestionsContext != nil {
+		if !(*body.SuggestionsContext == "dashboard" || *body.SuggestionsContext == "job-detail" || *body.SuggestionsContext == "configuration-detail") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "suggestionsContext"), "."), *body.SuggestionsContext, []any{"dashboard", "job-detail", "configuration-detail"}))
 		}
 	}
 	return

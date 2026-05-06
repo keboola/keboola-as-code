@@ -24,6 +24,7 @@ func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *secur
 	if err == nil {
 		ctx = context.WithValue(ctx, dependencies.ProjectRequestScopeCtxKey, prjReqScp)
 		ctx = context.WithValue(ctx, dependencies.KeboolaProjectAPICtxKey, prjReqScp.KeboolaProjectAPI())
+		ctx = context.WithValue(ctx, dependencies.KeboolaTokenCtxKey, prjReqScp.StorageAPIToken())
 	} else {
 		return nil, err
 	}
