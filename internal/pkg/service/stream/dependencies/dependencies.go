@@ -53,6 +53,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	jobTriggerSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/jobtriggersink"
+	kaiAgentSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/kaiagentsink"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskreader"
@@ -94,6 +95,7 @@ type ServiceScope interface {
 	KeboolaSinkBridge() *keboolaSinkBridge.Bridge
 	KeboolaBridgeRepository() *keboolaBridgeRepo.Repository
 	JobTriggerBridge() *jobTriggerSink.Bridge
+	KaiAgentBridge() *kaiAgentSink.Bridge
 	WatchTelemetryInterval() time.Duration
 }
 

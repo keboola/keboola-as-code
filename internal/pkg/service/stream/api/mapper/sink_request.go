@@ -61,6 +61,15 @@ func (m *Mapper) NewSinkEntity(parent key.SourceKey, payload *api.CreateSinkPayl
 			BranchID:           keboola.BranchID(payload.JobTrigger.BranchID),
 			ConfigDataTemplate: ptrToStr(payload.JobTrigger.ConfigDataTemplate),
 		}
+	case definition.SinkTypeKaiAgent:
+		if payload.KaiAgent == nil {
+			return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`"kaiAgent" must be configured for the "%s" sink type`, definition.SinkTypeKaiAgent))
+		}
+		kaiAgentEntity, err := m.newKaiAgentSinkEntity(payload.KaiAgent)
+		if err != nil {
+			return definition.Sink{}, err
+		}
+		entity.KaiAgent = &kaiAgentEntity
 	default:
 		return definition.Sink{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, entity.Type.String()))
 	}
@@ -101,6 +110,15 @@ func (m *Mapper) UpdateSinkEntity(entity definition.Sink, payload *api.UpdateSin
 		}
 		if payload.JobTrigger != nil {
 			if err := m.updateJobTriggerSinkEntity(entity.JobTrigger, payload.JobTrigger); err != nil {
+				return definition.Sink{}, err
+			}
+		}
+	case definition.SinkTypeKaiAgent:
+		if entity.KaiAgent == nil {
+			entity.KaiAgent = &definition.KaiAgentSink{}
+		}
+		if payload.KaiAgent != nil {
+			if err := m.updateKaiAgentSinkEntity(entity.KaiAgent, payload.KaiAgent); err != nil {
 				return definition.Sink{}, err
 			}
 		}
@@ -215,6 +233,72 @@ func (m *Mapper) updateJobTriggerSinkEntity(entity *definition.JobTriggerSink, p
 		entity.ConfigDataTemplate = *payload.ConfigDataTemplate
 	}
 	return nil
+}
+
+func (m *Mapper) newKaiAgentSinkEntity(payload *api.KaiAgentSinkCreate) (definition.KaiAgentSink, error) {
+	entity := definition.KaiAgentSink{
+		Mode: definition.KaiAgentMode(payload.Mode),
+	}
+	if payload.ChatID != nil {
+		entity.ChatID = *payload.ChatID
+	}
+	if payload.MessageTemplate != nil {
+		if err := m.validateJsonnetTemplate(*payload.MessageTemplate); err != nil {
+			return definition.KaiAgentSink{}, svcerrors.NewBadRequestError(errors.Errorf(`invalid "kaiAgent.messageTemplate": %w`, err))
+		}
+		entity.MessageTemplate = *payload.MessageTemplate
+	}
+	if payload.BranchID != nil {
+		entity.BranchID = *payload.BranchID
+	}
+	if payload.SuggestionsContext != nil {
+		entity.SuggestionsContext = definition.KaiAgentSuggestionsContext(*payload.SuggestionsContext)
+	}
+	if payload.DataTemplate != nil {
+		if err := m.validateJsonnetTemplate(*payload.DataTemplate); err != nil {
+			return definition.KaiAgentSink{}, svcerrors.NewBadRequestError(errors.Errorf(`invalid "kaiAgent.dataTemplate": %w`, err))
+		}
+		entity.DataTemplate = *payload.DataTemplate
+	}
+	return entity, nil
+}
+
+func (m *Mapper) updateKaiAgentSinkEntity(entity *definition.KaiAgentSink, payload *api.KaiAgentSinkUpdate) error {
+	if payload.Mode != nil {
+		entity.Mode = definition.KaiAgentMode(*payload.Mode)
+	}
+	if payload.ChatID != nil {
+		entity.ChatID = *payload.ChatID
+	}
+	if payload.MessageTemplate != nil {
+		if err := m.validateJsonnetTemplate(*payload.MessageTemplate); err != nil {
+			return svcerrors.NewBadRequestError(errors.Errorf(`invalid "kaiAgent.messageTemplate": %w`, err))
+		}
+		entity.MessageTemplate = *payload.MessageTemplate
+	}
+	if payload.BranchID != nil {
+		entity.BranchID = *payload.BranchID
+	}
+	if payload.SuggestionsContext != nil {
+		entity.SuggestionsContext = definition.KaiAgentSuggestionsContext(*payload.SuggestionsContext)
+	}
+	if payload.DataTemplate != nil {
+		if err := m.validateJsonnetTemplate(*payload.DataTemplate); err != nil {
+			return svcerrors.NewBadRequestError(errors.Errorf(`invalid "kaiAgent.dataTemplate": %w`, err))
+		}
+		entity.DataTemplate = *payload.DataTemplate
+	}
+	return nil
+}
+
+func (m *Mapper) validateJsonnetTemplate(tmpl string) error {
+	if tmpl == "" {
+		return nil
+	}
+	vm := m.jsonnetPool.Get()
+	err := vm.Validate(tmpl)
+	m.jsonnetPool.Put(vm)
+	return err
 }
 
 func ptrToStr(s *string) string {

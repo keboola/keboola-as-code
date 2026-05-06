@@ -22,6 +22,7 @@ type Sink struct {
 
 	Table      *TableSink      `json:"table,omitempty"      validate:"required_if=Type table"`
 	JobTrigger *JobTriggerSink `json:"jobTrigger,omitempty" validate:"required_if=Type jobTrigger"`
+	KaiAgent   *KaiAgentSink   `json:"kaiAgent,omitempty"   validate:"required_if=Type kaiAgent"`
 }
 
 func (t SinkType) String() string {
