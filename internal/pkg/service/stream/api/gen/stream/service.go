@@ -137,6 +137,7 @@ type AggregatedSink struct {
 	Description string
 	Table       *TableSink
 	JobTrigger  *JobTriggerSink
+	KaiAgent    *KaiAgentSink
 	Version     *Version
 	Created     *CreatedEntity
 	Deleted     *DeletedEntity
@@ -230,6 +231,7 @@ type CreateSinkPayload struct {
 	Description *string
 	Table       *TableSinkCreate
 	JobTrigger  *JobTriggerSinkCreate
+	KaiAgent    *KaiAgentSinkCreate
 }
 
 // CreateSourcePayload is the payload type of the stream service CreateSource
@@ -444,6 +446,84 @@ type JobTriggerSinkUpdate struct {
 	ConfigDataTemplate *string
 }
 
+// Kai-agent sink configuration for "type" = "kaiAgent". Each received record
+// is forwarded to kai-agent.keboola.com.
+type KaiAgentSink struct {
+	// Selects the kai-agent endpoint: "chat" (POST /api/chat) or "suggestions"
+	// (POST /api/suggestions).
+	Mode string
+	// Optional fixed UUID used as the chat ID for "chat" mode. When empty a new
+	// UUID is generated per record.
+	ChatID *string
+	// Optional Jsonnet template for "chat" mode. Its output (a plain string)
+	// becomes the message text.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// When empty the raw request body is sent as the message text.
+	MessageTemplate *string
+	// Optional Keboola branch ID forwarded to the chat for context ("chat" mode
+	// only). 0 means no branch.
+	BranchID *int
+	// UI context for "suggestions" mode. Required when mode = "suggestions".
+	SuggestionsContext *string
+	// Optional Jsonnet template for "suggestions" mode. Its output (a JSON object)
+	// is passed as the "data" field.
+	// When empty the full parsed JSON body is forwarded as-is.
+	DataTemplate *string
+}
+
+// Kai-agent sink configuration for "type" = "kaiAgent". Each received record
+// is forwarded to kai-agent.keboola.com.
+type KaiAgentSinkCreate struct {
+	// Selects the kai-agent endpoint: "chat" (POST /api/chat) or "suggestions"
+	// (POST /api/suggestions).
+	Mode string
+	// Optional fixed UUID used as the chat ID for "chat" mode. When empty a new
+	// UUID is generated per record.
+	ChatID *string
+	// Optional Jsonnet template for "chat" mode. Its output (a plain string)
+	// becomes the message text.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// When empty the raw request body is sent as the message text.
+	MessageTemplate *string
+	// Optional Keboola branch ID forwarded to the chat for context ("chat" mode
+	// only). 0 means no branch.
+	BranchID *int
+	// UI context for "suggestions" mode. Required when mode = "suggestions".
+	SuggestionsContext *string
+	// Optional Jsonnet template for "suggestions" mode. Its output (a JSON object)
+	// is passed as the "data" field.
+	// When empty the full parsed JSON body is forwarded as-is.
+	DataTemplate *string
+}
+
+// Kai-agent sink configuration for "type" = "kaiAgent". Each received record
+// is forwarded to kai-agent.keboola.com.
+type KaiAgentSinkUpdate struct {
+	// Selects the kai-agent endpoint: "chat" (POST /api/chat) or "suggestions"
+	// (POST /api/suggestions).
+	Mode *string
+	// Optional fixed UUID used as the chat ID for "chat" mode. When empty a new
+	// UUID is generated per record.
+	ChatID *string
+	// Optional Jsonnet template for "chat" mode. Its output (a plain string)
+	// becomes the message text.
+	// Available functions: Body(), Header(), Ip(), Now() — same as in table column
+	// templates.
+	// When empty the raw request body is sent as the message text.
+	MessageTemplate *string
+	// Optional Keboola branch ID forwarded to the chat for context ("chat" mode
+	// only). 0 means no branch.
+	BranchID *int
+	// UI context for "suggestions" mode. Required when mode = "suggestions".
+	SuggestionsContext *string
+	// Optional Jsonnet template for "suggestions" mode. Its output (a JSON object)
+	// is passed as the "data" field.
+	// When empty the full parsed JSON body is forwarded as-is.
+	DataTemplate *string
+}
+
 type Level struct {
 	// Timestamp of the first received record.
 	FirstRecordAt *string
@@ -625,6 +705,7 @@ type Sink struct {
 	Description string
 	Table       *TableSink
 	JobTrigger  *JobTriggerSink
+	KaiAgent    *KaiAgentSink
 	Version     *Version
 	Created     *CreatedEntity
 	Deleted     *DeletedEntity
@@ -945,6 +1026,7 @@ type UpdateSinkPayload struct {
 	Description *string
 	Table       *TableSinkUpdate
 	JobTrigger  *JobTriggerSinkUpdate
+	KaiAgent    *KaiAgentSinkUpdate
 }
 
 // UpdateSinkSettingsPayload is the payload type of the stream service

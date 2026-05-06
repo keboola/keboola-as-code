@@ -183,6 +183,13 @@ paths:
                                             configId: "123456"
                                             branchId: 0
                                             configDataTemplate: '{ parameters: { url: Body("url") } }'
+                                          kaiAgent:
+                                            mode: chat
+                                            chatId: 550e8400-e29b-41d4-a716-446655440000
+                                            messageTemplate: Body("message")
+                                            branchId: 0
+                                            suggestionsContext: job-detail
+                                            dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                                           version:
                                             number: 3
                                             hash: f43e93acd97eceb3
@@ -1032,6 +1039,13 @@ paths:
                                         configId: "123456"
                                         branchId: 0
                                         configDataTemplate: '{ parameters: { url: Body("url") } }'
+                                      kaiAgent:
+                                        mode: chat
+                                        chatId: 550e8400-e29b-41d4-a716-446655440000
+                                        messageTemplate: Body("message")
+                                        branchId: 0
+                                        suggestionsContext: job-detail
+                                        dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                                       version:
                                         number: 3
                                         hash: f43e93acd97eceb3
@@ -1146,6 +1160,13 @@ paths:
                                 configId: "123456"
                                 branchId: 0
                                 configDataTemplate: '{ parameters: { url: Body("url") } }'
+                            kaiAgent:
+                                mode: chat
+                                chatId: 550e8400-e29b-41d4-a716-446655440000
+                                messageTemplate: Body("message")
+                                branchId: 0
+                                suggestionsContext: job-detail
+                                dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
             responses:
                 "202":
                     description: Accepted response.
@@ -1354,6 +1375,13 @@ paths:
                                     configId: "123456"
                                     branchId: 0
                                     configDataTemplate: '{ parameters: { url: Body("url") } }'
+                                kaiAgent:
+                                    mode: chat
+                                    chatId: 550e8400-e29b-41d4-a716-446655440000
+                                    messageTemplate: Body("message")
+                                    branchId: 0
+                                    suggestionsContext: job-detail
+                                    dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                                 version:
                                     number: 3
                                     hash: f43e93acd97eceb3
@@ -1478,6 +1506,13 @@ paths:
                                 configId: "123456"
                                 branchId: 0
                                 configDataTemplate: '{ parameters: { url: Body("url") } }'
+                            kaiAgent:
+                                mode: chat
+                                chatId: 550e8400-e29b-41d4-a716-446655440000
+                                messageTemplate: Body("message")
+                                branchId: 0
+                                suggestionsContext: job-detail
+                                dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
             responses:
                 "202":
                     description: Accepted response.
@@ -2468,6 +2503,13 @@ paths:
                                         configId: "123456"
                                         branchId: 0
                                         configDataTemplate: '{ parameters: { url: Body("url") } }'
+                                      kaiAgent:
+                                        mode: chat
+                                        chatId: 550e8400-e29b-41d4-a716-446655440000
+                                        messageTemplate: Body("message")
+                                        branchId: 0
+                                        suggestionsContext: job-detail
+                                        dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                                       version:
                                         number: 3
                                         hash: f43e93acd97eceb3
@@ -3122,6 +3164,8 @@ components:
                     $ref: '#/components/schemas/DisabledEntity'
                 jobTrigger:
                     $ref: '#/components/schemas/JobTriggerSink'
+                kaiAgent:
+                    $ref: '#/components/schemas/KaiAgentSink'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -3155,6 +3199,7 @@ components:
                     enum:
                         - table
                         - jobTrigger
+                        - kaiAgent
                 version:
                     $ref: '#/components/schemas/Version'
             description: A mapping from imported data to a destination table.
@@ -3196,6 +3241,13 @@ components:
                     configId: "123456"
                     branchId: 0
                     configDataTemplate: '{ parameters: { url: Body("url") } }'
+                kaiAgent:
+                    mode: chat
+                    chatId: 550e8400-e29b-41d4-a716-446655440000
+                    messageTemplate: Body("message")
+                    branchId: 0
+                    suggestionsContext: job-detail
+                    dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                 version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -3345,6 +3397,13 @@ components:
                     configId: "123456"
                     branchId: 0
                     configDataTemplate: '{ parameters: { url: Body("url") } }'
+                  kaiAgent:
+                    mode: chat
+                    chatId: 550e8400-e29b-41d4-a716-446655440000
+                    messageTemplate: Body("message")
+                    branchId: 0
+                    suggestionsContext: job-detail
+                    dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -3573,6 +3632,13 @@ components:
                         configId: "123456"
                         branchId: 0
                         configDataTemplate: '{ parameters: { url: Body("url") } }'
+                      kaiAgent:
+                        mode: chat
+                        chatId: 550e8400-e29b-41d4-a716-446655440000
+                        messageTemplate: Body("message")
+                        branchId: 0
+                        suggestionsContext: job-detail
+                        dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -3767,6 +3833,13 @@ components:
                         configId: "123456"
                         branchId: 0
                         configDataTemplate: '{ parameters: { url: Body("url") } }'
+                      kaiAgent:
+                        mode: chat
+                        chatId: 550e8400-e29b-41d4-a716-446655440000
+                        messageTemplate: Body("message")
+                        branchId: 0
+                        suggestionsContext: job-detail
+                        dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -3999,6 +4072,13 @@ components:
                             configId: "123456"
                             branchId: 0
                             configDataTemplate: '{ parameters: { url: Body("url") } }'
+                          kaiAgent:
+                            mode: chat
+                            chatId: 550e8400-e29b-41d4-a716-446655440000
+                            messageTemplate: Body("message")
+                            branchId: 0
+                            suggestionsContext: job-detail
+                            dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                           version:
                             number: 3
                             hash: f43e93acd97eceb3
@@ -4224,6 +4304,8 @@ components:
                     maxLength: 4096
                 jobTrigger:
                     $ref: '#/components/schemas/JobTriggerSinkCreate'
+                kaiAgent:
+                    $ref: '#/components/schemas/KaiAgentSinkCreate'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -4250,6 +4332,7 @@ components:
                     enum:
                         - table
                         - jobTrigger
+                        - kaiAgent
             example:
                 branchId: default
                 sourceId: github-webhook-source
@@ -4287,6 +4370,13 @@ components:
                     configId: "123456"
                     branchId: 0
                     configDataTemplate: '{ parameters: { url: Body("url") } }'
+                kaiAgent:
+                    mode: chat
+                    chatId: 550e8400-e29b-41d4-a716-446655440000
+                    messageTemplate: Body("message")
+                    branchId: 0
+                    suggestionsContext: job-detail
+                    dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
             required:
                 - branchId
                 - sourceId
@@ -4302,6 +4392,8 @@ components:
                     maxLength: 4096
                 jobTrigger:
                     $ref: '#/components/schemas/JobTriggerSinkCreate'
+                kaiAgent:
+                    $ref: '#/components/schemas/KaiAgentSinkCreate'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -4322,6 +4414,7 @@ components:
                     enum:
                         - table
                         - jobTrigger
+                        - kaiAgent
             example:
                 sinkId: github-pr-table-sink
                 type: table
@@ -4357,6 +4450,13 @@ components:
                     configId: "123456"
                     branchId: 0
                     configDataTemplate: '{ parameters: { url: Body("url") } }'
+                kaiAgent:
+                    mode: chat
+                    chatId: 550e8400-e29b-41d4-a716-446655440000
+                    messageTemplate: Body("message")
+                    branchId: 0
+                    suggestionsContext: job-detail
+                    dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
             required:
                 - type
                 - name
@@ -4739,6 +4839,154 @@ components:
                 configId: "123456"
                 branchId: 0
                 configDataTemplate: '{ parameters: { url: Body("url") } }'
+        KaiAgentSink:
+            type: object
+            properties:
+                branchId:
+                    type: integer
+                    description: Optional Keboola branch ID forwarded to the chat for context ("chat" mode only). 0 means no branch.
+                    example: 0
+                    format: int64
+                chatId:
+                    type: string
+                    description: Optional fixed UUID used as the chat ID for "chat" mode. When empty a new UUID is generated per record.
+                    example: 550e8400-e29b-41d4-a716-446655440000
+                dataTemplate:
+                    type: string
+                    description: |-
+                        Optional Jsonnet template for "suggestions" mode. Its output (a JSON object) is passed as the "data" field.
+                        When empty the full parsed JSON body is forwarded as-is.
+                    example: '{ jobId: Body("jobId"), status: Body("status") }'
+                messageTemplate:
+                    type: string
+                    description: |-
+                        Optional Jsonnet template for "chat" mode. Its output (a plain string) becomes the message text.
+                        Available functions: Body(), Header(), Ip(), Now() — same as in table column templates.
+                        When empty the raw request body is sent as the message text.
+                    example: Body("message")
+                mode:
+                    type: string
+                    description: 'Selects the kai-agent endpoint: "chat" (POST /api/chat) or "suggestions" (POST /api/suggestions).'
+                    example: chat
+                    enum:
+                        - chat
+                        - suggestions
+                suggestionsContext:
+                    type: string
+                    description: UI context for "suggestions" mode. Required when mode = "suggestions".
+                    example: job-detail
+                    enum:
+                        - dashboard
+                        - job-detail
+                        - configuration-detail
+            description: Kai-agent sink configuration for "type" = "kaiAgent". Each received record is forwarded to kai-agent.keboola.com.
+            example:
+                mode: chat
+                chatId: 550e8400-e29b-41d4-a716-446655440000
+                messageTemplate: Body("message")
+                branchId: 0
+                suggestionsContext: job-detail
+                dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
+            required:
+                - mode
+        KaiAgentSinkCreate:
+            type: object
+            properties:
+                branchId:
+                    type: integer
+                    description: Optional Keboola branch ID forwarded to the chat for context ("chat" mode only). 0 means no branch.
+                    example: 0
+                    format: int64
+                chatId:
+                    type: string
+                    description: Optional fixed UUID used as the chat ID for "chat" mode. When empty a new UUID is generated per record.
+                    example: 550e8400-e29b-41d4-a716-446655440000
+                dataTemplate:
+                    type: string
+                    description: |-
+                        Optional Jsonnet template for "suggestions" mode. Its output (a JSON object) is passed as the "data" field.
+                        When empty the full parsed JSON body is forwarded as-is.
+                    example: '{ jobId: Body("jobId"), status: Body("status") }'
+                messageTemplate:
+                    type: string
+                    description: |-
+                        Optional Jsonnet template for "chat" mode. Its output (a plain string) becomes the message text.
+                        Available functions: Body(), Header(), Ip(), Now() — same as in table column templates.
+                        When empty the raw request body is sent as the message text.
+                    example: Body("message")
+                mode:
+                    type: string
+                    description: 'Selects the kai-agent endpoint: "chat" (POST /api/chat) or "suggestions" (POST /api/suggestions).'
+                    example: chat
+                    enum:
+                        - chat
+                        - suggestions
+                suggestionsContext:
+                    type: string
+                    description: UI context for "suggestions" mode. Required when mode = "suggestions".
+                    example: job-detail
+                    enum:
+                        - dashboard
+                        - job-detail
+                        - configuration-detail
+            description: Kai-agent sink configuration for "type" = "kaiAgent". Each received record is forwarded to kai-agent.keboola.com.
+            example:
+                mode: chat
+                chatId: 550e8400-e29b-41d4-a716-446655440000
+                messageTemplate: Body("message")
+                branchId: 0
+                suggestionsContext: job-detail
+                dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
+            required:
+                - mode
+        KaiAgentSinkUpdate:
+            type: object
+            properties:
+                branchId:
+                    type: integer
+                    description: Optional Keboola branch ID forwarded to the chat for context ("chat" mode only). 0 means no branch.
+                    example: 0
+                    format: int64
+                chatId:
+                    type: string
+                    description: Optional fixed UUID used as the chat ID for "chat" mode. When empty a new UUID is generated per record.
+                    example: 550e8400-e29b-41d4-a716-446655440000
+                dataTemplate:
+                    type: string
+                    description: |-
+                        Optional Jsonnet template for "suggestions" mode. Its output (a JSON object) is passed as the "data" field.
+                        When empty the full parsed JSON body is forwarded as-is.
+                    example: '{ jobId: Body("jobId"), status: Body("status") }'
+                messageTemplate:
+                    type: string
+                    description: |-
+                        Optional Jsonnet template for "chat" mode. Its output (a plain string) becomes the message text.
+                        Available functions: Body(), Header(), Ip(), Now() — same as in table column templates.
+                        When empty the raw request body is sent as the message text.
+                    example: Body("message")
+                mode:
+                    type: string
+                    description: 'Selects the kai-agent endpoint: "chat" (POST /api/chat) or "suggestions" (POST /api/suggestions).'
+                    example: chat
+                    enum:
+                        - chat
+                        - suggestions
+                suggestionsContext:
+                    type: string
+                    description: UI context for "suggestions" mode. Required when mode = "suggestions".
+                    example: job-detail
+                    enum:
+                        - dashboard
+                        - job-detail
+                        - configuration-detail
+            description: Kai-agent sink configuration for "type" = "kaiAgent". Each received record is forwarded to kai-agent.keboola.com.
+            example:
+                mode: chat
+                chatId: 550e8400-e29b-41d4-a716-446655440000
+                messageTemplate: Body("message")
+                branchId: 0
+                suggestionsContext: job-detail
+                dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
         Level:
             type: object
             properties:
@@ -5119,6 +5367,8 @@ components:
                     $ref: '#/components/schemas/DisabledEntity'
                 jobTrigger:
                     $ref: '#/components/schemas/JobTriggerSink'
+                kaiAgent:
+                    $ref: '#/components/schemas/KaiAgentSink'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -5150,6 +5400,7 @@ components:
                     enum:
                         - table
                         - jobTrigger
+                        - kaiAgent
                 version:
                     $ref: '#/components/schemas/Version'
             description: A mapping from imported data to a destination table.
@@ -5191,6 +5442,13 @@ components:
                     configId: "123456"
                     branchId: 0
                     configDataTemplate: '{ parameters: { url: Body("url") } }'
+                kaiAgent:
+                    mode: chat
+                    chatId: 550e8400-e29b-41d4-a716-446655440000
+                    messageTemplate: Body("message")
+                    branchId: 0
+                    suggestionsContext: job-detail
+                    dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                 version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -5621,6 +5879,13 @@ components:
                     configId: "123456"
                     branchId: 0
                     configDataTemplate: '{ parameters: { url: Body("url") } }'
+                  kaiAgent:
+                    mode: chat
+                    chatId: 550e8400-e29b-41d4-a716-446655440000
+                    messageTemplate: Body("message")
+                    branchId: 0
+                    suggestionsContext: job-detail
+                    dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -5728,6 +5993,13 @@ components:
                         configId: "123456"
                         branchId: 0
                         configDataTemplate: '{ parameters: { url: Body("url") } }'
+                      kaiAgent:
+                        mode: chat
+                        chatId: 550e8400-e29b-41d4-a716-446655440000
+                        messageTemplate: Body("message")
+                        branchId: 0
+                        suggestionsContext: job-detail
+                        dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -6566,6 +6838,8 @@ components:
                     maxLength: 4096
                 jobTrigger:
                     $ref: '#/components/schemas/JobTriggerSinkUpdate'
+                kaiAgent:
+                    $ref: '#/components/schemas/KaiAgentSinkUpdate'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -6592,6 +6866,7 @@ components:
                     enum:
                         - table
                         - jobTrigger
+                        - kaiAgent
             example:
                 branchId: default
                 sourceId: github-webhook-source
@@ -6630,6 +6905,13 @@ components:
                     configId: "123456"
                     branchId: 0
                     configDataTemplate: '{ parameters: { url: Body("url") } }'
+                kaiAgent:
+                    mode: chat
+                    chatId: 550e8400-e29b-41d4-a716-446655440000
+                    messageTemplate: Body("message")
+                    branchId: 0
+                    suggestionsContext: job-detail
+                    dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
             required:
                 - branchId
                 - sourceId
@@ -6648,6 +6930,8 @@ components:
                     maxLength: 4096
                 jobTrigger:
                     $ref: '#/components/schemas/JobTriggerSinkUpdate'
+                kaiAgent:
+                    $ref: '#/components/schemas/KaiAgentSinkUpdate'
                 name:
                     type: string
                     description: Human readable name of the sink.
@@ -6662,6 +6946,7 @@ components:
                     enum:
                         - table
                         - jobTrigger
+                        - kaiAgent
             example:
                 changeDescription: Renamed.
                 type: table
@@ -6697,6 +6982,13 @@ components:
                     configId: "123456"
                     branchId: 0
                     configDataTemplate: '{ parameters: { url: Body("url") } }'
+                kaiAgent:
+                    mode: chat
+                    chatId: 550e8400-e29b-41d4-a716-446655440000
+                    messageTemplate: Body("message")
+                    branchId: 0
+                    suggestionsContext: job-detail
+                    dataTemplate: '{ jobId: Body("jobId"), status: Body("status") }'
         UpdateSourceRequest:
             type: object
             properties:

@@ -43,6 +43,11 @@ func (m *Mapper) NewSinkResponse(entity definition.Sink) (*api.Sink, error) {
 			return nil, errors.Errorf(`sink %q has type "jobTrigger" but JobTrigger config is nil`, entity.SinkID)
 		}
 		out.JobTrigger = m.newJobTriggerSinkResponse(entity.JobTrigger)
+	case definition.SinkTypeKaiAgent:
+		if entity.KaiAgent == nil {
+			return nil, errors.Errorf(`sink %q has type "kaiAgent" but KaiAgent config is nil`, entity.SinkID)
+		}
+		out.KaiAgent = m.newKaiAgentSinkResponse(entity.KaiAgent)
 	default:
 		return nil, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, out.Type.String()))
 	}
@@ -79,6 +84,29 @@ func (m *Mapper) newJobTriggerSinkResponse(entity *definition.JobTriggerSink) *a
 	}
 	if entity.ConfigDataTemplate != "" {
 		out.ConfigDataTemplate = &entity.ConfigDataTemplate
+	}
+	return out
+}
+
+func (m *Mapper) newKaiAgentSinkResponse(entity *definition.KaiAgentSink) *api.KaiAgentSink {
+	out := &api.KaiAgentSink{
+		Mode: string(entity.Mode),
+	}
+	if entity.ChatID != "" {
+		out.ChatID = &entity.ChatID
+	}
+	if entity.MessageTemplate != "" {
+		out.MessageTemplate = &entity.MessageTemplate
+	}
+	if entity.BranchID != 0 {
+		out.BranchID = &entity.BranchID
+	}
+	if entity.SuggestionsContext != "" {
+		s := string(entity.SuggestionsContext)
+		out.SuggestionsContext = &s
+	}
+	if entity.DataTemplate != "" {
+		out.DataTemplate = &entity.DataTemplate
 	}
 	return out
 }

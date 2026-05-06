@@ -22,6 +22,7 @@ import (
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/plugin"
 	jobTriggerSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/jobtriggersink"
+	kaiAgentSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/kaiagentsink"
 	keboolaSinkBridge "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
 	keboolaBridgeRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge/model/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/model"
@@ -53,6 +54,7 @@ type serviceScope struct {
 	keboolaBridge               *keboolaSinkBridge.Bridge
 	keboolaBridgeRepository     *keboolaBridgeRepo.Repository
 	jobTriggerBridge            *jobTriggerSink.Bridge
+	kaiAgentBridge              *kaiAgentSink.Bridge
 	watchTelemetryInterval      time.Duration
 }
 
@@ -244,6 +246,15 @@ func newServiceScope(
 	})
 	d.jobTriggerBridge = jobTriggerSink.NewBridge(d, tokenFromCtx)
 
+	kaiAgentTokenFromCtx := kaiAgentSink.TokenFromContext(func(ctx context.Context) (string, bool) {
+		token, ok := ctx.Value(KeboolaTokenCtxKey).(keboola.Token)
+		if !ok || token.Token == "" {
+			return "", false
+		}
+		return token.Token, true
+	})
+	d.kaiAgentBridge = kaiAgentSink.NewBridge(d, kaiAgentTokenFromCtx)
+
 	apiCtxProvider := func(ctx context.Context) *keboola.AuthorizedAPI {
 		api, _ := ctx.Value(KeboolaProjectAPICtxKey).(*keboola.AuthorizedAPI)
 		return api
@@ -284,6 +295,10 @@ func (v *serviceScope) KeboolaSinkBridge() *keboolaSinkBridge.Bridge {
 
 func (v *serviceScope) JobTriggerBridge() *jobTriggerSink.Bridge {
 	return v.jobTriggerBridge
+}
+
+func (v *serviceScope) KaiAgentBridge() *kaiAgentSink.Bridge {
+	return v.kaiAgentBridge
 }
 
 func (v *serviceScope) KeboolaBridgeRepository() *keboolaBridgeRepo.Repository {
