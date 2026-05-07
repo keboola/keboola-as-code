@@ -37,10 +37,11 @@ type Pipeline struct {
 	jsonnetPool *jsonnetWrapper.VMPool[recordctx.Context]
 	onClose     func(ctx context.Context, cause string)
 
-	sent             atomic.Uint64
-	failed           atomic.Uint64
-	firstSentAt      atomic.Pointer[utctime.UTCTime]
-	lastSentAt       atomic.Pointer[utctime.UTCTime]
+	// In-memory stats accumulated across WriteRecord calls, flushed on Close.
+	sent        atomic.Uint64
+	failed      atomic.Uint64
+	firstSentAt atomic.Pointer[utctime.UTCTime]
+	lastSentAt  atomic.Pointer[utctime.UTCTime]
 }
 
 // ReopenOnSinkModification returns true so the pipeline is recreated when the sink definition changes.
