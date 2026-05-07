@@ -1,0 +1,35 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "sinkId": "my-kai-agent-sink",
+  "type": "kaiAgent",
+  "name": "My Kai Agent Sink",
+  "description": "",
+  "kaiAgent": {
+    "mode": "chat"
+  },
+  "version": {
+    "number": 1,
+    "hash": "%s",
+    "description": "New sink.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  }
+}

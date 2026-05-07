@@ -11,11 +11,11 @@ import (
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/request"
 
+	jsonnetWrapper "github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
-	jsonnetWrapper "github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
@@ -262,6 +262,7 @@ func (p *Pipeline) postJSONWithResult(ctx context.Context, url string, body, res
 		AndHeader("x-storageapi-token", p.token).
 		WithResult(result))
 	if rawResp != nil {
+		_ = rawResp.Body.Close()
 		return rawResp.StatusCode, err
 	}
 	return 0, err
