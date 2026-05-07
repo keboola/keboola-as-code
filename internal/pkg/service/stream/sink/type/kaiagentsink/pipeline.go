@@ -163,16 +163,16 @@ type suggestionsRequest struct {
 
 // suggestionsResponse is the successful JSON response from POST /api/suggestions.
 type suggestionsResponse struct {
-	Suggestions        []suggestionItem `json:"suggestions"`
-	SuggestionSessionID string          `json:"suggestionSessionId"`
+	Suggestions         []suggestionItem `json:"suggestions"`
+	SuggestionSessionID string           `json:"suggestionSessionId"`
 }
 
 type suggestionItem struct {
-	ID       string `json:"id"`
-	Label    string `json:"label"`
-	Prompt   string `json:"prompt"`
-	Priority int    `json:"priority"`
-	Category string `json:"category"`
+	ID        string `json:"id"`
+	Label     string `json:"label"`
+	Prompt    string `json:"prompt"`
+	Priority  int    `json:"priority"`
+	Category  string `json:"category"`
 	Reasoning string `json:"reasoning"`
 }
 
