@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestDetectEncoding(t *testing.T) {
@@ -117,5 +119,77 @@ func TestDecodeLogs_Unsupported(t *testing.T) {
 	t.Parallel()
 
 	_, err := DecodeLogs([]byte("{}"), EncodingUnsupported)
+	require.Error(t, err)
+}
+
+func TestDecodeMetrics_Protobuf(t *testing.T) {
+	t.Parallel()
+
+	metrics := pmetric.NewMetrics()
+	m := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("requests")
+	m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(7)
+
+	protoBytes, err := (&pmetric.ProtoMarshaler{}).MarshalMetrics(metrics)
+	require.NoError(t, err)
+
+	decoded, err := DecodeMetrics(protoBytes, EncodingProtobuf)
+	require.NoError(t, err)
+	assert.Equal(t, "requests", decoded.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
+}
+
+func TestDecodeMetrics_JSON(t *testing.T) {
+	t.Parallel()
+
+	metrics := pmetric.NewMetrics()
+	metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("requests")
+
+	jsonBytes, err := (&pmetric.JSONMarshaler{}).MarshalMetrics(metrics)
+	require.NoError(t, err)
+
+	decoded, err := DecodeMetrics(jsonBytes, EncodingJSON)
+	require.NoError(t, err)
+	assert.Equal(t, "requests", decoded.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
+}
+
+func TestDecodeMetrics_Unsupported(t *testing.T) {
+	t.Parallel()
+
+	_, err := DecodeMetrics([]byte("{}"), EncodingUnsupported)
+	require.Error(t, err)
+}
+
+func TestDecodeTraces_Protobuf(t *testing.T) {
+	t.Parallel()
+
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("GET /")
+
+	protoBytes, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+	require.NoError(t, err)
+
+	decoded, err := DecodeTraces(protoBytes, EncodingProtobuf)
+	require.NoError(t, err)
+	assert.Equal(t, "GET /", decoded.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+}
+
+func TestDecodeTraces_JSON(t *testing.T) {
+	t.Parallel()
+
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("GET /")
+
+	jsonBytes, err := (&ptrace.JSONMarshaler{}).MarshalTraces(traces)
+	require.NoError(t, err)
+
+	decoded, err := DecodeTraces(jsonBytes, EncodingJSON)
+	require.NoError(t, err)
+	assert.Equal(t, "GET /", decoded.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+}
+
+func TestDecodeTraces_Unsupported(t *testing.T) {
+	t.Parallel()
+
+	_, err := DecodeTraces([]byte("{}"), EncodingUnsupported)
 	require.Error(t, err)
 }

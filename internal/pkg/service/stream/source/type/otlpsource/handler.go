@@ -55,6 +55,14 @@ func New(
 	}
 }
 
+// signalDecoder is "decode the request body into N flat records". It bundles
+// the signal-specific decode (plog/pmetric/ptrace) with its flatten so the
+// shared handle() helper does not need to know which signal it is serving.
+type signalDecoder func(body []byte, enc Encoding) ([]FlatRecord, error)
+
+// responseBuilder constructs the signal-specific OTLP response body.
+type responseBuilder func(enc Encoding, result DispatchResult) (EncodedResponse, error)
+
 // HandleLogs serves POST /v1/logs.
 //
 // On well-formed input it always returns HTTP 200 with an OTLP-conformant
@@ -63,6 +71,24 @@ func New(
 // source. This matches OTLP retry semantics: 4xx means "do not retry",
 // 5xx means "retry the whole batch".
 func (h *Handler) HandleLogs(c *routing.Context) error {
+	return h.handle(c, "logs", decodeAndFlattenLogs, BuildLogsResponse)
+}
+
+// HandleMetrics serves POST /v1/metrics. One OTLP request typically carries
+// many metrics, each with many data points; flatten emits one record per
+// data point, so a single request can dispatch hundreds.
+func (h *Handler) HandleMetrics(c *routing.Context) error {
+	return h.handle(c, "metrics", decodeAndFlattenMetrics, BuildMetricsResponse)
+}
+
+// HandleTraces serves POST /v1/traces. Span events and links are kept nested
+// under the span rather than exploded into separate records — they are
+// intrinsically attached to their parent span.
+func (h *Handler) HandleTraces(c *routing.Context) error {
+	return h.handle(c, "traces", decodeAndFlattenTraces, BuildTracesResponse)
+}
+
+func (h *Handler) handle(c *routing.Context, signal string, decode signalDecoder, build responseBuilder) error {
 	projectID, sourceID, secret, err := parseAuthParams(c)
 	if err != nil {
 		h.errorHandler(c.RequestCtx, err)
@@ -83,19 +109,17 @@ func (h *Handler) HandleLogs(c *routing.Context) error {
 		return nil //nolint:nilerr
 	}
 
-	logs, err := DecodeLogs(body, enc)
+	records, err := decode(body, enc)
 	if err != nil {
 		h.errorHandler(c.RequestCtx, svcerrors.NewBadRequestError(
-			errors.PrefixError(err, "cannot decode OTLP logs payload"),
+			errors.PrefixError(err, "cannot decode OTLP "+signal+" payload"),
 		))
 		return nil //nolint:nilerr
 	}
 
-	records := FlattenLogs(logs)
-
 	// Empty batches are valid per the OTLP spec — return 200 immediately.
 	if len(records) == 0 {
-		h.writeEmptySuccess(c, enc)
+		h.writeEmptySuccess(c, enc, build)
 		return nil
 	}
 
@@ -113,7 +137,7 @@ func (h *Handler) HandleLogs(c *routing.Context) error {
 		records,
 	)
 
-	encoded, err := BuildLogsResponse(enc, result)
+	encoded, err := build(enc, result)
 	if err != nil {
 		h.errorHandler(c.RequestCtx, err)
 		return nil //nolint:nilerr
@@ -125,6 +149,30 @@ func (h *Handler) HandleLogs(c *routing.Context) error {
 	}
 	c.Response.SetBody(encoded.Body)
 	return nil
+}
+
+func decodeAndFlattenLogs(body []byte, enc Encoding) ([]FlatRecord, error) {
+	logs, err := DecodeLogs(body, enc)
+	if err != nil {
+		return nil, err
+	}
+	return FlattenLogs(logs), nil
+}
+
+func decodeAndFlattenMetrics(body []byte, enc Encoding) ([]FlatRecord, error) {
+	metrics, err := DecodeMetrics(body, enc)
+	if err != nil {
+		return nil, err
+	}
+	return FlattenMetrics(metrics), nil
+}
+
+func decodeAndFlattenTraces(body []byte, enc Encoding) ([]FlatRecord, error) {
+	traces, err := DecodeTraces(body, enc)
+	if err != nil {
+		return nil, err
+	}
+	return FlattenTraces(traces), nil
 }
 
 // HandleOptions serves OPTIONS for CORS preflight, matching the existing
@@ -139,8 +187,8 @@ func (h *Handler) HandleOptions(c *routing.Context) error {
 	return nil
 }
 
-func (h *Handler) writeEmptySuccess(c *routing.Context, enc Encoding) {
-	encoded, err := BuildLogsResponse(enc, DispatchResult{})
+func (h *Handler) writeEmptySuccess(c *routing.Context, enc Encoding, build responseBuilder) {
+	encoded, err := build(enc, DispatchResult{})
 	if err != nil {
 		h.errorHandler(c.RequestCtx, err)
 		return

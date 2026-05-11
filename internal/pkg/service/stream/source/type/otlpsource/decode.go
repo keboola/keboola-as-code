@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -76,8 +78,12 @@ func DecompressIfGzip(contentEncoding string, body []byte) ([]byte, error) {
 }
 
 var (
-	logsProtoUnmarshaler = &plog.ProtoUnmarshaler{} //nolint:gochecknoglobals
-	logsJSONUnmarshaler  = &plog.JSONUnmarshaler{}  //nolint:gochecknoglobals
+	logsProtoUnmarshaler    = &plog.ProtoUnmarshaler{}    //nolint:gochecknoglobals
+	logsJSONUnmarshaler     = &plog.JSONUnmarshaler{}     //nolint:gochecknoglobals
+	metricsProtoUnmarshaler = &pmetric.ProtoUnmarshaler{} //nolint:gochecknoglobals
+	metricsJSONUnmarshaler  = &pmetric.JSONUnmarshaler{}  //nolint:gochecknoglobals
+	tracesProtoUnmarshaler  = &ptrace.ProtoUnmarshaler{}  //nolint:gochecknoglobals
+	tracesJSONUnmarshaler   = &ptrace.JSONUnmarshaler{}   //nolint:gochecknoglobals
 )
 
 // DecodeLogs unmarshals an ExportLogsServiceRequest body into plog.Logs.
@@ -89,5 +95,29 @@ func DecodeLogs(body []byte, enc Encoding) (plog.Logs, error) {
 		return logsJSONUnmarshaler.UnmarshalLogs(body)
 	default:
 		return plog.Logs{}, errors.New("unsupported OTLP encoding")
+	}
+}
+
+// DecodeMetrics unmarshals an ExportMetricsServiceRequest body into pmetric.Metrics.
+func DecodeMetrics(body []byte, enc Encoding) (pmetric.Metrics, error) {
+	switch enc {
+	case EncodingProtobuf:
+		return metricsProtoUnmarshaler.UnmarshalMetrics(body)
+	case EncodingJSON:
+		return metricsJSONUnmarshaler.UnmarshalMetrics(body)
+	default:
+		return pmetric.Metrics{}, errors.New("unsupported OTLP encoding")
+	}
+}
+
+// DecodeTraces unmarshals an ExportTraceServiceRequest body into ptrace.Traces.
+func DecodeTraces(body []byte, enc Encoding) (ptrace.Traces, error) {
+	switch enc {
+	case EncodingProtobuf:
+		return tracesProtoUnmarshaler.UnmarshalTraces(body)
+	case EncodingJSON:
+		return tracesJSONUnmarshaler.UnmarshalTraces(body)
+	default:
+		return ptrace.Traces{}, errors.New("unsupported OTLP encoding")
 	}
 }
