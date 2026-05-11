@@ -39,6 +39,10 @@ func (m *Mapper) NewSourceEntity(parent key.BranchKey, payload *api.CreateSource
 		entity.HTTP = &definition.HTTPSource{
 			Secret: idgenerator.StreamHTTPSourceSecret(),
 		}
+	case definition.SourceTypeOTLP:
+		entity.OTLP = &definition.OTLPSource{
+			Secret: idgenerator.StreamHTTPSourceSecret(),
+		}
 	default:
 		return definition.Source{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, payload.Type.String()))
 	}
@@ -70,6 +74,13 @@ func (m *Mapper) UpdateSourceEntity(entity definition.Source, payload *api.Updat
 		}
 		if entity.HTTP.Secret == "" {
 			entity.HTTP.Secret = idgenerator.StreamHTTPSourceSecret()
+		}
+	case definition.SourceTypeOTLP:
+		if entity.OTLP == nil {
+			entity.OTLP = &definition.OTLPSource{}
+		}
+		if entity.OTLP.Secret == "" {
+			entity.OTLP.Secret = idgenerator.StreamHTTPSourceSecret()
 		}
 	default:
 		return definition.Source{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, payload.Type.String()))

@@ -963,7 +963,7 @@ var Sources = Type("Sources", ArrayOf(Source), func() {
 
 var SourceType = Type("SourceType", String, func() {
 	Meta("struct:field:type", "= definition.SourceType", "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition")
-	Enum(definition.SourceTypeHTTP.String())
+	Enum(definition.SourceTypeHTTP.String(), definition.SourceTypeOTLP.String())
 	Example(definition.SourceTypeHTTP.String())
 })
 
@@ -1074,10 +1074,13 @@ var SourceFields = func(op OperationType) {
 		Example("The source receives events from Github.")
 	})
 
-	// HTTP - sub-definition - read-only
+	// Type-specific details - read-only
 	if op == OpRead {
 		Attribute("http", HTTPSource, func() {
 			Description(fmt.Sprintf(`HTTP source details for "type" = "%s".`, definition.SourceTypeHTTP))
+		})
+		Attribute("otlp", OTLPSource, func() {
+			Description(fmt.Sprintf(`OTLP source details for "type" = "%s".`, definition.SourceTypeOTLP))
 		})
 	}
 
@@ -1099,6 +1102,17 @@ var HTTPSource = Type("HTTPSource", func() {
 	Attribute("url", String, func() {
 		Description("URL of the HTTP source. Contains secret used for authentication.")
 		Example("https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb")
+	})
+	Required("url")
+})
+
+// OTLP Source----------------------------------------------------------------------------------------------------------
+
+var OTLPSource = Type("OTLPSource", func() {
+	Description(fmt.Sprintf(`OTLP/HTTP source details for "type" = "%s".`, definition.SourceTypeOTLP))
+	Attribute("url", String, func() {
+		Description("Base endpoint URL for the OTLP source. Configure this as the endpoint in your OpenTelemetry SDK. The SDK automatically appends /v1/logs, /v1/metrics, or /v1/traces.")
+		Example("https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb")
 	})
 	Required("url")
 })

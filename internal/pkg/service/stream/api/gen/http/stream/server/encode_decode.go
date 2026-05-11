@@ -3600,6 +3600,9 @@ func marshalStreamSourceToSourceResponseBody(v *stream.Source) *SourceResponseBo
 	if v.HTTP != nil {
 		res.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(v.HTTP)
 	}
+	if v.Otlp != nil {
+		res.Otlp = marshalStreamOTLPSourceToOTLPSourceResponseBody(v.Otlp)
+	}
 	if v.Version != nil {
 		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
 	}
@@ -3623,6 +3626,19 @@ func marshalStreamHTTPSourceToHTTPSourceResponseBody(v *stream.HTTPSource) *HTTP
 		return nil
 	}
 	res := &HTTPSourceResponseBody{
+		URL: v.URL,
+	}
+
+	return res
+}
+
+// marshalStreamOTLPSourceToOTLPSourceResponseBody builds a value of type
+// *OTLPSourceResponseBody from a value of type *stream.OTLPSource.
+func marshalStreamOTLPSourceToOTLPSourceResponseBody(v *stream.OTLPSource) *OTLPSourceResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &OTLPSourceResponseBody{
 		URL: v.URL,
 	}
 
@@ -4065,6 +4081,9 @@ func marshalStreamAggregatedSourceToAggregatedSourceResponseBody(v *stream.Aggre
 	}
 	if v.HTTP != nil {
 		res.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(v.HTTP)
+	}
+	if v.Otlp != nil {
+		res.Otlp = marshalStreamOTLPSourceToOTLPSourceResponseBody(v.Otlp)
 	}
 	if v.Version != nil {
 		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)

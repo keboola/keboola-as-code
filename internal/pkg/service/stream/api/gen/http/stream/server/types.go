@@ -172,7 +172,9 @@ type GetSourceResponseBody struct {
 	// Description of the source.
 	Description string `form:"description" json:"description" xml:"description"`
 	// HTTP source details for "type" = "http".
-	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
+	HTTP *HTTPSourceResponseBody `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
+	// OTLP source details for "type" = "otlp".
+	Otlp     *OTLPSourceResponseBody     `form:"otlp,omitempty" json:"otlp,omitempty" xml:"otlp,omitempty"`
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Created  *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
@@ -1361,7 +1363,9 @@ type SourceResponseBody struct {
 	// Description of the source.
 	Description string `form:"description" json:"description" xml:"description"`
 	// HTTP source details for "type" = "http".
-	HTTP     *HTTPSourceResponseBody     `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
+	HTTP *HTTPSourceResponseBody `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
+	// OTLP source details for "type" = "otlp".
+	Otlp     *OTLPSourceResponseBody     `form:"otlp,omitempty" json:"otlp,omitempty" xml:"otlp,omitempty"`
 	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
 	Created  *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
 	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
@@ -1371,6 +1375,14 @@ type SourceResponseBody struct {
 // HTTPSourceResponseBody is used to define fields on response body types.
 type HTTPSourceResponseBody struct {
 	// URL of the HTTP source. Contains secret used for authentication.
+	URL string `form:"url" json:"url" xml:"url"`
+}
+
+// OTLPSourceResponseBody is used to define fields on response body types.
+type OTLPSourceResponseBody struct {
+	// Base endpoint URL for the OTLP source. Configure this as the endpoint in
+	// your OpenTelemetry SDK. The SDK automatically appends /v1/logs, /v1/metrics,
+	// or /v1/traces.
 	URL string `form:"url" json:"url" xml:"url"`
 }
 
@@ -1579,7 +1591,9 @@ type AggregatedSourceResponseBody struct {
 	// Description of the source.
 	Description string `form:"description" json:"description" xml:"description"`
 	// HTTP source details for "type" = "http".
-	HTTP     *HTTPSourceResponseBody       `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
+	HTTP *HTTPSourceResponseBody `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
+	// OTLP source details for "type" = "otlp".
+	Otlp     *OTLPSourceResponseBody       `form:"otlp,omitempty" json:"otlp,omitempty" xml:"otlp,omitempty"`
 	Version  *VersionResponseBody          `form:"version" json:"version" xml:"version"`
 	Created  *CreatedEntityResponseBody    `form:"created" json:"created" xml:"created"`
 	Deleted  *DeletedEntityResponseBody    `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
@@ -1781,6 +1795,9 @@ func NewGetSourceResponseBody(res *stream.Source) *GetSourceResponseBody {
 	}
 	if res.HTTP != nil {
 		body.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(res.HTTP)
+	}
+	if res.Otlp != nil {
+		body.Otlp = marshalStreamOTLPSourceToOTLPSourceResponseBody(res.Otlp)
 	}
 	if res.Version != nil {
 		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
@@ -3511,8 +3528,8 @@ func ValidateCreateSourceRequestBody(body *CreateSourceRequestBody, errContext [
 		}
 	}
 	if body.Type != nil {
-		if !(*body.Type == "http") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"http"}))
+		if !(*body.Type == "http" || *body.Type == "otlp") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"http", "otlp"}))
 		}
 	}
 	if body.Name != nil {
@@ -3537,8 +3554,8 @@ func ValidateCreateSourceRequestBody(body *CreateSourceRequestBody, errContext [
 // UpdateSourceRequestBody
 func ValidateUpdateSourceRequestBody(body *UpdateSourceRequestBody, errContext []string) (err error) {
 	if body.Type != nil {
-		if !(*body.Type == "http") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"http"}))
+		if !(*body.Type == "http" || *body.Type == "otlp") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []any{"http", "otlp"}))
 		}
 	}
 	if body.Name != nil {
