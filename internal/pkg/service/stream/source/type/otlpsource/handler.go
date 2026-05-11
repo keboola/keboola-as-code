@@ -14,6 +14,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/dispatcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -71,21 +72,21 @@ type responseBuilder func(enc Encoding, result DispatchResult) (EncodedResponse,
 // source. This matches OTLP retry semantics: 4xx means "do not retry",
 // 5xx means "retry the whole batch".
 func (h *Handler) HandleLogs(c *routing.Context) error {
-	return h.handle(c, "logs", decodeAndFlattenLogs, BuildLogsResponse)
+	return h.handle(c, definition.OTLPSignalLogs, decodeAndFlattenLogs, BuildLogsResponse)
 }
 
 // HandleMetrics serves POST /v1/metrics. One OTLP request typically carries
 // many metrics, each with many data points; flatten emits one record per
 // data point, so a single request can dispatch hundreds.
 func (h *Handler) HandleMetrics(c *routing.Context) error {
-	return h.handle(c, "metrics", decodeAndFlattenMetrics, BuildMetricsResponse)
+	return h.handle(c, definition.OTLPSignalMetrics, decodeAndFlattenMetrics, BuildMetricsResponse)
 }
 
 // HandleTraces serves POST /v1/traces. Span events and links are kept nested
 // under the span rather than exploded into separate records — they are
 // intrinsically attached to their parent span.
 func (h *Handler) HandleTraces(c *routing.Context) error {
-	return h.handle(c, "traces", decodeAndFlattenTraces, BuildTracesResponse)
+	return h.handle(c, definition.OTLPSignalTraces, decodeAndFlattenTraces, BuildTracesResponse)
 }
 
 func (h *Handler) handle(c *routing.Context, signal string, decode signalDecoder, build responseBuilder) error {
@@ -134,6 +135,7 @@ func (h *Handler) handle(c *routing.Context, signal string, decode signalDecoder
 		projectID,
 		sourceID,
 		secret,
+		signal,
 		records,
 	)
 
@@ -146,6 +148,10 @@ func (h *Handler) handle(c *routing.Context, signal string, decode signalDecoder
 	c.Response.SetStatusCode(encoded.StatusCode)
 	if encoded.ContentType != "" {
 		c.Response.Header.Set("Content-Type", encoded.ContentType)
+	}
+	// Per OTLP spec: SHOULD include Retry-After when returning 429.
+	if encoded.StatusCode == http.StatusTooManyRequests {
+		c.Response.Header.Set("Retry-After", "1")
 	}
 	c.Response.SetBody(encoded.Body)
 	return nil

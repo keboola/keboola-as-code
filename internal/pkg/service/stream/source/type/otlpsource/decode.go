@@ -23,8 +23,9 @@ const (
 )
 
 const (
-	contentTypeProtobuf = "application/x-protobuf"
-	contentTypeJSON     = "application/json"
+	contentTypeProtobuf      = "application/x-protobuf"
+	contentTypeProtobufAlias = "application/protobuf" // accepted for compatibility
+	contentTypeJSON          = "application/json"
 )
 
 // DetectEncoding parses the Content-Type header value and returns the matching
@@ -35,7 +36,7 @@ func DetectEncoding(contentType string) Encoding {
 		contentType = strings.TrimSpace(contentType[:i])
 	}
 	switch contentType {
-	case contentTypeProtobuf:
+	case contentTypeProtobuf, contentTypeProtobufAlias:
 		return EncodingProtobuf
 	case contentTypeJSON:
 		return EncodingJSON
