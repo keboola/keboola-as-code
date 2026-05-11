@@ -16,7 +16,8 @@
       "name": "My Source 2",
       "description": "",
       "http": {
-        "url": "https://stream-in.keboola.local/stream/%%TEST_KBC_PROJECT_ID%%/my-source-2/%s"
+        "url": "https://stream-in.keboola.local/stream/%%TEST_KBC_PROJECT_ID%%/my-source-2/%s",
+        "otlpUrl": "https://stream-in.keboola.local/otlp/%%TEST_KBC_PROJECT_ID%%/my-source-2/%s"
       },
       "version": {
         "number": 1,

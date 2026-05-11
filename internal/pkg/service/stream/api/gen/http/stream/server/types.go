@@ -1372,6 +1372,10 @@ type SourceResponseBody struct {
 type HTTPSourceResponseBody struct {
 	// URL of the HTTP source. Contains secret used for authentication.
 	URL string `form:"url" json:"url" xml:"url"`
+	// Base URL for the native OTLP/HTTP endpoint of this source. Use as
+	// OTEL_EXPORTER_OTLP_ENDPOINT; the OpenTelemetry SDK appends /v1/logs,
+	// /v1/metrics, or /v1/traces automatically.
+	OtlpURL string `form:"otlpUrl" json:"otlpUrl" xml:"otlpUrl"`
 }
 
 // VersionResponseBody is used to define fields on response body types.
