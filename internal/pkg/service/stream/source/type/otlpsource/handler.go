@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -103,7 +104,7 @@ func (h *Handler) handle(c *routing.Context, signal string, decode signalDecoder
 		return nil
 	}
 
-	body, err := DecompressIfGzip(string(c.Request.Header.Peek("Content-Encoding")), c.Request.Body())
+	body, err := DecompressBody(string(c.Request.Header.Peek("Content-Encoding")), c.Request.Body())
 	if err != nil {
 		h.errorHandler(c.RequestCtx, svcerrors.NewBadRequestError(err))
 		return nil //nolint:nilerr
@@ -204,7 +205,37 @@ func parseAuthParams(c *routing.Context) (keboola.ProjectID, key.SourceID, strin
 	if err != nil {
 		return 0, "", "", svcerrors.NewBadRequestError(errors.Errorf("invalid project ID %q", projectIDStr))
 	}
-	return keboola.ProjectID(projectIDInt), key.SourceID(c.Param("sourceID")), c.Param("secret"), nil
+
+	// The secret is in the URL path on the original /otlp/<p>/<s>/<secret>/...
+	// routes. The header-auth routes have no {secret} URL param and instead
+	// expect "Authorization: Bearer <secret>" — this keeps secrets out of
+	// HTTP access logs, CDN logs, and APM URL attributes.
+	secret := c.Param("secret")
+	if secret == "" {
+		secret = extractBearerToken(string(c.Request.Header.Peek("Authorization")))
+		if secret == "" {
+			return 0, "", "", svcerrors.NewBadRequestError(errors.New(
+				`missing OTLP secret: provide it in the URL path or as "Authorization: Bearer <secret>"`,
+			))
+		}
+	}
+
+	return keboola.ProjectID(projectIDInt), key.SourceID(c.Param("sourceID")), secret, nil
+}
+
+// extractBearerToken returns the token from an "Authorization: Bearer <token>"
+// header value, or "" if the header is missing/malformed. The scheme match
+// is case-insensitive per RFC 7235 §2.1.
+func extractBearerToken(authHeader string) string {
+	authHeader = strings.TrimSpace(authHeader)
+	const prefix = "bearer "
+	if len(authHeader) <= len(prefix) {
+		return ""
+	}
+	if !strings.EqualFold(authHeader[:len(prefix)], prefix) {
+		return ""
+	}
+	return strings.TrimSpace(authHeader[len(prefix):])
 }
 
 func headersToOrderedMap(reqCtx *fasthttp.RequestCtx) *orderedmap.OrderedMap {

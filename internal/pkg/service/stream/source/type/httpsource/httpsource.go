@@ -153,6 +153,13 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	// HTTP source (same server, same dispatcher) — the only new pieces are
 	// route registration, OTLP decoding, record flattening, and OTLP-conformant
 	// response construction.
+	//
+	// Two route shapes are supported:
+	//   /otlp/<projectID>/<sourceID>/<secret>/v1/{logs,metrics,traces}
+	//     — secret embedded in the URL (convenient, matches /stream/...)
+	//   /otlp/<projectID>/<sourceID>/v1/{logs,metrics,traces}
+	//     — secret in "Authorization: Bearer <secret>" header (keeps the
+	//       secret out of HTTP access logs and APM URL attributes)
 	otlpHandler := otlpsource.New(ctx, logger, d.Clock(), dp, errorHandler)
 	router.Options("/otlp/<projectID>/<sourceID>/<secret>/v1/logs", otlpHandler.HandleOptions)
 	router.Post("/otlp/<projectID>/<sourceID>/<secret>/v1/logs", otlpHandler.HandleLogs)
@@ -160,6 +167,12 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 	router.Post("/otlp/<projectID>/<sourceID>/<secret>/v1/metrics", otlpHandler.HandleMetrics)
 	router.Options("/otlp/<projectID>/<sourceID>/<secret>/v1/traces", otlpHandler.HandleOptions)
 	router.Post("/otlp/<projectID>/<sourceID>/<secret>/v1/traces", otlpHandler.HandleTraces)
+	router.Options("/otlp/<projectID>/<sourceID>/v1/logs", otlpHandler.HandleOptions)
+	router.Post("/otlp/<projectID>/<sourceID>/v1/logs", otlpHandler.HandleLogs)
+	router.Options("/otlp/<projectID>/<sourceID>/v1/metrics", otlpHandler.HandleOptions)
+	router.Post("/otlp/<projectID>/<sourceID>/v1/metrics", otlpHandler.HandleMetrics)
+	router.Options("/otlp/<projectID>/<sourceID>/v1/traces", otlpHandler.HandleOptions)
+	router.Post("/otlp/<projectID>/<sourceID>/v1/traces", otlpHandler.HandleTraces)
 
 	// Prepare HTTP server
 	readBufferSize, err := safecast.Convert[int](cfg.ReadBufferSize.Bytes())
