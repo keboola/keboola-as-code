@@ -2,6 +2,7 @@ package recordctx
 
 import (
 	"context"
+	"io"
 	"net"
 	"net/http"
 	"sort"
@@ -56,6 +57,46 @@ func FromOTLP(
 		bodyMap:   bodyMap,
 		signal:    signal,
 	}
+}
+
+// FromOTLPTestRequest builds a test Context for an OTLP source from a plain
+// HTTP request.  The request body must be a JSON object whose structure matches
+// the flat record produced by FlattenLogs/FlattenMetrics/FlattenTraces — the
+// same format a real OTLP batch would yield after decoding and flattening.
+// This lets users call the /test endpoint to validate their column templates
+// against a representative sample payload.
+func FromOTLPTestRequest(ctx context.Context, now time.Time, req *http.Request) (Context, error) {
+	bodyBytes := make([]byte, 0)
+	if req.Body != nil {
+		var err error
+		bodyBytes, err = io.ReadAll(req.Body)
+		if err != nil {
+			return nil, errors.PrefixError(err, "cannot read request body")
+		}
+	}
+
+	bodyMap := orderedmap.New()
+	if len(bodyBytes) > 0 {
+		if err := json.Unmarshal(bodyBytes, &bodyMap); err != nil {
+			return nil, errors.PrefixError(err, "request body must be a JSON object representing a flat OTLP record")
+		}
+	}
+
+	headers := orderedmap.New()
+	for k, v := range req.Header {
+		if len(v) > 0 {
+			headers.Set(http.CanonicalHeaderKey(k), v[0])
+		}
+	}
+	headers.SortKeys(func(keys []string) { sort.Strings(keys) })
+
+	var clientIP net.IP
+	if host, _, err := net.SplitHostPort(req.RemoteAddr); err == nil {
+		clientIP = net.ParseIP(host)
+	}
+
+	// Default signal to "logs" — signal affects routing only, not column rendering.
+	return FromOTLP(ctx, now, clientIP, headers, bodyMap, "logs"), nil
 }
 
 func (c *otlpContext) Ctx() context.Context {

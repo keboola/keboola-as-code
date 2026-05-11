@@ -1,0 +1,117 @@
+<<<<<
+definition/branch/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "isDefault": true
+}
+>>>>>
+
+<<<<<
+definition/source/active/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-otlp-source
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-otlp-source",
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "version": {
+    "number": 1,
+    "hash": "%s",
+    "description": "New source.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "type": "otlp",
+  "name": "My OTLP Source",
+  "otlp": {
+    "secret": "%s"
+  }
+}
+>>>>>
+
+<<<<<
+definition/source/version/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-otlp-source/0000000001
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-otlp-source",
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "version": {
+    "number": 1,
+    "hash": "%s",
+    "description": "New source.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "type": "otlp",
+  "name": "My OTLP Source",
+  "otlp": {
+    "secret": "%s"
+  }
+}
+>>>>>
+
+<<<<<
+task/%%TEST_KBC_PROJECT_ID%%/api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-otlp-source/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "taskId": "api.create.source/%%TEST_DEFAULT_BRANCH_ID%%/my-otlp-source/%s",
+  "type": "api.create.source",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "node": "test-node",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-otlp-source",
+  "result": "Source has been created successfully.",
+  "outputs": {
+    "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "sourceId": "my-otlp-source",
+    "url": "https://stream.keboola.local/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-otlp-source"
+  },
+  "duration": %s
+}
+>>>>>

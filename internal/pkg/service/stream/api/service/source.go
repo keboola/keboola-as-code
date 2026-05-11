@@ -304,7 +304,8 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 }
 
 func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.TestSourcePayload, _ io.ReadCloser) (res *api.TestResult, err error) {
-	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
+	source, err := s.definition.Source().Get(d.SourceKey()).Do(ctx).ResultOrErr()
+	if err != nil {
 		return nil, err
 	}
 
@@ -317,7 +318,19 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 	req := d.Request()
 	req.Header.Del("x-storageapi-token")
 
-	recordCtx := recordctx.FromHTTP(d.Clock().Now(), req)
+	var recordCtx recordctx.Context
+	if source.Type == definition.SourceTypeOTLP {
+		// For OTLP sources the test body is interpreted as an already-flattened
+		// OTLP record (the same structure that FlattenLogs/Metrics/Traces produces).
+		// This lets API callers test their jsonnet column expressions against a
+		// realistic flat payload without having to send a real protobuf batch.
+		recordCtx, err = recordctx.FromOTLPTestRequest(ctx, d.Clock().Now(), req)
+		if err != nil {
+			return nil, svcerrors.NewBadRequestError(err)
+		}
+	} else {
+		recordCtx = recordctx.FromHTTP(d.Clock().Now(), req)
+	}
 
 	return s.mapper.NewTestResultResponse(d.SourceKey(), sinks, recordCtx)
 }

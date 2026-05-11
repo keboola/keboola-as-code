@@ -1,0 +1,41 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-otlp-source",
+  "tables": [
+    {
+      "sinkId": "my-sink",
+      "tableId": "in.c-otlp.logs",
+      "rows": [
+        {
+          "columns": [
+            {
+              "name": "datetime",
+              "value": "%s"
+            },
+            {
+              "name": "severity",
+              "value": "\"WARN\""
+            },
+            {
+              "name": "message",
+              "value": "\"disk space low\""
+            },
+            {
+              "name": "service",
+              "value": "\"storage-service\""
+            },
+            {
+              "name": "otlp_timestamp",
+              "value": "\"2024-06-01T12:00:00Z\""
+            },
+            {
+              "name": "user_id",
+              "value": "\"u-42\""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
