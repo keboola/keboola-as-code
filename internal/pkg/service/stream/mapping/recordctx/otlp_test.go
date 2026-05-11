@@ -20,7 +20,7 @@ func TestOTLPContext_BodyMap_PassesThroughWithoutParsing(t *testing.T) {
 	body.Set("severity_text", "INFO")
 	body.Set("body", "hello")
 
-	c := FromOTLP(context.Background(), time.Now(), net.IPv4(127, 0, 0, 1), nil, body)
+	c := FromOTLP(context.Background(), time.Now(), net.IPv4(127, 0, 0, 1), nil, body, "logs")
 
 	gotMap, err := c.BodyMap()
 	require.NoError(t, err)
@@ -34,7 +34,7 @@ func TestOTLPContext_BodyBytes_LazyJSONMarshal(t *testing.T) {
 	body.Set("severity_text", "WARN")
 	body.Set("count", 42)
 
-	c := FromOTLP(context.Background(), time.Now(), net.IPv4(10, 0, 0, 1), nil, body)
+	c := FromOTLP(context.Background(), time.Now(), net.IPv4(10, 0, 0, 1), nil, body, "logs")
 
 	bytesA, err := c.BodyBytes()
 	require.NoError(t, err)
@@ -56,7 +56,7 @@ func TestOTLPContext_BodyLength(t *testing.T) {
 
 	body := orderedmap.New()
 	body.Set("k", "v")
-	c := FromOTLP(context.Background(), time.Now(), nil, nil, body)
+	c := FromOTLP(context.Background(), time.Now(), nil, nil, body, "logs")
 
 	expected, err := c.BodyBytes()
 	require.NoError(t, err)
@@ -68,7 +68,7 @@ func TestOTLPContext_JSONValue(t *testing.T) {
 
 	body := orderedmap.New()
 	body.Set("severity_text", "ERROR")
-	c := FromOTLP(context.Background(), time.Now(), nil, nil, body)
+	c := FromOTLP(context.Background(), time.Now(), nil, nil, body, "logs")
 
 	pool := &fastjson.ParserPool{}
 	v, err := c.JSONValue(pool)
@@ -82,16 +82,25 @@ func TestOTLPContext_TimestampAndClientIP(t *testing.T) {
 
 	now := time.Date(2024, 5, 11, 12, 0, 0, 0, time.UTC)
 	ip := net.IPv4(192, 168, 1, 100)
-	c := FromOTLP(context.Background(), now, ip, nil, orderedmap.New())
+	c := FromOTLP(context.Background(), now, ip, nil, orderedmap.New(), "logs")
 
 	assert.Equal(t, now, c.Timestamp())
 	assert.True(t, c.ClientIP().Equal(ip))
 }
 
+func TestOTLPContext_Signal(t *testing.T) {
+	t.Parallel()
+
+	for _, signal := range []string{"logs", "metrics", "traces"} {
+		c := FromOTLP(context.Background(), time.Now(), nil, nil, orderedmap.New(), signal)
+		assert.Equal(t, signal, c.Signal())
+	}
+}
+
 func TestOTLPContext_HeadersMap_NilSafe(t *testing.T) {
 	t.Parallel()
 
-	c := FromOTLP(context.Background(), time.Now(), nil, nil, orderedmap.New())
+	c := FromOTLP(context.Background(), time.Now(), nil, nil, orderedmap.New(), "logs")
 	m := c.HeadersMap()
 	require.NotNil(t, m)
 	assert.Equal(t, 0, m.Len())
@@ -104,7 +113,7 @@ func TestOTLPContext_HeadersString(t *testing.T) {
 	headers.Set("Content-Type", "application/x-protobuf")
 	headers.Set("User-Agent", "otel-go/1.0")
 
-	c := FromOTLP(context.Background(), time.Now(), nil, headers, orderedmap.New())
+	c := FromOTLP(context.Background(), time.Now(), nil, headers, orderedmap.New(), "logs")
 	s := c.HeadersString()
 
 	// Canonical header names, sorted, newline-terminated.
@@ -117,7 +126,7 @@ func TestOTLPContext_ReleaseBuffers(t *testing.T) {
 
 	body := orderedmap.New()
 	body.Set("k", "v")
-	c := FromOTLP(context.Background(), time.Now(), nil, nil, body)
+	c := FromOTLP(context.Background(), time.Now(), nil, nil, body, "logs")
 
 	_, err := c.BodyBytes()
 	require.NoError(t, err)
