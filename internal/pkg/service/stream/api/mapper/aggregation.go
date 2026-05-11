@@ -55,8 +55,13 @@ func (m *Mapper) NewAggregationSource(entity definition.Source) (*api.Aggregated
 		if err != nil {
 			return nil, err
 		}
+		otlpURL, err := entity.FormatOTLPSourceURL(m.httpSourcePublicURL.String())
+		if err != nil {
+			return nil, err
+		}
 		out.HTTP = &api.HTTPSource{
-			URL: u,
+			URL:     u,
+			OtlpURL: otlpURL,
 		}
 	default:
 		return nil, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, out.Type.String()))

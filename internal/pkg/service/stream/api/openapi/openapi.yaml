@@ -2099,6 +2099,7 @@ definitions:
             description: The source receives events from Github.
             http:
                 url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                otlpUrl: https://stream-in.keboola.com/otlp/1234/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
             version:
                 number: 3
                 hash: f43e93acd97eceb3
@@ -2302,6 +2303,7 @@ definitions:
                       description: The source receives events from Github.
                       http:
                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                        otlpUrl: https://stream-in.keboola.com/otlp/1234/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -2485,6 +2487,7 @@ definitions:
                   description: The source receives events from Github.
                   http:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                    otlpUrl: https://stream-in.keboola.com/otlp/1234/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -2950,6 +2953,10 @@ definitions:
         title: HTTPSource
         type: object
         properties:
+            otlpUrl:
+                type: string
+                description: Base URL for the native OTLP/HTTP endpoint of this source. Use as OTEL_EXPORTER_OTLP_ENDPOINT; the OpenTelemetry SDK appends /v1/logs, /v1/metrics, or /v1/traces automatically.
+                example: https://stream-in.keboola.com/otlp/1234/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
             url:
                 type: string
                 description: URL of the HTTP source. Contains secret used for authentication.
@@ -2957,8 +2964,10 @@ definitions:
         description: HTTP source details for "type" = "http".
         example:
             url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+            otlpUrl: https://stream-in.keboola.com/otlp/1234/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
         required:
             - url
+            - otlpUrl
     Level:
         title: Level
         type: object
@@ -3774,6 +3783,7 @@ definitions:
             description: The source receives events from Github.
             http:
                 url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                otlpUrl: https://stream-in.keboola.com/otlp/1234/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
             version:
                 number: 3
                 hash: f43e93acd97eceb3
@@ -3846,6 +3856,7 @@ definitions:
                       description: The source receives events from Github.
                       http:
                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                        otlpUrl: https://stream-in.keboola.com/otlp/1234/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -3899,6 +3910,7 @@ definitions:
                   description: The source receives events from Github.
                   http:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                    otlpUrl: https://stream-in.keboola.com/otlp/1234/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                   version:
                     number: 3
                     hash: f43e93acd97eceb3

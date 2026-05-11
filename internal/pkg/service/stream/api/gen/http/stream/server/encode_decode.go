@@ -3623,7 +3623,8 @@ func marshalStreamHTTPSourceToHTTPSourceResponseBody(v *stream.HTTPSource) *HTTP
 		return nil
 	}
 	res := &HTTPSourceResponseBody{
-		URL: v.URL,
+		URL:     v.URL,
+		OtlpURL: v.OtlpURL,
 	}
 
 	return res

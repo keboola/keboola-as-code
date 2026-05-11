@@ -1100,7 +1100,13 @@ var HTTPSource = Type("HTTPSource", func() {
 		Description("URL of the HTTP source. Contains secret used for authentication.")
 		Example("https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb")
 	})
-	Required("url")
+	Attribute("otlpUrl", String, func() {
+		Description("Base URL for the native OTLP/HTTP endpoint of this source. " +
+			"Use as OTEL_EXPORTER_OTLP_ENDPOINT; the OpenTelemetry SDK appends " +
+			"/v1/logs, /v1/metrics, or /v1/traces automatically.")
+		Example("https://stream-in.keboola.com/otlp/1234/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb")
+	})
+	Required("url", "otlpUrl")
 })
 
 // Sink ----------------------------------------------------------------------------------------------------------------

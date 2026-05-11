@@ -6,7 +6,8 @@
   "name": "My Source",
   "description": "",
   "http": {
-    "url": "https://stream-in.keboola.local/stream/%%TEST_KBC_PROJECT_ID%%/my-source-custom-id/%s"
+    "url": "https://stream-in.keboola.local/stream/%%TEST_KBC_PROJECT_ID%%/my-source-custom-id/%s",
+    "otlpUrl": "https://stream-in.keboola.local/otlp/%%TEST_KBC_PROJECT_ID%%/my-source-custom-id/%s"
   },
   "version": {
     "number": 1,

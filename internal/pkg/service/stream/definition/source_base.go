@@ -33,3 +33,20 @@ func (s *Source) FormatHTTPSourceURL(httpSourcePublicURL string) (string, error)
 
 	return u.JoinPath("stream", s.ProjectID.String(), s.SourceID.String(), s.HTTP.Secret).String(), nil
 }
+
+// FormatOTLPSourceURL returns the OTLP/HTTP base URL for the source.
+//
+// OTel SDKs append the signal-specific suffix (/v1/logs, /v1/metrics,
+// /v1/traces) automatically when given the base URL via
+// OTEL_EXPORTER_OTLP_ENDPOINT, so this method returns the base only.
+//
+// The URL shares the same secret as the HTTP source — OTLP rides on top of
+// the existing HTTP source, not a new source type.
+func (s *Source) FormatOTLPSourceURL(httpSourcePublicURL string) (string, error) {
+	u, err := url.Parse(httpSourcePublicURL)
+	if err != nil {
+		return "", err
+	}
+
+	return u.JoinPath("otlp", s.ProjectID.String(), s.SourceID.String(), s.HTTP.Secret).String(), nil
+}
