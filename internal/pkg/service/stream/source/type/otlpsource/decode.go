@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/klauspost/compress/zstd"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -57,13 +58,26 @@ func (e Encoding) ContentType() string {
 	}
 }
 
-// DecompressIfGzip decompresses body when Content-Encoding is "gzip", otherwise
-// returns body unchanged. No other compression formats are recognized.
-func DecompressIfGzip(contentEncoding string, body []byte) ([]byte, error) {
-	if strings.TrimSpace(contentEncoding) != "gzip" {
+// DecompressBody decompresses the request body based on Content-Encoding.
+// Supports "gzip" (per OTLP spec required) and "zstd" (optional, supported
+// by every major OTel SDK). Empty or unknown encodings pass through unchanged.
+//
+// Note: "identity" is sometimes set by clients to mean "no compression".
+// We treat any value other than gzip/zstd as identity to be permissive —
+// the body bytes are returned as-is and the downstream decoder will fail
+// fast if they aren't valid protobuf/JSON.
+func DecompressBody(contentEncoding string, body []byte) ([]byte, error) {
+	switch strings.TrimSpace(contentEncoding) {
+	case "gzip":
+		return decompressGzip(body)
+	case "zstd":
+		return decompressZstd(body)
+	default:
 		return body, nil
 	}
+}
 
+func decompressGzip(body []byte) ([]byte, error) {
 	reader, err := gzip.NewReader(bytes.NewReader(body))
 	if err != nil {
 		return nil, errors.PrefixError(err, "cannot create gzip reader")
@@ -73,6 +87,20 @@ func DecompressIfGzip(contentEncoding string, body []byte) ([]byte, error) {
 	decompressed, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, errors.PrefixError(err, "cannot decompress gzip body")
+	}
+	return decompressed, nil
+}
+
+func decompressZstd(body []byte) ([]byte, error) {
+	reader, err := zstd.NewReader(bytes.NewReader(body))
+	if err != nil {
+		return nil, errors.PrefixError(err, "cannot create zstd reader")
+	}
+	defer reader.Close()
+
+	decompressed, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, errors.PrefixError(err, "cannot decompress zstd body")
 	}
 	return decompressed, nil
 }

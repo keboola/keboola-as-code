@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"testing"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -40,16 +41,25 @@ func TestEncodingContentType(t *testing.T) {
 	assert.Empty(t, EncodingUnsupported.ContentType())
 }
 
-func TestDecompressIfGzip_NoCompression(t *testing.T) {
+func TestDecompressBody_NoCompression(t *testing.T) {
 	t.Parallel()
 
 	body := []byte("hello")
-	out, err := DecompressIfGzip("", body)
+	out, err := DecompressBody("", body)
 	require.NoError(t, err)
 	assert.Equal(t, body, out)
 }
 
-func TestDecompressIfGzip_Gzip(t *testing.T) {
+func TestDecompressBody_Identity(t *testing.T) {
+	t.Parallel()
+
+	body := []byte("identity passthrough")
+	out, err := DecompressBody("identity", body)
+	require.NoError(t, err)
+	assert.Equal(t, body, out, "identity (any unknown encoding) should pass body through unchanged")
+}
+
+func TestDecompressBody_Gzip(t *testing.T) {
 	t.Parallel()
 
 	original := []byte("the quick brown fox jumps over the lazy dog")
@@ -59,15 +69,36 @@ func TestDecompressIfGzip_Gzip(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, gz.Close())
 
-	out, err := DecompressIfGzip("gzip", buf.Bytes())
+	out, err := DecompressBody("gzip", buf.Bytes())
 	require.NoError(t, err)
 	assert.Equal(t, original, out)
 }
 
-func TestDecompressIfGzip_InvalidGzip(t *testing.T) {
+func TestDecompressBody_Zstd(t *testing.T) {
 	t.Parallel()
 
-	_, err := DecompressIfGzip("gzip", []byte("not gzip"))
+	original := []byte("zstd compression test payload, repeated. zstd compression test payload, repeated.")
+	encoder, err := zstd.NewWriter(nil)
+	require.NoError(t, err)
+	compressed := encoder.EncodeAll(original, nil)
+	require.NoError(t, encoder.Close())
+
+	out, err := DecompressBody("zstd", compressed)
+	require.NoError(t, err)
+	assert.Equal(t, original, out)
+}
+
+func TestDecompressBody_InvalidGzip(t *testing.T) {
+	t.Parallel()
+
+	_, err := DecompressBody("gzip", []byte("not gzip"))
+	require.Error(t, err)
+}
+
+func TestDecompressBody_InvalidZstd(t *testing.T) {
+	t.Parallel()
+
+	_, err := DecompressBody("zstd", []byte("not zstd"))
 	require.Error(t, err)
 }
 
