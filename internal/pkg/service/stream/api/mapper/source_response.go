@@ -38,10 +38,13 @@ func (m *Mapper) NewSourceResponse(entity definition.Source) (*api.Source, error
 		if err != nil {
 			return nil, err
 		}
-
-		out.HTTP = &api.HTTPSource{
-			URL: u,
+		out.HTTP = &api.HTTPSource{URL: u}
+	case definition.SourceTypeOTLP:
+		u, err := entity.FormatOTLPSourceURL(m.httpSourcePublicURL.String())
+		if err != nil {
+			return nil, err
 		}
+		out.Otlp = &api.OTLPSource{URL: u}
 	default:
 		return nil, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, out.Type.String()))
 	}

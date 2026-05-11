@@ -109,6 +109,8 @@ paths:
                                       description: The source receives events from Github.
                                       http:
                                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                                      otlp:
+                                        url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                       version:
                                         number: 3
                                         hash: f43e93acd97eceb3
@@ -340,6 +342,8 @@ paths:
                                       description: The source receives events from Github.
                                       http:
                                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                                      otlp:
+                                        url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                       version:
                                         number: 3
                                         hash: f43e93acd97eceb3
@@ -553,6 +557,8 @@ paths:
                                 description: The source receives events from Github.
                                 http:
                                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                                otlp:
+                                    url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                 version:
                                     number: 3
                                     hash: f43e93acd97eceb3
@@ -2943,6 +2949,8 @@ paths:
                                       description: The source receives events from Github.
                                       http:
                                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                                      otlp:
+                                        url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                       version:
                                         number: 3
                                         hash: f43e93acd97eceb3
@@ -3426,6 +3434,8 @@ components:
                     example: Github Webhook Source
                     minLength: 1
                     maxLength: 40
+                otlp:
+                    $ref: '#/components/schemas/OTLPSource'
                 projectId:
                     type: integer
                     description: ID of the project.
@@ -3444,6 +3454,7 @@ components:
                     example: http
                     enum:
                         - http
+                        - otlp
                 version:
                     $ref: '#/components/schemas/Version'
             description: Source of data for further processing, start of the stream, max 100 sources per a branch.
@@ -3456,6 +3467,8 @@ components:
                 description: The source receives events from Github.
                 http:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                otlp:
+                    url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                 version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -3645,6 +3658,8 @@ components:
                   description: The source receives events from Github.
                   http:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                  otlp:
+                    url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -3872,6 +3887,8 @@ components:
                       description: The source receives events from Github.
                       http:
                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                      otlp:
+                        url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -4315,6 +4332,7 @@ components:
                     example: http
                     enum:
                         - http
+                        - otlp
             example:
                 branchId: default
                 sourceId: github-webhook-source
@@ -4350,6 +4368,7 @@ components:
                     example: http
                     enum:
                         - http
+                        - otlp
             example:
                 sourceId: github-webhook-source
                 type: http
@@ -4765,6 +4784,18 @@ components:
                 limit: 100
             required:
                 - branchId
+        OTLPSource:
+            type: object
+            properties:
+                url:
+                    type: string
+                    description: Base endpoint URL for the OTLP source. Configure this as the endpoint in your OpenTelemetry SDK. The SDK automatically appends /v1/logs, /v1/metrics, or /v1/traces.
+                    example: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+            description: OTLP/HTTP source details for "type" = "otlp".
+            example:
+                url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+            required:
+                - url
         PaginatedResponse:
             type: object
             properties:
@@ -5604,6 +5635,8 @@ components:
                     example: Github Webhook Source
                     minLength: 1
                     maxLength: 40
+                otlp:
+                    $ref: '#/components/schemas/OTLPSource'
                 projectId:
                     type: integer
                     description: ID of the project.
@@ -5620,6 +5653,7 @@ components:
                     example: http
                     enum:
                         - http
+                        - otlp
                 version:
                     $ref: '#/components/schemas/Version'
             description: Source of data for further processing, start of the stream, max 100 sources per a branch.
@@ -5632,6 +5666,8 @@ components:
                 description: The source receives events from Github.
                 http:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                otlp:
+                    url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                 version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -5747,6 +5783,8 @@ components:
                   description: The source receives events from Github.
                   http:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                  otlp:
+                    url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -5818,6 +5856,8 @@ components:
                       description: The source receives events from Github.
                       http:
                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                      otlp:
+                        url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -6521,6 +6561,7 @@ components:
                     example: http
                     enum:
                         - http
+                        - otlp
             example:
                 branchId: default
                 sourceId: github-webhook-source
@@ -6554,6 +6595,7 @@ components:
                     example: http
                     enum:
                         - http
+                        - otlp
             example:
                 changeDescription: Renamed.
                 type: http

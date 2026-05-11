@@ -157,7 +157,9 @@ type AggregatedSource struct {
 	// Description of the source.
 	Description string
 	// HTTP source details for "type" = "http".
-	HTTP     *HTTPSource
+	HTTP *HTTPSource
+	// OTLP source details for "type" = "otlp".
+	Otlp     *OTLPSource
 	Version  *Version
 	Created  *CreatedEntity
 	Deleted  *DeletedEntity
@@ -473,6 +475,14 @@ type ListSourcesPayload struct {
 	Limit int
 }
 
+// OTLP/HTTP source details for "type" = "otlp".
+type OTLPSource struct {
+	// Base endpoint URL for the OTLP source. Configure this as the endpoint in
+	// your OpenTelemetry SDK. The SDK automatically appends /v1/logs, /v1/metrics,
+	// or /v1/traces.
+	URL string
+}
+
 type PaginatedResponse struct {
 	// Current limit.
 	Limit int
@@ -676,7 +686,9 @@ type Source struct {
 	// Description of the source.
 	Description string
 	// HTTP source details for "type" = "http".
-	HTTP     *HTTPSource
+	HTTP *HTTPSource
+	// OTLP source details for "type" = "otlp".
+	Otlp     *OTLPSource
 	Version  *Version
 	Created  *CreatedEntity
 	Deleted  *DeletedEntity
