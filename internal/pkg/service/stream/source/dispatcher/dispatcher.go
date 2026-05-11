@@ -69,15 +69,23 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 				return sourceKey(source.SourceKey)
 			},
 			func(key string, source definition.Source, rawValue *op.KeyValue, oldValue **sourceData) *sourceData {
+				var secret string
+				switch source.Type {
+				case definition.SourceTypeHTTP:
+					secret = source.HTTP.Secret
+				case definition.SourceTypeOTLP:
+					secret = source.OTLP.Secret
+				}
 				return &sourceData{
 					sourceKey: source.SourceKey,
 					enabled:   source.IsEnabled(),
-					secret:    source.HTTP.Secret,
+					secret:    secret,
 				}
 			},
 		).
 			WithFilter(func(event etcdop.WatchEvent[definition.Source]) bool {
-				return event.Value.Type == definition.SourceTypeHTTP
+				t := event.Value.Type
+				return t == definition.SourceTypeHTTP || t == definition.SourceTypeOTLP
 			}).
 			BuildMirror()
 		if err := <-dp.sources.StartMirroring(ctx, &dp.wg, dp.logger, d.Telemetry(), d.WatchTelemetryInterval()); err != nil {

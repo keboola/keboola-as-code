@@ -27,3 +27,13 @@ func NewHTTPSource(k key.SourceKey) definition.Source {
 		HTTP:        &definition.HTTPSource{Secret: "012345678901234567890123456789012345678912345678"},
 	}
 }
+
+func NewOTLPSource(k key.SourceKey) definition.Source {
+	return definition.Source{
+		SourceKey:   k,
+		Type:        definition.SourceTypeOTLP,
+		Name:        "My OTLP Source",
+		Description: "My Description",
+		OTLP:        &definition.OTLPSource{Secret: "012345678901234567890123456789012345678912345678"},
+	}
+}
