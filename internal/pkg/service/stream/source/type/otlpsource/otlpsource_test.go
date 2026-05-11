@@ -34,10 +34,10 @@ import (
 )
 
 var (
-	logsProtoMarshaler   = &plog.ProtoMarshaler{}
-	logsJSONMarshaler    = &plog.JSONMarshaler{}
+	logsProtoMarshaler    = &plog.ProtoMarshaler{}
+	logsJSONMarshaler     = &plog.JSONMarshaler{}
 	metricsProtoMarshaler = &pmetric.ProtoMarshaler{}
-	tracesProtoMarshaler = &ptrace.ProtoMarshaler{}
+	tracesProtoMarshaler  = &ptrace.ProtoMarshaler{}
 )
 
 type otlpTestState struct {
@@ -140,11 +140,11 @@ func runOTLPTestCases(t *testing.T, ts *otlpTestState) {
 			path:               baseURL + "/v1/logs",
 			expectedStatusCode: http.StatusOK,
 			expectedHeaders: map[string]string{
-				"Allow":                         "OPTIONS, POST",
-				"Access-Control-Allow-Methods":  "OPTIONS, POST",
-				"Access-Control-Allow-Headers":  "*",
-				"Access-Control-Allow-Origin":   "*",
-				"Server":                        httpsource.ServerHeader,
+				"Allow":                        "OPTIONS, POST",
+				"Access-Control-Allow-Methods": "OPTIONS, POST",
+				"Access-Control-Allow-Headers": "*",
+				"Access-Control-Allow-Origin":  "*",
+				"Server":                       httpsource.ServerHeader,
 			},
 		},
 		{
@@ -382,15 +382,15 @@ func TestOTLPSource_SignalRouting(t *testing.T) {
 	require.NoError(t, netutils.WaitForHTTP(fmt.Sprintf("http://localhost:%d", port), 10*time.Second))
 
 	// Each signal endpoint must return 200; AllowedSignals filtering is exercised via the router.
-	resp := doOTLPPost(t, ctx, baseURL+"/v1/logs", "application/x-protobuf", mustMarshalLogs(t, sampleLogs()))
+	resp := doOTLPPost(t, ctx, baseURL+"/v1/logs", mustMarshalLogs(t, sampleLogs()))
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	_ = resp.Body.Close()
 
-	resp = doOTLPPost(t, ctx, baseURL+"/v1/metrics", "application/x-protobuf", mustMarshalMetrics(t, sampleMetrics()))
+	resp = doOTLPPost(t, ctx, baseURL+"/v1/metrics", mustMarshalMetrics(t, sampleMetrics()))
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	_ = resp.Body.Close()
 
-	resp = doOTLPPost(t, ctx, baseURL+"/v1/traces", "application/x-protobuf", mustMarshalTraces(t, sampleTraces()))
+	resp = doOTLPPost(t, ctx, baseURL+"/v1/traces", mustMarshalTraces(t, sampleTraces()))
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	_ = resp.Body.Close()
 
@@ -442,7 +442,7 @@ func TestOTLPSource_PartialSuccess(t *testing.T) {
 	lr2.Body().SetStr("record two")
 
 	baseURL := fmt.Sprintf("http://localhost:%d/otlp/789/partial-source/%s", port, validSecret)
-	resp := doOTLPPost(t, ctx, baseURL+"/v1/logs", "application/x-protobuf", mustMarshalLogs(t, logs))
+	resp := doOTLPPost(t, ctx, baseURL+"/v1/logs", mustMarshalLogs(t, logs))
 
 	// When all records fail with a retryable error, the handler escalates to a top-level 5xx.
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
@@ -564,11 +564,11 @@ func mustGzip(t *testing.T, data []byte) []byte {
 	return buf.Bytes()
 }
 
-func doOTLPPost(t *testing.T, ctx context.Context, url, contentType string, body []byte) *http.Response {
+func doOTLPPost(t *testing.T, ctx context.Context, url string, body []byte) *http.Response {
 	t.Helper()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Content-Type", "application/x-protobuf")
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	return resp

@@ -16,15 +16,15 @@ import (
 func FlattenTraces(traces ptrace.Traces) []FlatRecord {
 	records := make([]FlatRecord, 0, traces.SpanCount())
 
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rs := traces.ResourceSpans().At(i)
 		resourceAttrs := attributesToMap(rs.Resource().Attributes())
 
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			ss := rs.ScopeSpans().At(j)
 			scopeMap := makeScopeMap(ss.Scope())
 
-			for k := 0; k < ss.Spans().Len(); k++ {
+			for k := range ss.Spans().Len() {
 				span := ss.Spans().At(k)
 				records = append(records, FlatRecord{Body: flattenSpan(span, resourceAttrs, scopeMap)})
 			}
@@ -65,7 +65,7 @@ func flattenSpan(
 
 func flattenSpanEvents(events ptrace.SpanEventSlice) []any {
 	out := make([]any, 0, events.Len())
-	for i := 0; i < events.Len(); i++ {
+	for i := range events.Len() {
 		e := events.At(i)
 		entry := orderedmap.New()
 		entry.Set("timestamp", formatTimestamp(e.Timestamp()))
@@ -78,7 +78,7 @@ func flattenSpanEvents(events ptrace.SpanEventSlice) []any {
 
 func flattenSpanLinks(links ptrace.SpanLinkSlice) []any {
 	out := make([]any, 0, links.Len())
-	for i := 0; i < links.Len(); i++ {
+	for i := range links.Len() {
 		l := links.At(i)
 		entry := orderedmap.New()
 		entry.Set("trace_id", l.TraceID().String())

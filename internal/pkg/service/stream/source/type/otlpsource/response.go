@@ -123,4 +123,3 @@ func formatRejectionMessage(r DispatchResult) string {
 	return strconv.Itoa(r.Rejected) + " of " + strconv.Itoa(r.Total) +
 		" records rejected; first error: " + r.FirstError.Error()
 }
-

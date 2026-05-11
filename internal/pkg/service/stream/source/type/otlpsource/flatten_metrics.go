@@ -16,15 +16,15 @@ import (
 func FlattenMetrics(metrics pmetric.Metrics) []FlatRecord {
 	records := make([]FlatRecord, 0, metrics.DataPointCount())
 
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		rm := metrics.ResourceMetrics().At(i)
 		resourceAttrs := attributesToMap(rm.Resource().Attributes())
 
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			sm := rm.ScopeMetrics().At(j)
 			scopeMap := makeScopeMap(sm.Scope())
 
-			for k := 0; k < sm.Metrics().Len(); k++ {
+			for k := range sm.Metrics().Len() {
 				m := sm.Metrics().At(k)
 				records = append(records, flattenMetric(m, resourceAttrs, scopeMap)...)
 			}
@@ -69,7 +69,7 @@ func flattenNumberPoints(
 	extras func(rec *orderedmap.OrderedMap),
 ) []FlatRecord {
 	out := make([]FlatRecord, 0, dps.Len())
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		pt := dps.At(i)
 		rec := newMetricBase(name, desc, unit, metricType, resourceAttrs, scopeMap)
 		setDPTimestamps(rec, pt.StartTimestamp(), pt.Timestamp())
@@ -90,7 +90,7 @@ func flattenHistogramPoints(
 ) []FlatRecord {
 	dps := h.DataPoints()
 	out := make([]FlatRecord, 0, dps.Len())
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		pt := dps.At(i)
 		rec := newMetricBase(name, desc, unit, "histogram", resourceAttrs, scopeMap)
 		setDPTimestamps(rec, pt.StartTimestamp(), pt.Timestamp())
@@ -120,7 +120,7 @@ func flattenExpHistogramPoints(
 ) []FlatRecord {
 	dps := h.DataPoints()
 	out := make([]FlatRecord, 0, dps.Len())
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		pt := dps.At(i)
 		rec := newMetricBase(name, desc, unit, "exponential_histogram", resourceAttrs, scopeMap)
 		setDPTimestamps(rec, pt.StartTimestamp(), pt.Timestamp())
@@ -150,7 +150,7 @@ func flattenSummaryPoints(
 ) []FlatRecord {
 	dps := s.DataPoints()
 	out := make([]FlatRecord, 0, dps.Len())
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		pt := dps.At(i)
 		rec := newMetricBase(name, desc, unit, "summary", resourceAttrs, scopeMap)
 		setDPTimestamps(rec, pt.StartTimestamp(), pt.Timestamp())
@@ -160,7 +160,7 @@ func flattenSummaryPoints(
 
 		qvSlice := pt.QuantileValues()
 		quantiles := make([]any, 0, qvSlice.Len())
-		for q := 0; q < qvSlice.Len(); q++ {
+		for q := range qvSlice.Len() {
 			qp := qvSlice.At(q)
 			entry := orderedmap.New()
 			entry.Set("quantile", qp.Quantile())
