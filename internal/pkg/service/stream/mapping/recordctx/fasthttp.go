@@ -46,6 +46,10 @@ func (c *fastHTTPContext) Timestamp() time.Time {
 	return c.timestamp
 }
 
+func (c *fastHTTPContext) Signal() string {
+	return ""
+}
+
 func (c *fastHTTPContext) ClientIP() net.IP {
 	c.lock.Lock()
 	defer c.lock.Unlock()

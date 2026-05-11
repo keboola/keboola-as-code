@@ -21,6 +21,7 @@ type otlpContext struct {
 	clientIP  net.IP
 	headers   *orderedmap.OrderedMap
 	bodyMap   *orderedmap.OrderedMap
+	signal    string
 
 	lock          sync.Mutex
 	headersString *string
@@ -45,6 +46,7 @@ func FromOTLP(
 	clientIP net.IP,
 	headers *orderedmap.OrderedMap,
 	bodyMap *orderedmap.OrderedMap,
+	signal string,
 ) Context {
 	return &otlpContext{
 		ctx:       ctx,
@@ -52,6 +54,7 @@ func FromOTLP(
 		clientIP:  clientIP,
 		headers:   headers,
 		bodyMap:   bodyMap,
+		signal:    signal,
 	}
 }
 
@@ -65,6 +68,10 @@ func (c *otlpContext) Timestamp() time.Time {
 
 func (c *otlpContext) ClientIP() net.IP {
 	return c.clientIP
+}
+
+func (c *otlpContext) Signal() string {
+	return c.signal
 }
 
 func (c *otlpContext) HeadersString() string {

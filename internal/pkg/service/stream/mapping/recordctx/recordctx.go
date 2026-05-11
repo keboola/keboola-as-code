@@ -14,6 +14,9 @@ type Context interface {
 	Ctx() context.Context
 	Timestamp() time.Time
 	ClientIP() net.IP
+	// Signal returns the OTLP signal type ("logs", "metrics", "traces") for
+	// OTLP records, or "" for plain HTTP records.
+	Signal() string
 	HeadersString() string
 	HeadersMap() *orderedmap.OrderedMap
 	ReleaseBuffers()

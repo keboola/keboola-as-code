@@ -18,9 +18,10 @@ type sourceData struct {
 }
 
 type sinkData struct {
-	sinkKey  key.SinkKey
-	sinkType definition.SinkType
-	enabled  bool
+	sinkKey        key.SinkKey
+	sinkType       definition.SinkType
+	enabled        bool
+	allowedSignals []string
 }
 
 func newCollection() *collection {
@@ -76,7 +77,12 @@ func (c *collection) addSink(sink definition.Sink) {
 		c.sources[sink.SourceKey] = source
 	}
 
-	source.sinks[sink.SinkKey] = &sinkData{sinkKey: sink.SinkKey, sinkType: sink.Type, enabled: sink.IsEnabled()}
+	source.sinks[sink.SinkKey] = &sinkData{
+		sinkKey:        sink.SinkKey,
+		sinkType:       sink.Type,
+		enabled:        sink.IsEnabled(),
+		allowedSignals: sink.AllowedSignals,
+	}
 }
 
 func (c *collection) deleteSink(sinkKey key.SinkKey) {

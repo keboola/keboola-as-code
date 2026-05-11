@@ -219,10 +219,17 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	}
 
 	// Write to sinks in parallel
+	signal := c.Signal()
 	var lock sync.Mutex
 	var wg sync.WaitGroup
 	for _, sink := range source.sinks {
 		if !sink.enabled {
+			continue
+		}
+
+		// Skip sinks that do not accept this signal type.
+		// Empty allowedSignals means accept all (HTTP sources and unfiltered OTLP).
+		if len(sink.allowedSignals) > 0 && !signalAllowed(signal, sink.allowedSignals) {
 			continue
 		}
 
@@ -415,4 +422,13 @@ func (r *Router) isClosed() bool {
 	default:
 		return false
 	}
+}
+
+func signalAllowed(signal string, allowed []string) bool {
+	for _, s := range allowed {
+		if s == signal {
+			return true
+		}
+	}
+	return false
 }
