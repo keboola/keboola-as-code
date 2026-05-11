@@ -25,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/dispatcher"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/type/otlpsource"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -147,6 +148,15 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 
 		return nil
 	})
+
+	// Native OTLP/HTTP endpoints. The OTLP transport rides on the existing
+	// HTTP source (same server, same dispatcher) — the only new pieces are
+	// route registration, OTLP decoding, record flattening, and OTLP-conformant
+	// response construction. Phase 1 ships /v1/logs only; metrics and traces
+	// will follow once logs are proven end-to-end.
+	otlpHandler := otlpsource.New(ctx, logger, d.Clock(), dp, errorHandler)
+	router.Options("/otlp/<projectID>/<sourceID>/<secret>/v1/logs", otlpHandler.HandleOptions)
+	router.Post("/otlp/<projectID>/<sourceID>/<secret>/v1/logs", otlpHandler.HandleLogs)
 
 	// Prepare HTTP server
 	readBufferSize, err := safecast.Convert[int](cfg.ReadBufferSize.Bytes())

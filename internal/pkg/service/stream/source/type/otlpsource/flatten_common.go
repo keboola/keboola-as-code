@@ -1,0 +1,79 @@
+package otlpsource
+
+import (
+	"encoding/base64"
+	"time"
+
+	"github.com/keboola/go-utils/pkg/orderedmap"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
+
+// FlatRecord is a single flattened OTLP record (one log record, one metric data
+// point, or one span) ready to be wrapped in a recordctx.Context.
+type FlatRecord struct {
+	Body *orderedmap.OrderedMap
+}
+
+// attributesToMap converts pcommon.Map of attributes to an ordered map. Keys
+// preserve their dotted form (e.g. "http.method") so they remain addressable
+// via Path column GetNested with proper escaping at the column level.
+func attributesToMap(attrs pcommon.Map) *orderedmap.OrderedMap {
+	m := orderedmap.New()
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		m.Set(k, anyValueToInterface(v))
+		return true
+	})
+	return m
+}
+
+// anyValueToInterface converts pcommon.Value (OTel AnyValue) into a Go value
+// that can survive JSON round-trip — string, int64, float64, bool, []byte
+// (base64-encoded string), nested ordered map, or []any.
+func anyValueToInterface(v pcommon.Value) any {
+	switch v.Type() {
+	case pcommon.ValueTypeStr:
+		return v.Str()
+	case pcommon.ValueTypeInt:
+		return v.Int()
+	case pcommon.ValueTypeDouble:
+		return v.Double()
+	case pcommon.ValueTypeBool:
+		return v.Bool()
+	case pcommon.ValueTypeBytes:
+		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())
+	case pcommon.ValueTypeMap:
+		return attributesToMap(v.Map())
+	case pcommon.ValueTypeSlice:
+		slice := v.Slice()
+		result := make([]any, slice.Len())
+		for i := 0; i < slice.Len(); i++ {
+			result[i] = anyValueToInterface(slice.At(i))
+		}
+		return result
+	case pcommon.ValueTypeEmpty:
+		return nil
+	default:
+		return nil
+	}
+}
+
+// formatTimestamp returns the RFC3339Nano UTC string for a pcommon.Timestamp,
+// or an empty string for the zero timestamp. Empty timestamps are common in
+// OTLP (optional fields), and emitting "" lets the column renderer apply its
+// own defaultValue logic.
+func formatTimestamp(ts pcommon.Timestamp) string {
+	if ts == 0 {
+		return ""
+	}
+	return ts.AsTime().UTC().Format(time.RFC3339Nano)
+}
+
+// makeScopeMap returns an ordered map with name/version of an instrumentation
+// scope. Always populated, even when the scope is empty — downstream column
+// mappings expect the keys to exist.
+func makeScopeMap(scope pcommon.InstrumentationScope) *orderedmap.OrderedMap {
+	m := orderedmap.New()
+	m.Set("name", scope.Name())
+	m.Set("version", scope.Version())
+	return m
+}
