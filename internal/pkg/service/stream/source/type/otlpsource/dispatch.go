@@ -44,23 +44,35 @@ func DispatchRecords(
 	projectID keboola.ProjectID,
 	sourceID key.SourceID,
 	secret string,
+	signal string,
 	records []FlatRecord,
 ) DispatchResult {
 	result := DispatchResult{Total: len(records)}
 
 	for _, rec := range records {
-		recordCtx := recordctx.FromOTLP(ctx, now, clientIP, headers, rec.Body)
-		_, err := dp.Dispatch(projectID, sourceID, secret, recordCtx)
+		recordCtx := recordctx.FromOTLP(ctx, now, clientIP, headers, rec.Body, signal)
+		sinkResult, routingErr := dp.Dispatch(projectID, sourceID, secret, recordCtx)
 		recordCtx.ReleaseBuffers()
-		if err == nil {
+
+		var statusCode int
+		var firstErr error
+		switch {
+		case routingErr != nil:
+			// Authentication / routing error (not found, disabled, shutdown).
+			firstErr = routingErr
+			statusCode = statusCodeFromError(routingErr)
+		case sinkResult != nil && sinkResult.StatusCode >= 300:
+			// One or more sink writes failed; treat the record as rejected.
+			statusCode = sinkResult.StatusCode
+			firstErr = errors.Errorf("sink write failed with status %d", statusCode)
+		default:
 			continue
 		}
 
 		result.Rejected++
 		if result.FirstError == nil {
-			result.FirstError = err
+			result.FirstError = firstErr
 		}
-		statusCode := statusCodeFromError(err)
 		if statusCode > result.WorstStatusCode {
 			result.WorstStatusCode = statusCode
 		}

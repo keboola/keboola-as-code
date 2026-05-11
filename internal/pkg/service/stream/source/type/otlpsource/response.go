@@ -25,14 +25,10 @@ type EncodedResponse struct {
 //
 // Success vs partial-success vs top-level error:
 //   - All records dispatched OK: 200 with empty ExportLogsServiceResponse.
-//   - Some records rejected, no top-level failure: 200 with partial_success
-//     populated. The OTLP client SHOULD NOT retry rejected records.
-//   - All records failed with the same retryable status (5xx, 429): return
-//     that status code; the OTLP client SHOULD retry the entire batch.
-//
-// We choose top-level error when result.Rejected == result.Total AND
-// result.WorstStatusCode is retryable (5xx or 429). Otherwise we return 200
-// with partial_success so non-retryable rejections (4xx) are not retried.
+//   - Some records rejected, rest OK: 200 with partial_success populated.
+//   - All records rejected: return the worst status code directly, whether 4xx
+//     (e.g. 404 unknown source) or 5xx/429 (transient failure). 4xx tells the
+//     client "fix your configuration"; 5xx/429 tells it to retry the batch.
 func BuildLogsResponse(enc Encoding, result DispatchResult) (EncodedResponse, error) {
 	if shouldEscalateToError(result) {
 		return EncodedResponse{StatusCode: result.WorstStatusCode}, nil
@@ -80,12 +76,13 @@ func BuildTracesResponse(enc Encoding, result DispatchResult) (EncodedResponse, 
 	return encode(enc, resp)
 }
 
-// shouldEscalateToError returns true when every record failed AND with a
-// retryable status. That signals the client to retry the entire batch.
-// Mixed outcomes and non-retryable rejections stay at 200 with partial_success
-// so clients do not retry rejected records that will not succeed.
+// shouldEscalateToError returns true when every record in the batch was
+// rejected. In that case the handler returns the worst HTTP status code
+// directly: 4xx for permanent errors (wrong secret, disabled source), 5xx/429
+// for transient ones. Mixed outcomes — at least one record accepted — stay at
+// 200 with partial_success.
 func shouldEscalateToError(r DispatchResult) bool {
-	return r.Rejected > 0 && r.Rejected == r.Total && isRetryable(r.WorstStatusCode)
+	return r.Rejected > 0 && r.Rejected == r.Total
 }
 
 func encode(enc Encoding, msg proto.Message) (EncodedResponse, error) {
@@ -127,11 +124,3 @@ func formatRejectionMessage(r DispatchResult) string {
 		" records rejected; first error: " + r.FirstError.Error()
 }
 
-// isRetryable maps a Stream error status code to OTLP retry semantics.
-// 5xx and 429 are retryable per the OTLP spec.
-func isRetryable(statusCode int) bool {
-	if statusCode == 429 {
-		return true
-	}
-	return statusCode >= 500 && statusCode < 600
-}
