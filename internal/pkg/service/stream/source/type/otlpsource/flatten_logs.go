@@ -15,15 +15,15 @@ import (
 func FlattenLogs(logs plog.Logs) []FlatRecord {
 	records := make([]FlatRecord, 0, logs.LogRecordCount())
 
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		rl := logs.ResourceLogs().At(i)
 		resourceAttrs := attributesToMap(rl.Resource().Attributes())
 
-		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+		for j := range rl.ScopeLogs().Len() {
 			sl := rl.ScopeLogs().At(j)
 			scopeMap := makeScopeMap(sl.Scope())
 
-			for k := 0; k < sl.LogRecords().Len(); k++ {
+			for k := range sl.LogRecords().Len() {
 				lr := sl.LogRecords().At(k)
 				records = append(records, FlatRecord{Body: flattenLogRecord(lr, resourceAttrs, scopeMap)})
 			}

@@ -130,7 +130,7 @@ func (h *Handler) handle(c *routing.Context, signal string, decode signalDecoder
 		ctx,
 		h.dispatcher,
 		h.clock.Now(),
-		c.RequestCtx.RemoteIP(),
+		c.RemoteIP(),
 		headers,
 		projectID,
 		sourceID,
