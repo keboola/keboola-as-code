@@ -85,7 +85,7 @@ func makeScopeMap(scope pcommon.InstrumentationScope) *orderedmap.OrderedMap {
 func uint64SliceToAny(s []uint64) []any {
 	out := make([]any, len(s))
 	for i, v := range s {
-		out[i] = int64(v)
+		out[i] = int64(v) //nolint:gosec
 	}
 	return out
 }
