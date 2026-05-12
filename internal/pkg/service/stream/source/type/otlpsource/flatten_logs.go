@@ -41,10 +41,10 @@ func flattenLogRecord(
 	rec := orderedmap.New()
 	rec.Set("timestamp", formatTimestamp(lr.Timestamp()))
 	rec.Set("observed_timestamp", formatTimestamp(lr.ObservedTimestamp()))
-	rec.Set("severity_number", int32(lr.SeverityNumber()))
+	rec.Set("severity_number", int64(lr.SeverityNumber()))
 	rec.Set("severity_text", lr.SeverityText())
 	rec.Set("body", anyValueToInterface(lr.Body()))
-	rec.Set("flags", uint32(lr.Flags()))
+	rec.Set("flags", int64(lr.Flags()))
 
 	// trace_id and span_id are omitted (not "") when empty — the Path column
 	// will fall back to its defaultValue. Emitting "" would mask the absence.

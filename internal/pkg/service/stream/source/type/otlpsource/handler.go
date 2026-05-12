@@ -118,8 +118,13 @@ func (h *Handler) handle(c *routing.Context, signal string, decode signalDecoder
 		return nil //nolint:nilerr
 	}
 
-	// Empty batches are valid per the OTLP spec — return 200 immediately.
+	// Empty batches are valid per the OTLP spec, but we still validate the
+	// secret so that an invalid/unknown source gets 404, not a free 200.
 	if len(records) == 0 {
+		if err := h.dispatcher.ValidateSource(projectID, sourceID, secret); err != nil {
+			h.errorHandler(c.RequestCtx, err)
+			return nil //nolint:nilerr
+		}
 		h.writeEmptySuccess(c, enc, build)
 		return nil
 	}
