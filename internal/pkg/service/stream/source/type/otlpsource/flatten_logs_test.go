@@ -44,7 +44,7 @@ func TestFlattenLogs_SingleRecord(t *testing.T) {
 	assert.Equal(t, "2024-01-15T10:30:00Z", getString(t, rec, "timestamp"))
 	assert.Equal(t, "INFO", getString(t, rec, "severity_text"))
 	assert.Equal(t, "User logged in", getValue(t, rec, "body"))
-	assert.Equal(t, int32(plog.SeverityNumberInfo), getValue(t, rec, "severity_number"))
+	assert.Equal(t, int64(plog.SeverityNumberInfo), getValue(t, rec, "severity_number"))
 
 	// attributes / resource / scope are nested ordered maps
 	attrs, _ := rec.Get("attributes")
