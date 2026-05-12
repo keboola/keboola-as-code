@@ -135,12 +135,16 @@ type AggregatedSink struct {
 	Name string
 	// Description of the source.
 	Description string
-	Table       *TableSink
-	Version     *Version
-	Created     *CreatedEntity
-	Deleted     *DeletedEntity
-	Disabled    *DisabledEntity
-	Statistics  *AggregatedStatistics
+	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
+	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
+	// OTLP sources; HTTP sources ignore this field.
+	AllowedSignals []string
+	Table          *TableSink
+	Version        *Version
+	Created        *CreatedEntity
+	Deleted        *DeletedEntity
+	Disabled       *DisabledEntity
+	Statistics     *AggregatedStatistics
 }
 
 type AggregatedSinks []*AggregatedSink
@@ -229,7 +233,11 @@ type CreateSinkPayload struct {
 	Name string
 	// Description of the source.
 	Description *string
-	Table       *TableSinkCreate
+	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
+	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
+	// OTLP sources; HTTP sources ignore this field.
+	AllowedSignals []string
+	Table          *TableSinkCreate
 }
 
 // CreateSourcePayload is the payload type of the stream service CreateSource
@@ -574,11 +582,15 @@ type Sink struct {
 	Name string
 	// Description of the source.
 	Description string
-	Table       *TableSink
-	Version     *Version
-	Created     *CreatedEntity
-	Deleted     *DeletedEntity
-	Disabled    *DisabledEntity
+	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
+	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
+	// OTLP sources; HTTP sources ignore this field.
+	AllowedSignals []string
+	Table          *TableSink
+	Version        *Version
+	Created        *CreatedEntity
+	Deleted        *DeletedEntity
+	Disabled       *DisabledEntity
 }
 
 type SinkFile struct {
@@ -895,7 +907,11 @@ type UpdateSinkPayload struct {
 	Name *string
 	// Description of the source.
 	Description *string
-	Table       *TableSinkUpdate
+	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
+	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
+	// OTLP sources; HTTP sources ignore this field.
+	AllowedSignals []string
+	Table          *TableSinkUpdate
 }
 
 // UpdateSinkSettingsPayload is the payload type of the stream service

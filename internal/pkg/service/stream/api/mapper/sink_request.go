@@ -34,6 +34,11 @@ func (m *Mapper) NewSinkEntity(parent key.SourceKey, payload *api.CreateSinkPayl
 		entity.Description = *payload.Description
 	}
 
+	// AllowedSignals is optional — empty means accept all signals
+	if len(payload.AllowedSignals) > 0 {
+		entity.AllowedSignals = payload.AllowedSignals
+	}
+
 	// Sink type
 	entity.Type = payload.Type
 	switch entity.Type {
@@ -59,6 +64,11 @@ func (m *Mapper) UpdateSinkEntity(entity definition.Sink, payload *api.UpdateSin
 	// Description
 	if payload.Description != nil {
 		entity.Description = *payload.Description
+	}
+
+	// AllowedSignals — nil means "don't change", empty slice means "clear the filter"
+	if payload.AllowedSignals != nil {
+		entity.AllowedSignals = payload.AllowedSignals
 	}
 
 	// Type
