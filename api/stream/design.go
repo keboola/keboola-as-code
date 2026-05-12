@@ -1326,6 +1326,14 @@ var SinkFields = func(op OperationType) {
 		Example("The sink stores records to a table.")
 	})
 
+	Attribute("allowedSignals", ArrayOf(String), func() {
+		Description(`Restricts the sink to specific OTLP signal types. ` +
+			`Empty (default) accepts all signals. ` +
+			`Valid values: "logs", "metrics", "traces". ` +
+			`Only relevant for OTLP sources; HTTP sources ignore this field.`)
+		Example([]string{"logs"})
+	})
+
 	// Table sub-definition
 	switch op {
 	case OpRead:
