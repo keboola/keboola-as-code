@@ -86,12 +86,12 @@ func TestFlattenMetrics_Histogram_AllFields(t *testing.T) {
 	require.Len(t, records, 1)
 	body := records[0].Body
 	assert.Equal(t, "histogram", mustGet(t, body, "metric_type"))
-	assert.Equal(t, uint64(150), mustGet(t, body, "count"))
+	assert.Equal(t, int64(150), mustGet(t, body, "count"))
 	assert.InDelta(t, 4523.7, mustGet(t, body, "sum"), 1e-9)
 	assert.InDelta(t, 1.2, mustGet(t, body, "min"), 1e-9)
 	assert.InDelta(t, 892.1, mustGet(t, body, "max"), 1e-9)
-	assert.Equal(t, []uint64{10, 50, 60, 20, 10}, mustGet(t, body, "bucket_counts"))
-	assert.Equal(t, []float64{5, 25, 50, 100}, mustGet(t, body, "explicit_bounds"))
+	assert.Equal(t, []any{int64(10), int64(50), int64(60), int64(20), int64(10)}, mustGet(t, body, "bucket_counts"))
+	assert.Equal(t, []any{float64(5), float64(25), float64(50), float64(100)}, mustGet(t, body, "explicit_bounds"))
 	assert.Equal(t, "Delta", mustGet(t, body, "aggregation_temporality"))
 }
 
@@ -132,10 +132,10 @@ func TestFlattenMetrics_ExponentialHistogram(t *testing.T) {
 	require.Len(t, records, 1)
 	body := records[0].Body
 	assert.Equal(t, "exponential_histogram", mustGet(t, body, "metric_type"))
-	assert.Equal(t, uint64(200), mustGet(t, body, "count"))
+	assert.Equal(t, int64(200), mustGet(t, body, "count"))
 	assert.InDelta(t, 123.4, mustGet(t, body, "sum"), 1e-9)
-	assert.Equal(t, int32(3), mustGet(t, body, "scale"))
-	assert.Equal(t, uint64(5), mustGet(t, body, "zero_count"))
+	assert.Equal(t, int64(3), mustGet(t, body, "scale"))
+	assert.Equal(t, int64(5), mustGet(t, body, "zero_count"))
 }
 
 func TestFlattenMetrics_Summary_Quantiles(t *testing.T) {
