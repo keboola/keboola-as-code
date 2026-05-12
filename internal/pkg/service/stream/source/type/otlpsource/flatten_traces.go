@@ -52,7 +52,7 @@ func flattenSpan(
 	rec.Set("trace_state", span.TraceState().AsRaw())
 	rec.Set("name", span.Name())
 	rec.Set("kind", span.Kind().String())
-	rec.Set("flags", span.Flags())
+	rec.Set("flags", int64(span.Flags()))
 	rec.Set("status_code", span.Status().Code().String())
 	rec.Set("status_message", span.Status().Message())
 	rec.Set("attributes", attributesToMap(span.Attributes()))

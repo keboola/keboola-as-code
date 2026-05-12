@@ -77,3 +77,24 @@ func makeScopeMap(scope pcommon.InstrumentationScope) *orderedmap.OrderedMap {
 	m.Set("version", scope.Version())
 	return m
 }
+
+// uint64SliceToAny converts []uint64 to []any holding int64 values.
+// go-jsonnet's jsonToValue only accepts []interface{} for slices, and
+// only handles signed integer types — uint32/uint64 hit the default
+// "Not a json type" branch.
+func uint64SliceToAny(s []uint64) []any {
+	out := make([]any, len(s))
+	for i, v := range s {
+		out[i] = int64(v)
+	}
+	return out
+}
+
+// float64SliceToAny converts []float64 to []any for the same reason.
+func float64SliceToAny(s []float64) []any {
+	out := make([]any, len(s))
+	for i, v := range s {
+		out[i] = v
+	}
+	return out
+}
