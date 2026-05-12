@@ -3956,6 +3956,12 @@ func marshalStreamSinkToSinkResponseBody(v *stream.Sink) *SinkResponseBody {
 		Name:        v.Name,
 		Description: v.Description,
 	}
+	if v.AllowedSignals != nil {
+		res.AllowedSignals = make([]string, len(v.AllowedSignals))
+		for i, val := range v.AllowedSignals {
+			res.AllowedSignals[i] = val
+		}
+	}
 	if v.Table != nil {
 		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)
 	}
@@ -4124,6 +4130,12 @@ func marshalStreamAggregatedSinkToAggregatedSinkResponseBody(v *stream.Aggregate
 		Type:        string(v.Type),
 		Name:        v.Name,
 		Description: v.Description,
+	}
+	if v.AllowedSignals != nil {
+		res.AllowedSignals = make([]string, len(v.AllowedSignals))
+		for i, val := range v.AllowedSignals {
+			res.AllowedSignals[i] = val
+		}
 	}
 	if v.Table != nil {
 		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)

@@ -1725,6 +1725,14 @@ definitions:
         title: AggregatedSink
         type: object
         properties:
+            allowedSignals:
+                type: array
+                items:
+                    type: string
+                    example: abc123
+                description: 'Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Valid values: "logs", "metrics", "traces". Only relevant for OTLP sources; HTTP sources ignore this field.'
+                example:
+                    - logs
             branchId:
                 type: integer
                 example: 345
@@ -1780,6 +1788,8 @@ definitions:
             type: table
             name: Raw Data Sink
             description: The sink stores records to a table.
+            allowedSignals:
+                - logs
             table:
                 type: keboola
                 tableId: in.c-bucket.table
@@ -1957,6 +1967,8 @@ definitions:
                       type: table
                       name: Raw Data Sink
                       description: The sink stores records to a table.
+                      allowedSignals:
+                        - logs
                       table:
                         type: keboola
                         tableId: in.c-bucket.table
@@ -2148,6 +2160,8 @@ definitions:
                   type: table
                   name: Raw Data Sink
                   description: The sink stores records to a table.
+                  allowedSignals:
+                    - logs
                   table:
                     type: keboola
                     tableId: in.c-bucket.table
@@ -2353,6 +2367,8 @@ definitions:
                           type: table
                           name: Raw Data Sink
                           description: The sink stores records to a table.
+                          allowedSignals:
+                            - logs
                           table:
                             type: keboola
                             tableId: in.c-bucket.table
@@ -2538,6 +2554,8 @@ definitions:
                       type: table
                       name: Raw Data Sink
                       description: The sink stores records to a table.
+                      allowedSignals:
+                        - logs
                       table:
                         type: keboola
                         tableId: in.c-bucket.table
@@ -3207,6 +3225,14 @@ definitions:
         title: Sink
         type: object
         properties:
+            allowedSignals:
+                type: array
+                items:
+                    type: string
+                    example: abc123
+                description: 'Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Valid values: "logs", "metrics", "traces". Only relevant for OTLP sources; HTTP sources ignore this field.'
+                example:
+                    - logs
             branchId:
                 type: integer
                 example: 345
@@ -3259,6 +3285,8 @@ definitions:
             type: table
             name: Raw Data Sink
             description: The sink stores records to a table.
+            allowedSignals:
+                - logs
             table:
                 type: keboola
                 tableId: in.c-bucket.table
@@ -3593,6 +3621,8 @@ definitions:
                       type: table
                       name: Raw Data Sink
                       description: The sink stores records to a table.
+                      allowedSignals:
+                        - logs
                       table:
                         type: keboola
                         tableId: in.c-bucket.table
@@ -3676,6 +3706,8 @@ definitions:
                   type: table
                   name: Raw Data Sink
                   description: The sink stores records to a table.
+                  allowedSignals:
+                    - logs
                   table:
                     type: keboola
                     tableId: in.c-bucket.table
@@ -3975,6 +4007,14 @@ definitions:
         title: StreamCreateSinkRequestBody
         type: object
         properties:
+            allowedSignals:
+                type: array
+                items:
+                    type: string
+                    example: abc123
+                description: 'Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Valid values: "logs", "metrics", "traces". Only relevant for OTLP sources; HTTP sources ignore this field.'
+                example:
+                    - logs
             description:
                 type: string
                 description: Description of the source.
@@ -4004,6 +4044,8 @@ definitions:
             type: table
             name: Raw Data Sink
             description: The sink stores records to a table.
+            allowedSignals:
+                - logs
             table:
                 type: keboola
                 tableId: in.c-bucket.table
@@ -4071,6 +4113,14 @@ definitions:
         title: StreamUpdateSinkRequestBody
         type: object
         properties:
+            allowedSignals:
+                type: array
+                items:
+                    type: string
+                    example: abc123
+                description: 'Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Valid values: "logs", "metrics", "traces". Only relevant for OTLP sources; HTTP sources ignore this field.'
+                example:
+                    - logs
             changeDescription:
                 type: string
                 description: Description of the modification, description of the version.
@@ -4098,6 +4148,8 @@ definitions:
             type: table
             name: Raw Data Sink
             description: The sink stores records to a table.
+            allowedSignals:
+                - logs
             table:
                 type: keboola
                 tableId: in.c-bucket.table
