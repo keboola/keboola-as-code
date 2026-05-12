@@ -62,8 +62,12 @@ type CreateSinkRequestBody struct {
 	// Human readable name of the sink.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
-	Description *string                     `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	Table       *TableSinkCreateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
+	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
+	// OTLP sources; HTTP sources ignore this field.
+	AllowedSignals []string                    `form:"allowedSignals,omitempty" json:"allowedSignals,omitempty" xml:"allowedSignals,omitempty"`
+	Table          *TableSinkCreateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
 }
 
 // UpdateSinkSettingsRequestBody is the type of the "stream" service
@@ -83,8 +87,12 @@ type UpdateSinkRequestBody struct {
 	// Human readable name of the sink.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Description of the source.
-	Description *string                     `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
-	Table       *TableSinkUpdateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
+	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
+	// OTLP sources; HTTP sources ignore this field.
+	AllowedSignals []string                    `form:"allowedSignals,omitempty" json:"allowedSignals,omitempty" xml:"allowedSignals,omitempty"`
+	Table          *TableSinkUpdateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
 }
 
 // APIVersionIndexResponseBody is the type of the "stream" service
@@ -391,12 +399,16 @@ type GetSinkResponseBody struct {
 	// Human readable name of the sink.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Description of the source.
-	Description string                      `form:"description" json:"description" xml:"description"`
-	Table       *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Version     *VersionResponseBody        `form:"version" json:"version" xml:"version"`
-	Created     *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
-	Deleted     *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled    *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Description string `form:"description" json:"description" xml:"description"`
+	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
+	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
+	// OTLP sources; HTTP sources ignore this field.
+	AllowedSignals []string                    `form:"allowedSignals,omitempty" json:"allowedSignals,omitempty" xml:"allowedSignals,omitempty"`
+	Table          *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Version        *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Created        *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
+	Deleted        *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled       *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
 
 // GetSinkSettingsResponseBody is the type of the "stream" service
@@ -1529,12 +1541,16 @@ type SinkResponseBody struct {
 	// Human readable name of the sink.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Description of the source.
-	Description string                      `form:"description" json:"description" xml:"description"`
-	Table       *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Version     *VersionResponseBody        `form:"version" json:"version" xml:"version"`
-	Created     *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
-	Deleted     *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled    *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Description string `form:"description" json:"description" xml:"description"`
+	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
+	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
+	// OTLP sources; HTTP sources ignore this field.
+	AllowedSignals []string                    `form:"allowedSignals,omitempty" json:"allowedSignals,omitempty" xml:"allowedSignals,omitempty"`
+	Table          *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Version        *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Created        *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
+	Deleted        *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled       *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
 
 // LevelResponseBody is used to define fields on response body types.
@@ -1611,13 +1627,17 @@ type AggregatedSinkResponseBody struct {
 	// Human readable name of the sink.
 	Name string `form:"name" json:"name" xml:"name"`
 	// Description of the source.
-	Description string                            `form:"description" json:"description" xml:"description"`
-	Table       *TableSinkResponseBody            `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
-	Version     *VersionResponseBody              `form:"version" json:"version" xml:"version"`
-	Created     *CreatedEntityResponseBody        `form:"created" json:"created" xml:"created"`
-	Deleted     *DeletedEntityResponseBody        `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
-	Disabled    *DisabledEntityResponseBody       `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
-	Statistics  *AggregatedStatisticsResponseBody `form:"statistics,omitempty" json:"statistics,omitempty" xml:"statistics,omitempty"`
+	Description string `form:"description" json:"description" xml:"description"`
+	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
+	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
+	// OTLP sources; HTTP sources ignore this field.
+	AllowedSignals []string                          `form:"allowedSignals,omitempty" json:"allowedSignals,omitempty" xml:"allowedSignals,omitempty"`
+	Table          *TableSinkResponseBody            `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
+	Version        *VersionResponseBody              `form:"version" json:"version" xml:"version"`
+	Created        *CreatedEntityResponseBody        `form:"created" json:"created" xml:"created"`
+	Deleted        *DeletedEntityResponseBody        `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled       *DisabledEntityResponseBody       `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+	Statistics     *AggregatedStatisticsResponseBody `form:"statistics,omitempty" json:"statistics,omitempty" xml:"statistics,omitempty"`
 }
 
 // AggregatedStatisticsResponseBody is used to define fields on response body
@@ -2049,6 +2069,12 @@ func NewGetSinkResponseBody(res *stream.Sink) *GetSinkResponseBody {
 		Type:        string(res.Type),
 		Name:        res.Name,
 		Description: res.Description,
+	}
+	if res.AllowedSignals != nil {
+		body.AllowedSignals = make([]string, len(res.AllowedSignals))
+		for i, val := range res.AllowedSignals {
+			body.AllowedSignals[i] = val
+		}
 	}
 	if res.Table != nil {
 		body.Table = marshalStreamTableSinkToTableSinkResponseBody(res.Table)
@@ -3262,6 +3288,12 @@ func NewCreateSinkPayload(body *CreateSinkRequestBody, branchID string, sourceID
 		sinkID := stream.SinkID(*body.SinkID)
 		v.SinkID = &sinkID
 	}
+	if body.AllowedSignals != nil {
+		v.AllowedSignals = make([]string, len(body.AllowedSignals))
+		for i, val := range body.AllowedSignals {
+			v.AllowedSignals[i] = val
+		}
+	}
 	if body.Table != nil {
 		v.Table = unmarshalTableSinkCreateRequestBodyToStreamTableSinkCreate(body.Table)
 	}
@@ -3354,6 +3386,12 @@ func NewUpdateSinkPayload(body *UpdateSinkRequestBody, branchID string, sourceID
 	if body.Type != nil {
 		type_ := stream.SinkType(*body.Type)
 		v.Type = &type_
+	}
+	if body.AllowedSignals != nil {
+		v.AllowedSignals = make([]string, len(body.AllowedSignals))
+		for i, val := range body.AllowedSignals {
+			v.AllowedSignals[i] = val
+		}
 	}
 	if body.Table != nil {
 		v.Table = unmarshalTableSinkUpdateRequestBodyToStreamTableSinkUpdate(body.Table)
