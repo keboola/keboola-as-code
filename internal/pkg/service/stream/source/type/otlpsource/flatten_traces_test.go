@@ -129,11 +129,11 @@ func TestFlattenTraces_CombinatorialExplosion(t *testing.T) {
 	t.Parallel()
 
 	traces := ptrace.NewTraces()
-	for r := 0; r < 2; r++ {
+	for range 2 {
 		rs := traces.ResourceSpans().AppendEmpty()
-		for s := 0; s < 3; s++ {
+		for range 3 {
 			ss := rs.ScopeSpans().AppendEmpty()
-			for k := 0; k < 4; k++ {
+			for range 4 {
 				ss.Spans().AppendEmpty().SetName("span")
 			}
 		}

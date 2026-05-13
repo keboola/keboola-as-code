@@ -46,7 +46,7 @@ func anyValueToInterface(v pcommon.Value) any {
 	case pcommon.ValueTypeSlice:
 		slice := v.Slice()
 		result := make([]any, slice.Len())
-		for i := 0; i < slice.Len(); i++ {
+		for i := range slice.Len() {
 			result[i] = anyValueToInterface(slice.At(i))
 		}
 		return result

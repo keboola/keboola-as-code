@@ -71,13 +71,13 @@ func TestFlattenLogs_CombinatorialExplosion(t *testing.T) {
 
 	// 2 resources × 2 scopes × 3 records = 12 flat records.
 	logs := plog.NewLogs()
-	for r := 0; r < 2; r++ {
+	for r := range 2 {
 		rl := logs.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().PutInt("resource.idx", int64(r))
-		for s := 0; s < 2; s++ {
+		for s := range 2 {
 			sl := rl.ScopeLogs().AppendEmpty()
 			sl.Scope().SetName("scope-" + string(rune('a'+s)))
-			for k := 0; k < 3; k++ {
+			for k := range 3 {
 				lr := sl.LogRecords().AppendEmpty()
 				lr.Body().SetStr("rec")
 				lr.Attributes().PutInt("k", int64(k))
