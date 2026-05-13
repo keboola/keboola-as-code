@@ -10,15 +10,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// statusErr satisfies svcerrors.WithStatusCode and is enough to drive the
+// statusError satisfies svcerrors.WithStatusCode and is enough to drive the
 // dispatch result aggregation without spinning up a real dispatcher.
-type statusErr struct {
+type statusError struct {
 	msg  string
 	code int
 }
 
-func (e *statusErr) Error() string  { return e.msg }
-func (e *statusErr) StatusCode() int { return e.code }
+func (e *statusError) Error() string   { return e.msg }
+func (e *statusError) StatusCode() int { return e.code }
 
 func TestStatusCodeFromError_FallbackTo500(t *testing.T) {
 	t.Parallel()
@@ -29,7 +29,7 @@ func TestStatusCodeFromError_FallbackTo500(t *testing.T) {
 func TestStatusCodeFromError_UsesWithStatusCode(t *testing.T) {
 	t.Parallel()
 
-	err := &statusErr{msg: "x", code: http.StatusServiceUnavailable}
+	err := &statusError{msg: "x", code: http.StatusServiceUnavailable}
 	assert.Equal(t, http.StatusServiceUnavailable, statusCodeFromError(err))
 }
 
@@ -47,8 +47,8 @@ func TestRecordOutcome_AggregatesErrors(t *testing.T) {
 	t.Parallel()
 
 	r := DispatchResult{Total: 3}
-	recordOutcome(&r, &statusErr{msg: "bad request", code: 400})
-	recordOutcome(&r, &statusErr{msg: "unavailable", code: 503})
+	recordOutcome(&r, &statusError{msg: "bad request", code: 400})
+	recordOutcome(&r, &statusError{msg: "unavailable", code: 503})
 	recordOutcome(&r, errors.New("unknown"))
 
 	assert.Equal(t, 3, r.Rejected)

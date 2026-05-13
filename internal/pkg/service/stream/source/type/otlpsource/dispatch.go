@@ -94,11 +94,11 @@ func DispatchRecordsWithConcurrency(
 	// in a slice with a stable index so FirstError corresponds to the
 	// lowest-index rejected record (deterministic across runs).
 	var (
-		wg     sync.WaitGroup
-		mu     sync.Mutex
-		errs   = make([]error, len(records))
-		sem    = make(chan struct{}, concurrency)
-		stats  = struct {
+		wg    sync.WaitGroup
+		mu    sync.Mutex
+		errs  = make([]error, len(records))
+		sem   = make(chan struct{}, concurrency)
+		stats = struct {
 			rejected int
 			worst    int
 		}{}
