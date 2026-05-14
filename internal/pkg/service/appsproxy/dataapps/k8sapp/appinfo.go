@@ -42,9 +42,18 @@ type appObject struct {
 }
 
 type appSpec struct {
-	AppID              string     `json:"appId"`
-	AutoRestartEnabled *bool      `json:"autoRestartEnabled,omitempty"`
-	Runtime            appRuntime `json:"runtime"`
+	AppID              string          `json:"appId"`
+	AutoRestartEnabled *bool           `json:"autoRestartEnabled,omitempty"`
+	DevMode            *appDevModeSpec `json:"devMode,omitempty"`
+	Runtime            appRuntime      `json:"runtime"`
+}
+
+// appDevModeSpec mirrors the App CRD's spec.devMode block. The proxy only
+// cares about the Enabled toggle; the remaining knobs (gitPollInterval,
+// autoRunSetupOnDepChange) are interpreted by the operator and the in-pod
+// runtime, not by apps-proxy.
+type appDevModeSpec struct {
+	Enabled bool `json:"enabled"`
 }
 
 type appRuntime struct {
@@ -59,6 +68,10 @@ type appBackend struct {
 type AppInfo struct {
 	ActualState        AppActualState
 	AutoRestartEnabled bool
+	// DevMode mirrors spec.devMode.enabled from the App CRD. When true the
+	// proxy does not auto-resume a Stopped app — only the owner of the
+	// dev/prod switch may trigger a restart.
+	DevMode bool
 	// UpstreamTarget is the pre-parsed URL from .status.appsProxy.upstreamUrl.
 	// Nil when the field is absent or unparseable.
 	UpstreamTarget *url.URL

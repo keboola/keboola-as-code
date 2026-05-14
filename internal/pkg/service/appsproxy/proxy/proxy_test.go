@@ -2397,6 +2397,38 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 			expectedNotifications: map[string]int{},
 		},
+		{
+			// DEV mode app that is Stopped — proxy must not auto-resume it
+			// and must show the "Application Disabled" page.
+			name: "dev-mode-no-wakeup",
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				patch := []byte(`{"spec":{"devMode":{"enabled":true}},"status":{"currentState":"Stopped"}}`)
+				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+					t.Context(), "app-devmode", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(t.Context(), api.AppID("devmode"))
+					return ok && info.DevMode && info.ActualState == k8sapp.AppActualStateStopped
+				}, 5*time.Second, 50*time.Millisecond)
+			},
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://dev-devmode.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "Application Disabled")
+
+				// Confirm the app was not auto-resumed: state remains Stopped.
+				info, ok := watcher.GetState(t.Context(), api.AppID("devmode"))
+				require.True(t, ok)
+				assert.Equal(t, k8sapp.AppActualStateStopped, info.ActualState)
+			},
+			expectedNotifications: map[string]int{},
+		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {
@@ -2926,6 +2958,22 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					Type:  api.RulePathPrefix,
 					Value: "/",
 					Auth:  []provider.ID{"basic"},
+				},
+			},
+		},
+		{
+			// DEV mode test fixture: public app; spec.devMode.enabled is
+			// flipped on the App CRD by the test setupK8s.
+			ID:             "devmode",
+			ProjectID:      "123",
+			Name:           "dev-mode-app",
+			AppSlug:        new("dev"), // dev-devmode.hub.keboola.local
+			UpstreamAppURL: upstream.String(),
+			AuthRules: []api.Rule{
+				{
+					Type:         api.RulePathPrefix,
+					Value:        "/",
+					AuthRequired: new(false),
 				},
 			},
 		},
