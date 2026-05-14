@@ -302,7 +302,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gohugoio/hashstructure v0.6.0 // indirect
 	github.com/gohugoio/hugo v0.147.6 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
