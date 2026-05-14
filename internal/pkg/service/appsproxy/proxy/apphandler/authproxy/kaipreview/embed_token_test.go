@@ -27,7 +27,7 @@ func (s *stubSTAVerifier) Verify(_ context.Context, _ string) (*STAVerifyResult,
 
 type stubDevModeChecker struct{ devMode bool }
 
-func (s *stubDevModeChecker) IsDevMode(_ string) bool { return s.devMode }
+func (s *stubDevModeChecker) IsDevMode(_ context.Context, _ string) bool { return s.devMode }
 
 var errStubUnauth = &stubErr{msg: "unauthorized"}
 

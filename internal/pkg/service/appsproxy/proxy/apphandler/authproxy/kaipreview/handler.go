@@ -1,6 +1,7 @@
 package kaipreview
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"time"
@@ -21,10 +22,10 @@ const (
 )
 
 // DevModeCheckerFunc adapts a plain function to the DevModeChecker interface.
-type DevModeCheckerFunc func(appID string) bool
+type DevModeCheckerFunc func(ctx context.Context, appID string) bool
 
 // IsDevMode implements DevModeChecker.
-func (f DevModeCheckerFunc) IsDevMode(appID string) bool { return f(appID) }
+func (f DevModeCheckerFunc) IsDevMode(ctx context.Context, appID string) bool { return f(ctx, appID) }
 
 type HandlerDeps struct {
 	Clock             clockwork.Clock

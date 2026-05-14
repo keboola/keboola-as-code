@@ -35,7 +35,7 @@ func (h *ExchangeHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Dev-mode gate: pretend the endpoint doesn't exist on non-dev apps.
-	if !h.deps.DevMode.IsDevMode(h.deps.AppID) {
+	if !h.deps.DevMode.IsDevMode(r.Context(), h.deps.AppID) {
 		http.NotFound(w, r)
 		return nil
 	}

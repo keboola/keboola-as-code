@@ -38,8 +38,8 @@ type ruleIndex int
 
 func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handler, authHandlers map[provider.ID]selector.Handler) (http.Handler, error) {
 	// DevModeChecker is backed by the live K8s state watcher: re-evaluates on every request.
-	devModeChecker := kaipreview.DevModeCheckerFunc(func(appID string) bool {
-		info, ok := manager.upstreamManager.AppInfo(context.Background(), api.AppID(appID))
+	devModeChecker := kaipreview.DevModeCheckerFunc(func(ctx context.Context, appID string) bool {
+		info, ok := manager.upstreamManager.AppInfo(ctx, api.AppID(appID))
 		return ok && info.DevMode
 	})
 

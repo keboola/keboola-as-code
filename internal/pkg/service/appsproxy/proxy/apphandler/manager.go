@@ -56,10 +56,10 @@ type dependencies interface {
 
 func NewManager(d dependencies) *Manager {
 	cfg := d.Config()
-	var storageAPIURL string
-	if cfg.StorageAPIURL != nil {
-		storageAPIURL = cfg.StorageAPIURL.String()
+	if cfg.StorageAPIURL == nil {
+		panic("appsproxy: StorageAPIURL is required for kai-preview STA verification")
 	}
+	storageAPIURL := cfg.StorageAPIURL.String()
 	staHTTPClient := &http.Client{Timeout: 5 * time.Second}
 	return &Manager{
 		config:           cfg,

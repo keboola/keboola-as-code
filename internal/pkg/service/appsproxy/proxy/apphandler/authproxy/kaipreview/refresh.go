@@ -45,7 +45,7 @@ func (h *RefreshHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Request
 	// SPA can read status codes and bodies of auth-failure responses, not just successes.
 	h.deps.CORS.WriteResponseHeaders(w, origin)
 
-	if !h.deps.DevMode.IsDevMode(h.deps.AppID) {
+	if !h.deps.DevMode.IsDevMode(r.Context(), h.deps.AppID) {
 		http.NotFound(w, r)
 		return nil
 	}

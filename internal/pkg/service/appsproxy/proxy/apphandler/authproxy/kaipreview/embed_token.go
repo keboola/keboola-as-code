@@ -18,7 +18,7 @@ type STATokenVerifier interface {
 // DevModeChecker tells the handler whether the current app is in dev mode.
 // Backed by the apps-proxy CRD watcher (AppInfo.DevMode).
 type DevModeChecker interface {
-	IsDevMode(appID string) bool
+	IsDevMode(ctx context.Context, appID string) bool
 }
 
 type EmbedTokenDeps struct {
@@ -59,7 +59,7 @@ func (h *EmbedTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Requ
 	h.deps.CORS.WriteResponseHeaders(w, origin)
 
 	// Dev-mode gate first: pretend the endpoint doesn't exist on non-dev apps.
-	if !h.deps.DevMode.IsDevMode(h.deps.AppID) {
+	if !h.deps.DevMode.IsDevMode(r.Context(), h.deps.AppID) {
 		http.NotFound(w, r)
 		return nil
 	}
