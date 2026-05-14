@@ -78,3 +78,63 @@ func TestClearSessionCookie_Attributes(t *testing.T) {
 	assert.True(t, c.Partitioned)
 	assert.Equal(t, http.SameSiteNoneMode, c.SameSite)
 }
+
+func TestValidateSessionCookie_Valid(t *testing.T) {
+	t.Parallel()
+	clock := clockwork.NewFakeClock()
+	jwt, err := MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
+	require.NoError(t, err)
+
+	r := httptest.NewRequest("GET", "/anything", nil)
+	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
+
+	claims, ok := ValidateSessionCookie(r, testSessionKey, clock, "app-123", "proj-456")
+	assert.True(t, ok)
+	require.NotNil(t, claims)
+	assert.Equal(t, "app-123", claims.AppID)
+}
+
+func TestValidateSessionCookie_Missing(t *testing.T) {
+	t.Parallel()
+	clock := clockwork.NewFakeClock()
+	r := httptest.NewRequest("GET", "/anything", nil)
+	_, ok := ValidateSessionCookie(r, testSessionKey, clock, "app-123", "proj-456")
+	assert.False(t, ok)
+}
+
+func TestValidateSessionCookie_AppMismatch(t *testing.T) {
+	t.Parallel()
+	clock := clockwork.NewFakeClock()
+	jwt, err := MintSessionJWT(testSessionKey, clock, "different-app", "proj-456", 4*time.Hour)
+	require.NoError(t, err)
+	r := httptest.NewRequest("GET", "/anything", nil)
+	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
+
+	_, ok := ValidateSessionCookie(r, testSessionKey, clock, "app-123", "proj-456")
+	assert.False(t, ok)
+}
+
+func TestValidateSessionCookie_Expired(t *testing.T) {
+	t.Parallel()
+	clock := clockwork.NewFakeClock()
+	jwt, err := MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
+	require.NoError(t, err)
+	clock.Advance(5 * time.Hour)
+	r := httptest.NewRequest("GET", "/anything", nil)
+	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
+
+	_, ok := ValidateSessionCookie(r, testSessionKey, clock, "app-123", "proj-456")
+	assert.False(t, ok)
+}
+
+func TestValidateSessionCookie_ProjectMismatch(t *testing.T) {
+	t.Parallel()
+	clock := clockwork.NewFakeClock()
+	jwt, err := MintSessionJWT(testSessionKey, clock, "app-123", "different-project", 4*time.Hour)
+	require.NoError(t, err)
+	r := httptest.NewRequest("GET", "/anything", nil)
+	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
+
+	_, ok := ValidateSessionCookie(r, testSessionKey, clock, "app-123", "proj-456")
+	assert.False(t, ok)
+}

@@ -3,6 +3,8 @@ package kaipreview
 import (
 	"net/http"
 	"time"
+
+	"github.com/jonboulle/clockwork"
 )
 
 const SessionCookieName = "kbc-kai-preview-session"
@@ -51,4 +53,23 @@ func ReadSessionCookie(r *http.Request) string {
 		return ""
 	}
 	return c.Value
+}
+
+// ValidateSessionCookie reads the kai-preview session cookie from the request,
+// verifies the signature, expiry, and (app_id, project) scope. Returns claims
+// + true on success, nil + false on any failure. Stateless — relies only on the
+// signing key.
+func ValidateSessionCookie(r *http.Request, sessionKey string, clock clockwork.Clock, appID, projectID string) (*SessionClaims, bool) {
+	raw := ReadSessionCookie(r)
+	if raw == "" {
+		return nil, false
+	}
+	claims, err := VerifySessionJWT(sessionKey, clock, raw)
+	if err != nil {
+		return nil, false
+	}
+	if claims.AppID != appID || claims.ProjectID != projectID {
+		return nil, false
+	}
+	return claims, true
 }
