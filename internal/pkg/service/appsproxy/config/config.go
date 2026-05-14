@@ -2,6 +2,7 @@ package config
 
 import (
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
@@ -95,6 +96,12 @@ func New() Config {
 }
 
 func (c *Config) Normalize() {
+}
+
+func (c *KaiPreview) Normalize() {
+	for i, o := range c.AllowedIDEOrigins {
+		c.AllowedIDEOrigins[i] = strings.TrimRight(o, "/")
+	}
 }
 
 func (c *API) Normalize() {

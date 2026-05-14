@@ -1,6 +1,7 @@
 package kaipreview
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -11,7 +12,7 @@ import (
 
 func TestBootstrapHandler_ServesHTMLWithCSP(t *testing.T) {
 	t.Parallel()
-	h := NewBootstrapHandler([]string{"https://connection.keboola.com"})
+	h := NewBootstrapHandler([]string{"https://connection.keboola.com"}, &stubDevModeChecker{devMode: true}, "app-123")
 	r := httptest.NewRequest("GET", "/_proxy/kai-preview/bootstrap", nil)
 	w := httptest.NewRecorder()
 
@@ -32,10 +33,20 @@ func TestBootstrapHandler_ServesHTMLWithCSP(t *testing.T) {
 
 func TestBootstrapHandler_WrongMethod(t *testing.T) {
 	t.Parallel()
-	h := NewBootstrapHandler([]string{"https://connection.keboola.com"})
+	h := NewBootstrapHandler([]string{"https://connection.keboola.com"}, &stubDevModeChecker{devMode: true}, "app-123")
 	r := httptest.NewRequest("POST", "/_proxy/kai-preview/bootstrap", nil)
 	w := httptest.NewRecorder()
 	err := h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)
 	assert.Equal(t, 405, w.Code)
+}
+
+func TestBootstrapHandler_NonDevModeReturns404(t *testing.T) {
+	t.Parallel()
+	h := NewBootstrapHandler([]string{"https://connection.keboola.com"}, &stubDevModeChecker{devMode: false}, "app-123")
+	r := httptest.NewRequest(http.MethodGet, "/_proxy/kai-preview/bootstrap", nil)
+	w := httptest.NewRecorder()
+	err := h.ServeHTTPOrError(w, r)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }

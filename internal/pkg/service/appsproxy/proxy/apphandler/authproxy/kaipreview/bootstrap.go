@@ -17,13 +17,17 @@ var bootstrapTmpl = template.Must(template.ParseFS(bootstrapFS, "template/bootst
 type BootstrapHandler struct {
 	allowedIDEOrigins []string
 	originsJSON       template.JS
+	devMode           DevModeChecker
+	appID             string
 }
 
-func NewBootstrapHandler(allowedIDEOrigins []string) *BootstrapHandler {
+func NewBootstrapHandler(allowedIDEOrigins []string, devMode DevModeChecker, appID string) *BootstrapHandler {
 	bs, _ := json.Marshal(allowedIDEOrigins) // []string round-trip never errors for []string
 	return &BootstrapHandler{
 		allowedIDEOrigins: allowedIDEOrigins,
 		originsJSON:       template.JS(bs),
+		devMode:           devMode,
+		appID:             appID,
 	}
 }
 
@@ -32,6 +36,13 @@ func (h *BootstrapHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return nil
 	}
+
+	// Dev-mode gate: pretend the endpoint doesn't exist on non-dev apps.
+	if !h.devMode.IsDevMode(r.Context(), h.appID) {
+		http.NotFound(w, r)
+		return nil
+	}
+
 	WriteFrameAncestorsCSP(w, h.allowedIDEOrigins)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")

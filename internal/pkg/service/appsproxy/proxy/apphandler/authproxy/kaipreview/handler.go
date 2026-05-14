@@ -55,7 +55,7 @@ func NewHandler(deps HandlerDeps) *Handler {
 			Clock: deps.Clock, STA: deps.STA, DevMode: deps.DevMode, CORS: deps.CORS,
 			HandshakeKey: deps.HandshakeKey, AppID: deps.AppID, AppProjectID: deps.AppProjectID,
 		}),
-		bootstrap: NewBootstrapHandler(deps.AllowedIDEOrigins),
+		bootstrap: NewBootstrapHandler(deps.AllowedIDEOrigins, deps.DevMode, deps.AppID),
 		exchange: NewExchangeHandler(ExchangeDeps{
 			Clock: deps.Clock, DevMode: deps.DevMode,
 			HandshakeKey: deps.HandshakeKey, SessionKey: deps.SessionKey, SessionTTL: deps.SessionTTL,
