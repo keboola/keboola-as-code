@@ -1,0 +1,70 @@
+package kaipreview
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/jonboulle/clockwork"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestSetSessionCookie_Attributes(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	clock := clockwork.NewFakeClock()
+	ttl := 4 * time.Hour
+
+	jwt, err := MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", ttl)
+	require.NoError(t, err)
+
+	SetSessionCookie(w, jwt, ttl)
+
+	resp := w.Result()
+	cookies := resp.Cookies()
+	require.Len(t, cookies, 1)
+	c := cookies[0]
+
+	assert.Equal(t, SessionCookieName, c.Name)
+	assert.Equal(t, jwt, c.Value)
+	assert.Equal(t, "/", c.Path)
+	assert.True(t, c.Secure)
+	assert.True(t, c.HttpOnly)
+	assert.Equal(t, http.SameSiteNoneMode, c.SameSite)
+	assert.True(t, c.Partitioned)
+	assert.Empty(t, c.Domain, "must be host-only — no Domain attribute")
+	assert.Equal(t, int(ttl.Seconds()), c.MaxAge)
+}
+
+func TestReadSessionCookie_Present(t *testing.T) {
+	t.Parallel()
+	r := httptest.NewRequest("GET", "/", nil)
+	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "the-jwt"})
+	got := ReadSessionCookie(r)
+	assert.Equal(t, "the-jwt", got)
+}
+
+func TestReadSessionCookie_Missing(t *testing.T) {
+	t.Parallel()
+	r := httptest.NewRequest("GET", "/", nil)
+	got := ReadSessionCookie(r)
+	assert.Empty(t, got)
+}
+
+func TestClearSessionCookie_Attributes(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	ClearSessionCookie(w)
+	cookies := w.Result().Cookies()
+	require.Len(t, cookies, 1)
+	c := cookies[0]
+	assert.Equal(t, SessionCookieName, c.Name)
+	assert.Empty(t, c.Value)
+	assert.Equal(t, -1, c.MaxAge, "clear cookie must use MaxAge=-1")
+	assert.True(t, c.Secure)
+	assert.True(t, c.HttpOnly)
+	assert.True(t, c.Partitioned)
+	assert.Equal(t, http.SameSiteNoneMode, c.SameSite)
+}
