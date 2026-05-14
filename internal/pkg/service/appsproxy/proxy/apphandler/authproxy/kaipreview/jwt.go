@@ -25,7 +25,6 @@ type HandshakeClaims struct {
 	AppID     string `json:"app_id"`
 	ProjectID string `json:"project"`
 	Purpose   string `json:"purpose"`
-	JTI       string `json:"jti"`
 	jwt.RegisteredClaims
 }
 
@@ -57,8 +56,8 @@ func MintHandshakeJWT(key string, clock clockwork.Clock, appID, projectID string
 		AppID:     appID,
 		ProjectID: projectID,
 		Purpose:   purposeHandshake,
-		JTI:       jti,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        jti,
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(handshakeTTL)),
 		},

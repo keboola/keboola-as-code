@@ -27,7 +27,7 @@ func TestHandshakeJWT_RoundTrip(t *testing.T) {
 	assert.Equal(t, "app-123", claims.AppID)
 	assert.Equal(t, "proj-456", claims.ProjectID)
 	assert.Equal(t, "kai-preview-embed", claims.Purpose)
-	assert.NotEmpty(t, claims.JTI)
+	assert.NotEmpty(t, claims.ID)
 }
 
 func TestHandshakeJWT_ExpiredAfter60s(t *testing.T) {
