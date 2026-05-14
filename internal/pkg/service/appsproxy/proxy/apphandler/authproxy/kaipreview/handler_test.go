@@ -1,0 +1,78 @@
+package kaipreview
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/jonboulle/clockwork"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func newTestCompositeHandler(devMode bool) *Handler {
+	return NewHandler(HandlerDeps{
+		Clock:             clockwork.NewFakeClock(),
+		STA:               &stubSTAVerifier{projectID: "proj-456"},
+		DevMode:           &stubDevModeChecker{devMode: devMode},
+		CORS:              NewCORS([]string{"https://connection.keboola.com"}),
+		HandshakeKey:      testHandshakeKey,
+		SessionKey:        testSessionKey,
+		SessionTTL:        4 * time.Hour,
+		AllowedIDEOrigins: []string{"https://connection.keboola.com"},
+		AppID:             "app-123",
+		AppProjectID:      "proj-456",
+	})
+}
+
+func TestCompositeHandler_RoutesEmbedToken(t *testing.T) {
+	t.Parallel()
+	h := newTestCompositeHandler(true)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/embed-token", nil)
+	r.Header.Set("Origin", "https://connection.keboola.com")
+	r.Header.Set("X-StorageApi-Token", "valid")
+	w := httptest.NewRecorder()
+	require.NoError(t, h.ServeHTTPOrError(w, r))
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestCompositeHandler_RoutesBootstrap(t *testing.T) {
+	t.Parallel()
+	h := newTestCompositeHandler(true)
+	r := httptest.NewRequest(http.MethodGet, "/_proxy/kai-preview/bootstrap", nil)
+	w := httptest.NewRecorder()
+	require.NoError(t, h.ServeHTTPOrError(w, r))
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Header().Get("Content-Type"), "text/html")
+}
+
+func TestCompositeHandler_RoutesExchange(t *testing.T) {
+	t.Parallel()
+	h := newTestCompositeHandler(true)
+	// Empty body — exchange should return 400 (handler reached, valid path)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/exchange", nil)
+	w := httptest.NewRecorder()
+	require.NoError(t, h.ServeHTTPOrError(w, r))
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestCompositeHandler_RoutesRefresh(t *testing.T) {
+	t.Parallel()
+	h := newTestCompositeHandler(true)
+	// No cookie — refresh should return 401 (handler reached, valid path)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/refresh", nil)
+	r.Header.Set("Origin", "https://connection.keboola.com")
+	w := httptest.NewRecorder()
+	require.NoError(t, h.ServeHTTPOrError(w, r))
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestCompositeHandler_UnknownSubpath404(t *testing.T) {
+	t.Parallel()
+	h := newTestCompositeHandler(true)
+	r := httptest.NewRequest(http.MethodGet, "/_proxy/kai-preview/does-not-exist", nil)
+	w := httptest.NewRecorder()
+	require.NoError(t, h.ServeHTTPOrError(w, r))
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
