@@ -29,6 +29,7 @@ type entry struct {
 	k8sName            string
 	state              AppActualState
 	autoRestartEnabled bool
+	devMode            bool
 	upstreamTarget     *url.URL // pre-parsed; nil when appsProxy.upstreamUrl absent/invalid
 	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
 	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
@@ -146,6 +147,7 @@ func (w *StateWatcher) GetState(ctx context.Context, appID api.AppID) (AppInfo, 
 	return AppInfo{
 		ActualState:        e.state,
 		AutoRestartEnabled: e.autoRestartEnabled,
+		DevMode:            e.devMode,
 		UpstreamTarget:     e.upstreamTarget,
 		E2BAccessToken:     e.e2bAccessToken,
 	}, true
@@ -209,6 +211,8 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 		autoRestartEnabled = *appObj.Spec.AutoRestartEnabled
 	}
 
+	devMode := appObj.Spec.DevMode != nil && appObj.Spec.DevMode.Enabled
+
 	var upstreamTarget *url.URL
 	if rawURL := appObj.Status.AppsProxy.UpstreamURL; rawURL != "" {
 		if t, err := url.Parse(rawURL); err == nil {
@@ -235,11 +239,12 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 		k8sName:            k8sName,
 		state:              appObj.Status.CurrentState,
 		autoRestartEnabled: autoRestartEnabled,
+		devMode:            devMode,
 		upstreamTarget:     upstreamTarget,
 		e2bAccessToken:     e2bAccessToken,
 		e2bSecretName:      e2bSecretName,
 	})
-	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v upstreamTarget=%v", k8sName, appID, appObj.Status.CurrentState, autoRestartEnabled, upstreamTarget != nil)
+	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v devMode=%v upstreamTarget=%v", k8sName, appID, appObj.Status.CurrentState, autoRestartEnabled, devMode, upstreamTarget != nil)
 }
 
 func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
