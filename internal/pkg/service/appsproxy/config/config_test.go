@@ -26,4 +26,5 @@ func TestKaiPreviewConfig_RequiresSigningKeys(t *testing.T) {
 	err := configmap.ValidateAndNormalize(&cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "kaiPreview.handshakeSigningKey")
+	assert.Contains(t, err.Error(), "kaiPreview.sessionSigningKey")
 }
