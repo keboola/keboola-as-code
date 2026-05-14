@@ -99,6 +99,8 @@ func TestEmbedTokenHandler_MissingSTAHeader(t *testing.T) {
 	err := h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Equal(t, "https://connection.keboola.com", w.Header().Get("Access-Control-Allow-Origin"),
+		"auth-failure responses to allowed origins must include CORS headers so SPA can read status")
 }
 
 func TestEmbedTokenHandler_STAInvalid(t *testing.T) {
@@ -113,6 +115,8 @@ func TestEmbedTokenHandler_STAInvalid(t *testing.T) {
 	err := h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Equal(t, "https://connection.keboola.com", w.Header().Get("Access-Control-Allow-Origin"),
+		"auth-failure responses to allowed origins must include CORS headers so SPA can read status")
 }
 
 func TestEmbedTokenHandler_WrongProject(t *testing.T) {
@@ -127,6 +131,8 @@ func TestEmbedTokenHandler_WrongProject(t *testing.T) {
 	err := h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusForbidden, w.Code)
+	assert.Equal(t, "https://connection.keboola.com", w.Header().Get("Access-Control-Allow-Origin"),
+		"auth-failure responses to allowed origins must include CORS headers so SPA can read status")
 }
 
 func TestEmbedTokenHandler_AppNotInDevMode(t *testing.T) {
@@ -155,6 +161,8 @@ func TestEmbedTokenHandler_DisallowedOrigin(t *testing.T) {
 	err := h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusForbidden, w.Code)
+	assert.Empty(t, w.Header().Get("Access-Control-Allow-Origin"),
+		"disallowed origins must NOT receive CORS headers")
 }
 
 func TestEmbedTokenHandler_WrongMethod(t *testing.T) {

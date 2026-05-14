@@ -54,6 +54,9 @@ func (h *EmbedTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "origin not allowed", http.StatusForbidden)
 		return nil
 	}
+	// All remaining responses are to an allowed origin — emit CORS headers now so the
+	// SPA can read status codes and bodies of auth-failure responses, not just successes.
+	h.deps.CORS.WriteResponseHeaders(w, origin)
 
 	// Dev-mode gate first: pretend the endpoint doesn't exist on non-dev apps.
 	if !h.deps.DevMode.IsDevMode(h.deps.AppID) {
@@ -83,7 +86,7 @@ func (h *EmbedTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Requ
 		return errors.Errorf("kai-preview: mint handshake JWT: %w", err)
 	}
 
-	h.deps.CORS.WriteResponseHeaders(w, origin)
+	// CORS headers already set above.
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
