@@ -3,6 +3,7 @@
 package apphandler
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -29,11 +31,18 @@ type appHandler struct {
 	upstream           chain.Handler
 	allAuthHandlers    chain.Handler
 	authHandlerPerRule map[ruleIndex]chain.Handler
+	kaiPreview         *kaipreview.Handler
 }
 
 type ruleIndex int
 
 func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handler, authHandlers map[provider.ID]selector.Handler) (http.Handler, error) {
+	// DevModeChecker is backed by the live K8s state watcher: re-evaluates on every request.
+	devModeChecker := kaipreview.DevModeCheckerFunc(func(appID string) bool {
+		info, ok := manager.upstreamManager.AppInfo(context.Background(), api.AppID(appID))
+		return ok && info.DevMode
+	})
+
 	handler := &appHandler{
 		manager:            manager,
 		app:                app,
@@ -41,6 +50,18 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 		attrs:              app.Telemetry(),
 		upstream:           appUpstream,
 		authHandlerPerRule: make(map[ruleIndex]chain.Handler),
+		kaiPreview: kaipreview.NewHandler(kaipreview.HandlerDeps{
+			Clock:             manager.clock,
+			STA:               manager.staVerifier,
+			DevMode:           devModeChecker,
+			CORS:              kaipreview.NewCORS(manager.config.KaiPreview.AllowedIDEOrigins),
+			HandshakeKey:      manager.config.KaiPreview.HandshakeSigningKey,
+			SessionKey:        manager.config.KaiPreview.SessionSigningKey,
+			SessionTTL:        manager.config.KaiPreview.SessionTTL,
+			AllowedIDEOrigins: manager.config.KaiPreview.AllowedIDEOrigins,
+			AppID:             string(app.ID),
+			AppProjectID:      app.ProjectID,
+		}),
 	}
 
 	// Create handler with all auth handlers, to route internal URLs
@@ -146,6 +167,26 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		return nil
 	}
 
+	// kai-preview: dev-mode iframe-auth path.
+	// (routing decision documented in spec § "apps-proxy: routing decision for dev-mode apps")
+	if h.isDevMode(req.Context()) {
+		// 1. /_proxy/kai-preview/* routes go to the kai-preview composite handler.
+		if strings.HasPrefix(req.URL.Path, kaipreview.PathPrefix) {
+			return h.kaiPreview.ServeHTTPOrError(w, req)
+		}
+		// 2. Valid session cookie → forward to upstream, skip AuthRules.
+		if _, ok := kaipreview.ValidateSessionCookie(req, h.manager.config.KaiPreview.SessionSigningKey, h.manager.clock, string(h.app.ID), h.app.ProjectID); ok {
+			// TODO(T15): sliding refresh — re-mint when claims.NeedsRefresh(now) is true.
+			return h.upstream.ServeHTTPOrError(w, req)
+		}
+		// 3. Iframe document load on a dev-mode app with no session → serve bootstrap shim.
+		if kaipreview.IsIframeDocumentLoad(req) {
+			bootstrapReq := req.Clone(req.Context())
+			bootstrapReq.URL.Path = kaipreview.PathPrefix + "/bootstrap"
+			return h.kaiPreview.ServeHTTPOrError(w, bootstrapReq)
+		}
+	}
+
 	// Route internal URLs if there is at least one auth handler
 	if strings.HasPrefix(req.URL.Path, config.InternalPrefix) && h.allAuthHandlers != nil {
 		return h.allAuthHandlers.ServeHTTPOrError(w, req)
@@ -172,4 +213,12 @@ func (h *appHandler) serveRule(w http.ResponseWriter, req *http.Request, index r
 
 	// Serve the request without authentication
 	return h.upstream.ServeHTTPOrError(w, req)
+}
+
+// isDevMode reports whether this app currently has DevMode enabled.
+// It reads from the live K8s state cache so toggling DevMode on the App CRD takes
+// effect on the next request without requiring handler recreation.
+func (h *appHandler) isDevMode(ctx context.Context) bool {
+	info, ok := h.manager.upstreamManager.AppInfo(ctx, h.app.ID)
+	return ok && info.DevMode
 }

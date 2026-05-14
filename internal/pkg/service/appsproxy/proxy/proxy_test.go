@@ -2429,6 +2429,91 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 			expectedNotifications: map[string]int{},
 		},
+		{
+			// kai-preview: GET /_proxy/kai-preview/bootstrap on a dev-mode app (Running) → 200 with HTML shim.
+			name: "kai-preview-bootstrap-dev-mode-running",
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				patch := []byte(`{"spec":{"devMode":{"enabled":true}},"status":{"currentState":"Running"}}`)
+				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+					t.Context(), "app-devmode", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(t.Context(), api.AppID("devmode"))
+					return ok && info.DevMode && info.ActualState == k8sapp.AppActualStateRunning
+				}, 5*time.Second, 50*time.Millisecond)
+			},
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://dev-devmode.hub.keboola.local/_proxy/kai-preview/bootstrap", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				// The bootstrap shim is an HTML page with postMessage logic.
+				assert.Contains(t, response.Header.Get("Content-Type"), "text/html")
+				// The bootstrap shim references the exchange path.
+				assert.Contains(t, string(body), "/_proxy/kai-preview/exchange")
+			},
+			expectedNotifications: map[string]int{},
+		},
+		{
+			// kai-preview: GET /_proxy/kai-preview/bootstrap on a non-dev-mode app falls through to
+			// AuthRules. The "devmode" app has AuthRequired=false, so the upstream is reached — the
+			// kai-preview bootstrap shim is NOT served.
+			name: "kai-preview-bootstrap-non-dev-mode",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				// "devmode" app has DevMode=false by default (makeDefaultK8sObjects does not set devMode).
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://dev-devmode.hub.keboola.local/_proxy/kai-preview/bootstrap", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				// With DevMode=false the request falls through to the AuthRules path.
+				// The "devmode" app is public (AuthRequired=false), so the upstream responds directly.
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				// Upstream app returns its response; the bootstrap shim is NOT served.
+				assert.Equal(t, "Hello, client", string(body))
+			},
+			expectedNotifications: map[string]int{
+				"devmode": 1,
+			},
+		},
+		{
+			// kai-preview: GET / with Sec-Fetch-Dest=iframe on a dev-mode Running app and no session cookie
+			// → proxy serves the bootstrap shim (iframe document load detection).
+			name: "kai-preview-iframe-bootstrap-fallback",
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				patch := []byte(`{"spec":{"devMode":{"enabled":true}},"status":{"currentState":"Running"}}`)
+				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+					t.Context(), "app-devmode", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(t.Context(), api.AppID("devmode"))
+					return ok && info.DevMode && info.ActualState == k8sapp.AppActualStateRunning
+				}, 5*time.Second, 50*time.Millisecond)
+			},
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://dev-devmode.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				// Simulate an iframe document load (Sec-Fetch-Dest=iframe + Accept=text/html).
+				request.Header.Set("Sec-Fetch-Dest", "iframe")
+				request.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				// Should be the bootstrap shim HTML, not the upstream app response.
+				assert.Contains(t, response.Header.Get("Content-Type"), "text/html")
+				assert.NotEqual(t, "Hello, client", strings.TrimSpace(string(body)))
+				assert.NotEmpty(t, string(body))
+			},
+			expectedNotifications: map[string]int{},
+		},
 	}
 
 	publicAppTestCaseFactory := func(method string) testCase {
