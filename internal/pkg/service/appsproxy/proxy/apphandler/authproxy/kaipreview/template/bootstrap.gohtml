@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Loading preview…</title>
+  <style>
+    html, body { margin: 0; padding: 0; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .status { display: flex; align-items: center; justify-content: center; height: 100vh; color: #888; font-size: 14px; }
+  </style>
+</head>
+<body>
+<div class="status" id="status">Loading preview…</div>
+<script>
+(function () {
+  "use strict";
+
+  // Server-rendered: the list of IDE origins this preview is allowed to handshake with.
+  var ALLOWED_IDE_ORIGINS = {{ .AllowedIDEOriginsJSON }};
+
+  var EXCHANGE_PATH = "/_proxy/kai-preview/exchange";
+  var status = document.getElementById("status");
+  var didHandshake = false;
+  var readyInterval;
+
+  function setStatus(text) { if (status) { status.textContent = text; } }
+
+  function originAllowed(origin) {
+    for (var i = 0; i < ALLOWED_IDE_ORIGINS.length; i++) {
+      if (ALLOWED_IDE_ORIGINS[i] === origin) { return true; }
+    }
+    return false;
+  }
+
+  function broadcastReady() {
+    if (!window.parent || window.parent === window) {
+      setStatus("This preview only loads from the Keboola UI.");
+      return;
+    }
+    for (var i = 0; i < ALLOWED_IDE_ORIGINS.length; i++) {
+      try { window.parent.postMessage({ type: "kai-preview-ready" }, ALLOWED_IDE_ORIGINS[i]); }
+      catch (e) { /* targetOrigin mismatch is benign */ }
+    }
+  }
+
+  function onMessage(event) {
+    if (didHandshake) { return; }
+    if (!originAllowed(event.origin)) { return; }
+    if (!event.data || event.data.type !== "kai-preview-token" || typeof event.data.token !== "string") { return; }
+    didHandshake = true;
+    if (readyInterval) { clearInterval(readyInterval); readyInterval = null; }
+
+    fetch(EXCHANGE_PATH, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: event.data.token })
+    }).then(function (r) {
+      if (!r.ok) {
+        setStatus("Preview authorization failed (" + r.status + "). Reload the parent page.");
+        return;
+      }
+      window.location.replace("/");
+    }).catch(function () {
+      setStatus("Preview authorization failed — network error.");
+    });
+  }
+
+  window.addEventListener("message", onMessage);
+  broadcastReady();
+  readyInterval = setInterval(broadcastReady, 500);
+  // Give up after ~10s if no parent responds.
+  setTimeout(function () {
+    if (!didHandshake && readyInterval) {
+      clearInterval(readyInterval);
+      readyInterval = null;
+      setStatus("This preview only loads from the Keboola UI.");
+    }
+  }, 10000);
+})();
+</script>
+</body>
+</html>
