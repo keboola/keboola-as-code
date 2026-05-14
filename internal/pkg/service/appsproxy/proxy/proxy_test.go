@@ -22,6 +22,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
@@ -47,6 +48,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/oauthproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
@@ -3154,6 +3156,152 @@ func htmlLinkTo(url string) string {
 func registerDefaultK8sApps(t *testing.T, watcher *k8sapp.StateWatcher) {
 	t.Helper()
 	require.True(t, watcher.WaitForCacheSync(t.Context()), "App CRD informer cache sync timed out")
+}
+
+// TestKaiPreviewSlidingRefresh is a focused regression test for the sliding-refresh path in
+// apphandler.serveHTTPOrError. It boots a dev-mode app via the standard harness but injects a
+// FakeClock so that time can be advanced deterministically.
+//
+//   - At t+1h (before midpoint of 4h TTL) → no Set-Cookie on the response.
+//   - At t+3h (past midpoint) → Set-Cookie: kbc-kai-preview-session=… appears and the new JWT
+//     validates as fresh (NeedsRefresh==false immediately after issuance).
+func TestKaiPreviewSlidingRefresh(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+
+	const sessionTTL = 4 * time.Hour
+
+	fakeClock := clockwork.NewFakeClock()
+
+	// Create testing apps API and upstream.
+	tmpDir := t.TempDir()
+	pm, _ := server.NewPortManager(t, tmpDir, "appsproxy")
+	appsAPI := testutil.StartDataAppsAPI(t, pm)
+	t.Cleanup(func() { appsAPI.Close() })
+	appServer := testutil.StartAppServer(t, pm)
+	t.Cleanup(func() { appServer.Close() })
+
+	providers := testAuthProviders(t, pm)
+	appURL := testutil.AppServerURL(t, appServer)
+	apps := testDataApps(appURL, providers)
+	appsAPI.Register(apps)
+
+	// Build the service scope with an injected FakeClock so the proxy sees our
+	// controlled notion of "now".
+	secret := make([]byte, 32)
+	_, err := rand.Read(secret)
+	require.NoError(t, err)
+	csrfSecret := make([]byte, 32)
+	_, err = rand.Read(csrfSecret)
+	require.NoError(t, err)
+
+	cfg := config.New()
+	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
+	cfg.CookieSecretSalt = string(secret)
+	cfg.CsrfTokenSalt = string(csrfSecret)
+	cfg.SandboxesAPI.URL = appsAPI.URL
+	cfg.KaiPreview.SessionTTL = sessionTTL
+
+	d, mocked := proxyDependencies.NewMockedServiceScopeWithK8sObjects(
+		t, ctx, cfg,
+		makeDefaultK8sObjects(apps, appURL.String()),
+		dependencies.WithRealHTTPClient(),
+		dependencies.WithClock(fakeClock),
+	)
+	defer func() {
+		d.Process().Shutdown(ctx, errors.New("bye bye"))
+		d.Process().WaitForShutdown()
+	}()
+
+	// Wire logging the same way as createProxyHandler.
+	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
+	logger.SetOutput(loggerWriter)
+	logger.SetErrOutput(loggerWriter)
+	handler := proxy.NewHandler(ctx, d)
+
+	// Boot a TLS proxy server.
+	port := pm.GetFreePort()
+	var lc net.ListenConfig
+	l, err := lc.Listen(ctx, "tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	require.NoError(t, err)
+	proxySrv := &httptest.Server{
+		Listener: l,
+		Config:   &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ErrorLog: log.NewStdErrorLogger(d.Logger())},
+	}
+	proxySrv.StartTLS()
+	t.Cleanup(func() { proxySrv.Close() })
+
+	proxyURL, err := url.Parse(proxySrv.URL)
+	require.NoError(t, err)
+	client := createHTTPClient(t, proxyURL)
+
+	// Wait for K8s informer to sync, then enable DevMode=Running for the "devmode" app.
+	registerDefaultK8sApps(t, d.AppStateWatcher())
+	patch := []byte(`{"spec":{"devMode":{"enabled":true}},"status":{"currentState":"Running"}}`)
+	_, err = mocked.TestFakeK8sClient().Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+		ctx, "app-devmode", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+	)
+	require.NoError(t, err)
+	require.Eventually(t, func() bool {
+		info, ok := d.AppStateWatcher().GetState(ctx, api.AppID("devmode"))
+		return ok && info.DevMode && info.ActualState == k8sapp.AppActualStateRunning
+	}, 5*time.Second, 50*time.Millisecond)
+
+	// Retrieve the session signing key that the mocked scope auto-filled.
+	sessionKey := mocked.TestConfig().KaiPreview.SessionSigningKey
+
+	// Mint a session JWT anchored at FakeClock's current time (t=0).
+	rawJWT, err := kaipreview.MintSessionJWT(sessionKey, fakeClock, "devmode", "123", sessionTTL)
+	require.NoError(t, err)
+
+	sendRequest := func(t *testing.T) *http.Response {
+		t.Helper()
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://dev-devmode.hub.keboola.local/", nil)
+		require.NoError(t, err)
+		req.AddCookie(&http.Cookie{Name: kaipreview.SessionCookieName, Value: rawJWT})
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		return resp
+	}
+
+	// --- t+1h: before midpoint — no refresh expected ---
+	fakeClock.Advance(1 * time.Hour)
+	resp := sendRequest(t)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	_, _ = io.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	var setCookieHeader string
+	for _, c := range resp.Cookies() {
+		if c.Name == kaipreview.SessionCookieName {
+			setCookieHeader = c.Value
+		}
+	}
+	assert.Empty(t, setCookieHeader, "expected no Set-Cookie at t+1h (before midpoint)")
+
+	// --- t+3h: past midpoint (3h > 4h/2) — refresh expected ---
+	fakeClock.Advance(2 * time.Hour) // total 3h elapsed
+	resp = sendRequest(t)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	_, _ = io.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	var refreshedJWT string
+	for _, c := range resp.Cookies() {
+		if c.Name == kaipreview.SessionCookieName {
+			refreshedJWT = c.Value
+		}
+	}
+	require.NotEmpty(t, refreshedJWT, "expected Set-Cookie with refreshed JWT at t+3h")
+
+	// Verify the new JWT is valid and immediately fresh (NeedsRefresh should be false right now).
+	newClaims, err := kaipreview.VerifySessionJWT(sessionKey, fakeClock, refreshedJWT)
+	require.NoError(t, err)
+	assert.Equal(t, "devmode", newClaims.AppID)
+	assert.Equal(t, "123", newClaims.ProjectID)
+	assert.False(t, newClaims.NeedsRefresh(fakeClock.Now()), "newly minted JWT should not need refresh immediately")
+
+	assert.Empty(t, mocked.DebugLogger().ErrorMessages())
 }
 
 // makeDefaultK8sObjects converts a slice of app configs into K8s unstructured App CRD objects

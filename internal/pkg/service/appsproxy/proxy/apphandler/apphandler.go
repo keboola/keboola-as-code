@@ -174,9 +174,27 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		if strings.HasPrefix(req.URL.Path, kaipreview.PathPrefix) {
 			return h.kaiPreview.ServeHTTPOrError(w, req)
 		}
-		// 2. Valid session cookie → forward to upstream, skip AuthRules.
-		if _, ok := kaipreview.ValidateSessionCookie(req, h.manager.config.KaiPreview.SessionSigningKey, h.manager.clock, string(h.app.ID), h.app.ProjectID); ok {
-			// TODO(T15): sliding refresh — re-mint when claims.NeedsRefresh(now) is true.
+		// 2. Valid session cookie → forward to upstream (skip AuthRules), with sliding refresh.
+		if claims, ok := kaipreview.ValidateSessionCookie(
+			req,
+			h.manager.config.KaiPreview.SessionSigningKey,
+			h.manager.clock,
+			string(h.app.ID),
+			h.app.ProjectID,
+		); ok {
+			if claims.NeedsRefresh(h.manager.clock.Now()) {
+				newJWT, err := kaipreview.MintSessionJWT(
+					h.manager.config.KaiPreview.SessionSigningKey,
+					h.manager.clock,
+					string(h.app.ID),
+					h.app.ProjectID,
+					h.manager.config.KaiPreview.SessionTTL,
+				)
+				if err == nil {
+					kaipreview.SetSessionCookie(w, newJWT, h.manager.config.KaiPreview.SessionTTL)
+				}
+				// If mint fails, just forward without refresh — the existing cookie is still valid.
+			}
 			return h.upstream.ServeHTTPOrError(w, req)
 		}
 		// 3. Iframe document load on a dev-mode app with no session → serve bootstrap shim.
