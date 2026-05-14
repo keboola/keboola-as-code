@@ -53,6 +53,16 @@ func TestReadSessionCookie_Missing(t *testing.T) {
 	assert.Empty(t, got)
 }
 
+func TestSetSessionCookie_NonPositiveTTL_ClearsInstead(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	SetSessionCookie(w, "ignored-jwt", 0)
+	cookies := w.Result().Cookies()
+	require.Len(t, cookies, 1)
+	assert.Equal(t, -1, cookies[0].MaxAge, "ttl=0 must invalidate, not create a session cookie")
+	assert.Empty(t, cookies[0].Value)
+}
+
 func TestClearSessionCookie_Attributes(t *testing.T) {
 	t.Parallel()
 	w := httptest.NewRecorder()

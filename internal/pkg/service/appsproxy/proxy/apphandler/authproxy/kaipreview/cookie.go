@@ -9,9 +9,12 @@ const SessionCookieName = "kbc-kai-preview-session"
 
 // SetSessionCookie writes the kai-preview session cookie on w. The cookie is
 // host-only (no Domain), Secure, HttpOnly, SameSite=None, Partitioned (CHIPS).
-// See docs/superpowers/specs/2026-05-14-dev-iframe-auth-design.md for the full
-// attribute rationale.
+// See the kai-preview design doc for the full attribute rationale.
 func SetSessionCookie(w http.ResponseWriter, jwt string, ttl time.Duration) {
+	if ttl <= 0 {
+		ClearSessionCookie(w)
+		return
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:        SessionCookieName,
 		Value:       jwt,
