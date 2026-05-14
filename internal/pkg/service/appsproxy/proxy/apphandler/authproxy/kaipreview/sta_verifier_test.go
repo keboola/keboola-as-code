@@ -49,3 +49,45 @@ func TestSTAVerifier_NetworkError(t *testing.T) {
 	_, err := v.Verify(context.Background(), "token")
 	require.Error(t, err)
 }
+
+func TestSTAVerifier_MissingOwnerID(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"owner":{}}`))
+	}))
+	defer srv.Close()
+
+	v := NewSTAVerifier(srv.URL, srv.Client())
+	_, err := v.Verify(context.Background(), "token")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "missing owner.id")
+}
+
+func TestSTAVerifier_ServerError(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	v := NewSTAVerifier(srv.URL, srv.Client())
+	_, err := v.Verify(context.Background(), "token")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "500")
+}
+
+func TestSTAVerifier_MalformedJSON(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("not-json"))
+	}))
+	defer srv.Close()
+
+	v := NewSTAVerifier(srv.URL, srv.Client())
+	_, err := v.Verify(context.Background(), "token")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "decode STA verify response")
+}
