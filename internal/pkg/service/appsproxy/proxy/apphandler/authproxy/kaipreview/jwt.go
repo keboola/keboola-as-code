@@ -87,12 +87,17 @@ func VerifyHandshakeJWT(key string, clock clockwork.Clock, raw string) (*Handsha
 
 func MintSessionJWT(key string, clock clockwork.Clock, appID, projectID string, ttl time.Duration) (string, error) {
 	now := clock.Now()
+	jti, err := randomHex(16)
+	if err != nil {
+		return "", errors.Errorf("kai-preview: generate jti: %w", err)
+	}
 	claims := SessionClaims{
 		AppID:     appID,
 		ProjectID: projectID,
 		Purpose:   purposeSession,
 		TTL:       int64(ttl.Seconds()),
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        jti,
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
 		},
