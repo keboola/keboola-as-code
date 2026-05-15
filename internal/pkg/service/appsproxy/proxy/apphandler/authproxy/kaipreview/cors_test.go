@@ -12,7 +12,7 @@ func TestCORS_AllowedOrigin_Preflight(t *testing.T) {
 	t.Parallel()
 	cors := NewCORS([]string{"https://connection.keboola.com"})
 
-	r := httptest.NewRequest(http.MethodOptions, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodOptions, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("Access-Control-Request-Method", "POST")
 	r.Header.Set("Access-Control-Request-Headers", "X-StorageApi-Token, Content-Type")
@@ -30,7 +30,7 @@ func TestCORS_DisallowedOrigin_Preflight(t *testing.T) {
 	t.Parallel()
 	cors := NewCORS([]string{"https://connection.keboola.com"})
 
-	r := httptest.NewRequest(http.MethodOptions, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodOptions, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://evil.example.com")
 	w := httptest.NewRecorder()
 
@@ -53,7 +53,7 @@ func TestCORS_WriteResponseHeaders(t *testing.T) {
 func TestCORS_NonPreflightPassesThrough(t *testing.T) {
 	t.Parallel()
 	cors := NewCORS([]string{"https://connection.keboola.com"})
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	w := httptest.NewRecorder()
 	handled := cors.HandlePreflight(w, r)
 	assert.False(t, handled)

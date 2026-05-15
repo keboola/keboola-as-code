@@ -15,10 +15,10 @@ import (
 var PathPrefix = config.InternalPrefix + "/kai-preview"
 
 const (
-	pathEmbedToken = "/embed-token"
-	pathBootstrap  = "/bootstrap"
-	pathExchange   = "/exchange"
-	pathRefresh    = "/refresh"
+	pathHandshakeToken = "/handshake-token"
+	pathBootstrap      = "/bootstrap"
+	pathExchange       = "/exchange"
+	pathRefresh        = "/refresh"
 )
 
 // DevModeCheckerFunc adapts a plain function to the DevModeChecker interface.
@@ -43,15 +43,15 @@ type HandlerDeps struct {
 // Handler is the per-app composite handler that serves all four kai-preview
 // internal endpoints. One instance per app. Routes by URL path suffix.
 type Handler struct {
-	embedToken *EmbedTokenHandler
-	bootstrap  *BootstrapHandler
-	exchange   *ExchangeHandler
-	refresh    *RefreshHandler
+	handshakeToken *HandshakeTokenHandler
+	bootstrap      *BootstrapHandler
+	exchange       *ExchangeHandler
+	refresh        *RefreshHandler
 }
 
 func NewHandler(deps HandlerDeps) *Handler {
 	return &Handler{
-		embedToken: NewEmbedTokenHandler(EmbedTokenDeps{
+		handshakeToken: NewHandshakeTokenHandler(HandshakeTokenDeps{
 			Clock: deps.Clock, STA: deps.STA, DevMode: deps.DevMode, CORS: deps.CORS,
 			HandshakeKey: deps.HandshakeKey, AppID: deps.AppID, AppProjectID: deps.AppProjectID,
 		}),
@@ -76,8 +76,8 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, r *http.Request) error
 	}
 	sub := r.URL.Path[len(PathPrefix):]
 	switch sub {
-	case pathEmbedToken:
-		return h.embedToken.ServeHTTPOrError(w, r)
+	case pathHandshakeToken:
+		return h.handshakeToken.ServeHTTPOrError(w, r)
 	case pathBootstrap:
 		return h.bootstrap.ServeHTTPOrError(w, r)
 	case pathExchange:

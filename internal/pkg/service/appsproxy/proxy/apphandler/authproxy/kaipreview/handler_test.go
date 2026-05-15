@@ -26,10 +26,10 @@ func newTestCompositeHandler(devMode bool) *Handler {
 	})
 }
 
-func TestCompositeHandler_RoutesEmbedToken(t *testing.T) {
+func TestCompositeHandler_RoutesHandshakeToken(t *testing.T) {
 	t.Parallel()
 	h := newTestCompositeHandler(true)
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "valid")
 	w := httptest.NewRecorder()

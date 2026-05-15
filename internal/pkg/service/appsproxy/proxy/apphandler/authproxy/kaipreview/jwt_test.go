@@ -26,7 +26,7 @@ func TestHandshakeJWT_RoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "app-123", claims.AppID)
 	assert.Equal(t, "proj-456", claims.ProjectID)
-	assert.Equal(t, "kai-preview-embed", claims.Purpose)
+	assert.Equal(t, "kai-preview-handshake", claims.Purpose)
 	assert.NotEmpty(t, claims.ID)
 }
 

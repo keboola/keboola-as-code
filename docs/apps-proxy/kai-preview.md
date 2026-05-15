@@ -17,7 +17,7 @@ end-users browsing directly.
 The kai-preview path is active only when **both** of the following are true:
 
 1. The app's `App` CRD has `spec.devMode.enabled: true`.
-2. The kbc-ui SPA calls `POST /_proxy/kai-preview/embed-token` with a valid
+2. The kbc-ui SPA calls `POST /_proxy/kai-preview/handshake-token` with a valid
    Storage API token in the `X-StorageApi-Token` header.
 
 When `spec.devMode.enabled` is `false` (or absent) every kai-preview endpoint
@@ -33,12 +33,12 @@ apps that do not have dev-mode enabled.
 
 | Endpoint | Method | Auth | Notes |
 |---|---|---|---|
-| `/_proxy/kai-preview/embed-token` | `POST` | `X-StorageApi-Token` header (CORS) | Mint a 60 s handshake JWT after verifying the STA token against Storage API |
+| `/_proxy/kai-preview/handshake-token` | `POST` | `X-StorageApi-Token` header (CORS) | Mint a 60 s handshake JWT after verifying the STA token against Storage API |
 | `/_proxy/kai-preview/bootstrap`   | `GET`  | none | Return the postMessage handshake shim HTML; sets `Content-Security-Policy: frame-ancestors <allowed-origins>` |
 | `/_proxy/kai-preview/exchange`    | `POST` | JWT in JSON body `{"token":"..."}` | Verify handshake JWT, set the `kbc-kai-preview-session` session cookie |
 | `/_proxy/kai-preview/refresh`     | `POST` | session cookie (CORS) | Re-mint and slide the session cookie; returns `204 No Content` |
 
-**CORS note.** `embed-token` and `refresh` enforce an origin allowlist
+**CORS note.** `handshake-token` and `refresh` enforce an origin allowlist
 (`kaiPreview.allowedOrigins`). Requests from origins not in the list are
 rejected with `403` before any business logic runs. `bootstrap` and `exchange` are
 not cross-origin calls (they are frame navigations / same-origin fetch from inside
@@ -55,8 +55,8 @@ the frame).
 | `kaiPreview.handshakeSigningKey` | *(required)* | HMAC-SHA256 key for the 60 s handshake JWT |
 | `kaiPreview.sessionSigningKey`   | *(required)* | HMAC-SHA256 key for the session cookie JWT |
 | `kaiPreview.sessionTTL`          | `4h`          | Sliding session cookie lifetime |
-| `kaiPreview.allowedOrigins`      | *(required)* | Origins permitted to call `embed-token` and `refresh`, e.g. `https://connection.keboola.com` |
-| `storageApiUrl`                  | `https://connection.keboola.com` | Storage API base URL used to verify STA tokens in `embed-token` |
+| `kaiPreview.allowedOrigins`      | *(required)* | Origins permitted to call `handshake-token` and `refresh`, e.g. `https://connection.keboola.com` |
+| `storageApiUrl`                  | `https://connection.keboola.com` | Storage API base URL used to verify STA tokens in `handshake-token` |
 
 ### 4.2 Provisioning new signing keys
 
@@ -88,7 +88,7 @@ Incoming request
 ├─2─ App has dev-mode enabled?
 │     │
 │     ├─ YES + path starts with /_proxy/kai-preview/*
-│     │       └─ kai-preview composite handler (embed-token / bootstrap / exchange / refresh)
+│     │       └─ kai-preview composite handler (handshake-token / bootstrap / exchange / refresh)
 │     │
 │     ├─ YES + request has a valid kbc-kai-preview-session cookie
 │     │       └─ forward to upstream app
@@ -113,7 +113,7 @@ All JWTs (both handshake and session cookie) are **stateless HMAC**. There is no
 shared cache, Redis, or database involved. Any replica that holds the same signing
 key can verify a token minted by any other replica. This means:
 
-- Mint (`embed-token`) and exchange can land on different replicas — no affinity
+- Mint (`handshake-token`) and exchange can land on different replicas — no affinity
   required.
 - Cookie validation is fully per-request and stateless — works identically across
   all replicas.
@@ -156,16 +156,16 @@ APPS_PROXY_STORAGE_API_URL="https://connection.keboola.com" \
 
 Expected: proxy starts, logs `kai-preview enabled` (or similar), no startup errors.
 
-### 7.2 Mint an embed token
+### 7.2 Mint a handshake token
 
 ```bash
-EMBED_TOKEN=$(curl -s -X POST "https://${APP_HOST}/_proxy/kai-preview/embed-token" \
+HANDSHAKE_TOKEN=$(curl -s -X POST "https://${APP_HOST}/_proxy/kai-preview/handshake-token" \
   -H "Origin: ${IDE_ORIGIN}" \
   -H "X-StorageApi-Token: ${STA_TOKEN}" \
   -H "Content-Type: application/json" \
   | jq -r '.token')
 
-echo "embed token: ${EMBED_TOKEN}"
+echo "handshake token: ${HANDSHAKE_TOKEN}"
 ```
 
 **Expected:**
@@ -200,7 +200,7 @@ handshake.
 ```bash
 SESSION_COOKIE=$(curl -s -c - -X POST "https://${APP_HOST}/_proxy/kai-preview/exchange" \
   -H "Content-Type: application/json" \
-  -d "{\"token\":\"${EMBED_TOKEN}\"}" \
+  -d "{\"token\":\"${HANDSHAKE_TOKEN}\"}" \
   -D - \
   | grep -i 'set-cookie')
 
@@ -224,7 +224,7 @@ Save the cookie for subsequent steps:
 curl -s -c /tmp/kai-preview-cookies.txt -X POST \
   "https://${APP_HOST}/_proxy/kai-preview/exchange" \
   -H "Content-Type: application/json" \
-  -d "{\"token\":\"${EMBED_TOKEN}\"}" > /dev/null
+  -d "{\"token\":\"${HANDSHAKE_TOKEN}\"}" > /dev/null
 ```
 
 ### 7.5 Make an authenticated request using the session cookie
@@ -267,7 +267,7 @@ Then re-run the mint step:
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}" \
-  -X POST "https://${APP_HOST}/_proxy/kai-preview/embed-token" \
+  -X POST "https://${APP_HOST}/_proxy/kai-preview/handshake-token" \
   -H "Origin: ${IDE_ORIGIN}" \
   -H "X-StorageApi-Token: ${STA_TOKEN}"
 ```
@@ -293,7 +293,7 @@ kubectl rollout status deployment/apps-proxy -n <apps-namespace>
 Mint a token (this will land on an arbitrary replica):
 
 ```bash
-EMBED_TOKEN=$(curl -s -X POST "https://${APP_HOST}/_proxy/kai-preview/embed-token" \
+HANDSHAKE_TOKEN=$(curl -s -X POST "https://${APP_HOST}/_proxy/kai-preview/handshake-token" \
   -H "Origin: ${IDE_ORIGIN}" \
   -H "X-StorageApi-Token: ${STA_TOKEN}" \
   | jq -r '.token')
@@ -305,7 +305,7 @@ Exchange it (may land on a different replica due to load-balancer round-robin):
 curl -s -c /tmp/kai-preview-cookies-mr.txt \
   -X POST "https://${APP_HOST}/_proxy/kai-preview/exchange" \
   -H "Content-Type: application/json" \
-  -d "{\"token\":\"${EMBED_TOKEN}\"}" \
+  -d "{\"token\":\"${HANDSHAKE_TOKEN}\"}" \
   -o /dev/null -w "%{http_code}\n"
 ```
 

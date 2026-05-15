@@ -21,7 +21,7 @@ type DevModeChecker interface {
 	IsDevMode(ctx context.Context, appID string) bool
 }
 
-type EmbedTokenDeps struct {
+type HandshakeTokenDeps struct {
 	Clock        clockwork.Clock
 	STA          STATokenVerifier
 	DevMode      DevModeChecker
@@ -31,15 +31,15 @@ type EmbedTokenDeps struct {
 	AppProjectID string
 }
 
-type EmbedTokenHandler struct {
-	deps EmbedTokenDeps
+type HandshakeTokenHandler struct {
+	deps HandshakeTokenDeps
 }
 
-func NewEmbedTokenHandler(deps EmbedTokenDeps) *EmbedTokenHandler {
-	return &EmbedTokenHandler{deps: deps}
+func NewHandshakeTokenHandler(deps HandshakeTokenDeps) *HandshakeTokenHandler {
+	return &HandshakeTokenHandler{deps: deps}
 }
 
-func (h *EmbedTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Request) error {
+func (h *HandshakeTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Request) error {
 	if h.deps.CORS.HandlePreflight(w, r) {
 		return nil
 	}

@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	purposeHandshake = "kai-preview-embed"
+	purposeHandshake = "kai-preview-handshake"
 	purposeSession   = "kai-preview-session"
 	handshakeTTL     = 60 * time.Second
 )

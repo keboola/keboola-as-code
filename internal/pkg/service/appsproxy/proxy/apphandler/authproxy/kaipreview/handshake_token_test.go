@@ -35,14 +35,14 @@ type stubErr struct{ msg string }
 
 func (e *stubErr) Error() string { return e.msg }
 
-func newTestEmbedHandler(staOK bool, staProject string, devMode bool) *EmbedTokenHandler {
+func newTestHandshakeHandler(staOK bool, staProject string, devMode bool) *HandshakeTokenHandler {
 	var sta STATokenVerifier
 	if staOK {
 		sta = &stubSTAVerifier{projectID: staProject}
 	} else {
 		sta = &stubSTAVerifier{err: errStubUnauth}
 	}
-	return NewEmbedTokenHandler(EmbedTokenDeps{
+	return NewHandshakeTokenHandler(HandshakeTokenDeps{
 		Clock:        clockwork.NewFakeClock(),
 		STA:          sta,
 		DevMode:      &stubDevModeChecker{devMode: devMode},
@@ -53,11 +53,11 @@ func newTestEmbedHandler(staOK bool, staProject string, devMode bool) *EmbedToke
 	})
 }
 
-func TestEmbedTokenHandler_Success(t *testing.T) {
+func TestHandshakeTokenHandler_Success(t *testing.T) {
 	t.Parallel()
-	h := newTestEmbedHandler(true, "proj-456", true)
+	h := newTestHandshakeHandler(true, "proj-456", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "valid-token")
 	w := httptest.NewRecorder()
@@ -74,11 +74,11 @@ func TestEmbedTokenHandler_Success(t *testing.T) {
 	require.NotEmpty(t, body.Token)
 }
 
-func TestEmbedTokenHandler_PreflightOptions(t *testing.T) {
+func TestHandshakeTokenHandler_PreflightOptions(t *testing.T) {
 	t.Parallel()
-	h := newTestEmbedHandler(true, "proj-456", true)
+	h := newTestHandshakeHandler(true, "proj-456", true)
 
-	r := httptest.NewRequest(http.MethodOptions, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodOptions, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("Access-Control-Request-Method", "POST")
 	w := httptest.NewRecorder()
@@ -88,11 +88,11 @@ func TestEmbedTokenHandler_PreflightOptions(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, w.Code)
 }
 
-func TestEmbedTokenHandler_MissingSTAHeader(t *testing.T) {
+func TestHandshakeTokenHandler_MissingSTAHeader(t *testing.T) {
 	t.Parallel()
-	h := newTestEmbedHandler(true, "proj-456", true)
+	h := newTestHandshakeHandler(true, "proj-456", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	w := httptest.NewRecorder()
 
@@ -103,11 +103,11 @@ func TestEmbedTokenHandler_MissingSTAHeader(t *testing.T) {
 		"auth-failure responses to allowed origins must include CORS headers so SPA can read status")
 }
 
-func TestEmbedTokenHandler_STAInvalid(t *testing.T) {
+func TestHandshakeTokenHandler_STAInvalid(t *testing.T) {
 	t.Parallel()
-	h := newTestEmbedHandler(false, "", true)
+	h := newTestHandshakeHandler(false, "", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "bad-token")
 	w := httptest.NewRecorder()
@@ -119,11 +119,11 @@ func TestEmbedTokenHandler_STAInvalid(t *testing.T) {
 		"auth-failure responses to allowed origins must include CORS headers so SPA can read status")
 }
 
-func TestEmbedTokenHandler_WrongProject(t *testing.T) {
+func TestHandshakeTokenHandler_WrongProject(t *testing.T) {
 	t.Parallel()
-	h := newTestEmbedHandler(true, "different-project", true)
+	h := newTestHandshakeHandler(true, "different-project", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "valid-but-wrong-project")
 	w := httptest.NewRecorder()
@@ -135,11 +135,11 @@ func TestEmbedTokenHandler_WrongProject(t *testing.T) {
 		"auth-failure responses to allowed origins must include CORS headers so SPA can read status")
 }
 
-func TestEmbedTokenHandler_AppNotInDevMode(t *testing.T) {
+func TestHandshakeTokenHandler_AppNotInDevMode(t *testing.T) {
 	t.Parallel()
-	h := newTestEmbedHandler(true, "proj-456", false)
+	h := newTestHandshakeHandler(true, "proj-456", false)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "valid-token")
 	w := httptest.NewRecorder()
@@ -149,11 +149,11 @@ func TestEmbedTokenHandler_AppNotInDevMode(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code, "must look like the endpoint doesn't exist when app isn't in dev mode")
 }
 
-func TestEmbedTokenHandler_DisallowedOrigin(t *testing.T) {
+func TestHandshakeTokenHandler_DisallowedOrigin(t *testing.T) {
 	t.Parallel()
-	h := newTestEmbedHandler(true, "proj-456", true)
+	h := newTestHandshakeHandler(true, "proj-456", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://evil.example.com")
 	r.Header.Set("X-StorageApi-Token", "valid-token")
 	w := httptest.NewRecorder()
@@ -165,10 +165,10 @@ func TestEmbedTokenHandler_DisallowedOrigin(t *testing.T) {
 		"disallowed origins must NOT receive CORS headers")
 }
 
-func TestEmbedTokenHandler_WrongMethod(t *testing.T) {
+func TestHandshakeTokenHandler_WrongMethod(t *testing.T) {
 	t.Parallel()
-	h := newTestEmbedHandler(true, "proj-456", true)
-	r := httptest.NewRequest(http.MethodGet, "/_proxy/kai-preview/embed-token", nil)
+	h := newTestHandshakeHandler(true, "proj-456", true)
+	r := httptest.NewRequest(http.MethodGet, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	w := httptest.NewRecorder()
 
@@ -177,11 +177,11 @@ func TestEmbedTokenHandler_WrongMethod(t *testing.T) {
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
-func TestEmbedTokenHandler_NoTokenInErrorBody(t *testing.T) {
+func TestHandshakeTokenHandler_NoTokenInErrorBody(t *testing.T) {
 	t.Parallel()
-	h := newTestEmbedHandler(false, "", true)
+	h := newTestHandshakeHandler(false, "", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/embed-token", nil)
+	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "secret-token-do-not-leak")
 	w := httptest.NewRecorder()
