@@ -37,9 +37,10 @@ type Dispatcher struct {
 }
 
 type sourceData struct {
-	sourceKey key.SourceKey
-	enabled   bool
-	secret    string
+	sourceKey  key.SourceKey
+	sourceType definition.SourceType
+	enabled    bool
+	secret     string
 }
 
 type dependencies interface {
@@ -77,9 +78,10 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 					secret = source.OTLP.Secret
 				}
 				return &sourceData{
-					sourceKey: source.SourceKey,
-					enabled:   source.IsEnabled(),
-					secret:    secret,
+					sourceKey:  source.SourceKey,
+					sourceType: source.Type,
+					enabled:    source.IsEnabled(),
+					secret:     secret,
 				}
 			},
 		).
@@ -97,9 +99,9 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 }
 
 // ValidateSource checks that projectID/sourceID/secret refer to an active source
-// without dispatching any record. Used to authenticate empty OTLP batches which
-// otherwise would bypass the secret check.
-func (d *Dispatcher) ValidateSource(projectID keboola.ProjectID, sourceID key.SourceID, secret string) error {
+// of the given expected type, without dispatching any record. Used to authenticate
+// empty OTLP batches which otherwise would bypass the secret check.
+func (d *Dispatcher) ValidateSource(projectID keboola.ProjectID, sourceID key.SourceID, secret string, expectedType definition.SourceType) error {
 	d.wg.Add(1)
 	defer d.wg.Done()
 
@@ -107,11 +109,11 @@ func (d *Dispatcher) ValidateSource(projectID keboola.ProjectID, sourceID key.So
 		return ShutdownError{}
 	}
 
-	_, err := d.lookupSources(projectID, sourceID, secret)
+	_, err := d.lookupSources(projectID, sourceID, secret, expectedType)
 	return err
 }
 
-func (d *Dispatcher) Dispatch(projectID keboola.ProjectID, sourceID key.SourceID, secret string, c recordctx.Context) (*sinkRouter.SourcesResult, error) {
+func (d *Dispatcher) Dispatch(projectID keboola.ProjectID, sourceID key.SourceID, secret string, expectedType definition.SourceType, c recordctx.Context) (*sinkRouter.SourcesResult, error) {
 	d.wg.Add(1)
 	defer d.wg.Done()
 
@@ -120,7 +122,7 @@ func (d *Dispatcher) Dispatch(projectID keboola.ProjectID, sourceID key.SourceID
 		return nil, ShutdownError{}
 	}
 
-	matchedSources, err := d.lookupSources(projectID, sourceID, secret)
+	matchedSources, err := d.lookupSources(projectID, sourceID, secret, expectedType)
 	if err != nil {
 		return nil, err
 	}
@@ -129,14 +131,20 @@ func (d *Dispatcher) Dispatch(projectID keboola.ProjectID, sourceID key.SourceID
 	return d.sinkRouter.DispatchToSources(matchedSources, c), nil
 }
 
-// lookupSources returns all enabled source keys matching projectID/sourceID/secret.
-func (d *Dispatcher) lookupSources(projectID keboola.ProjectID, sourceID key.SourceID, secret string) ([]key.SourceKey, error) {
+// lookupSources returns all enabled source keys matching projectID/sourceID/secret
+// AND the expected source type — so an HTTP secret cannot be used to authenticate
+// to /otlp/... endpoints and vice versa.
+func (d *Dispatcher) lookupSources(projectID keboola.ProjectID, sourceID key.SourceID, secret string, expectedType definition.SourceType) ([]key.SourceKey, error) {
 	// Get all relevant sources from all branches
 	disabled := 0
 	var matchedSources []key.SourceKey
 	d.sources.WalkPrefix(sourceKeyPrefix(projectID, sourceID), func(key string, source *sourceData) (stop bool) {
 		// Secret is now immutable and should be the same in all branches.
 		// If in the future we would allow secret to be regenerated in the main/dev branch, it will still work correctly.
+		// The source type must also match — the secret is namespaced by transport.
+		if source.sourceType != expectedType {
+			return false
+		}
 		if source.secret == secret {
 			if source.enabled {
 				matchedSources = append(matchedSources, source.sourceKey)
