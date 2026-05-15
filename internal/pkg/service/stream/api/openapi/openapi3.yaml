@@ -111,6 +111,8 @@ paths:
                                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                       otlp:
                                         url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                                        baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+                                        secret: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                       version:
                                         number: 3
                                         hash: f43e93acd97eceb3
@@ -346,6 +348,8 @@ paths:
                                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                       otlp:
                                         url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                                        baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+                                        secret: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                       version:
                                         number: 3
                                         hash: f43e93acd97eceb3
@@ -561,6 +565,8 @@ paths:
                                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                 otlp:
                                     url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                                    baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+                                    secret: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                 version:
                                     number: 3
                                     hash: f43e93acd97eceb3
@@ -2550,7 +2556,22 @@ paths:
             tags:
                 - test
             summary: Test source payload mapping
-            description: Tests configured mapping of the source and its sinks.
+            description: |-
+                Tests configured mapping of the source and its sinks against an example request body.
+
+                For HTTP sources the body is the raw payload that an HTTP client would send (treated as a single record).
+
+                For OTLP sources the body must be a single **flattened OTLP record** — a JSON object with the same shape that the source produces internally for each log record, metric data point, or span. Example flattened log record:
+                ```json
+                {
+                  "timestamp": "2024-01-15T10:30:00Z",
+                  "body": "User logged in",
+                  "severity_text": "INFO",
+                  "attr.user.id": "user-123",
+                  "resource.service.name": "auth-service"
+                }
+                ```
+                Do not send a raw OTLP protobuf or the multi-record envelope produced by an OTel SDK — the test endpoint intentionally evaluates one already-flattened record so the response is deterministic.
             operationId: TestSource
             parameters:
                 - name: branchId
@@ -2963,6 +2984,8 @@ paths:
                                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                       otlp:
                                         url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                                        baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+                                        secret: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                                       version:
                                         number: 3
                                         hash: f43e93acd97eceb3
@@ -3098,8 +3121,12 @@ components:
                     type: array
                     items:
                         type: string
-                        example: abc123
-                    description: 'Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Valid values: "logs", "metrics", "traces". Only relevant for OTLP sources; HTTP sources ignore this field.'
+                        example: metrics
+                        enum:
+                            - logs
+                            - metrics
+                            - traces
+                    description: Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
                     example:
                         - logs
                 branchId:
@@ -3493,6 +3520,8 @@ components:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                 otlp:
                     url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                    baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+                    secret: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                 version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -3686,6 +3715,8 @@ components:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                   otlp:
                     url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                    baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+                    secret: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -3917,6 +3948,8 @@ components:
                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                       otlp:
                         url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                        baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+                        secret: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -4206,8 +4239,12 @@ components:
                     type: array
                     items:
                         type: string
-                        example: abc123
-                    description: 'Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Valid values: "logs", "metrics", "traces". Only relevant for OTLP sources; HTTP sources ignore this field.'
+                        example: metrics
+                        enum:
+                            - logs
+                            - metrics
+                            - traces
+                    description: Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
                     example:
                         - logs
                 branchId:
@@ -4290,8 +4327,12 @@ components:
                     type: array
                     items:
                         type: string
-                        example: abc123
-                    description: 'Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Valid values: "logs", "metrics", "traces". Only relevant for OTLP sources; HTTP sources ignore this field.'
+                        example: metrics
+                        enum:
+                            - logs
+                            - metrics
+                            - traces
+                    description: Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
                     example:
                         - logs
                 description:
@@ -4837,15 +4878,27 @@ components:
         OTLPSource:
             type: object
             properties:
+                baseUrl:
+                    type: string
+                    description: 'Endpoint URL without the secret. Use this together with the `secret` field via the `Authorization: Bearer <secret>` header so the secret stays out of access/CDN/APM logs. The OpenTelemetry SDK appends /v1/logs, /v1/metrics, or /v1/traces automatically.'
+                    example: https://stream-in.keboola.com/otlp/123/my-source
+                secret:
+                    type: string
+                    description: '48-character secret authenticating writes to this source. Send it as `Authorization: Bearer <secret>` to the `baseUrl`.'
+                    example: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                 url:
                     type: string
-                    description: Base endpoint URL for the OTLP source. Configure this as the endpoint in your OpenTelemetry SDK. The SDK automatically appends /v1/logs, /v1/metrics, or /v1/traces.
+                    description: Endpoint URL with the secret embedded as the last path segment. Convenient for SDKs that authenticate by URL only. The OpenTelemetry SDK automatically appends /v1/logs, /v1/metrics, or /v1/traces based on the signal type — do not append a signal path yourself. Most SDK exporters reject or silently strip the suffix.
                     example: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
             description: OTLP/HTTP source details for "type" = "otlp".
             example:
                 url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+                secret: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
             required:
                 - url
+                - baseUrl
+                - secret
         PaginatedResponse:
             type: object
             properties:
@@ -5011,8 +5064,12 @@ components:
                     type: array
                     items:
                         type: string
-                        example: abc123
-                    description: 'Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Valid values: "logs", "metrics", "traces". Only relevant for OTLP sources; HTTP sources ignore this field.'
+                        example: metrics
+                        enum:
+                            - logs
+                            - metrics
+                            - traces
+                    description: Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
                     example:
                         - logs
                 branchId:
@@ -5732,6 +5789,8 @@ components:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                 otlp:
                     url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                    baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+                    secret: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                 version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -5849,6 +5908,8 @@ components:
                     url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                   otlp:
                     url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                    baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+                    secret: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                   version:
                     number: 3
                     hash: f43e93acd97eceb3
@@ -5922,6 +5983,8 @@ components:
                         url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                       otlp:
                         url: https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                        baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+                        secret: G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
                       version:
                         number: 3
                         hash: f43e93acd97eceb3
@@ -6466,8 +6529,12 @@ components:
                     type: array
                     items:
                         type: string
-                        example: abc123
-                    description: 'Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Valid values: "logs", "metrics", "traces". Only relevant for OTLP sources; HTTP sources ignore this field.'
+                        example: metrics
+                        enum:
+                            - logs
+                            - metrics
+                            - traces
+                    description: Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
                     example:
                         - logs
                 branchId:
@@ -6554,8 +6621,12 @@ components:
                     type: array
                     items:
                         type: string
-                        example: abc123
-                    description: 'Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Valid values: "logs", "metrics", "traces". Only relevant for OTLP sources; HTTP sources ignore this field.'
+                        example: metrics
+                        enum:
+                            - logs
+                            - metrics
+                            - traces
+                    description: Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
                     example:
                         - logs
                 changeDescription:

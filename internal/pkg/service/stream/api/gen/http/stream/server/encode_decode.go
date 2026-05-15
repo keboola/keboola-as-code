@@ -3639,7 +3639,9 @@ func marshalStreamOTLPSourceToOTLPSourceResponseBody(v *stream.OTLPSource) *OTLP
 		return nil
 	}
 	res := &OTLPSourceResponseBody{
-		URL: v.URL,
+		URL:     v.URL,
+		BaseURL: v.BaseURL,
+		Secret:  v.Secret,
 	}
 
 	return res

@@ -46,7 +46,27 @@ type Service interface {
 	GetSourceSettings(context.Context, dependencies.SourceRequestScope, *GetSourceSettingsPayload) (res *SettingsResult, err error)
 	// Update source settings.
 	UpdateSourceSettings(context.Context, dependencies.SourceRequestScope, *UpdateSourceSettingsPayload) (res *Task, err error)
-	// Tests configured mapping of the source and its sinks.
+	// Tests configured mapping of the source and its sinks against an example
+	// request body.
+
+	// For HTTP sources the body is the raw payload that an HTTP client would send
+	// (treated as a single record).
+
+	// For OTLP sources the body must be a single **flattened OTLP record** — a
+	// JSON object with the same shape that the source produces internally for each
+	// log record, metric data point, or span. Example flattened log record:
+	// ```json
+	// {
+	// "timestamp": "2024-01-15T10:30:00Z",
+	// "body": "User logged in",
+	// "severity_text": "INFO",
+	// "attr.user.id": "user-123",
+	// "resource.service.name": "auth-service"
+	// }
+	// ```
+	// Do not send a raw OTLP protobuf or the multi-record envelope produced by an
+	// OTel SDK — the test endpoint intentionally evaluates one already-flattened
+	// record so the response is deterministic.
 	TestSource(context.Context, dependencies.SourceRequestScope, *TestSourcePayload, io.ReadCloser) (res *TestResult, err error)
 	// Clears all statistics of the source.
 	SourceStatisticsClear(context.Context, dependencies.SourceRequestScope, *SourceStatisticsClearPayload) (err error)
@@ -136,8 +156,7 @@ type AggregatedSink struct {
 	// Description of the source.
 	Description string
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
-	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
-	// OTLP sources; HTTP sources ignore this field.
+	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
 	AllowedSignals []string
 	Table          *TableSink
 	Version        *Version
@@ -234,8 +253,7 @@ type CreateSinkPayload struct {
 	// Description of the source.
 	Description *string
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
-	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
-	// OTLP sources; HTTP sources ignore this field.
+	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
 	AllowedSignals []string
 	Table          *TableSinkCreate
 }
@@ -485,10 +503,20 @@ type ListSourcesPayload struct {
 
 // OTLP/HTTP source details for "type" = "otlp".
 type OTLPSource struct {
-	// Base endpoint URL for the OTLP source. Configure this as the endpoint in
-	// your OpenTelemetry SDK. The SDK automatically appends /v1/logs, /v1/metrics,
-	// or /v1/traces.
+	// Endpoint URL with the secret embedded as the last path segment. Convenient
+	// for SDKs that authenticate by URL only. The OpenTelemetry SDK automatically
+	// appends /v1/logs, /v1/metrics, or /v1/traces based on the signal type — do
+	// not append a signal path yourself. Most SDK exporters reject or silently
+	// strip the suffix.
 	URL string
+	// Endpoint URL without the secret. Use this together with the `secret` field
+	// via the `Authorization: Bearer <secret>` header so the secret stays out of
+	// access/CDN/APM logs. The OpenTelemetry SDK appends /v1/logs, /v1/metrics, or
+	// /v1/traces automatically.
+	BaseURL string
+	// 48-character secret authenticating writes to this source. Send it as
+	// `Authorization: Bearer <secret>` to the `baseUrl`.
+	Secret string
 }
 
 type PaginatedResponse struct {
@@ -583,8 +611,7 @@ type Sink struct {
 	// Description of the source.
 	Description string
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
-	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
-	// OTLP sources; HTTP sources ignore this field.
+	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
 	AllowedSignals []string
 	Table          *TableSink
 	Version        *Version
@@ -908,8 +935,7 @@ type UpdateSinkPayload struct {
 	// Description of the source.
 	Description *string
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
-	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
-	// OTLP sources; HTTP sources ignore this field.
+	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
 	AllowedSignals []string
 	Table          *TableSinkUpdate
 }

@@ -296,7 +296,22 @@ var _ = Service("stream", func() {
 
 	Method("TestSource", func() {
 		Meta("openapi:summary", "Test source payload mapping")
-		Description("Tests configured mapping of the source and its sinks.")
+		Description("Tests configured mapping of the source and its sinks against an example request body.\n\n" +
+			"For HTTP sources the body is the raw payload that an HTTP client would send (treated as a single record).\n\n" +
+			"For OTLP sources the body must be a single **flattened OTLP record** — a JSON object with the same shape that " +
+			"the source produces internally for each log record, metric data point, or span. " +
+			"Example flattened log record:\n" +
+			"```json\n" +
+			"{\n" +
+			"  \"timestamp\": \"2024-01-15T10:30:00Z\",\n" +
+			"  \"body\": \"User logged in\",\n" +
+			"  \"severity_text\": \"INFO\",\n" +
+			"  \"attr.user.id\": \"user-123\",\n" +
+			"  \"resource.service.name\": \"auth-service\"\n" +
+			"}\n" +
+			"```\n" +
+			"Do not send a raw OTLP protobuf or the multi-record envelope produced by an OTel SDK — the test endpoint " +
+			"intentionally evaluates one already-flattened record so the response is deterministic.")
 		Result(TestResult)
 		Payload(TestSourceRequest)
 		HTTP(func() {
@@ -1111,10 +1126,23 @@ var HTTPSource = Type("HTTPSource", func() {
 var OTLPSource = Type("OTLPSource", func() {
 	Description(fmt.Sprintf(`OTLP/HTTP source details for "type" = "%s".`, definition.SourceTypeOTLP))
 	Attribute("url", String, func() {
-		Description("Base endpoint URL for the OTLP source. Configure this as the endpoint in your OpenTelemetry SDK. The SDK automatically appends /v1/logs, /v1/metrics, or /v1/traces.")
+		Description("Endpoint URL with the secret embedded as the last path segment. " +
+			"Convenient for SDKs that authenticate by URL only. " +
+			"The OpenTelemetry SDK automatically appends /v1/logs, /v1/metrics, or /v1/traces based on the signal type — " +
+			"do not append a signal path yourself. Most SDK exporters reject or silently strip the suffix.")
 		Example("https://stream-in.keboola.com/otlp/123/my-source/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb")
 	})
-	Required("url")
+	Attribute("baseUrl", String, func() {
+		Description("Endpoint URL without the secret. Use this together with the `secret` field via the " +
+			"`Authorization: Bearer <secret>` header so the secret stays out of access/CDN/APM logs. " +
+			"The OpenTelemetry SDK appends /v1/logs, /v1/metrics, or /v1/traces automatically.")
+		Example("https://stream-in.keboola.com/otlp/123/my-source")
+	})
+	Attribute("secret", String, func() {
+		Description("48-character secret authenticating writes to this source. Send it as `Authorization: Bearer <secret>` to the `baseUrl`.")
+		Example("G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb")
+	})
+	Required("url", "baseUrl", "secret")
 })
 
 // Sink ----------------------------------------------------------------------------------------------------------------
@@ -1326,10 +1354,11 @@ var SinkFields = func(op OperationType) {
 		Example("The sink stores records to a table.")
 	})
 
-	Attribute("allowedSignals", ArrayOf(String), func() {
+	Attribute("allowedSignals", ArrayOf(String, func() {
+		Enum("logs", "metrics", "traces")
+	}), func() {
 		Description(`Restricts the sink to specific OTLP signal types. ` +
 			`Empty (default) accepts all signals. ` +
-			`Valid values: "logs", "metrics", "traces". ` +
 			`Only relevant for OTLP sources; HTTP sources ignore this field.`)
 		Example([]string{"logs"})
 	})
