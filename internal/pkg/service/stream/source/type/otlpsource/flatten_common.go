@@ -2,11 +2,25 @@ package otlpsource
 
 import (
 	"encoding/base64"
+	"math"
 	"time"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
+
+// uint64ToInt64Saturating converts a uint64 to int64 by clamping any value
+// above math.MaxInt64 to math.MaxInt64. OTLP cumulative counts (histogram /
+// summary / data-point counts) are unsigned 64-bit and could theoretically
+// exceed the signed range; in practice no production metric will, but
+// silently wrapping into negative numbers would corrupt the flattened record.
+// Saturation keeps the value as close to truth as the signed encoding allows.
+func uint64ToInt64Saturating(v uint64) int64 {
+	if v > math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return int64(v)
+}
 
 // FlatRecord is a single flattened OTLP record (one log record, one metric data
 // point, or one span) ready to be wrapped in a recordctx.Context.
@@ -81,11 +95,11 @@ func makeScopeMap(scope pcommon.InstrumentationScope) *orderedmap.OrderedMap {
 // uint64SliceToAny converts []uint64 to []any holding int64 values.
 // go-jsonnet's jsonToValue only accepts []interface{} for slices, and
 // only handles signed integer types — uint32/uint64 hit the default
-// "Not a json type" branch.
+// "Not a json type" branch. Values above math.MaxInt64 are saturated.
 func uint64SliceToAny(s []uint64) []any {
 	out := make([]any, len(s))
 	for i, v := range s {
-		out[i] = int64(v) //nolint:gosec
+		out[i] = uint64ToInt64Saturating(v)
 	}
 	return out
 }

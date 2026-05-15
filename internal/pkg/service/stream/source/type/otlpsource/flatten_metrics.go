@@ -95,7 +95,7 @@ func flattenHistogramPoints(
 		rec := newMetricBase(name, desc, unit, "histogram", resourceAttrs, scopeMap)
 		setDPTimestamps(rec, pt.StartTimestamp(), pt.Timestamp())
 		rec.Set("attributes", attributesToMap(pt.Attributes()))
-		rec.Set("count", int64(pt.Count())) //nolint:gosec
+		rec.Set("count", uint64ToInt64Saturating(pt.Count()))
 		if pt.HasSum() {
 			rec.Set("sum", pt.Sum())
 		}
@@ -125,7 +125,7 @@ func flattenExpHistogramPoints(
 		rec := newMetricBase(name, desc, unit, "exponential_histogram", resourceAttrs, scopeMap)
 		setDPTimestamps(rec, pt.StartTimestamp(), pt.Timestamp())
 		rec.Set("attributes", attributesToMap(pt.Attributes()))
-		rec.Set("count", int64(pt.Count())) //nolint:gosec
+		rec.Set("count", uint64ToInt64Saturating(pt.Count()))
 		if pt.HasSum() {
 			rec.Set("sum", pt.Sum())
 		}
@@ -136,7 +136,7 @@ func flattenExpHistogramPoints(
 			rec.Set("max", pt.Max())
 		}
 		rec.Set("scale", int64(pt.Scale()))
-		rec.Set("zero_count", int64(pt.ZeroCount())) //nolint:gosec
+		rec.Set("zero_count", uint64ToInt64Saturating(pt.ZeroCount()))
 		rec.Set("aggregation_temporality", h.AggregationTemporality().String())
 		out = append(out, FlatRecord{Body: rec})
 	}
@@ -155,7 +155,7 @@ func flattenSummaryPoints(
 		rec := newMetricBase(name, desc, unit, "summary", resourceAttrs, scopeMap)
 		setDPTimestamps(rec, pt.StartTimestamp(), pt.Timestamp())
 		rec.Set("attributes", attributesToMap(pt.Attributes()))
-		rec.Set("count", int64(pt.Count())) //nolint:gosec
+		rec.Set("count", uint64ToInt64Saturating(pt.Count()))
 		rec.Set("sum", pt.Sum())
 
 		qvSlice := pt.QuantileValues()
