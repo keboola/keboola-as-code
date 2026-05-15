@@ -93,6 +93,10 @@ poll_task() {
 }
 
 save_state() {
+  # Create with restrictive perms — OTLP_URL embeds the write secret and the
+  # default umask on shared machines may otherwise leave it readable to others.
+  ( umask 077; : > "${STATE_FILE}" )
+  chmod 600 "${STATE_FILE}"
   cat > "${STATE_FILE}" <<EOF
 # stream-otlp-state.env — $(date -u +%Y-%m-%dT%H:%M:%SZ)
 STREAM_API_HOST="${STREAM_API_HOST}"
@@ -292,7 +296,8 @@ METRICS_COLUMNS=$(cat <<'EOF'
   {"type":"template","name":"quantile_values",         "template":{"language":"jsonnet","content":"Body(\"quantile_values\", [])"}},
   {"type":"template","name":"attributes",              "template":{"language":"jsonnet","content":"Body(\"attributes\", {})"}},
   {"type":"template","name":"resource",                "template":{"language":"jsonnet","content":"Body(\"resource\", {})"}},
-  {"type":"template","name":"scope_name",              "template":{"language":"jsonnet","content":"Body(\"scope\", {})[\"name\"]"}}
+  {"type":"template","name":"scope_name",              "template":{"language":"jsonnet","content":"Body(\"scope\", {})[\"name\"]"}},
+  {"type":"template","name":"scope_version",           "template":{"language":"jsonnet","content":"Body(\"scope\", {})[\"version\"]"}}
 ]
 EOF
 )
