@@ -64,8 +64,7 @@ type CreateSinkRequestBody struct {
 	// Description of the source.
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
-	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
-	// OTLP sources; HTTP sources ignore this field.
+	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
 	AllowedSignals []string                    `form:"allowedSignals,omitempty" json:"allowedSignals,omitempty" xml:"allowedSignals,omitempty"`
 	Table          *TableSinkCreateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
 }
@@ -89,8 +88,7 @@ type UpdateSinkRequestBody struct {
 	// Description of the source.
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
-	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
-	// OTLP sources; HTTP sources ignore this field.
+	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
 	AllowedSignals []string                    `form:"allowedSignals,omitempty" json:"allowedSignals,omitempty" xml:"allowedSignals,omitempty"`
 	Table          *TableSinkUpdateRequestBody `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
 }
@@ -401,8 +399,7 @@ type GetSinkResponseBody struct {
 	// Description of the source.
 	Description string `form:"description" json:"description" xml:"description"`
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
-	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
-	// OTLP sources; HTTP sources ignore this field.
+	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
 	AllowedSignals []string                    `form:"allowedSignals,omitempty" json:"allowedSignals,omitempty" xml:"allowedSignals,omitempty"`
 	Table          *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
 	Version        *VersionResponseBody        `form:"version" json:"version" xml:"version"`
@@ -1392,10 +1389,20 @@ type HTTPSourceResponseBody struct {
 
 // OTLPSourceResponseBody is used to define fields on response body types.
 type OTLPSourceResponseBody struct {
-	// Base endpoint URL for the OTLP source. Configure this as the endpoint in
-	// your OpenTelemetry SDK. The SDK automatically appends /v1/logs, /v1/metrics,
-	// or /v1/traces.
+	// Endpoint URL with the secret embedded as the last path segment. Convenient
+	// for SDKs that authenticate by URL only. The OpenTelemetry SDK automatically
+	// appends /v1/logs, /v1/metrics, or /v1/traces based on the signal type — do
+	// not append a signal path yourself. Most SDK exporters reject or silently
+	// strip the suffix.
 	URL string `form:"url" json:"url" xml:"url"`
+	// Endpoint URL without the secret. Use this together with the `secret` field
+	// via the `Authorization: Bearer <secret>` header so the secret stays out of
+	// access/CDN/APM logs. The OpenTelemetry SDK appends /v1/logs, /v1/metrics, or
+	// /v1/traces automatically.
+	BaseURL string `form:"baseUrl" json:"baseUrl" xml:"baseUrl"`
+	// 48-character secret authenticating writes to this source. Send it as
+	// `Authorization: Bearer <secret>` to the `baseUrl`.
+	Secret string `form:"secret" json:"secret" xml:"secret"`
 }
 
 // VersionResponseBody is used to define fields on response body types.
@@ -1543,8 +1550,7 @@ type SinkResponseBody struct {
 	// Description of the source.
 	Description string `form:"description" json:"description" xml:"description"`
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
-	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
-	// OTLP sources; HTTP sources ignore this field.
+	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
 	AllowedSignals []string                    `form:"allowedSignals,omitempty" json:"allowedSignals,omitempty" xml:"allowedSignals,omitempty"`
 	Table          *TableSinkResponseBody      `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
 	Version        *VersionResponseBody        `form:"version" json:"version" xml:"version"`
@@ -1629,8 +1635,7 @@ type AggregatedSinkResponseBody struct {
 	// Description of the source.
 	Description string `form:"description" json:"description" xml:"description"`
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
-	// all signals. Valid values: "logs", "metrics", "traces". Only relevant for
-	// OTLP sources; HTTP sources ignore this field.
+	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
 	AllowedSignals []string                          `form:"allowedSignals,omitempty" json:"allowedSignals,omitempty" xml:"allowedSignals,omitempty"`
 	Table          *TableSinkResponseBody            `form:"table,omitempty" json:"table,omitempty" xml:"table,omitempty"`
 	Version        *VersionResponseBody              `form:"version" json:"version" xml:"version"`
@@ -3667,6 +3672,12 @@ func ValidateCreateSinkRequestBody(body *CreateSinkRequestBody, errContext []str
 			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "description"), "."), *body.Description, utf8.RuneCountInString(*body.Description), 4096, false))
 		}
 	}
+	for i, e := range body.AllowedSignals {
+		errContext := append(errContext, fmt.Sprintf(`allowedSignals[%d]`, i))
+		if !(e == "logs" || e == "metrics" || e == "traces") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "allowedSignals[*]"), "."), e, []any{"logs", "metrics", "traces"}))
+		}
+	}
 	if body.Table != nil {
 		if err2 := ValidateTableSinkCreateRequestBody(body.Table, append(errContext, "table")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -3710,6 +3721,12 @@ func ValidateUpdateSinkRequestBody(body *UpdateSinkRequestBody, errContext []str
 	if body.Description != nil {
 		if utf8.RuneCountInString(*body.Description) > 4096 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "description"), "."), *body.Description, utf8.RuneCountInString(*body.Description), 4096, false))
+		}
+	}
+	for i, e := range body.AllowedSignals {
+		errContext := append(errContext, fmt.Sprintf(`allowedSignals[%d]`, i))
+		if !(e == "logs" || e == "metrics" || e == "traces") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "allowedSignals[*]"), "."), e, []any{"logs", "metrics", "traces"}))
 		}
 	}
 	if body.Table != nil {

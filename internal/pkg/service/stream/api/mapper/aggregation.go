@@ -71,16 +71,17 @@ func (m *Mapper) NewAggregationSource(entity definition.Source) (*api.Aggregated
 
 func (m *Mapper) NewAggregationSinkResponse(entity repository.SinkWithStatistics) (*api.AggregatedSink, error) {
 	out := &api.AggregatedSink{
-		ProjectID:   entity.ProjectID,
-		BranchID:    entity.BranchID,
-		SourceID:    entity.SourceID,
-		SinkID:      entity.SinkID,
-		Name:        entity.Name,
-		Description: entity.Description,
-		Created:     m.NewCreatedResponse(entity.Created),
-		Version:     m.NewVersionResponse(entity.Version),
-		Deleted:     m.NewDeletedResponse(entity.SoftDeletable),
-		Disabled:    m.NewDisabledResponse(entity.Switchable),
+		ProjectID:      entity.ProjectID,
+		BranchID:       entity.BranchID,
+		SourceID:       entity.SourceID,
+		SinkID:         entity.SinkID,
+		Name:           entity.Name,
+		Description:    entity.Description,
+		AllowedSignals: entity.AllowedSignals,
+		Created:        m.NewCreatedResponse(entity.Created),
+		Version:        m.NewVersionResponse(entity.Version),
+		Deleted:        m.NewDeletedResponse(entity.SoftDeletable),
+		Disabled:       m.NewDisabledResponse(entity.Switchable),
 	}
 
 	if entity.Statistics.Total != nil {
