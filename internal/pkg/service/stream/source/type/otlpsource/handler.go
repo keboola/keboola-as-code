@@ -97,10 +97,18 @@ func (h *Handler) handle(c *routing.Context, signal string, decode signalDecoder
 		return nil //nolint:nilerr
 	}
 
+	// Authenticate before decompressing/decoding the body so unauthenticated
+	// callers cannot consume decode CPU and so a bad secret consistently
+	// returns 404 instead of a parse-error 400/415.
+	if err := h.dispatcher.ValidateSource(projectID, sourceID, secret, definition.SourceTypeOTLP); err != nil {
+		h.errorHandler(c.RequestCtx, err)
+		return nil //nolint:nilerr
+	}
+
 	enc := DetectEncoding(string(c.Request.Header.Peek("Content-Type")))
 	if enc == EncodingUnsupported {
 		h.errorHandler(c.RequestCtx, svcerrors.NewUnsupportedMediaTypeError(
-			errors.New(`unsupported OTLP content type, expected "application/x-protobuf" or "application/json"`),
+			errors.New(`unsupported OTLP content type, expected "application/x-protobuf", "application/protobuf", or "application/json"`),
 		))
 		return nil
 	}
@@ -119,13 +127,8 @@ func (h *Handler) handle(c *routing.Context, signal string, decode signalDecoder
 		return nil //nolint:nilerr
 	}
 
-	// Empty batches are valid per the OTLP spec, but we still validate the
-	// secret so that an invalid/unknown source gets 404, not a free 200.
+	// Empty batches are valid per the OTLP spec.
 	if len(records) == 0 {
-		if err := h.dispatcher.ValidateSource(projectID, sourceID, secret, definition.SourceTypeOTLP); err != nil {
-			h.errorHandler(c.RequestCtx, err)
-			return nil //nolint:nilerr
-		}
 		h.writeEmptySuccess(c, enc, build)
 		return nil
 	}
@@ -232,7 +235,14 @@ func headersToOrderedMap(reqCtx *fasthttp.RequestCtx) *orderedmap.OrderedMap {
 	out := orderedmap.New()
 	for _, k := range reqCtx.Request.Header.PeekKeys() {
 		key := string(k)
-		out.Set(http.CanonicalHeaderKey(key), string(reqCtx.Request.Header.Peek(key)))
+		canonical := http.CanonicalHeaderKey(key)
+		// Drop Authorization so the bearer secret cannot reach a column
+		// rendered via Header()/headers mapping. The secret has already been
+		// consumed by parseAuthParams.
+		if canonical == "Authorization" {
+			continue
+		}
+		out.Set(canonical, string(reqCtx.Request.Header.Peek(key)))
 	}
 	out.SortKeys(func(keys []string) {
 		sort.Strings(keys)
