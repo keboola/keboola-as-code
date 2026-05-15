@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/dispatcher"
@@ -51,7 +52,7 @@ func DispatchRecords(
 
 	for _, rec := range records {
 		recordCtx := recordctx.FromOTLP(ctx, now, clientIP, headers, rec.Body, signal)
-		sinkResult, routingErr := dp.Dispatch(projectID, sourceID, secret, recordCtx)
+		sinkResult, routingErr := dp.Dispatch(projectID, sourceID, secret, definition.SourceTypeOTLP, recordCtx)
 		recordCtx.ReleaseBuffers()
 
 		var statusCode int

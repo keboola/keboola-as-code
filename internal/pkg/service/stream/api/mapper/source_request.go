@@ -66,7 +66,9 @@ func (m *Mapper) UpdateSourceEntity(entity definition.Source, payload *api.Updat
 		entity.Type = *payload.Type
 	}
 
-	// Type specific updates
+	// Type-specific updates. Only the block matching the active type is kept
+	// so that switching type drops the previous type's stale secret/config and
+	// the persisted entity always carries exactly one type-specific block.
 	switch entity.Type {
 	case definition.SourceTypeHTTP:
 		if entity.HTTP == nil {
@@ -75,6 +77,7 @@ func (m *Mapper) UpdateSourceEntity(entity definition.Source, payload *api.Updat
 		if entity.HTTP.Secret == "" {
 			entity.HTTP.Secret = idgenerator.StreamHTTPSourceSecret()
 		}
+		entity.OTLP = nil
 	case definition.SourceTypeOTLP:
 		if entity.OTLP == nil {
 			entity.OTLP = &definition.OTLPSource{}
@@ -82,6 +85,7 @@ func (m *Mapper) UpdateSourceEntity(entity definition.Source, payload *api.Updat
 		if entity.OTLP.Secret == "" {
 			entity.OTLP.Secret = idgenerator.StreamHTTPSourceSecret()
 		}
+		entity.HTTP = nil
 	default:
 		return definition.Source{}, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, payload.Type.String()))
 	}

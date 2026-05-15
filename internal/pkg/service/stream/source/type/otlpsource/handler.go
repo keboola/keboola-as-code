@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -121,7 +122,7 @@ func (h *Handler) handle(c *routing.Context, signal string, decode signalDecoder
 	// Empty batches are valid per the OTLP spec, but we still validate the
 	// secret so that an invalid/unknown source gets 404, not a free 200.
 	if len(records) == 0 {
-		if err := h.dispatcher.ValidateSource(projectID, sourceID, secret); err != nil {
+		if err := h.dispatcher.ValidateSource(projectID, sourceID, secret, definition.SourceTypeOTLP); err != nil {
 			h.errorHandler(c.RequestCtx, err)
 			return nil //nolint:nilerr
 		}
@@ -215,7 +216,16 @@ func parseAuthParams(c *routing.Context) (keboola.ProjectID, key.SourceID, strin
 	if err != nil {
 		return 0, "", "", svcerrors.NewBadRequestError(errors.Errorf("invalid project ID %q", projectIDStr))
 	}
-	return keboola.ProjectID(projectIDInt), key.SourceID(c.Param("sourceID")), c.Param("secret"), nil
+	// Accept the secret either in the URL path (legacy/curl-friendly form) or in
+	// the Authorization: Bearer header. The header form keeps the secret out of
+	// access logs, CDN logs, and APM URL attributes.
+	secret := c.Param("secret")
+	if secret == "" {
+		if auth := string(c.Request.Header.Peek("Authorization")); strings.HasPrefix(auth, "Bearer ") {
+			secret = strings.TrimPrefix(auth, "Bearer ")
+		}
+	}
+	return keboola.ProjectID(projectIDInt), key.SourceID(c.Param("sourceID")), secret, nil
 }
 
 func headersToOrderedMap(reqCtx *fasthttp.RequestCtx) *orderedmap.OrderedMap {
