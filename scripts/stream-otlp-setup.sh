@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# stream-otlp-setup.sh
+# scripts/stream-otlp-setup.sh
 #
 # Creates an OTLP source + three signal-specific sinks (logs, metrics, traces)
 # on a Keboola Stream stack. Every field from the OTLP flatten step gets its
 # own column so nothing is dropped.
 #
-# State is saved incrementally to ./stream-otlp-state.env after each step so a
-# partial failure can be resumed by re-running the script.
+# State is saved incrementally to ./stream-otlp-state.env (relative to the
+# current working directory) after each step so a partial failure can be
+# resumed by re-running the script.
 #
 # Usage:
 #   export KEBOOLA_TOKEN=<sapi-token>
 #   export KEBOOLA_BRANCH_ID=<branch-id>    # 0 = default
-#   bash stream-otlp-setup.sh
+#   bash scripts/stream-otlp-setup.sh
 #
 # Optional overrides:
 #   STREAM_API_HOST     — defaults to stream.keboola.com
@@ -20,6 +21,18 @@
 #   CLEANUP             — set to "true" to delete the source instead
 
 set -euo pipefail
+
+# Upfront dependency check — the script relies on jq for response parsing,
+# state extraction, and payload construction. Fail fast instead of half-creating
+# resources on a system without it.
+command -v jq &>/dev/null || {
+  echo "  ✗ jq is required but not installed. Install via your package manager (apt, brew, dnf, …)." >&2
+  exit 1
+}
+command -v curl &>/dev/null || {
+  echo "  ✗ curl is required but not installed." >&2
+  exit 1
+}
 
 TOKEN="${KEBOOLA_TOKEN:?Set KEBOOLA_TOKEN}"
 BRANCH_ID="${KEBOOLA_BRANCH_ID:?Set KEBOOLA_BRANCH_ID (0 = default branch)}"
@@ -30,7 +43,7 @@ STATE_FILE="${STATE_FILE:-./stream-otlp-state.env}"
 
 STREAM_API="https://${STREAM_API_HOST}/v1"
 
-pretty()  { command -v jq &>/dev/null && jq . || cat; }
+pretty()  { jq .; }
 header()  { echo; echo "══════════════════════════════════════════════════════"; echo "  $*"; echo "══════════════════════════════════════════════════════"; }
 ok()      { echo "  ✓ $*"; }
 info()    { echo "  → $*"; }
@@ -111,8 +124,23 @@ if [[ "${CLEANUP:-false}" == "true" ]]; then
     "${STREAM_API}/branches/${BRANCH_ID}/sources/${SOURCE_ID}" \
     -H "X-StorageApi-Token: ${TOKEN}")
   http_code=$(tail -1 <<< "${local_raw}")
-  head -n -1 <<< "${local_raw}" | pretty
-  [[ "${http_code}" -lt 400 || "${http_code}" == "404" ]] || fail "Delete failed HTTP ${http_code}"
+  delete_body=$(head -n -1 <<< "${local_raw}")
+  echo "${delete_body}" | pretty
+  # 404 — already gone, treat as success.
+  if [[ "${http_code}" == "404" ]]; then
+    rm -f "${STATE_FILE}"
+    ok "Already deleted"
+    exit 0
+  fi
+  [[ "${http_code}" -lt 400 ]] || fail "Delete failed HTTP ${http_code}"
+  # Source deletion is asynchronous: the API returns 202 with a task URL.
+  # Poll it before removing the state file so a delayed failure can be retried.
+  delete_task_url=$(echo "${delete_body}" | jq -r '.url // empty')
+  if [[ -n "${delete_task_url}" ]]; then
+    info "Polling delete task…"
+    poll_task "${delete_task_url}" > /dev/null
+    ok "Delete task completed"
+  fi
   rm -f "${STATE_FILE}"
   ok "Done"
   exit 0
@@ -125,8 +153,11 @@ header "1. Create OTLP source"
 if [[ -n "${SOURCE_ID}" ]]; then
   ok "Already exists: ${SOURCE_ID} — skipping"
 else
-  api_post "/branches/${BRANCH_ID}/sources" \
-    "{\"name\": \"${SOURCE_NAME}\", \"type\": \"otlp\"}"
+  # Build the payload with jq so SOURCE_NAME values containing quotes, backslashes,
+  # or newlines are escaped correctly. Direct string interpolation would produce
+  # invalid JSON for any non-trivial name.
+  create_payload=$(jq -nc --arg name "${SOURCE_NAME}" '{name: $name, type: "otlp"}')
+  api_post "/branches/${BRANCH_ID}/sources" "${create_payload}"
 
   if [[ "${API_CODE}" == "409" ]]; then
     warn "409 — fetching existing source by name…"
@@ -311,9 +342,14 @@ echo "════════════════════════�
 echo "  Step 1 — Smoke-test the endpoint"
 echo "══════════════════════════════════════════════════════"
 echo
-echo "    bash stream-otlp-send.sh"
+echo "  Send a minimal logs batch with curl (protobuf payload omitted for brevity —"
+echo "  any OTel SDK will produce valid encodings):"
 echo
-echo "  All three signals should return HTTP 200."
+echo "    curl -i -X POST \"${OTLP_URL}/v1/logs\" \\"
+echo "      -H 'Content-Type: application/json' \\"
+echo "      -d '{\"resourceLogs\":[{\"scopeLogs\":[{\"logRecords\":[{\"body\":{\"stringValue\":\"hello\"}}]}]}]}'"
+echo
+echo "  Expect HTTP 200 with an empty/partial-success body."
 echo
 echo "══════════════════════════════════════════════════════"
 echo "  Step 2 — Configure your OTel SDK"
@@ -353,7 +389,7 @@ echo
 echo "  Snowflake:"
 echo "    SELECT datetime, timestamp, severity_text, body,"
 echo "           attributes:\"user.id\"::string AS user_id"
-echo "    FROM IDENTIFIER('${BUCKET//./\".\"}'.logs)"
+echo "    FROM \"${BUCKET}\".\"logs\""
 echo "    ORDER BY datetime DESC LIMIT 20;"
 echo
 echo "  BigQuery:"
@@ -366,4 +402,4 @@ echo "════════════════════════�
 echo "  Tear down"
 echo "══════════════════════════════════════════════════════"
 echo
-echo "    CLEANUP=true bash stream-otlp-setup.sh"
+echo "    CLEANUP=true bash scripts/stream-otlp-setup.sh"
