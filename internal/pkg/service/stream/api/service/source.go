@@ -328,7 +328,7 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 		// when the query parameter is omitted.
 		signal := "logs"
 		if payload != nil && payload.Signal != nil {
-			signal = *payload.Signal
+			signal = string(*payload.Signal)
 		}
 		recordCtx, err = recordctx.FromOTLPTestRequest(ctx, d.Clock().Now(), req, signal)
 		if err != nil {
@@ -345,23 +345,14 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 	return s.mapper.NewTestResultResponse(d.SourceKey(), sinks, recordCtx)
 }
 
-// filterSinksBySignal keeps only sinks whose AllowedSignals accept the given
-// OTLP signal. An empty AllowedSignals (no filter) accepts everything.
+// filterSinksBySignal keeps only sinks whose AcceptsSignal returns true.
+// Delegates to definition.SignalAccepted so the /test endpoint stays in lock
+// step with the runtime router's per-signal dispatch decision.
 func filterSinksBySignal(sinks []definition.Sink, signal string) []definition.Sink {
-	if signal == "" {
-		return sinks
-	}
 	out := make([]definition.Sink, 0, len(sinks))
 	for _, sink := range sinks {
-		if len(sink.AllowedSignals) == 0 {
+		if sink.AcceptsSignal(signal) {
 			out = append(out, sink)
-			continue
-		}
-		for _, allowed := range sink.AllowedSignals {
-			if allowed == signal {
-				out = append(out, sink)
-				break
-			}
 		}
 	}
 	return out

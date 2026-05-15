@@ -23,7 +23,7 @@ func (m *Mapper) NewSinkResponse(entity definition.Sink) (*api.Sink, error) {
 		SinkID:         entity.SinkID,
 		Name:           entity.Name,
 		Description:    entity.Description,
-		AllowedSignals: entity.AllowedSignals,
+		AllowedSignals: stringsToSignals(entity.AllowedSignals),
 		Created:        m.NewCreatedResponse(entity.Created),
 		Version:        m.NewVersionResponse(entity.Version),
 		Deleted:        m.NewDeletedResponse(entity.SoftDeletable),

@@ -1,4 +1,4 @@
-package router
+package router_test
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 )
 
-func TestSinkAcceptsSignal(t *testing.T) {
+func TestSignalAccepted(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
@@ -74,7 +74,7 @@ func TestSinkAcceptsSignal(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.expected, sinkAcceptsSignal(tc.allowed, tc.signal))
+			assert.Equal(t, tc.expected, definition.SignalAccepted(tc.allowed, tc.signal))
 		})
 	}
 }

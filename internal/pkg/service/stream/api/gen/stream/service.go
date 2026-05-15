@@ -167,7 +167,7 @@ type AggregatedSink struct {
 	Description string
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
 	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
-	AllowedSignals []string
+	AllowedSignals []OTLPSignal
 	Table          *TableSink
 	Version        *Version
 	Created        *CreatedEntity
@@ -264,7 +264,7 @@ type CreateSinkPayload struct {
 	Description *string
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
 	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
-	AllowedSignals []string
+	AllowedSignals []OTLPSignal
 	Table          *TableSinkCreate
 }
 
@@ -511,6 +511,9 @@ type ListSourcesPayload struct {
 	Limit int
 }
 
+// OTLP signal type — one of logs, metrics, or traces.
+type OTLPSignal string
+
 // OTLP/HTTP source details for "type" = "otlp".
 type OTLPSource struct {
 	// Endpoint URL with the secret embedded as the last path segment. Convenient
@@ -622,7 +625,7 @@ type Sink struct {
 	Description string
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
 	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
-	AllowedSignals []string
+	AllowedSignals []OTLPSignal
 	Table          *TableSink
 	Version        *Version
 	Created        *CreatedEntity
@@ -914,7 +917,7 @@ type TestSourcePayload struct {
 	// OTLP signal type to simulate for sink routing. Only applies to OTLP sources
 	// — ignored for HTTP sources. Defaults to "logs" if omitted. Sinks whose
 	// `allowedSignals` filter rejects this signal are skipped in the result.
-	Signal *string
+	Signal *OTLPSignal
 }
 
 // UndeleteSinkPayload is the payload type of the stream service UndeleteSink
@@ -950,7 +953,7 @@ type UpdateSinkPayload struct {
 	Description *string
 	// Restricts the sink to specific OTLP signal types. Empty (default) accepts
 	// all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
-	AllowedSignals []string
+	AllowedSignals []OTLPSignal
 	Table          *TableSinkUpdate
 }
 

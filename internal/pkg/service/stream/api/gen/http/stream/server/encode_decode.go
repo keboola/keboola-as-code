@@ -3971,7 +3971,7 @@ func marshalStreamSinkToSinkResponseBody(v *stream.Sink) *SinkResponseBody {
 	if v.AllowedSignals != nil {
 		res.AllowedSignals = make([]string, len(v.AllowedSignals))
 		for i, val := range v.AllowedSignals {
-			res.AllowedSignals[i] = val
+			res.AllowedSignals[i] = string(val)
 		}
 	}
 	if v.Table != nil {
@@ -4146,7 +4146,7 @@ func marshalStreamAggregatedSinkToAggregatedSinkResponseBody(v *stream.Aggregate
 	if v.AllowedSignals != nil {
 		res.AllowedSignals = make([]string, len(v.AllowedSignals))
 		for i, val := range v.AllowedSignals {
-			res.AllowedSignals[i] = val
+			res.AllowedSignals[i] = string(val)
 		}
 	}
 	if v.Table != nil {
