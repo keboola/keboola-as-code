@@ -39,7 +39,7 @@ apps that do not have dev-mode enabled.
 | `/_proxy/kai-preview/refresh`     | `POST` | session cookie (CORS) | Re-mint and slide the session cookie; returns `204 No Content` |
 
 **CORS note.** `embed-token` and `refresh` enforce an origin allowlist
-(`kaiPreview.allowedIdeOrigins`). Requests from origins not in the list are
+(`kaiPreview.allowedOrigins`). Requests from origins not in the list are
 rejected with `403` before any business logic runs. `bootstrap` and `exchange` are
 not cross-origin calls (they are frame navigations / same-origin fetch from inside
 the frame).
@@ -55,7 +55,7 @@ the frame).
 | `kaiPreview.handshakeSigningKey` | *(required)* | HMAC-SHA256 key for the 60 s handshake JWT |
 | `kaiPreview.sessionSigningKey`   | *(required)* | HMAC-SHA256 key for the session cookie JWT |
 | `kaiPreview.sessionTTL`          | `4h`          | Sliding session cookie lifetime |
-| `kaiPreview.allowedIdeOrigins`   | *(required)* | Origins permitted to call `embed-token` and `refresh`, e.g. `https://connection.keboola.com` |
+| `kaiPreview.allowedOrigins`      | *(required)* | Origins permitted to call `embed-token` and `refresh`, e.g. `https://connection.keboola.com` |
 | `storageApiUrl`                  | `https://connection.keboola.com` | Storage API base URL used to verify STA tokens in `embed-token` |
 
 ### 4.2 Provisioning new signing keys
@@ -149,7 +149,7 @@ export SESSION_KEY="$(openssl rand -hex 32)"
 APPS_PROXY_KAI_PREVIEW_HANDSHAKE_SIGNING_KEY="${HANDSHAKE_KEY}" \
 APPS_PROXY_KAI_PREVIEW_SESSION_SIGNING_KEY="${SESSION_KEY}" \
 APPS_PROXY_KAI_PREVIEW_SESSION_TTL="4h" \
-APPS_PROXY_KAI_PREVIEW_ALLOWED_IDE_ORIGINS="${IDE_ORIGIN}" \
+APPS_PROXY_KAI_PREVIEW_ALLOWED_ORIGINS="${IDE_ORIGIN}" \
 APPS_PROXY_STORAGE_API_URL="https://connection.keboola.com" \
   ./apps-proxy
 ```

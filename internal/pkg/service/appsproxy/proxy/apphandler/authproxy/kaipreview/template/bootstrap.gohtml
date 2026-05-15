@@ -15,7 +15,7 @@
   "use strict";
 
   // Server-rendered: the list of IDE origins this preview is allowed to handshake with.
-  var ALLOWED_IDE_ORIGINS = {{ .AllowedIDEOriginsJSON }};
+  var ALLOWED_ORIGINS = {{ .AllowedOriginsJSON }};
 
   var EXCHANGE_PATH = "/_proxy/kai-preview/exchange";
   var status = document.getElementById("status");
@@ -25,8 +25,8 @@
   function setStatus(text) { if (status) { status.textContent = text; } }
 
   function originAllowed(origin) {
-    for (var i = 0; i < ALLOWED_IDE_ORIGINS.length; i++) {
-      if (ALLOWED_IDE_ORIGINS[i] === origin) { return true; }
+    for (var i = 0; i < ALLOWED_ORIGINS.length; i++) {
+      if (ALLOWED_ORIGINS[i] === origin) { return true; }
     }
     return false;
   }
@@ -36,8 +36,8 @@
       setStatus("This preview only loads from the Keboola UI.");
       return;
     }
-    for (var i = 0; i < ALLOWED_IDE_ORIGINS.length; i++) {
-      try { window.parent.postMessage({ type: "kai-preview-ready" }, ALLOWED_IDE_ORIGINS[i]); }
+    for (var i = 0; i < ALLOWED_ORIGINS.length; i++) {
+      try { window.parent.postMessage({ type: "kai-preview-ready" }, ALLOWED_ORIGINS[i]); }
       catch (e) { /* targetOrigin mismatch is benign */ }
     }
   }

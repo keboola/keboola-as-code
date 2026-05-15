@@ -39,10 +39,10 @@ func TestKaiPreviewConfig_NormalizeStripsTrailingSlash(t *testing.T) {
 	cfg.KaiPreview = config.KaiPreview{
 		HandshakeSigningKey: "k1",
 		SessionSigningKey:   "k2",
-		AllowedIDEOrigins:   []string{"https://connection.keboola.com/", "https://staging.keboola.com"},
+		AllowedOrigins:      []string{"https://connection.keboola.com/", "https://staging.keboola.com"},
 	}
 	err := configmap.ValidateAndNormalize(&cfg)
 	require.NoError(t, err)
-	assert.Equal(t, "https://connection.keboola.com", cfg.KaiPreview.AllowedIDEOrigins[0])
-	assert.Equal(t, "https://staging.keboola.com", cfg.KaiPreview.AllowedIDEOrigins[1])
+	assert.Equal(t, "https://connection.keboola.com", cfg.KaiPreview.AllowedOrigins[0])
+	assert.Equal(t, "https://staging.keboola.com", cfg.KaiPreview.AllowedOrigins[1])
 }

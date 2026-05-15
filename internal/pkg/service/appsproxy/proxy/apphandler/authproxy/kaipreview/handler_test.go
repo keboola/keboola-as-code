@@ -20,7 +20,7 @@ func newTestCompositeHandler(devMode bool) *Handler {
 		HandshakeKey:      testHandshakeKey,
 		SessionKey:        testSessionKey,
 		SessionTTL:        4 * time.Hour,
-		AllowedIDEOrigins: []string{"https://connection.keboola.com"},
+		AllowedOrigins: []string{"https://connection.keboola.com"},
 		AppID:             "app-123",
 		AppProjectID:      "proj-456",
 	})

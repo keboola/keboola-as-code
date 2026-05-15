@@ -35,7 +35,7 @@ type HandlerDeps struct {
 	HandshakeKey      string
 	SessionKey        string
 	SessionTTL        time.Duration
-	AllowedIDEOrigins []string
+	AllowedOrigins []string
 	AppID             string
 	AppProjectID      string
 }
@@ -55,7 +55,7 @@ func NewHandler(deps HandlerDeps) *Handler {
 			Clock: deps.Clock, STA: deps.STA, DevMode: deps.DevMode, CORS: deps.CORS,
 			HandshakeKey: deps.HandshakeKey, AppID: deps.AppID, AppProjectID: deps.AppProjectID,
 		}),
-		bootstrap: NewBootstrapHandler(deps.AllowedIDEOrigins, deps.DevMode, deps.AppID),
+		bootstrap: NewBootstrapHandler(deps.AllowedOrigins, deps.DevMode, deps.AppID),
 		exchange: NewExchangeHandler(ExchangeDeps{
 			Clock: deps.Clock, DevMode: deps.DevMode,
 			HandshakeKey: deps.HandshakeKey, SessionKey: deps.SessionKey, SessionTTL: deps.SessionTTL,

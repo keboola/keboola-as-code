@@ -88,8 +88,8 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	if cfg.KaiPreview.SessionSigningKey == "" {
 		cfg.KaiPreview.SessionSigningKey = "test-session-signing-key-for-mocked-scope"
 	}
-	if len(cfg.KaiPreview.AllowedIDEOrigins) == 0 {
-		cfg.KaiPreview.AllowedIDEOrigins = []string{"https://connection.keboola.com"}
+	if len(cfg.KaiPreview.AllowedOrigins) == 0 {
+		cfg.KaiPreview.AllowedOrigins = []string{"https://connection.keboola.com"}
 	}
 	if cfg.K8s.AppsNamespace == "" {
 		cfg.K8s.AppsNamespace = "keboola"

@@ -15,19 +15,19 @@ var bootstrapFS embed.FS
 var bootstrapTmpl = template.Must(template.ParseFS(bootstrapFS, "template/bootstrap.gohtml"))
 
 type BootstrapHandler struct {
-	allowedIDEOrigins []string
-	originsJSON       template.JS
-	devMode           DevModeChecker
-	appID             string
+	allowedOrigins []string
+	originsJSON    template.JS
+	devMode        DevModeChecker
+	appID          string
 }
 
-func NewBootstrapHandler(allowedIDEOrigins []string, devMode DevModeChecker, appID string) *BootstrapHandler {
-	bs, _ := json.Marshal(allowedIDEOrigins) // []string round-trip never errors for []string
+func NewBootstrapHandler(allowedOrigins []string, devMode DevModeChecker, appID string) *BootstrapHandler {
+	bs, _ := json.Marshal(allowedOrigins) // []string round-trip never errors for []string
 	return &BootstrapHandler{
-		allowedIDEOrigins: allowedIDEOrigins,
-		originsJSON:       template.JS(bs),
-		devMode:           devMode,
-		appID:             appID,
+		allowedOrigins: allowedOrigins,
+		originsJSON:    template.JS(bs),
+		devMode:        devMode,
+		appID:          appID,
 	}
 }
 
@@ -43,14 +43,14 @@ func (h *BootstrapHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Reque
 		return nil
 	}
 
-	WriteFrameAncestorsCSP(w, h.allowedIDEOrigins)
+	WriteFrameAncestorsCSP(w, h.allowedOrigins)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 
 	data := struct {
-		AllowedIDEOriginsJSON template.JS
+		AllowedOriginsJSON template.JS
 	}{
-		AllowedIDEOriginsJSON: h.originsJSON,
+		AllowedOriginsJSON: h.originsJSON,
 	}
 	if err := bootstrapTmpl.Execute(w, data); err != nil {
 		return errors.Errorf("kai-preview: render bootstrap shim: %w", err)
