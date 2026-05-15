@@ -34,9 +34,10 @@ func (m *Mapper) NewSinkEntity(parent key.SourceKey, payload *api.CreateSinkPayl
 		entity.Description = *payload.Description
 	}
 
-	// AllowedSignals is optional — empty means accept all signals
+	// AllowedSignals is optional — empty means accept all signals.
+	// Convert from the Goa-typed enum slice to plain []string for storage.
 	if len(payload.AllowedSignals) > 0 {
-		entity.AllowedSignals = payload.AllowedSignals
+		entity.AllowedSignals = signalsToStrings(payload.AllowedSignals)
 	}
 
 	// Sink type
@@ -68,7 +69,7 @@ func (m *Mapper) UpdateSinkEntity(entity definition.Sink, payload *api.UpdateSin
 
 	// AllowedSignals — nil means "don't change", empty slice means "clear the filter"
 	if payload.AllowedSignals != nil {
-		entity.AllowedSignals = payload.AllowedSignals
+		entity.AllowedSignals = signalsToStrings(payload.AllowedSignals)
 	}
 
 	// Type
@@ -126,6 +127,29 @@ func (m *Mapper) newTableSinkEntity(payload *api.CreateSinkPayload) (entity defi
 	}
 
 	return entity, err
+}
+
+// signalsToStrings converts the Goa-typed []api.OTLPSignal payload field into
+// the plain []string used by the persisted entity. The reverse conversion lives
+// in sink_response.go (stringsToSignals).
+func signalsToStrings(signals []api.OTLPSignal) []string {
+	out := make([]string, len(signals))
+	for i, s := range signals {
+		out[i] = string(s)
+	}
+	return out
+}
+
+// stringsToSignals is the reverse conversion used when building API responses.
+func stringsToSignals(signals []string) []api.OTLPSignal {
+	if signals == nil {
+		return nil
+	}
+	out := make([]api.OTLPSignal, len(signals))
+	for i, s := range signals {
+		out[i] = api.OTLPSignal(s)
+	}
+	return out
 }
 
 func (m *Mapper) newTableSinkMappingEntity(payload *api.TableMapping) (entity table.Mapping, err error) {

@@ -72,7 +72,7 @@ func TestNewSinkEntity_AllowedSignals(t *testing.T) {
 		payload := &api.CreateSinkPayload{
 			Name:           "logs-sink",
 			Type:           definition.SinkTypeTable,
-			AllowedSignals: []string{"logs"},
+			AllowedSignals: []api.OTLPSignal{"logs"},
 			Table:          newMinimalTablePayload(),
 		}
 		entity, err := m.NewSinkEntity(sourceKey, payload)
@@ -85,7 +85,7 @@ func TestNewSinkEntity_AllowedSignals(t *testing.T) {
 		payload := &api.CreateSinkPayload{
 			Name:           "multi-sink",
 			Type:           definition.SinkTypeTable,
-			AllowedSignals: []string{"logs", "metrics"},
+			AllowedSignals: []api.OTLPSignal{"logs", "metrics"},
 			Table:          newMinimalTablePayload(),
 		}
 		entity, err := m.NewSinkEntity(sourceKey, payload)
@@ -123,7 +123,7 @@ func TestUpdateSinkEntity_AllowedSignals(t *testing.T) {
 		entity := base
 		payload := &api.UpdateSinkPayload{
 			Type:           &sinkType,
-			AllowedSignals: []string{"traces"},
+			AllowedSignals: []api.OTLPSignal{"traces"},
 		}
 		updated, err := m.UpdateSinkEntity(entity, payload)
 		require.NoError(t, err)
@@ -149,7 +149,7 @@ func TestUpdateSinkEntity_AllowedSignals(t *testing.T) {
 		entity.AllowedSignals = []string{"logs"}
 		payload := &api.UpdateSinkPayload{
 			Type:           &sinkType,
-			AllowedSignals: []string{},
+			AllowedSignals: []api.OTLPSignal{},
 		}
 		updated, err := m.UpdateSinkEntity(entity, payload)
 		require.NoError(t, err)
@@ -172,7 +172,7 @@ func TestNewSinkResponse_AllowedSignals(t *testing.T) {
 		}
 		resp, err := m.NewSinkResponse(entity)
 		require.NoError(t, err)
-		assert.Equal(t, []string{"logs", "metrics"}, resp.AllowedSignals)
+		assert.Equal(t, []api.OTLPSignal{"logs", "metrics"}, resp.AllowedSignals)
 	})
 
 	t.Run("empty_signals_in_response", func(t *testing.T) {

@@ -2078,7 +2078,7 @@ func NewGetSinkResponseBody(res *stream.Sink) *GetSinkResponseBody {
 	if res.AllowedSignals != nil {
 		body.AllowedSignals = make([]string, len(res.AllowedSignals))
 		for i, val := range res.AllowedSignals {
-			body.AllowedSignals[i] = val
+			body.AllowedSignals[i] = string(val)
 		}
 	}
 	if res.Table != nil {
@@ -3197,7 +3197,10 @@ func NewTestSourcePayload(branchID string, sourceID string, signal *string, stor
 	v := &stream.TestSourcePayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
-	v.Signal = signal
+	if signal != nil {
+		tmpsignal := stream.OTLPSignal(*signal)
+		v.Signal = &tmpsignal
+	}
 	v.StorageAPIToken = storageAPIToken
 
 	return v
@@ -3295,9 +3298,9 @@ func NewCreateSinkPayload(body *CreateSinkRequestBody, branchID string, sourceID
 		v.SinkID = &sinkID
 	}
 	if body.AllowedSignals != nil {
-		v.AllowedSignals = make([]string, len(body.AllowedSignals))
+		v.AllowedSignals = make([]stream.OTLPSignal, len(body.AllowedSignals))
 		for i, val := range body.AllowedSignals {
-			v.AllowedSignals[i] = val
+			v.AllowedSignals[i] = stream.OTLPSignal(val)
 		}
 	}
 	if body.Table != nil {
@@ -3394,9 +3397,9 @@ func NewUpdateSinkPayload(body *UpdateSinkRequestBody, branchID string, sourceID
 		v.Type = &type_
 	}
 	if body.AllowedSignals != nil {
-		v.AllowedSignals = make([]string, len(body.AllowedSignals))
+		v.AllowedSignals = make([]stream.OTLPSignal, len(body.AllowedSignals))
 		for i, val := range body.AllowedSignals {
-			v.AllowedSignals[i] = val
+			v.AllowedSignals[i] = stream.OTLPSignal(val)
 		}
 	}
 	if body.Table != nil {
