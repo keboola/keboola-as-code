@@ -545,7 +545,10 @@ func TestOTLPSource_PartialSuccess(t *testing.T) {
 	})
 	require.NoError(t, netutils.WaitForHTTP(fmt.Sprintf("http://localhost:%d", port), 10*time.Second))
 
-	// A logs batch with 2 records where the sink fails — expect 200 with partial_success body.
+	// All-rejected path: 2 records, every WriteRecord errors out. Per the OTLP
+	// response builder this escalates to a top-level 5xx instead of a 200 with
+	// partial_success (see shouldEscalateToError in response.go). The mixed
+	// accept/reject path is exercised by TestOTLPSource_PartialSuccess_Mixed.
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().PutStr("service.name", "test-service")
