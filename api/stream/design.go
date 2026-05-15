@@ -324,7 +324,14 @@ var _ = Service("stream", func() {
 		Payload(TestSourceRequest)
 		HTTP(func() {
 			POST("/branches/{branchId}/sources/{sourceId}/test")
-			Param("signal")
+			// Re-declare the enum here so Swagger 2.0 (openapi.yaml) emits it on
+			// the parameter schema — Goa propagates named-type enums to OpenAPI 3
+			// automatically but drops them on the v2 parameter shape.
+			Param("signal", String, func() {
+				Description("OTLP signal type to simulate for sink routing.")
+				Enum("logs", "metrics", "traces")
+				Example("logs")
+			})
 			Meta("openapi:tag:test")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -996,6 +1003,8 @@ var Source = Type("Source", func() {
 			"http": Val{
 				"url": "https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX",
 			},
+			"version": exampleVersion(),
+			"created": exampleCreated(),
 		})
 	})
 	Example("otlp_source", func() {
@@ -1012,9 +1021,43 @@ var Source = Type("Source", func() {
 				"baseUrl": "https://stream-in.keboola.com/otlp/1234/my-otlp-source",
 				"secret":  "EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX",
 			},
+			"version": exampleVersion(),
+			"created": exampleCreated(),
 		})
 	})
 })
+
+// exampleVersion and exampleCreated build the required version/created blocks
+// shared by every Source/AggregatedSource example so the OpenAPI documentation
+// matches the schema (which marks both fields as required).
+func exampleVersion() Val {
+	return Val{
+		"number":      1,
+		"hash":        "f43e93acd97eceb3",
+		"description": "New source.",
+		"at":          "2024-01-15T10:00:00.000Z",
+		"by": Val{
+			"type":      "user",
+			"tokenId":   "896455",
+			"tokenDesc": "john.green@company.com",
+			"userId":    "578621",
+			"userName":  "John Green",
+		},
+	}
+}
+
+func exampleCreated() Val {
+	return Val{
+		"at": "2024-01-15T10:00:00.000Z",
+		"by": Val{
+			"type":      "user",
+			"tokenId":   "896455",
+			"tokenDesc": "john.green@company.com",
+			"userId":    "578621",
+			"userName":  "John Green",
+		},
+	}
+}
 
 var Sources = Type("Sources", ArrayOf(Source), func() {
 	Description(fmt.Sprintf("List of sources, max %d sources per a branch.", source.MaxSourcesPerBranch))
@@ -1695,7 +1738,9 @@ var AggregatedSource = Type("AggregatedSource", func() {
 			"http": Val{
 				"url": "https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX",
 			},
-			"sinks": []any{},
+			"version": exampleVersion(),
+			"created": exampleCreated(),
+			"sinks":   []any{},
 		})
 	})
 	Example("otlp_source", func() {
@@ -1712,7 +1757,9 @@ var AggregatedSource = Type("AggregatedSource", func() {
 				"baseUrl": "https://stream-in.keboola.com/otlp/1234/my-otlp-source",
 				"secret":  "EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX",
 			},
-			"sinks": []any{},
+			"version": exampleVersion(),
+			"created": exampleCreated(),
+			"sinks":   []any{},
 		})
 	})
 })
