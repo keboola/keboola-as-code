@@ -2,6 +2,7 @@ package dummy
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
@@ -31,14 +32,47 @@ type SinkController struct {
 	PipelineOpenError                error
 	PipelineWriteRecordStatus        pipeline.RecordStatus
 	PipelineWriteError               error
-	UploadHandler                    func(ctx context.Context, volume *diskreader.Volume, slice plugin.Slice, stats statistics.Value) error
-	UploadError                      error
-	ImportHandler                    func(ctx context.Context, file plugin.File, stats statistics.Value) error
-	ImportError                      error
+	// PipelineWriteHook overrides PipelineWriteError when non-nil. It is invoked
+	// for each WriteRecord call so tests can produce per-record outcomes (e.g.
+	// fail every other record to exercise partial_success paths).
+	PipelineWriteHook func(sinkKey key.SinkKey) error
+	UploadHandler     func(ctx context.Context, volume *diskreader.Volume, slice plugin.Slice, stats statistics.Value) error
+	UploadError       error
+	ImportHandler     func(ctx context.Context, file plugin.File, stats statistics.Value) error
+	ImportError       error
+
+	// counts tracks how many records were written to each sink so tests can
+	// assert per-sink routing (which sinks were selected for a given record).
+	countsMu sync.Mutex
+	counts   map[key.SinkKey]int
+}
+
+// WriteCount returns the number of WriteRecord calls observed for the given sink.
+func (c *SinkController) WriteCount(k key.SinkKey) int {
+	c.countsMu.Lock()
+	defer c.countsMu.Unlock()
+	return c.counts[k]
+}
+
+// ResetWriteCounts clears all per-sink counters.
+func (c *SinkController) ResetWriteCounts() {
+	c.countsMu.Lock()
+	defer c.countsMu.Unlock()
+	c.counts = nil
+}
+
+func (c *SinkController) recordWrite(k key.SinkKey) {
+	c.countsMu.Lock()
+	defer c.countsMu.Unlock()
+	if c.counts == nil {
+		c.counts = make(map[key.SinkKey]int)
+	}
+	c.counts[k]++
 }
 
 type Pipeline struct {
 	controller *SinkController
+	sinkKey    key.SinkKey
 	onClose    func(ctx context.Context, cause string)
 }
 
@@ -87,7 +121,7 @@ func (c *SinkController) RegisterDummySinkTypes(plugins *plugin.Plugins, control
 	// Register dummy pipeline opener for tests
 	plugins.RegisterSinkPipelineOpener(func(ctx context.Context, sinkKey key.SinkKey, sinkType definition.SinkType, onClose func(ctx context.Context, cause string)) (pipeline.Pipeline, error) {
 		if sinkType == SinkType {
-			return controller.OpenPipeline(onClose)
+			return controller.OpenPipeline(sinkKey, onClose)
 		}
 
 		return nil, pipeline.NoOpenerFoundError{SinkType: sinkType}
@@ -115,11 +149,11 @@ func (c *SinkController) RegisterDummySinkTypes(plugins *plugin.Plugins, control
 	)
 }
 
-func (c *SinkController) OpenPipeline(onClose func(ctx context.Context, cause string)) (pipeline.Pipeline, error) {
+func (c *SinkController) OpenPipeline(sinkKey key.SinkKey, onClose func(ctx context.Context, cause string)) (pipeline.Pipeline, error) {
 	if c.PipelineOpenError != nil {
 		return nil, c.PipelineOpenError
 	}
-	return &Pipeline{controller: c, onClose: onClose}, nil
+	return &Pipeline{controller: c, sinkKey: sinkKey, onClose: onClose}, nil
 }
 
 func (p *Pipeline) ReopenOnSinkModification() bool {
@@ -127,6 +161,13 @@ func (p *Pipeline) ReopenOnSinkModification() bool {
 }
 
 func (p *Pipeline) WriteRecord(_ recordctx.Context) (pipeline.WriteResult, error) {
+	p.controller.recordWrite(p.sinkKey)
+	if hook := p.controller.PipelineWriteHook; hook != nil {
+		if err := hook(p.sinkKey); err != nil {
+			return pipeline.WriteResult{Status: pipeline.RecordError}, err
+		}
+		return pipeline.WriteResult{Status: p.controller.PipelineWriteRecordStatus}, nil
+	}
 	if err := p.controller.PipelineWriteError; err != nil {
 		return pipeline.WriteResult{Status: pipeline.RecordError}, err
 	}

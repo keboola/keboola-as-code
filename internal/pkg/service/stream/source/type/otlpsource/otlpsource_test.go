@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -19,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	logspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
+	"google.golang.org/protobuf/proto"
 
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream"
@@ -107,12 +110,13 @@ func TestOTLPSource(t *testing.T) {
 	require.NoError(t, repo.Sink().Create(&ts.sinkAll, ts.clk.Now(), test.ByUser(), "create").Do(ts.ctx).Err())
 
 	require.NoError(t, stream.StartComponents(ts.ctx, ts.d, ts.mock.TestConfig(), stream.ComponentHTTPSource))
+	t.Cleanup(func() {
+		ts.d.Process().Shutdown(ts.ctx, errors.New("bye bye"))
+		ts.d.Process().WaitForShutdown()
+	})
 	require.NoError(t, netutils.WaitForHTTP(ts.url, 10*time.Second))
 
 	runOTLPTestCases(t, ts)
-
-	ts.d.Process().Shutdown(ts.ctx, errors.New("bye bye"))
-	ts.d.Process().WaitForShutdown()
 }
 
 func runOTLPTestCases(t *testing.T, ts *otlpTestState) {
@@ -170,6 +174,83 @@ func runOTLPTestCases(t *testing.T, ts *otlpTestState) {
 			headers:            map[string]string{"Content-Type": "application/x-protobuf"},
 			body:               mustMarshalLogs(t, sampleLogs()),
 			expectedStatusCode: http.StatusNotFound,
+		},
+
+		// ---- header-auth: Authorization: Bearer <secret> on the secret-less route -----
+
+		{
+			name:   "bearer auth - logs success",
+			method: http.MethodPost,
+			path:   "/otlp/123/my-source/v1/logs",
+			headers: map[string]string{
+				"Content-Type":  "application/x-protobuf",
+				"Authorization": "Bearer " + ts.validSecret,
+			},
+			body:               mustMarshalLogs(t, sampleLogs()),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:   "bearer auth - metrics success",
+			method: http.MethodPost,
+			path:   "/otlp/123/my-source/v1/metrics",
+			headers: map[string]string{
+				"Content-Type":  "application/x-protobuf",
+				"Authorization": "Bearer " + ts.validSecret,
+			},
+			body:               mustMarshalMetrics(t, sampleMetrics()),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:   "bearer auth - traces success",
+			method: http.MethodPost,
+			path:   "/otlp/123/my-source/v1/traces",
+			headers: map[string]string{
+				"Content-Type":  "application/x-protobuf",
+				"Authorization": "Bearer " + ts.validSecret,
+			},
+			body:               mustMarshalTraces(t, sampleTraces()),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:   "bearer auth - wrong secret",
+			method: http.MethodPost,
+			path:   "/otlp/123/my-source/v1/logs",
+			headers: map[string]string{
+				"Content-Type":  "application/x-protobuf",
+				"Authorization": "Bearer " + wrongSecret,
+			},
+			body:               mustMarshalLogs(t, sampleLogs()),
+			expectedStatusCode: http.StatusNotFound,
+		},
+		{
+			name:               "bearer auth - missing Authorization header",
+			method:             http.MethodPost,
+			path:               "/otlp/123/my-source/v1/logs",
+			headers:            map[string]string{"Content-Type": "application/x-protobuf"},
+			body:               mustMarshalLogs(t, sampleLogs()),
+			expectedStatusCode: http.StatusNotFound,
+		},
+		{
+			name:   "bearer auth - malformed Authorization header",
+			method: http.MethodPost,
+			path:   "/otlp/123/my-source/v1/logs",
+			headers: map[string]string{
+				"Content-Type":  "application/x-protobuf",
+				"Authorization": "Basic " + ts.validSecret,
+			},
+			body:               mustMarshalLogs(t, sampleLogs()),
+			expectedStatusCode: http.StatusNotFound,
+		},
+		{
+			name:   "bearer auth - OPTIONS preflight on secret-less route",
+			method: http.MethodOptions,
+			path:   "/otlp/123/my-source/v1/logs",
+			expectedHeaders: map[string]string{
+				"Allow":                        "OPTIONS, POST",
+				"Access-Control-Allow-Methods": "OPTIONS, POST",
+				"Access-Control-Allow-Origin":  "*",
+			},
+			expectedStatusCode: http.StatusOK,
 		},
 		{
 			name: "source disabled",
@@ -360,14 +441,22 @@ func TestOTLPSource_SignalRouting(t *testing.T) {
 	source := test.NewOTLPSource(sourceKey)
 	source.OTLP.Secret = validSecret
 
-	sinkLogs := dummy.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: "logs-sink"})
+	logsKey := key.SinkKey{SourceKey: sourceKey, SinkID: "logs-sink"}
+	metricsKey := key.SinkKey{SourceKey: sourceKey, SinkID: "metrics-sink"}
+	tracesKey := key.SinkKey{SourceKey: sourceKey, SinkID: "traces-sink"}
+	allKey := key.SinkKey{SourceKey: sourceKey, SinkID: "all-sink"}
+
+	sinkLogs := dummy.NewSink(logsKey)
 	sinkLogs.AllowedSignals = []string{definition.OTLPSignalLogs}
 
-	sinkMetrics := dummy.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: "metrics-sink"})
+	sinkMetrics := dummy.NewSink(metricsKey)
 	sinkMetrics.AllowedSignals = []string{definition.OTLPSignalMetrics}
 
-	sinkTraces := dummy.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: "traces-sink"})
+	sinkTraces := dummy.NewSink(tracesKey)
 	sinkTraces.AllowedSignals = []string{definition.OTLPSignalTraces}
+
+	// Unfiltered sink — should receive records from every signal endpoint.
+	sinkAll := dummy.NewSink(allKey)
 
 	repo := d.DefinitionRepository()
 	require.NoError(t, repo.Branch().Create(&branch, clk.Now(), test.ByUser()).Do(ctx).Err())
@@ -375,27 +464,48 @@ func TestOTLPSource_SignalRouting(t *testing.T) {
 	require.NoError(t, repo.Sink().Create(&sinkLogs, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
 	require.NoError(t, repo.Sink().Create(&sinkMetrics, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
 	require.NoError(t, repo.Sink().Create(&sinkTraces, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, repo.Sink().Create(&sinkAll, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+
+	ctrl := mock.TestDummySinkController()
 
 	require.NoError(t, stream.StartComponents(ctx, d, mock.TestConfig(), stream.ComponentHTTPSource))
+	t.Cleanup(func() {
+		d.Process().Shutdown(ctx, errors.New("done"))
+		d.Process().WaitForShutdown()
+	})
 
 	baseURL := fmt.Sprintf("http://localhost:%d/otlp/456/routing-source/%s", port, validSecret)
 	require.NoError(t, netutils.WaitForHTTP(fmt.Sprintf("http://localhost:%d", port), 10*time.Second))
 
-	// Each signal endpoint must return 200; AllowedSignals filtering is exercised via the router.
+	// One log record reaches logs-sink and all-sink only.
+	ctrl.ResetWriteCounts()
 	resp := doOTLPPost(t, ctx, baseURL+"/v1/logs", mustMarshalLogs(t, sampleLogs()))
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	_ = resp.Body.Close()
+	assert.Equal(t, 1, ctrl.WriteCount(logsKey), "logs record reached logs-sink")
+	assert.Equal(t, 0, ctrl.WriteCount(metricsKey), "logs record did NOT reach metrics-sink")
+	assert.Equal(t, 0, ctrl.WriteCount(tracesKey), "logs record did NOT reach traces-sink")
+	assert.Equal(t, 1, ctrl.WriteCount(allKey), "logs record reached unfiltered all-sink")
 
+	// One metric data point reaches metrics-sink and all-sink only.
+	ctrl.ResetWriteCounts()
 	resp = doOTLPPost(t, ctx, baseURL+"/v1/metrics", mustMarshalMetrics(t, sampleMetrics()))
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	_ = resp.Body.Close()
+	assert.Equal(t, 0, ctrl.WriteCount(logsKey), "metric did NOT reach logs-sink")
+	assert.Equal(t, 1, ctrl.WriteCount(metricsKey), "metric reached metrics-sink")
+	assert.Equal(t, 0, ctrl.WriteCount(tracesKey), "metric did NOT reach traces-sink")
+	assert.Equal(t, 1, ctrl.WriteCount(allKey), "metric reached unfiltered all-sink")
 
+	// One span reaches traces-sink and all-sink only.
+	ctrl.ResetWriteCounts()
 	resp = doOTLPPost(t, ctx, baseURL+"/v1/traces", mustMarshalTraces(t, sampleTraces()))
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	_ = resp.Body.Close()
-
-	d.Process().Shutdown(ctx, errors.New("done"))
-	d.Process().WaitForShutdown()
+	assert.Equal(t, 0, ctrl.WriteCount(logsKey), "trace did NOT reach logs-sink")
+	assert.Equal(t, 0, ctrl.WriteCount(metricsKey), "trace did NOT reach metrics-sink")
+	assert.Equal(t, 1, ctrl.WriteCount(tracesKey), "trace reached traces-sink")
+	assert.Equal(t, 1, ctrl.WriteCount(allKey), "trace reached unfiltered all-sink")
 }
 
 func TestOTLPSource_PartialSuccess(t *testing.T) {
@@ -429,6 +539,10 @@ func TestOTLPSource_PartialSuccess(t *testing.T) {
 	require.NoError(t, repo.Sink().Create(&sink, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
 
 	require.NoError(t, stream.StartComponents(ctx, d, mock.TestConfig(), stream.ComponentHTTPSource))
+	t.Cleanup(func() {
+		d.Process().Shutdown(ctx, errors.New("done"))
+		d.Process().WaitForShutdown()
+	})
 	require.NoError(t, netutils.WaitForHTTP(fmt.Sprintf("http://localhost:%d", port), 10*time.Second))
 
 	// A logs batch with 2 records where the sink fails — expect 200 with partial_success body.
@@ -443,12 +557,83 @@ func TestOTLPSource_PartialSuccess(t *testing.T) {
 
 	baseURL := fmt.Sprintf("http://localhost:%d/otlp/789/partial-source/%s", port, validSecret)
 	resp := doOTLPPost(t, ctx, baseURL+"/v1/logs", mustMarshalLogs(t, logs))
+	defer func() { _ = resp.Body.Close() }()
 
 	// When all records fail with a retryable error, the handler escalates to a top-level 5xx.
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}
 
-	d.Process().Shutdown(ctx, errors.New("done"))
-	d.Process().WaitForShutdown()
+// TestOTLPSource_PartialSuccess_Mixed exercises the actual partial-success
+// path: some records succeed and some fail in the same batch, so the response
+// is HTTP 200 with an OTLP partial_success body that reports a non-zero
+// rejected count.
+func TestOTLPSource_PartialSuccess_Mixed(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+
+	port := netutils.FreePortForTest(t)
+	clk := clockwork.NewFakeClock()
+	d, mock := dependencies.NewMockedServiceScopeWithConfig(t, ctx, func(cfg *config.Config) {
+		cfg.Source.HTTP.Listen = fmt.Sprintf("0.0.0.0:%d", port)
+	}, commonDeps.WithClock(clk))
+
+	validSecret := strings.Repeat("4", 48)
+	branchKey := key.BranchKey{ProjectID: 555, BranchID: 1}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "mixed-source"}
+
+	branch := test.NewBranch(branchKey)
+	source := test.NewOTLPSource(sourceKey)
+	source.OTLP.Secret = validSecret
+
+	// Hook: every second WriteRecord call returns an error. With a 4-record batch
+	// the deterministic outcome is 2 accepted, 2 rejected.
+	ctrl := mock.TestDummySinkController()
+	var calls atomic.Int64
+	ctrl.PipelineWriteHook = func(_ key.SinkKey) error {
+		if calls.Add(1)%2 == 0 {
+			return errors.New("transient sink error")
+		}
+		return nil
+	}
+
+	sink := dummy.NewSink(key.SinkKey{SourceKey: sourceKey, SinkID: "mixed-sink"})
+
+	repo := d.DefinitionRepository()
+	require.NoError(t, repo.Branch().Create(&branch, clk.Now(), test.ByUser()).Do(ctx).Err())
+	require.NoError(t, repo.Source().Create(&source, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+	require.NoError(t, repo.Sink().Create(&sink, clk.Now(), test.ByUser(), "create").Do(ctx).Err())
+
+	require.NoError(t, stream.StartComponents(ctx, d, mock.TestConfig(), stream.ComponentHTTPSource))
+	t.Cleanup(func() {
+		d.Process().Shutdown(ctx, errors.New("done"))
+		d.Process().WaitForShutdown()
+	})
+	require.NoError(t, netutils.WaitForHTTP(fmt.Sprintf("http://localhost:%d", port), 10*time.Second))
+
+	// 4-record logs batch — hook alternates accept/fail, so 2 records are rejected.
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", "mixed-test")
+	sl := rl.ScopeLogs().AppendEmpty()
+	for i := 0; i < 4; i++ {
+		lr := sl.LogRecords().AppendEmpty()
+		lr.Body().SetStr(fmt.Sprintf("record %d", i))
+	}
+
+	baseURL := fmt.Sprintf("http://localhost:%d/otlp/555/mixed-source/%s", port, validSecret)
+	resp := doOTLPPost(t, ctx, baseURL+"/v1/logs", mustMarshalLogs(t, logs))
+	defer func() { _ = resp.Body.Close() }()
+
+	// Top-level 200 with an OTLP partial_success body reporting the rejected count.
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	parsed := &logspb.ExportLogsServiceResponse{}
+	require.NoError(t, proto.Unmarshal(body, parsed), "response body must be a valid OTLP logs export response")
+	require.NotNil(t, parsed.GetPartialSuccess(), "partial_success block must be present")
+	assert.EqualValues(t, 2, parsed.GetPartialSuccess().GetRejectedLogRecords(), "exactly 2 of 4 records should be rejected")
 }
 
 // ---- sample OTel payload helpers --------------------------------------------
