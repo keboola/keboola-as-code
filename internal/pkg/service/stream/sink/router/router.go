@@ -227,9 +227,7 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 			continue
 		}
 
-		// Skip sinks that do not accept this signal type.
-		// Empty allowedSignals means accept all (HTTP sources and unfiltered OTLP).
-		if len(sink.allowedSignals) > 0 && !signalAllowed(signal, sink.allowedSignals) {
+		if !sinkAcceptsSignal(sink.allowedSignals, signal) {
 			continue
 		}
 
@@ -424,8 +422,21 @@ func (r *Router) isClosed() bool {
 	}
 }
 
-func signalAllowed(signal string, allowed []string) bool {
-	for _, s := range allowed {
+// sinkAcceptsSignal returns true when a record with the given signal should be
+// dispatched to a sink configured with the given allowedSignals filter.
+//
+// HTTP-source records arrive with an empty signal — they bypass the filter
+// regardless of how it is set, matching the documented "HTTP sources ignore
+// this field" contract. OTLP records (signal = "logs" | "metrics" | "traces")
+// are gated by the filter unless it is empty, which means "accept all".
+func sinkAcceptsSignal(allowedSignals []string, signal string) bool {
+	if signal == "" {
+		return true
+	}
+	if len(allowedSignals) == 0 {
+		return true
+	}
+	for _, s := range allowedSignals {
 		if s == signal {
 			return true
 		}
