@@ -29,13 +29,14 @@ const (
 )
 
 // DetectEncoding parses the Content-Type header value and returns the matching
-// OTLP wire format. Unknown values yield EncodingUnsupported.
+// OTLP wire format. Media-type comparison is case-insensitive per RFC 9110.
+// Unknown values yield EncodingUnsupported.
 func DetectEncoding(contentType string) Encoding {
 	contentType = strings.TrimSpace(contentType)
 	if i := strings.IndexByte(contentType, ';'); i >= 0 {
 		contentType = strings.TrimSpace(contentType[:i])
 	}
-	switch contentType {
+	switch strings.ToLower(contentType) {
 	case contentTypeProtobuf, contentTypeProtobufAlias:
 		return EncodingProtobuf
 	case contentTypeJSON:

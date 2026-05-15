@@ -620,7 +620,7 @@ func TestOTLPSource_PartialSuccess_Mixed(t *testing.T) {
 	rl := logs.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().PutStr("service.name", "mixed-test")
 	sl := rl.ScopeLogs().AppendEmpty()
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		lr := sl.LogRecords().AppendEmpty()
 		lr.Body().SetStr(fmt.Sprintf("record %d", i))
 	}

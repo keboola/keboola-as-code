@@ -60,15 +60,12 @@ func FromOTLP(
 }
 
 // FromOTLPTestRequest builds a test Context for an OTLP source from a plain
-// HTTP request.  The request body must be a JSON object whose structure matches
-// the flat record produced by FlattenLogs/FlattenMetrics/FlattenTraces — the
-// same format a real OTLP batch would yield after decoding and flattening.
-// This lets users call the /test endpoint to validate their column templates
-// against a representative sample payload.
-// FromOTLPTestRequest reads the request body as a flat OTLP record and wraps it
-// in a record context tagged with the given signal. Caller is responsible for
-// validating signal (the Goa enum on TestSourcePayload.Signal does that for the
-// public API; pass "logs" as the documented default when the field is omitted).
+// HTTP request. The body must be a JSON object matching the flat record shape
+// produced by FlattenLogs/FlattenMetrics/FlattenTraces, so the /test endpoint
+// can validate column templates against a representative sample payload.
+// The caller is responsible for validating signal (the Goa enum on
+// TestSourcePayload.Signal does that at the API boundary); pass "logs" as the
+// documented default when the field is omitted.
 func FromOTLPTestRequest(ctx context.Context, now time.Time, req *http.Request, signal string) (Context, error) {
 	bodyBytes := make([]byte, 0)
 	if req.Body != nil {

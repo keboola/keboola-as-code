@@ -224,8 +224,11 @@ func parseAuthParams(c *routing.Context) (keboola.ProjectID, key.SourceID, strin
 	// access logs, CDN logs, and APM URL attributes.
 	secret := c.Param("secret")
 	if secret == "" {
-		if auth := string(c.Request.Header.Peek("Authorization")); strings.HasPrefix(auth, "Bearer ") {
-			secret = strings.TrimPrefix(auth, "Bearer ")
+		// HTTP auth scheme is case-insensitive per RFC 9110: accept Bearer,
+		// bearer, BEARER, etc. The token after the scheme is the secret.
+		const prefixLen = len("Bearer ")
+		if auth := string(c.Request.Header.Peek("Authorization")); len(auth) > prefixLen && strings.EqualFold(auth[:prefixLen], "Bearer ") {
+			secret = auth[prefixLen:]
 		}
 	}
 	return keboola.ProjectID(projectIDInt), key.SourceID(c.Param("sourceID")), secret, nil
