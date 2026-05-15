@@ -26,6 +26,14 @@ func TestDetectEncoding(t *testing.T) {
 		{"application/json; charset=utf-8", EncodingJSON},
 		{"text/plain", EncodingUnsupported},
 		{"", EncodingUnsupported},
+		// application/protobuf is the OTLP spec alias for application/x-protobuf.
+		{"application/protobuf", EncodingProtobuf},
+		{"application/protobuf; charset=utf-8", EncodingProtobuf},
+		// Media types are case-insensitive per RFC 9110.
+		{"Application/Protobuf", EncodingProtobuf},
+		{"APPLICATION/X-PROTOBUF", EncodingProtobuf},
+		{"Application/JSON", EncodingJSON},
+		{"APPLICATION/JSON", EncodingJSON},
 	}
 	for _, c := range cases {
 		assert.Equal(t, c.want, DetectEncoding(c.in), "input=%q", c.in)

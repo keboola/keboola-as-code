@@ -190,6 +190,29 @@ func runOTLPTestCases(t *testing.T, ts *otlpTestState) {
 			expectedStatusCode: http.StatusOK,
 		},
 		{
+			// RFC 9110 auth schemes are case-insensitive.
+			name:   "bearer auth - lowercase scheme",
+			method: http.MethodPost,
+			path:   "/otlp/123/my-source/v1/logs",
+			headers: map[string]string{
+				"Content-Type":  "application/x-protobuf",
+				"Authorization": "bearer " + ts.validSecret,
+			},
+			body:               mustMarshalLogs(t, sampleLogs()),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:   "bearer auth - mixed-case scheme",
+			method: http.MethodPost,
+			path:   "/otlp/123/my-source/v1/logs",
+			headers: map[string]string{
+				"Content-Type":  "application/x-protobuf",
+				"Authorization": "BeArEr " + ts.validSecret,
+			},
+			body:               mustMarshalLogs(t, sampleLogs()),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
 			name:   "bearer auth - metrics success",
 			method: http.MethodPost,
 			path:   "/otlp/123/my-source/v1/metrics",
