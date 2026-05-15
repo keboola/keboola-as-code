@@ -164,12 +164,23 @@ else
   api_post "/branches/${BRANCH_ID}/sources" "${create_payload}"
 
   if [[ "${API_CODE}" == "409" ]]; then
-    warn "409 — fetching existing source by name…"
+    warn "409 — fetching existing OTLP source by name…"
     api_get "/branches/${BRANCH_ID}/sources"
+    # Filter by both name AND type so we never accidentally reuse (and later
+    # delete during cleanup) an unrelated HTTP source that happens to share
+    # the name.
     SOURCE_ID=$(echo "${API_BODY}" | jq -r --arg n "${SOURCE_NAME}" \
-      '.sources[] | select(.name==$n) | .sourceId' | head -1)
-    [[ -n "${SOURCE_ID}" ]] || fail "Source '${SOURCE_NAME}' not found in list"
-    ok "Reusing: ${SOURCE_ID}"
+      '.sources[] | select(.name==$n and .type=="otlp") | .sourceId' | head -1)
+    if [[ -z "${SOURCE_ID}" ]]; then
+      # A non-OTLP source matched the name → bail out instead of reusing it.
+      conflicting_type=$(echo "${API_BODY}" | jq -r --arg n "${SOURCE_NAME}" \
+        '[.sources[] | select(.name==$n) | .type] | first // empty')
+      if [[ -n "${conflicting_type}" ]]; then
+        fail "A source named '${SOURCE_NAME}' already exists with type '${conflicting_type}'. Pick a different SOURCE_NAME."
+      fi
+      fail "OTLP source '${SOURCE_NAME}' not found in list"
+    fi
+    ok "Reusing OTLP source: ${SOURCE_ID}"
   elif [[ "${API_CODE}" -ge 400 ]]; then
     fail "Create source failed HTTP ${API_CODE}"
   else
@@ -223,10 +234,25 @@ create_sink() {
   if [[ "${API_CODE}" == "409" ]]; then
     warn "409 — fetching existing sink…"
     api_get "/branches/${BRANCH_ID}/sources/${SOURCE_ID}/sinks"
-    sink_id=$(echo "${API_BODY}" | jq -r --arg n "${sink_name}" \
-      '.sinks[] | select(.name==$n) | .sinkId' | head -1)
-    [[ -n "${sink_id}" ]] || fail "Sink '${sink_name}' not found in list"
-    ok "Reusing: ${sink_id}"
+    # An existing sink with the same name might point at a different table
+    # or carry a different allowedSignals filter. Verify both before reusing
+    # so a stale fixture doesn't silently route to the wrong table/signal.
+    matched=$(echo "${API_BODY}" | jq -c --arg n "${sink_name}" \
+      '[.sinks[] | select(.name==$n)] | first // empty')
+    if [[ -z "${matched}" ]]; then
+      fail "Sink '${sink_name}' not found in list"
+    fi
+    sink_id=$(jq -r '.sinkId' <<< "${matched}")
+    existing_table=$(jq -r '.table.tableId // empty' <<< "${matched}")
+    existing_signals=$(jq -c '.allowedSignals // []' <<< "${matched}")
+    expected_signals=$(jq -c '.' <<< "${signals_json}")
+    if [[ "${existing_table}" != "${table_id}" ]]; then
+      fail "Sink '${sink_name}' (${sink_id}) targets table '${existing_table}', expected '${table_id}'. Refusing to reuse."
+    fi
+    if [[ "${existing_signals}" != "${expected_signals}" ]]; then
+      fail "Sink '${sink_name}' (${sink_id}) has allowedSignals=${existing_signals}, expected ${expected_signals}. Refusing to reuse."
+    fi
+    ok "Reusing sink with matching mapping: ${sink_id}"
   elif [[ "${API_CODE}" -ge 400 ]]; then
     fail "Create sink failed HTTP ${API_CODE}"
   else
