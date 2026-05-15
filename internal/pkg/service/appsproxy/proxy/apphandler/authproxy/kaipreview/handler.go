@@ -28,16 +28,16 @@ type DevModeCheckerFunc func(ctx context.Context, appID string) bool
 func (f DevModeCheckerFunc) IsDevMode(ctx context.Context, appID string) bool { return f(ctx, appID) }
 
 type HandlerDeps struct {
-	Clock             clockwork.Clock
-	STA               STATokenVerifier
-	DevMode           DevModeChecker
-	CORS              *CORS
-	HandshakeKey      string
-	SessionKey        string
-	SessionTTL        time.Duration
-	AllowedOrigins []string
-	AppID             string
-	AppProjectID      string
+	Clock                clockwork.Clock
+	StorageTokenVerifier StorageTokenVerifier
+	DevMode              DevModeChecker
+	CORS                 *CORS
+	HandshakeKey         string
+	SessionKey           string
+	SessionTTL           time.Duration
+	AllowedOrigins       []string
+	AppID                string
+	AppProjectID         string
 }
 
 // Handler is the per-app composite handler that serves all four kai-preview
@@ -52,7 +52,7 @@ type Handler struct {
 func NewHandler(deps HandlerDeps) *Handler {
 	return &Handler{
 		handshakeToken: NewHandshakeTokenHandler(HandshakeTokenDeps{
-			Clock: deps.Clock, STA: deps.STA, DevMode: deps.DevMode, CORS: deps.CORS,
+			Clock: deps.Clock, StorageTokenVerifier: deps.StorageTokenVerifier, DevMode: deps.DevMode, CORS: deps.CORS,
 			HandshakeKey: deps.HandshakeKey, AppID: deps.AppID, AppProjectID: deps.AppProjectID,
 		}),
 		bootstrap: NewBootstrapHandler(deps.AllowedOrigins, deps.DevMode, deps.AppID),

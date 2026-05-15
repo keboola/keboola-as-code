@@ -52,7 +52,7 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 		authHandlerPerRule: make(map[ruleIndex]chain.Handler),
 		kaiPreview: kaipreview.NewHandler(kaipreview.HandlerDeps{
 			Clock:             manager.clock,
-			STA:               manager.staVerifier,
+			StorageTokenVerifier: manager.storageTokenVerifier,
 			DevMode:           devModeChecker,
 			CORS:              kaipreview.NewCORS(manager.config.KaiPreview.AllowedOrigins),
 			HandshakeKey:      manager.config.KaiPreview.HandshakeSigningKey,

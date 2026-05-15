@@ -10,9 +10,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// STATokenVerifier abstracts STAVerifier so tests can inject a stub without HTTP.
-type STATokenVerifier interface {
-	Verify(ctx context.Context, token string) (*STAVerifyResult, error)
+// StorageTokenVerifier abstracts HTTPStorageTokenVerifier so tests can inject a stub without HTTP.
+type StorageTokenVerifier interface {
+	Verify(ctx context.Context, token string) (*StorageTokenVerifyResult, error)
 }
 
 // DevModeChecker tells the handler whether the current app is in dev mode.
@@ -22,13 +22,13 @@ type DevModeChecker interface {
 }
 
 type HandshakeTokenDeps struct {
-	Clock        clockwork.Clock
-	STA          STATokenVerifier
-	DevMode      DevModeChecker
-	CORS         *CORS
-	HandshakeKey string
-	AppID        string
-	AppProjectID string
+	Clock                clockwork.Clock
+	StorageTokenVerifier StorageTokenVerifier
+	DevMode              DevModeChecker
+	CORS                 *CORS
+	HandshakeKey         string
+	AppID                string
+	AppProjectID         string
 }
 
 type HandshakeTokenHandler struct {
@@ -64,16 +64,16 @@ func (h *HandshakeTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.
 		return nil
 	}
 
-	staToken := r.Header.Get("X-StorageApi-Token")
-	if staToken == "" {
+	storageToken := r.Header.Get("X-StorageApi-Token")
+	if storageToken == "" {
 		http.Error(w, "missing X-StorageApi-Token", http.StatusUnauthorized)
 		return nil
 	}
 
-	res, err := h.deps.STA.Verify(r.Context(), staToken)
+	res, err := h.deps.StorageTokenVerifier.Verify(r.Context(), storageToken)
 	if err != nil {
-		// Never echo the raw STA token in the error body or logs.
-		http.Error(w, "STA token invalid", http.StatusUnauthorized)
+		// Never echo the raw Storage token in the error body or logs.
+		http.Error(w, "Storage token invalid", http.StatusUnauthorized)
 		return nil
 	}
 	if res.ProjectID != h.deps.AppProjectID {

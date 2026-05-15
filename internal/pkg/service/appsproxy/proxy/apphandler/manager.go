@@ -34,7 +34,7 @@ type Manager struct {
 	pageWriter       *pagewriter.Writer
 	handlers         *syncmap.SyncMap[api.AppID, appHandlerWrapper]
 	clock            clockwork.Clock
-	staVerifier      kaipreview.STATokenVerifier
+	storageTokenVerifier kaipreview.StorageTokenVerifier
 }
 
 type appHandlerWrapper struct {
@@ -57,10 +57,10 @@ type dependencies interface {
 func NewManager(d dependencies) *Manager {
 	cfg := d.Config()
 	if cfg.StorageAPIURL == nil {
-		panic("appsproxy: StorageAPIURL is required for kai-preview STA verification")
+		panic("appsproxy: StorageAPIURL is required for kai-preview Storage token verification")
 	}
 	storageAPIURL := cfg.StorageAPIURL.String()
-	staHTTPClient := &http.Client{Timeout: 5 * time.Second}
+	storageTokenHTTPClient := &http.Client{Timeout: 5 * time.Second}
 	return &Manager{
 		config:           cfg,
 		telemetry:        d.Telemetry(),
@@ -71,8 +71,8 @@ func NewManager(d dependencies) *Manager {
 		handlers: syncmap.New[api.AppID, appHandlerWrapper](func(api.AppID) *appHandlerWrapper {
 			return &appHandlerWrapper{lock: &sync.Mutex{}}
 		}),
-		clock:       d.Clock(),
-		staVerifier: kaipreview.NewSTAVerifier(storageAPIURL, staHTTPClient),
+		clock:                d.Clock(),
+		storageTokenVerifier: kaipreview.NewHTTPStorageTokenVerifier(storageAPIURL, storageTokenHTTPClient),
 	}
 }
 

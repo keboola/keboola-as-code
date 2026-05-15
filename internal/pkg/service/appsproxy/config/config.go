@@ -25,7 +25,7 @@ type Config struct {
 	Upstream         Upstream          `configKey:"-" configUsage:"Configuration options for upstream"`
 	SandboxesAPI     SandboxesAPI      `configKey:"sandboxesAPI"`
 	CsrfTokenSalt    string            `configKey:"csrfTokenSalt" configUsage:"Salt used for generating CSRF tokens" validate:"required" sensitive:"true"`
-	StorageAPIURL    *url.URL          `configKey:"storageApiUrl" configUsage:"Base URL of the Keboola Storage API used for STA token verification (kai-preview flow). E.g. https://connection.keboola.com" validate:"required"`
+	StorageAPIURL    *url.URL          `configKey:"storageApiUrl" configUsage:"Base URL of the Keboola Storage API used for Storage token verification (kai-preview flow). E.g. https://connection.keboola.com" validate:"required"`
 	KaiPreview       KaiPreview        `configKey:"kaiPreview" configUsage:"kai-preview iframe-auth configuration."`
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSTAVerifier_Success(t *testing.T) {
+func TestStorageTokenVerifier_Success(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "GET", r.Method)
@@ -24,33 +24,33 @@ func TestSTAVerifier_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	v := NewSTAVerifier(srv.URL, srv.Client())
+	v := NewHTTPStorageTokenVerifier(srv.URL, srv.Client())
 	res, err := v.Verify(context.Background(), "test-token")
 	require.NoError(t, err)
 	assert.Equal(t, "proj-456", res.ProjectID)
 }
 
-func TestSTAVerifier_Unauthorized(t *testing.T) {
+func TestStorageTokenVerifier_Unauthorized(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 	}))
 	defer srv.Close()
 
-	v := NewSTAVerifier(srv.URL, srv.Client())
+	v := NewHTTPStorageTokenVerifier(srv.URL, srv.Client())
 	_, err := v.Verify(context.Background(), "bad-token")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unauthorized")
 }
 
-func TestSTAVerifier_NetworkError(t *testing.T) {
+func TestStorageTokenVerifier_NetworkError(t *testing.T) {
 	t.Parallel()
-	v := NewSTAVerifier("http://127.0.0.1:1", http.DefaultClient) // port 1 = unreachable
+	v := NewHTTPStorageTokenVerifier("http://127.0.0.1:1", http.DefaultClient) // port 1 = unreachable
 	_, err := v.Verify(context.Background(), "token")
 	require.Error(t, err)
 }
 
-func TestSTAVerifier_MissingOwnerID(t *testing.T) {
+func TestStorageTokenVerifier_MissingOwnerID(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -59,26 +59,26 @@ func TestSTAVerifier_MissingOwnerID(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	v := NewSTAVerifier(srv.URL, srv.Client())
+	v := NewHTTPStorageTokenVerifier(srv.URL, srv.Client())
 	_, err := v.Verify(context.Background(), "token")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing owner.id")
 }
 
-func TestSTAVerifier_ServerError(t *testing.T) {
+func TestStorageTokenVerifier_ServerError(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}))
 	defer srv.Close()
 
-	v := NewSTAVerifier(srv.URL, srv.Client())
+	v := NewHTTPStorageTokenVerifier(srv.URL, srv.Client())
 	_, err := v.Verify(context.Background(), "token")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "500")
 }
 
-func TestSTAVerifier_MalformedJSON(t *testing.T) {
+func TestStorageTokenVerifier_MalformedJSON(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -86,8 +86,8 @@ func TestSTAVerifier_MalformedJSON(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	v := NewSTAVerifier(srv.URL, srv.Client())
+	v := NewHTTPStorageTokenVerifier(srv.URL, srv.Client())
 	_, err := v.Verify(context.Background(), "token")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "decode STA verify response")
+	assert.Contains(t, err.Error(), "decode Storage token verify response")
 }

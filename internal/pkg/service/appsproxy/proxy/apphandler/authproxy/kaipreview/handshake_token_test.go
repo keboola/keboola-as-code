@@ -13,16 +13,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubSTAVerifier struct {
+type stubStorageTokenVerifier struct {
 	projectID string
 	err       error
 }
 
-func (s *stubSTAVerifier) Verify(_ context.Context, _ string) (*STAVerifyResult, error) {
+func (s *stubStorageTokenVerifier) Verify(_ context.Context, _ string) (*StorageTokenVerifyResult, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
-	return &STAVerifyResult{ProjectID: s.projectID}, nil
+	return &StorageTokenVerifyResult{ProjectID: s.projectID}, nil
 }
 
 type stubDevModeChecker struct{ devMode bool }
@@ -35,21 +35,21 @@ type stubErr struct{ msg string }
 
 func (e *stubErr) Error() string { return e.msg }
 
-func newTestHandshakeHandler(staOK bool, staProject string, devMode bool) *HandshakeTokenHandler {
-	var sta STATokenVerifier
-	if staOK {
-		sta = &stubSTAVerifier{projectID: staProject}
+func newTestHandshakeHandler(tokenValid bool, storageTokenProject string, devMode bool) *HandshakeTokenHandler {
+	var verifier StorageTokenVerifier
+	if tokenValid {
+		verifier = &stubStorageTokenVerifier{projectID: storageTokenProject}
 	} else {
-		sta = &stubSTAVerifier{err: errStubUnauth}
+		verifier = &stubStorageTokenVerifier{err: errStubUnauth}
 	}
 	return NewHandshakeTokenHandler(HandshakeTokenDeps{
-		Clock:        clockwork.NewFakeClock(),
-		STA:          sta,
-		DevMode:      &stubDevModeChecker{devMode: devMode},
-		CORS:         NewCORS([]string{"https://connection.keboola.com"}),
-		HandshakeKey: testHandshakeKey,
-		AppID:        "app-123",
-		AppProjectID: "proj-456",
+		Clock:                clockwork.NewFakeClock(),
+		StorageTokenVerifier: verifier,
+		DevMode:              &stubDevModeChecker{devMode: devMode},
+		CORS:                 NewCORS([]string{"https://connection.keboola.com"}),
+		HandshakeKey:         testHandshakeKey,
+		AppID:                "app-123",
+		AppProjectID:         "proj-456",
 	})
 }
 

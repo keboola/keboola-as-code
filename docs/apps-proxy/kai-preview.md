@@ -33,7 +33,7 @@ apps that do not have dev-mode enabled.
 
 | Endpoint | Method | Auth | Notes |
 |---|---|---|---|
-| `/_proxy/kai-preview/handshake-token` | `POST` | `X-StorageApi-Token` header (CORS) | Mint a 60 s handshake JWT after verifying the STA token against Storage API |
+| `/_proxy/kai-preview/handshake-token` | `POST` | `X-StorageApi-Token` header (CORS) | Mint a 60 s handshake JWT after verifying the Storage token against Storage API |
 | `/_proxy/kai-preview/bootstrap`   | `GET`  | none | Return the postMessage handshake shim HTML; sets `Content-Security-Policy: frame-ancestors <allowed-origins>` |
 | `/_proxy/kai-preview/exchange`    | `POST` | JWT in JSON body `{"token":"..."}` | Verify handshake JWT, set the `kbc-kai-preview-session` session cookie |
 | `/_proxy/kai-preview/refresh`     | `POST` | session cookie (CORS) | Re-mint and slide the session cookie; returns `204 No Content` |
@@ -56,7 +56,7 @@ the frame).
 | `kaiPreview.sessionSigningKey`   | *(required)* | HMAC-SHA256 key for the session cookie JWT |
 | `kaiPreview.sessionTTL`          | `4h`          | Sliding session cookie lifetime |
 | `kaiPreview.allowedOrigins`      | *(required)* | Origins permitted to call `handshake-token` and `refresh`, e.g. `https://connection.keboola.com` |
-| `storageApiUrl`                  | `https://connection.keboola.com` | Storage API base URL used to verify STA tokens in `handshake-token` |
+| `storageApiUrl`                  | `https://connection.keboola.com` | Storage API base URL used to verify Storage tokens in `handshake-token` |
 
 ### 4.2 Provisioning new signing keys
 
@@ -136,7 +136,7 @@ the top for your target environment.
 ```bash
 export APP_HOST="myapp.data-apps.keboola.com"   # FQDN of the data app
 export IDE_ORIGIN="https://connection.keboola.com"
-export STA_TOKEN="<your-storage-api-token>"
+export STORAGE_TOKEN="<your-storage-api-token>"
 
 # Signing keys — use the same values provisioned to the stack
 export HANDSHAKE_KEY="$(openssl rand -hex 32)"
@@ -161,7 +161,7 @@ Expected: proxy starts, logs `kai-preview enabled` (or similar), no startup erro
 ```bash
 HANDSHAKE_TOKEN=$(curl -s -X POST "https://${APP_HOST}/_proxy/kai-preview/handshake-token" \
   -H "Origin: ${IDE_ORIGIN}" \
-  -H "X-StorageApi-Token: ${STA_TOKEN}" \
+  -H "X-StorageApi-Token: ${STORAGE_TOKEN}" \
   -H "Content-Type: application/json" \
   | jq -r '.token')
 
@@ -269,7 +269,7 @@ Then re-run the mint step:
 curl -s -o /dev/null -w "%{http_code}" \
   -X POST "https://${APP_HOST}/_proxy/kai-preview/handshake-token" \
   -H "Origin: ${IDE_ORIGIN}" \
-  -H "X-StorageApi-Token: ${STA_TOKEN}"
+  -H "X-StorageApi-Token: ${STORAGE_TOKEN}"
 ```
 
 **Expected:** `404`. All four kai-preview endpoints should return `404`.
@@ -295,7 +295,7 @@ Mint a token (this will land on an arbitrary replica):
 ```bash
 HANDSHAKE_TOKEN=$(curl -s -X POST "https://${APP_HOST}/_proxy/kai-preview/handshake-token" \
   -H "Origin: ${IDE_ORIGIN}" \
-  -H "X-StorageApi-Token: ${STA_TOKEN}" \
+  -H "X-StorageApi-Token: ${STORAGE_TOKEN}" \
   | jq -r '.token')
 ```
 

@@ -14,7 +14,7 @@ import (
 func newTestCompositeHandler(devMode bool) *Handler {
 	return NewHandler(HandlerDeps{
 		Clock:             clockwork.NewFakeClock(),
-		STA:               &stubSTAVerifier{projectID: "proj-456"},
+		StorageTokenVerifier: &stubStorageTokenVerifier{projectID: "proj-456"},
 		DevMode:           &stubDevModeChecker{devMode: devMode},
 		CORS:              NewCORS([]string{"https://connection.keboola.com"}),
 		HandshakeKey:      testHandshakeKey,
