@@ -1,4 +1,4 @@
-package kaipreview
+package endpoints
 
 import (
 	"bytes"
@@ -11,6 +11,8 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 )
 
 func newTestExchangeHandler(devMode bool) *ExchangeHandler {
@@ -28,7 +30,7 @@ func newTestExchangeHandler(devMode bool) *ExchangeHandler {
 func mintForTest(t *testing.T, appID, projectID string) string {
 	t.Helper()
 	clock := clockwork.NewFakeClock()
-	jwt, err := MintHandshakeJWT(testHandshakeKey, clock, appID, projectID)
+	jwt, err := kaipreview.MintHandshakeJWT(testHandshakeKey, clock, appID, projectID)
 	require.NoError(t, err)
 	return jwt
 }
@@ -49,7 +51,7 @@ func TestExchangeHandler_Success(t *testing.T) {
 
 	cookies := w.Result().Cookies()
 	require.Len(t, cookies, 1)
-	assert.Equal(t, SessionCookieName, cookies[0].Name)
+	assert.Equal(t, kaipreview.SessionCookieName, cookies[0].Name)
 	assert.True(t, cookies[0].Partitioned)
 }
 

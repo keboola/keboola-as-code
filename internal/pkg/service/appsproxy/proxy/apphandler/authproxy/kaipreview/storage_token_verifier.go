@@ -8,6 +8,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// StorageTokenVerifier abstracts HTTPStorageTokenVerifier so tests can inject a stub without HTTP.
+type StorageTokenVerifier interface {
+	Verify(ctx context.Context, token string) (*StorageTokenVerifyResult, error)
+}
+
 // StorageTokenVerifyResult is the subset of Storage API's tokens/verify response that the
 // kai-preview flow consumes. We deliberately ignore email, name, roles — see
 // docs/superpowers/specs/2026-05-14-dev-iframe-auth-design.md "no identity in

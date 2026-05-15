@@ -1,4 +1,4 @@
-package kaipreview
+package endpoints
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -48,7 +49,7 @@ func (h *ExchangeHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Reques
 		return nil
 	}
 
-	claims, err := VerifyHandshakeJWT(h.deps.HandshakeKey, h.deps.Clock, body.Token)
+	claims, err := kaipreview.VerifyHandshakeJWT(h.deps.HandshakeKey, h.deps.Clock, body.Token)
 	if err != nil {
 		http.Error(w, "invalid handshake token", http.StatusUnauthorized)
 		return nil
@@ -58,12 +59,12 @@ func (h *ExchangeHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Reques
 		return nil
 	}
 
-	sessionJWT, err := MintSessionJWT(h.deps.SessionKey, h.deps.Clock, h.deps.AppID, h.deps.AppProjectID, h.deps.SessionTTL)
+	sessionJWT, err := kaipreview.MintSessionJWT(h.deps.SessionKey, h.deps.Clock, h.deps.AppID, h.deps.AppProjectID, h.deps.SessionTTL)
 	if err != nil {
 		return errors.Errorf("kai-preview: mint session JWT: %w", err)
 	}
 
-	SetSessionCookie(w, sessionJWT, h.deps.SessionTTL)
+	kaipreview.SetSessionCookie(w, sessionJWT, h.deps.SessionTTL)
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
 	return nil

@@ -1,4 +1,4 @@
-package kaipreview
+package endpoints
 
 import (
 	"net/http"

@@ -1,4 +1,4 @@
-package kaipreview
+package endpoints
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 )
 
 // PathPrefix is the URL prefix all kai-preview endpoints live under.
@@ -29,9 +30,9 @@ func (f DevModeCheckerFunc) IsDevMode(ctx context.Context, appID string) bool { 
 
 type HandlerDeps struct {
 	Clock                clockwork.Clock
-	StorageTokenVerifier StorageTokenVerifier
+	StorageTokenVerifier kaipreview.StorageTokenVerifier
 	DevMode              DevModeChecker
-	CORS                 *CORS
+	CORS                 *kaipreview.CORS
 	HandshakeKey         string
 	SessionKey           string
 	SessionTTL           time.Duration

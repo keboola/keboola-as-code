@@ -1,4 +1,4 @@
-package kaipreview
+package endpoints
 
 import (
 	"context"
@@ -7,13 +7,9 @@ import (
 
 	"github.com/jonboulle/clockwork"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
-
-// StorageTokenVerifier abstracts HTTPStorageTokenVerifier so tests can inject a stub without HTTP.
-type StorageTokenVerifier interface {
-	Verify(ctx context.Context, token string) (*StorageTokenVerifyResult, error)
-}
 
 // DevModeChecker tells the handler whether the current app is in dev mode.
 // Backed by the apps-proxy CRD watcher (AppInfo.DevMode).
@@ -23,9 +19,9 @@ type DevModeChecker interface {
 
 type HandshakeTokenDeps struct {
 	Clock                clockwork.Clock
-	StorageTokenVerifier StorageTokenVerifier
+	StorageTokenVerifier kaipreview.StorageTokenVerifier
 	DevMode              DevModeChecker
-	CORS                 *CORS
+	CORS                 *kaipreview.CORS
 	HandshakeKey         string
 	AppID                string
 	AppProjectID         string
@@ -81,7 +77,7 @@ func (h *HandshakeTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.
 		return nil
 	}
 
-	jwt, err := MintHandshakeJWT(h.deps.HandshakeKey, h.deps.Clock, h.deps.AppID, h.deps.AppProjectID)
+	jwt, err := kaipreview.MintHandshakeJWT(h.deps.HandshakeKey, h.deps.Clock, h.deps.AppID, h.deps.AppProjectID)
 	if err != nil {
 		return errors.Errorf("kai-preview: mint handshake JWT: %w", err)
 	}

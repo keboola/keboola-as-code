@@ -1,4 +1,4 @@
-package kaipreview
+package endpoints
 
 import (
 	"context"
@@ -11,6 +11,13 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
+)
+
+const (
+	testHandshakeKey = "test-handshake-key-must-be-long-enough"
+	testSessionKey   = "test-session-key-also-long-enough"
 )
 
 type stubStorageTokenVerifier struct {
@@ -18,11 +25,11 @@ type stubStorageTokenVerifier struct {
 	err       error
 }
 
-func (s *stubStorageTokenVerifier) Verify(_ context.Context, _ string) (*StorageTokenVerifyResult, error) {
+func (s *stubStorageTokenVerifier) Verify(_ context.Context, _ string) (*kaipreview.StorageTokenVerifyResult, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
-	return &StorageTokenVerifyResult{ProjectID: s.projectID}, nil
+	return &kaipreview.StorageTokenVerifyResult{ProjectID: s.projectID}, nil
 }
 
 type stubDevModeChecker struct{ devMode bool }
@@ -36,7 +43,7 @@ type stubErr struct{ msg string }
 func (e *stubErr) Error() string { return e.msg }
 
 func newTestHandshakeHandler(tokenValid bool, storageTokenProject string, devMode bool) *HandshakeTokenHandler {
-	var verifier StorageTokenVerifier
+	var verifier kaipreview.StorageTokenVerifier
 	if tokenValid {
 		verifier = &stubStorageTokenVerifier{projectID: storageTokenProject}
 	} else {
@@ -46,7 +53,7 @@ func newTestHandshakeHandler(tokenValid bool, storageTokenProject string, devMod
 		Clock:                clockwork.NewFakeClock(),
 		StorageTokenVerifier: verifier,
 		DevMode:              &stubDevModeChecker{devMode: devMode},
-		CORS:                 NewCORS([]string{"https://connection.keboola.com"}),
+		CORS:                 kaipreview.NewCORS([]string{"https://connection.keboola.com"}),
 		HandshakeKey:         testHandshakeKey,
 		AppID:                "app-123",
 		AppProjectID:         "proj-456",

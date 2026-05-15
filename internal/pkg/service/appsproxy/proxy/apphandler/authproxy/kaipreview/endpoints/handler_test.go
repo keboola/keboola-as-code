@@ -1,4 +1,4 @@
-package kaipreview
+package endpoints
 
 import (
 	"net/http"
@@ -9,6 +9,8 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 )
 
 func newTestCompositeHandler(devMode bool) *Handler {
@@ -16,7 +18,7 @@ func newTestCompositeHandler(devMode bool) *Handler {
 		Clock:             clockwork.NewFakeClock(),
 		StorageTokenVerifier: &stubStorageTokenVerifier{projectID: "proj-456"},
 		DevMode:           &stubDevModeChecker{devMode: devMode},
-		CORS:              NewCORS([]string{"https://connection.keboola.com"}),
+		CORS:              kaipreview.NewCORS([]string{"https://connection.keboola.com"}),
 		HandshakeKey:      testHandshakeKey,
 		SessionKey:        testSessionKey,
 		SessionTTL:        4 * time.Hour,

@@ -1,4 +1,4 @@
-package kaipreview
+package endpoints
 
 import (
 	"net/http"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -14,7 +15,7 @@ type RefreshDeps struct {
 	DevMode      DevModeChecker
 	SessionKey   string
 	SessionTTL   time.Duration
-	CORS         *CORS
+	CORS         *kaipreview.CORS
 	AppID        string
 	AppProjectID string
 }
@@ -50,13 +51,13 @@ func (h *RefreshHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Request
 		return nil
 	}
 
-	cookieValue := ReadSessionCookie(r)
+	cookieValue := kaipreview.ReadSessionCookie(r)
 	if cookieValue == "" {
 		http.Error(w, "no session", http.StatusUnauthorized)
 		return nil
 	}
 
-	claims, err := VerifySessionJWT(h.deps.SessionKey, h.deps.Clock, cookieValue)
+	claims, err := kaipreview.VerifySessionJWT(h.deps.SessionKey, h.deps.Clock, cookieValue)
 	if err != nil {
 		http.Error(w, "session expired", http.StatusUnauthorized)
 		return nil
@@ -66,11 +67,11 @@ func (h *RefreshHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Request
 		return nil
 	}
 
-	newJWT, err := MintSessionJWT(h.deps.SessionKey, h.deps.Clock, h.deps.AppID, h.deps.AppProjectID, h.deps.SessionTTL)
+	newJWT, err := kaipreview.MintSessionJWT(h.deps.SessionKey, h.deps.Clock, h.deps.AppID, h.deps.AppProjectID, h.deps.SessionTTL)
 	if err != nil {
 		return errors.Errorf("kai-preview: re-mint session JWT: %w", err)
 	}
-	SetSessionCookie(w, newJWT, h.deps.SessionTTL)
+	kaipreview.SetSessionCookie(w, newJWT, h.deps.SessionTTL)
 
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusNoContent)

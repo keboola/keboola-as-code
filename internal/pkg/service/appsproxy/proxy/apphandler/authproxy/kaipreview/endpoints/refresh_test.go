@@ -1,4 +1,4 @@
-package kaipreview
+package endpoints
 
 import (
 	"net/http"
@@ -9,6 +9,8 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 )
 
 func newTestRefreshHandler(devMode bool) (*RefreshHandler, *clockwork.FakeClock) {
@@ -18,7 +20,7 @@ func newTestRefreshHandler(devMode bool) (*RefreshHandler, *clockwork.FakeClock)
 		DevMode:      &stubDevModeChecker{devMode: devMode},
 		SessionKey:   testSessionKey,
 		SessionTTL:   4 * time.Hour,
-		CORS:         NewCORS([]string{"https://connection.keboola.com"}),
+		CORS:         kaipreview.NewCORS([]string{"https://connection.keboola.com"}),
 		AppID:        "app-123",
 		AppProjectID: "proj-456",
 	}), clock
@@ -27,12 +29,12 @@ func newTestRefreshHandler(devMode bool) (*RefreshHandler, *clockwork.FakeClock)
 func TestRefreshHandler_Success(t *testing.T) {
 	t.Parallel()
 	h, clock := newTestRefreshHandler(true)
-	jwt, err := MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
+	jwt, err := kaipreview.MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
 	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/refresh", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
-	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
+	r.AddCookie(&http.Cookie{Name: kaipreview.SessionCookieName, Value: jwt})
 	w := httptest.NewRecorder()
 
 	err = h.ServeHTTPOrError(w, r)
@@ -42,7 +44,7 @@ func TestRefreshHandler_Success(t *testing.T) {
 
 	cookies := w.Result().Cookies()
 	require.Len(t, cookies, 1)
-	assert.Equal(t, SessionCookieName, cookies[0].Name)
+	assert.Equal(t, kaipreview.SessionCookieName, cookies[0].Name)
 	assert.NotEqual(t, jwt, cookies[0].Value, "must be a fresh JWT, not the old one")
 }
 
@@ -75,13 +77,13 @@ func TestRefreshHandler_MissingCookie(t *testing.T) {
 func TestRefreshHandler_ExpiredCookie(t *testing.T) {
 	t.Parallel()
 	h, clock := newTestRefreshHandler(true)
-	jwt, err := MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
+	jwt, err := kaipreview.MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
 	require.NoError(t, err)
 	clock.Advance(5 * time.Hour)
 
 	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/refresh", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
-	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
+	r.AddCookie(&http.Cookie{Name: kaipreview.SessionCookieName, Value: jwt})
 	w := httptest.NewRecorder()
 
 	err = h.ServeHTTPOrError(w, r)
@@ -93,12 +95,12 @@ func TestRefreshHandler_ExpiredCookie(t *testing.T) {
 func TestRefreshHandler_DevModeOff(t *testing.T) {
 	t.Parallel()
 	h, clock := newTestRefreshHandler(false)
-	jwt, err := MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
+	jwt, err := kaipreview.MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
 	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/refresh", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
-	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
+	r.AddCookie(&http.Cookie{Name: kaipreview.SessionCookieName, Value: jwt})
 	w := httptest.NewRecorder()
 
 	err = h.ServeHTTPOrError(w, r)
@@ -109,12 +111,12 @@ func TestRefreshHandler_DevModeOff(t *testing.T) {
 func TestRefreshHandler_ScopeMismatch(t *testing.T) {
 	t.Parallel()
 	h, clock := newTestRefreshHandler(true)
-	jwt, err := MintSessionJWT(testSessionKey, clock, "different-app", "proj-456", 4*time.Hour)
+	jwt, err := kaipreview.MintSessionJWT(testSessionKey, clock, "different-app", "proj-456", 4*time.Hour)
 	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/refresh", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
-	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
+	r.AddCookie(&http.Cookie{Name: kaipreview.SessionCookieName, Value: jwt})
 	w := httptest.NewRecorder()
 
 	err = h.ServeHTTPOrError(w, r)
@@ -125,12 +127,12 @@ func TestRefreshHandler_ScopeMismatch(t *testing.T) {
 func TestRefreshHandler_DisallowedOrigin(t *testing.T) {
 	t.Parallel()
 	h, clock := newTestRefreshHandler(true)
-	jwt, err := MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
+	jwt, err := kaipreview.MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
 	require.NoError(t, err)
 
 	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/refresh", nil)
 	r.Header.Set("Origin", "https://evil.example.com")
-	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
+	r.AddCookie(&http.Cookie{Name: kaipreview.SessionCookieName, Value: jwt})
 	w := httptest.NewRecorder()
 
 	err = h.ServeHTTPOrError(w, r)
