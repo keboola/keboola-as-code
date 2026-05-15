@@ -99,8 +99,9 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 }
 
 // ValidateSource checks that projectID/sourceID/secret refer to an active source
-// of the given expected type, without dispatching any record. Used to authenticate
-// empty OTLP batches which otherwise would bypass the secret check.
+// of the given expected type, without dispatching any record. The OTLP handler
+// calls it on every request before decoding the body so unauthenticated callers
+// get a deterministic 404 instead of consuming decode CPU.
 func (d *Dispatcher) ValidateSource(projectID keboola.ProjectID, sourceID key.SourceID, secret string, expectedType definition.SourceType) error {
 	d.wg.Add(1)
 	defer d.wg.Done()

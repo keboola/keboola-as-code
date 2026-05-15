@@ -102,6 +102,14 @@ paths:
                                     lastId: my-object-456
                                 sources:
                                     - branchId: 5678
+                                      created:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
                                       description: ""
                                       http:
                                         url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
@@ -110,7 +118,26 @@ paths:
                                       sinks: []
                                       sourceId: my-http-source
                                       type: http
+                                      version:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
+                                        description: New source.
+                                        hash: f43e93acd97eceb3
+                                        number: 1
                                     - branchId: 5678
+                                      created:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
                                       description: ""
                                       name: My OTLP Source
                                       otlp:
@@ -121,6 +148,17 @@ paths:
                                       sinks: []
                                       sourceId: my-otlp-source
                                       type: otlp
+                                      version:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
+                                        description: New source.
+                                        hash: f43e93acd97eceb3
+                                        number: 1
             security:
                 - storage-api-token: []
     /v1/branches/{branchId}/sources:
@@ -179,6 +217,14 @@ paths:
                                     lastId: my-object-456
                                 sources:
                                     - branchId: 5678
+                                      created:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
                                       description: ""
                                       http:
                                         url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
@@ -186,7 +232,26 @@ paths:
                                       projectId: 1234
                                       sourceId: my-http-source
                                       type: http
+                                      version:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
+                                        description: New source.
+                                        hash: f43e93acd97eceb3
+                                        number: 1
                                     - branchId: 5678
+                                      created:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
                                       description: ""
                                       name: My OTLP Source
                                       otlp:
@@ -196,6 +261,17 @@ paths:
                                       projectId: 1234
                                       sourceId: my-otlp-source
                                       type: otlp
+                                      version:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
+                                        description: New source.
+                                        hash: f43e93acd97eceb3
+                                        number: 1
             security:
                 - storage-api-token: []
         post:
@@ -370,6 +446,14 @@ paths:
                                     description: HTTP source response shape.
                                     value:
                                         branchId: 5678
+                                        created:
+                                            at: "2024-01-15T10:00:00.000Z"
+                                            by:
+                                                tokenDesc: john.green@company.com
+                                                tokenId: "896455"
+                                                type: user
+                                                userId: "578621"
+                                                userName: John Green
                                         description: ""
                                         http:
                                             url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
@@ -377,11 +461,30 @@ paths:
                                         projectId: 1234
                                         sourceId: my-http-source
                                         type: http
+                                        version:
+                                            at: "2024-01-15T10:00:00.000Z"
+                                            by:
+                                                tokenDesc: john.green@company.com
+                                                tokenId: "896455"
+                                                type: user
+                                                userId: "578621"
+                                                userName: John Green
+                                            description: New source.
+                                            hash: f43e93acd97eceb3
+                                            number: 1
                                 otlp_source:
                                     summary: otlp_source
                                     description: OTLP source response shape.
                                     value:
                                         branchId: 5678
+                                        created:
+                                            at: "2024-01-15T10:00:00.000Z"
+                                            by:
+                                                tokenDesc: john.green@company.com
+                                                tokenId: "896455"
+                                                type: user
+                                                userId: "578621"
+                                                userName: John Green
                                         description: ""
                                         name: My OTLP Source
                                         otlp:
@@ -391,6 +494,17 @@ paths:
                                         projectId: 1234
                                         sourceId: my-otlp-source
                                         type: otlp
+                                        version:
+                                            at: "2024-01-15T10:00:00.000Z"
+                                            by:
+                                                tokenDesc: john.green@company.com
+                                                tokenId: "896455"
+                                                type: user
+                                                userId: "578621"
+                                                userName: John Green
+                                            description: New source.
+                                            hash: f43e93acd97eceb3
+                                            number: 1
                 "404":
                     description: 'stream.api.sourceNotFound: Source not found error.'
                     content:
@@ -2368,7 +2482,7 @@ paths:
             parameters:
                 - name: signal
                   in: query
-                  description: OTLP signal type to simulate for sink routing. Only applies to OTLP sources — ignored for HTTP sources. Defaults to "logs" if omitted. Sinks whose `allowedSignals` filter rejects this signal are skipped in the result.
+                  description: OTLP signal type to simulate for sink routing.
                   allowEmptyValue: true
                   schema:
                     type: string
@@ -2780,6 +2894,14 @@ paths:
                                     lastId: my-object-456
                                 sources:
                                     - branchId: 5678
+                                      created:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
                                       description: ""
                                       http:
                                         url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
@@ -2787,7 +2909,26 @@ paths:
                                       projectId: 1234
                                       sourceId: my-http-source
                                       type: http
+                                      version:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
+                                        description: New source.
+                                        hash: f43e93acd97eceb3
+                                        number: 1
                                     - branchId: 5678
+                                      created:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
                                       description: ""
                                       name: My OTLP Source
                                       otlp:
@@ -2797,6 +2938,17 @@ paths:
                                       projectId: 1234
                                       sourceId: my-otlp-source
                                       type: otlp
+                                      version:
+                                        at: "2024-01-15T10:00:00.000Z"
+                                        by:
+                                            tokenDesc: john.green@company.com
+                                            tokenId: "896455"
+                                            type: user
+                                            userId: "578621"
+                                            userName: John Green
+                                        description: New source.
+                                        hash: f43e93acd97eceb3
+                                        number: 1
             security:
                 - storage-api-token: []
     /v1/documentation/openapi.json:
@@ -3287,6 +3439,14 @@ components:
             description: Source of data for further processing, start of the stream, max 100 sources per a branch.
             example:
                 branchId: 5678
+                created:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
                 description: ""
                 name: My OTLP Source
                 otlp:
@@ -3297,6 +3457,17 @@ components:
                 sinks: []
                 sourceId: my-otlp-source
                 type: otlp
+                version:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
+                    description: New source.
+                    hash: f43e93acd97eceb3
+                    number: 1
             required:
                 - projectId
                 - branchId
@@ -3313,6 +3484,14 @@ components:
                 $ref: '#/components/schemas/AggregatedSource'
             example:
                 - branchId: 5678
+                  created:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
                   description: ""
                   http:
                     url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
@@ -3321,7 +3500,26 @@ components:
                   sinks: []
                   sourceId: my-http-source
                   type: http
+                  version:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
+                    description: New source.
+                    hash: f43e93acd97eceb3
+                    number: 1
                 - branchId: 5678
+                  created:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
                   description: ""
                   name: My OTLP Source
                   otlp:
@@ -3332,6 +3530,17 @@ components:
                   sinks: []
                   sourceId: my-otlp-source
                   type: otlp
+                  version:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
+                    description: New source.
+                    hash: f43e93acd97eceb3
+                    number: 1
         AggregatedSourcesRequest:
             type: object
             properties:
@@ -3386,6 +3595,14 @@ components:
                     lastId: my-object-456
                 sources:
                     - branchId: 5678
+                      created:
+                        at: "2024-01-15T10:00:00.000Z"
+                        by:
+                            tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
+                            userId: "578621"
+                            userName: John Green
                       description: ""
                       http:
                         url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
@@ -3394,7 +3611,26 @@ components:
                       sinks: []
                       sourceId: my-http-source
                       type: http
+                      version:
+                        at: "2024-01-15T10:00:00.000Z"
+                        by:
+                            tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
+                            userId: "578621"
+                            userName: John Green
+                        description: New source.
+                        hash: f43e93acd97eceb3
+                        number: 1
                     - branchId: 5678
+                      created:
+                        at: "2024-01-15T10:00:00.000Z"
+                        by:
+                            tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
+                            userId: "578621"
+                            userName: John Green
                       description: ""
                       name: My OTLP Source
                       otlp:
@@ -3405,6 +3641,17 @@ components:
                       sinks: []
                       sourceId: my-otlp-source
                       type: otlp
+                      version:
+                        at: "2024-01-15T10:00:00.000Z"
+                        by:
+                            tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
+                            userId: "578621"
+                            userName: John Green
+                        description: New source.
+                        hash: f43e93acd97eceb3
+                        number: 1
             required:
                 - projectId
                 - branchId
@@ -5069,6 +5316,14 @@ components:
             description: Source of data for further processing, start of the stream, max 100 sources per a branch.
             example:
                 branchId: 5678
+                created:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
                 description: ""
                 name: My OTLP Source
                 otlp:
@@ -5078,6 +5333,17 @@ components:
                 projectId: 1234
                 sourceId: my-otlp-source
                 type: otlp
+                version:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
+                    description: New source.
+                    hash: f43e93acd97eceb3
+                    number: 1
             required:
                 - projectId
                 - branchId
@@ -5150,6 +5416,14 @@ components:
             description: List of sources, max 100 sources per a branch.
             example:
                 - branchId: 5678
+                  created:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
                   description: ""
                   http:
                     url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
@@ -5157,7 +5431,26 @@ components:
                   projectId: 1234
                   sourceId: my-http-source
                   type: http
+                  version:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
+                    description: New source.
+                    hash: f43e93acd97eceb3
+                    number: 1
                 - branchId: 5678
+                  created:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
                   description: ""
                   name: My OTLP Source
                   otlp:
@@ -5167,6 +5460,17 @@ components:
                   projectId: 1234
                   sourceId: my-otlp-source
                   type: otlp
+                  version:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
+                    description: New source.
+                    hash: f43e93acd97eceb3
+                    number: 1
         SourcesList:
             type: object
             properties:
@@ -5195,6 +5499,14 @@ components:
                     lastId: my-object-456
                 sources:
                     - branchId: 5678
+                      created:
+                        at: "2024-01-15T10:00:00.000Z"
+                        by:
+                            tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
+                            userId: "578621"
+                            userName: John Green
                       description: ""
                       http:
                         url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
@@ -5202,7 +5514,26 @@ components:
                       projectId: 1234
                       sourceId: my-http-source
                       type: http
+                      version:
+                        at: "2024-01-15T10:00:00.000Z"
+                        by:
+                            tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
+                            userId: "578621"
+                            userName: John Green
+                        description: New source.
+                        hash: f43e93acd97eceb3
+                        number: 1
                     - branchId: 5678
+                      created:
+                        at: "2024-01-15T10:00:00.000Z"
+                        by:
+                            tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
+                            userId: "578621"
+                            userName: John Green
                       description: ""
                       name: My OTLP Source
                       otlp:
@@ -5212,6 +5543,17 @@ components:
                       projectId: 1234
                       sourceId: my-otlp-source
                       type: otlp
+                      version:
+                        at: "2024-01-15T10:00:00.000Z"
+                        by:
+                            tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
+                            userId: "578621"
+                            userName: John Green
+                        description: New source.
+                        hash: f43e93acd97eceb3
+                        number: 1
             required:
                 - projectId
                 - branchId

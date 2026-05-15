@@ -130,8 +130,8 @@ func (m *Mapper) newTableSinkEntity(payload *api.CreateSinkPayload) (entity defi
 }
 
 // signalsToStrings converts the Goa-typed []api.OTLPSignal payload field into
-// the plain []string used by the persisted entity. The reverse conversion lives
-// in sink_response.go (stringsToSignals).
+// the plain []string used by the persisted entity. The reverse conversion is
+// stringsToSignals immediately below.
 func signalsToStrings(signals []api.OTLPSignal) []string {
 	out := make([]string, len(signals))
 	for i, s := range signals {
