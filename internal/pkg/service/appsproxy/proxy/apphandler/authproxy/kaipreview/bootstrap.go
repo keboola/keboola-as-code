@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
+	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -43,7 +44,12 @@ func (h *BootstrapHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Reque
 		return nil
 	}
 
-	WriteFrameAncestorsCSP(w, h.allowedOrigins)
+	csp := "frame-ancestors 'none'"
+	if len(h.allowedOrigins) > 0 {
+		csp = "frame-ancestors " + strings.Join(h.allowedOrigins, " ")
+	}
+
+	w.Header().Set("Content-Security-Policy", csp)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 
