@@ -2561,19 +2561,36 @@ paths:
 
                 For HTTP sources the body is the raw payload that an HTTP client would send (treated as a single record).
 
-                For OTLP sources the body must be a single **flattened OTLP record** — a JSON object with the same shape that the source produces internally for each log record, metric data point, or span. Example flattened log record:
+                For OTLP sources the body must be a single **flattened OTLP record** — a JSON object with the same shape that the source produces internally for each log record, metric data point, or span. Attributes, resource, and scope are nested objects (not dotted keys); reference them in column mappings as `Body('attributes')['user.id']`, `Body('resource')['service.name']`, `Body('scope')['name']`, etc. Example flattened log record:
                 ```json
                 {
                   "timestamp": "2024-01-15T10:30:00Z",
-                  "body": "User logged in",
+                  "observed_timestamp": "2024-01-15T10:30:00Z",
+                  "severity_number": 9,
                   "severity_text": "INFO",
-                  "attr.user.id": "user-123",
-                  "resource.service.name": "auth-service"
+                  "body": "User logged in",
+                  "flags": 0,
+                  "attributes": {"user.id": "user-123"},
+                  "resource": {"service.name": "auth-service"},
+                  "scope": {"name": "github.com/my/auth", "version": "1.2.3"}
                 }
                 ```
-                Do not send a raw OTLP protobuf or the multi-record envelope produced by an OTel SDK — the test endpoint intentionally evaluates one already-flattened record so the response is deterministic.
+                Do not send a raw OTLP protobuf or the multi-record envelope produced by an OTel SDK — the test endpoint intentionally evaluates one already-flattened record so the response is deterministic. For OTLP sources, the `signal` query parameter selects which signal type the request simulates for sink routing (`logs` by default); sinks whose `allowedSignals` filter rejects that signal are skipped in the result.
             operationId: TestSource
             parameters:
+                - name: signal
+                  in: query
+                  description: OTLP signal type to simulate for sink routing. Only applies to OTLP sources — ignored for HTTP sources. Defaults to "logs" if omitted. Sinks whose `allowedSignals` filter rejects this signal are skipped in the result.
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: OTLP signal type to simulate for sink routing. Only applies to OTLP sources — ignored for HTTP sources. Defaults to "logs" if omitted. Sinks whose `allowedSignals` filter rejects this signal are skipped in the result.
+                    example: logs
+                    enum:
+                        - logs
+                        - metrics
+                        - traces
+                  example: logs
                 - name: branchId
                   in: path
                   required: true
@@ -6510,6 +6527,14 @@ components:
                     type: string
                     description: ID of the branch or "default".
                     example: default
+                signal:
+                    type: string
+                    description: OTLP signal type to simulate for sink routing. Only applies to OTLP sources — ignored for HTTP sources. Defaults to "logs" if omitted. Sinks whose `allowedSignals` filter rejects this signal are skipped in the result.
+                    example: logs
+                    enum:
+                        - logs
+                        - metrics
+                        - traces
                 sourceId:
                     type: string
                     description: Unique ID of the source.
@@ -6519,6 +6544,7 @@ components:
             example:
                 branchId: default
                 sourceId: github-webhook-source
+                signal: logs
             required:
                 - branchId
                 - sourceId

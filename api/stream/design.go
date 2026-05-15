@@ -299,23 +299,32 @@ var _ = Service("stream", func() {
 		Description("Tests configured mapping of the source and its sinks against an example request body.\n\n" +
 			"For HTTP sources the body is the raw payload that an HTTP client would send (treated as a single record).\n\n" +
 			"For OTLP sources the body must be a single **flattened OTLP record** — a JSON object with the same shape that " +
-			"the source produces internally for each log record, metric data point, or span. " +
+			"the source produces internally for each log record, metric data point, or span. Attributes, resource, and scope " +
+			"are nested objects (not dotted keys); reference them in column mappings as `Body('attributes')['user.id']`, " +
+			"`Body('resource')['service.name']`, `Body('scope')['name']`, etc. " +
 			"Example flattened log record:\n" +
 			"```json\n" +
 			"{\n" +
 			"  \"timestamp\": \"2024-01-15T10:30:00Z\",\n" +
-			"  \"body\": \"User logged in\",\n" +
+			"  \"observed_timestamp\": \"2024-01-15T10:30:00Z\",\n" +
+			"  \"severity_number\": 9,\n" +
 			"  \"severity_text\": \"INFO\",\n" +
-			"  \"attr.user.id\": \"user-123\",\n" +
-			"  \"resource.service.name\": \"auth-service\"\n" +
+			"  \"body\": \"User logged in\",\n" +
+			"  \"flags\": 0,\n" +
+			"  \"attributes\": {\"user.id\": \"user-123\"},\n" +
+			"  \"resource\": {\"service.name\": \"auth-service\"},\n" +
+			"  \"scope\": {\"name\": \"github.com/my/auth\", \"version\": \"1.2.3\"}\n" +
 			"}\n" +
 			"```\n" +
 			"Do not send a raw OTLP protobuf or the multi-record envelope produced by an OTel SDK — the test endpoint " +
-			"intentionally evaluates one already-flattened record so the response is deterministic.")
+			"intentionally evaluates one already-flattened record so the response is deterministic. " +
+			"For OTLP sources, the `signal` query parameter selects which signal type the request simulates for sink " +
+			"routing (`logs` by default); sinks whose `allowedSignals` filter rejects that signal are skipped in the result.")
 		Result(TestResult)
 		Payload(TestSourceRequest)
 		HTTP(func() {
 			POST("/branches/{branchId}/sources/{sourceId}/test")
+			Param("signal")
 			Meta("openapi:tag:test")
 			Response(StatusOK)
 			SourceNotFoundError()
@@ -1003,6 +1012,12 @@ var UpdateSourceRequest = Type("UpdateSourceRequest", func() {
 
 var TestSourceRequest = Type("TestSourceRequest", func() {
 	SourceKeyRequest()
+	Attribute("signal", String, func() {
+		Description(`OTLP signal type to simulate for sink routing. Only applies to OTLP sources — ignored for HTTP sources. ` +
+			`Defaults to "logs" if omitted. Sinks whose ` + "`allowedSignals`" + ` filter rejects this signal are skipped in the result.`)
+		Enum("logs", "metrics", "traces")
+		Example("logs")
+	})
 })
 
 var TestResult = Type("TestResult", func() {

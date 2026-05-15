@@ -767,6 +767,7 @@ func DecodeTestSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		var (
 			branchID        string
 			sourceID        string
+			signal          *string
 			storageAPIToken string
 			err             error
 
@@ -780,6 +781,15 @@ func DecodeTestSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		if utf8.RuneCountInString(sourceID) > 48 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
 		}
+		signalRaw := r.URL.Query().Get("signal")
+		if signalRaw != "" {
+			signal = &signalRaw
+		}
+		if signal != nil {
+			if !(*signal == "logs" || *signal == "metrics" || *signal == "traces") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("signal", *signal, []any{"logs", "metrics", "traces"}))
+			}
+		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
 			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
@@ -787,7 +797,7 @@ func DecodeTestSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		if err != nil {
 			return payload, err
 		}
-		payload = NewTestSourcePayload(branchID, sourceID, storageAPIToken)
+		payload = NewTestSourcePayload(branchID, sourceID, signal, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
