@@ -328,11 +328,37 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 		if err != nil {
 			return nil, svcerrors.NewBadRequestError(err)
 		}
+		// Sinks whose AllowedSignals filter rejects this signal would be skipped
+		// during real ingestion; rendering them here would surface mapping errors
+		// from sinks that never see this record at runtime.
+		sinks = filterSinksBySignal(sinks, recordCtx.Signal())
 	} else {
 		recordCtx = recordctx.FromHTTP(d.Clock().Now(), req)
 	}
 
 	return s.mapper.NewTestResultResponse(d.SourceKey(), sinks, recordCtx)
+}
+
+// filterSinksBySignal keeps only sinks whose AllowedSignals accept the given
+// OTLP signal. An empty AllowedSignals (no filter) accepts everything.
+func filterSinksBySignal(sinks []definition.Sink, signal string) []definition.Sink {
+	if signal == "" {
+		return sinks
+	}
+	out := make([]definition.Sink, 0, len(sinks))
+	for _, sink := range sinks {
+		if len(sink.AllowedSignals) == 0 {
+			out = append(out, sink)
+			continue
+		}
+		for _, allowed := range sink.AllowedSignals {
+			if allowed == signal {
+				out = append(out, sink)
+				break
+			}
+		}
+	}
+	return out
 }
 
 func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.SourceRequestScope, payload *api.SourceStatisticsClearPayload) (err error) {

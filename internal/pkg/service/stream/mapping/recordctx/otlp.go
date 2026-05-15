@@ -95,8 +95,16 @@ func FromOTLPTestRequest(ctx context.Context, now time.Time, req *http.Request) 
 		clientIP = net.ParseIP(host)
 	}
 
-	// Default signal to "logs" — signal affects routing only, not column rendering.
-	return FromOTLP(ctx, now, clientIP, headers, bodyMap, "logs"), nil
+	// Signal can be selected via ?signal=logs|metrics|traces so the test endpoint
+	// reflects the same per-signal sink filtering that real ingestion applies.
+	// Default to "logs" for back-compat with existing API callers.
+	signal := req.URL.Query().Get("signal")
+	switch signal {
+	case "logs", "metrics", "traces":
+	default:
+		signal = "logs"
+	}
+	return FromOTLP(ctx, now, clientIP, headers, bodyMap, signal), nil
 }
 
 func (c *otlpContext) Ctx() context.Context {
