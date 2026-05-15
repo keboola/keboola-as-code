@@ -3219,10 +3219,10 @@ func TestKaiPreviewSlidingRefresh(t *testing.T) {
 	logger.SetErrOutput(loggerWriter)
 	handler := proxy.NewHandler(ctx, d)
 
-	// Boot a TLS proxy server.
-	port := pm.GetFreePort()
+	// Boot a TLS proxy server. Bind to :0 to let the OS assign a free port atomically,
+	// eliminating the TOCTOU race that occurs when GetFreePort() releases the port before Listen().
 	var lc net.ListenConfig
-	l, err := lc.Listen(ctx, "tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	l, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	proxySrv := &httptest.Server{
 		Listener: l,
