@@ -26,14 +26,14 @@ import (
 )
 
 type Manager struct {
-	config           config.Config
-	telemetry        telemetry.Telemetry
-	configLoader     appconfig.Loader
-	upstreamManager  *upstream.Manager
-	authProxyManager *authproxy.Manager
-	pageWriter       *pagewriter.Writer
-	handlers         *syncmap.SyncMap[api.AppID, appHandlerWrapper]
-	clock            clockwork.Clock
+	config               config.Config
+	telemetry            telemetry.Telemetry
+	configLoader         appconfig.Loader
+	upstreamManager      *upstream.Manager
+	authProxyManager     *authproxy.Manager
+	pageWriter           *pagewriter.Writer
+	handlers             *syncmap.SyncMap[api.AppID, appHandlerWrapper]
+	clock                clockwork.Clock
 	storageTokenVerifier kaipreview.StorageTokenVerifier
 }
 

@@ -40,12 +40,13 @@ func TestExchangeHandler_Success(t *testing.T) {
 	h := newTestExchangeHandler(true)
 	jwt := mintForTest(t, "app-123", "proj-456")
 
-	body, _ := json.Marshal(map[string]string{"token": jwt})
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader(body))
+	body, err := json.Marshal(map[string]string{"token": jwt})
+	require.NoError(t, err)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	err := h.ServeHTTPOrError(w, r)
+	err = h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, w.Code)
 
@@ -59,11 +60,12 @@ func TestExchangeHandler_InvalidJWT(t *testing.T) {
 	t.Parallel()
 	h := newTestExchangeHandler(true)
 
-	body, _ := json.Marshal(map[string]string{"token": "not-a-jwt"})
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader(body))
+	body, err := json.Marshal(map[string]string{"token": "not-a-jwt"})
+	require.NoError(t, err)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 
-	err := h.ServeHTTPOrError(w, r)
+	err = h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
@@ -73,11 +75,12 @@ func TestExchangeHandler_AppIDMismatch(t *testing.T) {
 	h := newTestExchangeHandler(true)
 	jwt := mintForTest(t, "different-app", "proj-456")
 
-	body, _ := json.Marshal(map[string]string{"token": jwt})
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader(body))
+	body, err := json.Marshal(map[string]string{"token": jwt})
+	require.NoError(t, err)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 
-	err := h.ServeHTTPOrError(w, r)
+	err = h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusForbidden, w.Code)
 }
@@ -87,11 +90,12 @@ func TestExchangeHandler_ProjectMismatch(t *testing.T) {
 	h := newTestExchangeHandler(true)
 	jwt := mintForTest(t, "app-123", "different-project")
 
-	body, _ := json.Marshal(map[string]string{"token": jwt})
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader(body))
+	body, err := json.Marshal(map[string]string{"token": jwt})
+	require.NoError(t, err)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 
-	err := h.ServeHTTPOrError(w, r)
+	err = h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusForbidden, w.Code)
 }
@@ -101,11 +105,12 @@ func TestExchangeHandler_DevModeOff(t *testing.T) {
 	h := newTestExchangeHandler(false)
 	jwt := mintForTest(t, "app-123", "proj-456")
 
-	body, _ := json.Marshal(map[string]string{"token": jwt})
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader(body))
+	body, err := json.Marshal(map[string]string{"token": jwt})
+	require.NoError(t, err)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 
-	err := h.ServeHTTPOrError(w, r)
+	err = h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
@@ -113,7 +118,7 @@ func TestExchangeHandler_DevModeOff(t *testing.T) {
 func TestExchangeHandler_WrongMethod(t *testing.T) {
 	t.Parallel()
 	h := newTestExchangeHandler(true)
-	r := httptest.NewRequest(http.MethodGet, "/_proxy/kai-preview/exchange", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/_proxy/kai-preview/exchange", nil)
 	w := httptest.NewRecorder()
 
 	err := h.ServeHTTPOrError(w, r)
@@ -124,7 +129,7 @@ func TestExchangeHandler_WrongMethod(t *testing.T) {
 func TestExchangeHandler_EmptyBody(t *testing.T) {
 	t.Parallel()
 	h := newTestExchangeHandler(true)
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader([]byte("{}")))
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/exchange", bytes.NewReader([]byte("{}")))
 	w := httptest.NewRecorder()
 
 	err := h.ServeHTTPOrError(w, r)

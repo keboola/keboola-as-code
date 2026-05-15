@@ -52,16 +52,16 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 		upstream:           appUpstream,
 		authHandlerPerRule: make(map[ruleIndex]chain.Handler),
 		kaiPreview: kpendpoints.NewHandler(kpendpoints.HandlerDeps{
-			Clock:             manager.clock,
+			Clock:                manager.clock,
 			StorageTokenVerifier: manager.storageTokenVerifier,
-			DevMode:           devModeChecker,
-			CORS:              kaipreview.NewCORS(manager.config.KaiPreview.AllowedOrigins),
-			HandshakeKey:      manager.config.KaiPreview.HandshakeSigningKey,
-			SessionKey:        manager.config.KaiPreview.SessionSigningKey,
-			SessionTTL:        manager.config.KaiPreview.SessionTTL,
-			AllowedOrigins:    manager.config.KaiPreview.AllowedOrigins,
-			AppID:             string(app.ID),
-			AppProjectID:      app.ProjectID,
+			DevMode:              devModeChecker,
+			CORS:                 kaipreview.NewCORS(manager.config.KaiPreview.AllowedOrigins),
+			HandshakeKey:         manager.config.KaiPreview.HandshakeSigningKey,
+			SessionKey:           manager.config.KaiPreview.SessionSigningKey,
+			SessionTTL:           manager.config.KaiPreview.SessionTTL,
+			AllowedOrigins:       manager.config.KaiPreview.AllowedOrigins,
+			AppID:                string(app.ID),
+			AppProjectID:         app.ProjectID,
 		}),
 	}
 
@@ -170,39 +170,9 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 
 	// kai-preview: dev-mode iframe-auth path.
 	// (routing decision documented in spec § "apps-proxy: routing decision for dev-mode apps")
-	if h.isDevMode(req.Context()) {
-		// 1. /_proxy/kai-preview/* routes go to the kai-preview composite handler.
-		if strings.HasPrefix(req.URL.Path, kpendpoints.PathPrefix) {
-			return h.kaiPreview.ServeHTTPOrError(w, req)
-		}
-		// 2. Valid session cookie → forward to upstream (skip AuthRules), with sliding refresh.
-		if claims, ok := kaipreview.ValidateSessionCookie(
-			req,
-			h.manager.config.KaiPreview.SessionSigningKey,
-			h.manager.clock,
-			string(h.app.ID),
-			h.app.ProjectID,
-		); ok {
-			if claims.NeedsRefresh(h.manager.clock.Now()) {
-				newJWT, err := kaipreview.MintSessionJWT(
-					h.manager.config.KaiPreview.SessionSigningKey,
-					h.manager.clock,
-					string(h.app.ID),
-					h.app.ProjectID,
-					h.manager.config.KaiPreview.SessionTTL,
-				)
-				if err == nil {
-					kaipreview.SetSessionCookie(w, newJWT, h.manager.config.KaiPreview.SessionTTL)
-				}
-				// If mint fails, just forward without refresh — the existing cookie is still valid.
-			}
-			return h.upstream.ServeHTTPOrError(w, req)
-		}
-		// 3. Iframe document load on a dev-mode app with no session → serve bootstrap shim.
-		if kaipreview.IsIframeDocumentLoad(req) {
-			bootstrapReq := req.Clone(req.Context())
-			bootstrapReq.URL.Path = kpendpoints.PathPrefix + "/bootstrap"
-			return h.kaiPreview.ServeHTTPOrError(w, bootstrapReq)
+	if h.isDevMode(req.Context()) { //nolint:contextcheck // false positive: req.Context() is the correct context here
+		if handled, err := h.serveKaiPreview(w, req); handled {
+			return err
 		}
 	}
 
@@ -232,6 +202,51 @@ func (h *appHandler) serveRule(w http.ResponseWriter, req *http.Request, index r
 
 	// Serve the request without authentication
 	return h.upstream.ServeHTTPOrError(w, req)
+}
+
+// serveKaiPreview handles the three dev-mode routing cases for the kai-preview iframe-auth path.
+// Returns (true, err) when it handled the request, or (false, nil) when the caller should continue routing.
+func (h *appHandler) serveKaiPreview(w http.ResponseWriter, req *http.Request) (bool, error) {
+	// 1. /_proxy/kai-preview/* routes go to the kai-preview composite handler.
+	if strings.HasPrefix(req.URL.Path, kpendpoints.PathPrefix) {
+		return true, h.kaiPreview.ServeHTTPOrError(w, req)
+	}
+	// 2. Valid session cookie → forward to upstream (skip AuthRules), with sliding refresh.
+	if claims, ok := kaipreview.ValidateSessionCookie(
+		req,
+		h.manager.config.KaiPreview.SessionSigningKey,
+		h.manager.clock,
+		string(h.app.ID),
+		h.app.ProjectID,
+	); ok {
+		h.maybeRefreshSessionCookie(w, claims)
+		return true, h.upstream.ServeHTTPOrError(w, req)
+	}
+	// 3. Iframe document load on a dev-mode app with no session → serve bootstrap shim.
+	if kaipreview.IsIframeDocumentLoad(req) {
+		bootstrapReq := req.Clone(req.Context()) //nolint:contextcheck // false positive: req.Context() is the correct context here
+		bootstrapReq.URL.Path = kpendpoints.PathPrefix + "/bootstrap"
+		return true, h.kaiPreview.ServeHTTPOrError(w, bootstrapReq)
+	}
+	return false, nil
+}
+
+// maybeRefreshSessionCookie re-mints the session JWT when the session has passed its midpoint.
+// If minting fails, the existing cookie is left in place (it is still valid).
+func (h *appHandler) maybeRefreshSessionCookie(w http.ResponseWriter, claims *kaipreview.SessionClaims) {
+	if !claims.NeedsRefresh(h.manager.clock.Now()) {
+		return
+	}
+	newJWT, err := kaipreview.MintSessionJWT(
+		h.manager.config.KaiPreview.SessionSigningKey,
+		h.manager.clock,
+		string(h.app.ID),
+		h.app.ProjectID,
+		h.manager.config.KaiPreview.SessionTTL,
+	)
+	if err == nil {
+		kaipreview.SetSessionCookie(w, newJWT, h.manager.config.KaiPreview.SessionTTL)
+	}
 }
 
 // isDevMode reports whether this app currently has DevMode enabled.

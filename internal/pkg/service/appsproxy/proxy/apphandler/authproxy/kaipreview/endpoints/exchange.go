@@ -46,13 +46,13 @@ func (h *ExchangeHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Reques
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Token == "" {
 		http.Error(w, "invalid body", http.StatusBadRequest)
-		return nil
+		return nil //nolint:nilerr // intentional: decode error handled via HTTP 400 response
 	}
 
 	claims, err := kaipreview.VerifyHandshakeJWT(h.deps.HandshakeKey, h.deps.Clock, body.Token)
 	if err != nil {
 		http.Error(w, "invalid handshake token", http.StatusUnauthorized)
-		return nil
+		return nil //nolint:nilerr // intentional: invalid token handled via HTTP 401 response
 	}
 	if claims.AppID != h.deps.AppID || claims.ProjectID != h.deps.AppProjectID {
 		http.Error(w, "handshake token scope mismatch", http.StatusForbidden)

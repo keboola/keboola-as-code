@@ -13,25 +13,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 )
 
-func newTestCompositeHandler(devMode bool) *Handler {
+func newTestCompositeHandler() *Handler {
 	return NewHandler(HandlerDeps{
-		Clock:             clockwork.NewFakeClock(),
+		Clock:                clockwork.NewFakeClock(),
 		StorageTokenVerifier: &stubStorageTokenVerifier{projectID: "proj-456"},
-		DevMode:           &stubDevModeChecker{devMode: devMode},
-		CORS:              kaipreview.NewCORS([]string{"https://connection.keboola.com"}),
-		HandshakeKey:      testHandshakeKey,
-		SessionKey:        testSessionKey,
-		SessionTTL:        4 * time.Hour,
-		AllowedOrigins: []string{"https://connection.keboola.com"},
-		AppID:             "app-123",
-		AppProjectID:      "proj-456",
+		DevMode:              &stubDevModeChecker{devMode: true},
+		CORS:                 kaipreview.NewCORS([]string{"https://connection.keboola.com"}),
+		HandshakeKey:         testHandshakeKey,
+		SessionKey:           testSessionKey,
+		SessionTTL:           4 * time.Hour,
+		AllowedOrigins:       []string{"https://connection.keboola.com"},
+		AppID:                "app-123",
+		AppProjectID:         "proj-456",
 	})
 }
 
 func TestCompositeHandler_RoutesHandshakeToken(t *testing.T) {
 	t.Parallel()
-	h := newTestCompositeHandler(true)
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
+	h := newTestCompositeHandler()
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "valid")
 	w := httptest.NewRecorder()
@@ -41,8 +41,8 @@ func TestCompositeHandler_RoutesHandshakeToken(t *testing.T) {
 
 func TestCompositeHandler_RoutesBootstrap(t *testing.T) {
 	t.Parallel()
-	h := newTestCompositeHandler(true)
-	r := httptest.NewRequest(http.MethodGet, "/_proxy/kai-preview/bootstrap", nil)
+	h := newTestCompositeHandler()
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/_proxy/kai-preview/bootstrap", nil)
 	w := httptest.NewRecorder()
 	require.NoError(t, h.ServeHTTPOrError(w, r))
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -51,9 +51,9 @@ func TestCompositeHandler_RoutesBootstrap(t *testing.T) {
 
 func TestCompositeHandler_RoutesExchange(t *testing.T) {
 	t.Parallel()
-	h := newTestCompositeHandler(true)
+	h := newTestCompositeHandler()
 	// Empty body — exchange should return 400 (handler reached, valid path)
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/exchange", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/exchange", nil)
 	w := httptest.NewRecorder()
 	require.NoError(t, h.ServeHTTPOrError(w, r))
 	assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -61,9 +61,9 @@ func TestCompositeHandler_RoutesExchange(t *testing.T) {
 
 func TestCompositeHandler_RoutesRefresh(t *testing.T) {
 	t.Parallel()
-	h := newTestCompositeHandler(true)
+	h := newTestCompositeHandler()
 	// No cookie — refresh should return 401 (handler reached, valid path)
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/refresh", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/refresh", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	w := httptest.NewRecorder()
 	require.NoError(t, h.ServeHTTPOrError(w, r))
@@ -72,8 +72,8 @@ func TestCompositeHandler_RoutesRefresh(t *testing.T) {
 
 func TestCompositeHandler_UnknownSubpath404(t *testing.T) {
 	t.Parallel()
-	h := newTestCompositeHandler(true)
-	r := httptest.NewRequest(http.MethodGet, "/_proxy/kai-preview/does-not-exist", nil)
+	h := newTestCompositeHandler()
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/_proxy/kai-preview/does-not-exist", nil)
 	w := httptest.NewRecorder()
 	require.NoError(t, h.ServeHTTPOrError(w, r))
 	assert.Equal(t, http.StatusNotFound, w.Code)

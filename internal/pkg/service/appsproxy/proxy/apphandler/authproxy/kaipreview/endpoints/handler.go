@@ -13,7 +13,7 @@ import (
 )
 
 // PathPrefix is the URL prefix all kai-preview endpoints live under.
-var PathPrefix = config.InternalPrefix + "/kai-preview"
+const PathPrefix = config.InternalPrefix + "/kai-preview"
 
 const (
 	pathHandshakeToken = "/handshake-token"

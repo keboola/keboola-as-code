@@ -22,7 +22,7 @@ const (
 
 // HandshakeClaims carries the authorization scope from mint to exchange.
 type HandshakeClaims struct {
-	AppID     string `json:"app_id"`
+	AppID     string `json:"appId"`
 	ProjectID string `json:"project"`
 	Purpose   string `json:"purpose"`
 	jwt.RegisteredClaims
@@ -30,10 +30,10 @@ type HandshakeClaims struct {
 
 // SessionClaims carries the authorization scope inside the session cookie.
 type SessionClaims struct {
-	AppID     string `json:"app_id"`
+	AppID     string `json:"appId"`
 	ProjectID string `json:"project"`
 	Purpose   string `json:"purpose"`
-	TTL       int64  `json:"ttl_s"` // total intended lifetime in seconds (for halfway-refresh detection)
+	TTL       int64  `json:"ttlS"` // total intended lifetime in seconds (for halfway-refresh detection)
 	jwt.RegisteredClaims
 }
 

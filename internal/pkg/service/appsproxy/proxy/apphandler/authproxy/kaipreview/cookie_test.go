@@ -40,7 +40,7 @@ func TestSetSessionCookie_Attributes(t *testing.T) {
 
 func TestReadSessionCookie_Present(t *testing.T) {
 	t.Parallel()
-	r := httptest.NewRequest("GET", "/", nil)
+	r := httptest.NewRequestWithContext(t.Context(), "GET", "/", nil)
 	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "the-jwt"})
 	got := ReadSessionCookie(r)
 	assert.Equal(t, "the-jwt", got)
@@ -48,7 +48,7 @@ func TestReadSessionCookie_Present(t *testing.T) {
 
 func TestReadSessionCookie_Missing(t *testing.T) {
 	t.Parallel()
-	r := httptest.NewRequest("GET", "/", nil)
+	r := httptest.NewRequestWithContext(t.Context(), "GET", "/", nil)
 	got := ReadSessionCookie(r)
 	assert.Empty(t, got)
 }
@@ -85,7 +85,7 @@ func TestValidateSessionCookie_Valid(t *testing.T) {
 	jwt, err := MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
 	require.NoError(t, err)
 
-	r := httptest.NewRequest("GET", "/anything", nil)
+	r := httptest.NewRequestWithContext(t.Context(), "GET", "/anything", nil)
 	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
 
 	claims, ok := ValidateSessionCookie(r, testSessionKey, clock, "app-123", "proj-456")
@@ -97,7 +97,7 @@ func TestValidateSessionCookie_Valid(t *testing.T) {
 func TestValidateSessionCookie_Missing(t *testing.T) {
 	t.Parallel()
 	clock := clockwork.NewFakeClock()
-	r := httptest.NewRequest("GET", "/anything", nil)
+	r := httptest.NewRequestWithContext(t.Context(), "GET", "/anything", nil)
 	_, ok := ValidateSessionCookie(r, testSessionKey, clock, "app-123", "proj-456")
 	assert.False(t, ok)
 }
@@ -107,7 +107,7 @@ func TestValidateSessionCookie_AppMismatch(t *testing.T) {
 	clock := clockwork.NewFakeClock()
 	jwt, err := MintSessionJWT(testSessionKey, clock, "different-app", "proj-456", 4*time.Hour)
 	require.NoError(t, err)
-	r := httptest.NewRequest("GET", "/anything", nil)
+	r := httptest.NewRequestWithContext(t.Context(), "GET", "/anything", nil)
 	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
 
 	_, ok := ValidateSessionCookie(r, testSessionKey, clock, "app-123", "proj-456")
@@ -120,7 +120,7 @@ func TestValidateSessionCookie_Expired(t *testing.T) {
 	jwt, err := MintSessionJWT(testSessionKey, clock, "app-123", "proj-456", 4*time.Hour)
 	require.NoError(t, err)
 	clock.Advance(5 * time.Hour)
-	r := httptest.NewRequest("GET", "/anything", nil)
+	r := httptest.NewRequestWithContext(t.Context(), "GET", "/anything", nil)
 	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
 
 	_, ok := ValidateSessionCookie(r, testSessionKey, clock, "app-123", "proj-456")
@@ -132,7 +132,7 @@ func TestValidateSessionCookie_ProjectMismatch(t *testing.T) {
 	clock := clockwork.NewFakeClock()
 	jwt, err := MintSessionJWT(testSessionKey, clock, "app-123", "different-project", 4*time.Hour)
 	require.NoError(t, err)
-	r := httptest.NewRequest("GET", "/anything", nil)
+	r := httptest.NewRequestWithContext(t.Context(), "GET", "/anything", nil)
 	r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: jwt})
 
 	_, ok := ValidateSessionCookie(r, testSessionKey, clock, "app-123", "proj-456")

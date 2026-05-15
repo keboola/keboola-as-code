@@ -27,7 +27,8 @@ func TestIsIframeDocumentLoad(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/some/path", nil)
+			t.Parallel()
+			r := httptest.NewRequestWithContext(t.Context(), "GET", "/some/path", nil)
 			if tc.dest != "" {
 				r.Header.Set("Sec-Fetch-Dest", tc.dest)
 			}

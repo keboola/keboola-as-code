@@ -60,7 +60,7 @@ func (h *RefreshHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Request
 	claims, err := kaipreview.VerifySessionJWT(h.deps.SessionKey, h.deps.Clock, cookieValue)
 	if err != nil {
 		http.Error(w, "session expired", http.StatusUnauthorized)
-		return nil
+		return nil //nolint:nilerr // intentional: invalid session handled via HTTP 401 response
 	}
 	if claims.AppID != h.deps.AppID || claims.ProjectID != h.deps.AppProjectID {
 		http.Error(w, "session scope mismatch", http.StatusForbidden)

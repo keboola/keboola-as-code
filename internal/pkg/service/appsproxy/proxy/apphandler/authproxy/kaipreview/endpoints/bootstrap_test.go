@@ -13,7 +13,7 @@ import (
 func TestBootstrapHandler_ServesHTMLWithCSP(t *testing.T) {
 	t.Parallel()
 	h := NewBootstrapHandler([]string{"https://connection.keboola.com"}, &stubDevModeChecker{devMode: true}, "app-123")
-	r := httptest.NewRequest("GET", "/_proxy/kai-preview/bootstrap", nil)
+	r := httptest.NewRequestWithContext(t.Context(), "GET", "/_proxy/kai-preview/bootstrap", nil)
 	w := httptest.NewRecorder()
 
 	err := h.ServeHTTPOrError(w, r)
@@ -34,7 +34,7 @@ func TestBootstrapHandler_ServesHTMLWithCSP(t *testing.T) {
 func TestBootstrapHandler_WrongMethod(t *testing.T) {
 	t.Parallel()
 	h := NewBootstrapHandler([]string{"https://connection.keboola.com"}, &stubDevModeChecker{devMode: true}, "app-123")
-	r := httptest.NewRequest("POST", "/_proxy/kai-preview/bootstrap", nil)
+	r := httptest.NewRequestWithContext(t.Context(), "POST", "/_proxy/kai-preview/bootstrap", nil)
 	w := httptest.NewRecorder()
 	err := h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)
@@ -44,7 +44,7 @@ func TestBootstrapHandler_WrongMethod(t *testing.T) {
 func TestBootstrapHandler_NonDevModeReturns404(t *testing.T) {
 	t.Parallel()
 	h := NewBootstrapHandler([]string{"https://connection.keboola.com"}, &stubDevModeChecker{devMode: false}, "app-123")
-	r := httptest.NewRequest(http.MethodGet, "/_proxy/kai-preview/bootstrap", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/_proxy/kai-preview/bootstrap", nil)
 	w := httptest.NewRecorder()
 	err := h.ServeHTTPOrError(w, r)
 	require.NoError(t, err)

@@ -1,7 +1,6 @@
 package kaipreview
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -18,14 +17,16 @@ func TestStorageTokenVerifier_Success(t *testing.T) {
 		assert.Equal(t, "/v2/storage/tokens/verify", r.URL.Path)
 		assert.Equal(t, "test-token", r.Header.Get("X-StorageApi-Token"))
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"owner": map[string]any{"id": "proj-456", "name": "Test Project"},
-		})
+		}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}))
 	defer srv.Close()
 
 	v := NewHTTPStorageTokenVerifier(srv.URL, srv.Client())
-	res, err := v.Verify(context.Background(), "test-token")
+	res, err := v.Verify(t.Context(), "test-token")
 	require.NoError(t, err)
 	assert.Equal(t, "proj-456", res.ProjectID)
 }
@@ -38,7 +39,7 @@ func TestStorageTokenVerifier_Unauthorized(t *testing.T) {
 	defer srv.Close()
 
 	v := NewHTTPStorageTokenVerifier(srv.URL, srv.Client())
-	_, err := v.Verify(context.Background(), "bad-token")
+	_, err := v.Verify(t.Context(), "bad-token")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unauthorized")
 }
@@ -46,7 +47,7 @@ func TestStorageTokenVerifier_Unauthorized(t *testing.T) {
 func TestStorageTokenVerifier_NetworkError(t *testing.T) {
 	t.Parallel()
 	v := NewHTTPStorageTokenVerifier("http://127.0.0.1:1", http.DefaultClient) // port 1 = unreachable
-	_, err := v.Verify(context.Background(), "token")
+	_, err := v.Verify(t.Context(), "token")
 	require.Error(t, err)
 }
 
@@ -60,7 +61,7 @@ func TestStorageTokenVerifier_MissingOwnerID(t *testing.T) {
 	defer srv.Close()
 
 	v := NewHTTPStorageTokenVerifier(srv.URL, srv.Client())
-	_, err := v.Verify(context.Background(), "token")
+	_, err := v.Verify(t.Context(), "token")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing owner.id")
 }
@@ -73,7 +74,7 @@ func TestStorageTokenVerifier_ServerError(t *testing.T) {
 	defer srv.Close()
 
 	v := NewHTTPStorageTokenVerifier(srv.URL, srv.Client())
-	_, err := v.Verify(context.Background(), "token")
+	_, err := v.Verify(t.Context(), "token")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "500")
 }
@@ -87,7 +88,7 @@ func TestStorageTokenVerifier_MalformedJSON(t *testing.T) {
 	defer srv.Close()
 
 	v := NewHTTPStorageTokenVerifier(srv.URL, srv.Client())
-	_, err := v.Verify(context.Background(), "token")
+	_, err := v.Verify(t.Context(), "token")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "decode Storage token verify response")
 }

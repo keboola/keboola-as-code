@@ -70,7 +70,7 @@ func (h *HandshakeTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.
 	if err != nil {
 		// Never echo the raw Storage token in the error body or logs.
 		http.Error(w, "Storage token invalid", http.StatusUnauthorized)
-		return nil
+		return nil //nolint:nilerr // intentional: error is handled via HTTP response, not propagated
 	}
 	if res.ProjectID != h.deps.AppProjectID {
 		http.Error(w, "app belongs to a different project", http.StatusForbidden)
@@ -86,6 +86,8 @@ func (h *HandshakeTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]string{"token": jwt})
+	if err := json.NewEncoder(w).Encode(map[string]string{"token": jwt}); err != nil {
+		return errors.Errorf("kai-preview: write handshake token response: %w", err)
+	}
 	return nil
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/jonboulle/clockwork"
@@ -36,11 +35,11 @@ type stubDevModeChecker struct{ devMode bool }
 
 func (s *stubDevModeChecker) IsDevMode(_ context.Context, _ string) bool { return s.devMode }
 
-var errStubUnauth = &stubErr{msg: "unauthorized"}
+var errStubUnauth = &stubError{msg: "unauthorized"}
 
-type stubErr struct{ msg string }
+type stubError struct{ msg string }
 
-func (e *stubErr) Error() string { return e.msg }
+func (e *stubError) Error() string { return e.msg }
 
 func newTestHandshakeHandler(tokenValid bool, storageTokenProject string, devMode bool) *HandshakeTokenHandler {
 	var verifier kaipreview.StorageTokenVerifier
@@ -64,7 +63,7 @@ func TestHandshakeTokenHandler_Success(t *testing.T) {
 	t.Parallel()
 	h := newTestHandshakeHandler(true, "proj-456", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "valid-token")
 	w := httptest.NewRecorder()
@@ -85,7 +84,7 @@ func TestHandshakeTokenHandler_PreflightOptions(t *testing.T) {
 	t.Parallel()
 	h := newTestHandshakeHandler(true, "proj-456", true)
 
-	r := httptest.NewRequest(http.MethodOptions, "/_proxy/kai-preview/handshake-token", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodOptions, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("Access-Control-Request-Method", "POST")
 	w := httptest.NewRecorder()
@@ -99,7 +98,7 @@ func TestHandshakeTokenHandler_MissingSTAHeader(t *testing.T) {
 	t.Parallel()
 	h := newTestHandshakeHandler(true, "proj-456", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	w := httptest.NewRecorder()
 
@@ -114,7 +113,7 @@ func TestHandshakeTokenHandler_STAInvalid(t *testing.T) {
 	t.Parallel()
 	h := newTestHandshakeHandler(false, "", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "bad-token")
 	w := httptest.NewRecorder()
@@ -130,7 +129,7 @@ func TestHandshakeTokenHandler_WrongProject(t *testing.T) {
 	t.Parallel()
 	h := newTestHandshakeHandler(true, "different-project", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "valid-but-wrong-project")
 	w := httptest.NewRecorder()
@@ -146,7 +145,7 @@ func TestHandshakeTokenHandler_AppNotInDevMode(t *testing.T) {
 	t.Parallel()
 	h := newTestHandshakeHandler(true, "proj-456", false)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "valid-token")
 	w := httptest.NewRecorder()
@@ -160,7 +159,7 @@ func TestHandshakeTokenHandler_DisallowedOrigin(t *testing.T) {
 	t.Parallel()
 	h := newTestHandshakeHandler(true, "proj-456", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://evil.example.com")
 	r.Header.Set("X-StorageApi-Token", "valid-token")
 	w := httptest.NewRecorder()
@@ -175,7 +174,7 @@ func TestHandshakeTokenHandler_DisallowedOrigin(t *testing.T) {
 func TestHandshakeTokenHandler_WrongMethod(t *testing.T) {
 	t.Parallel()
 	h := newTestHandshakeHandler(true, "proj-456", true)
-	r := httptest.NewRequest(http.MethodGet, "/_proxy/kai-preview/handshake-token", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	w := httptest.NewRecorder()
 
@@ -188,10 +187,10 @@ func TestHandshakeTokenHandler_NoTokenInErrorBody(t *testing.T) {
 	t.Parallel()
 	h := newTestHandshakeHandler(false, "", true)
 
-	r := httptest.NewRequest(http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
+	r := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/_proxy/kai-preview/handshake-token", nil)
 	r.Header.Set("Origin", "https://connection.keboola.com")
 	r.Header.Set("X-StorageApi-Token", "secret-token-do-not-leak")
 	w := httptest.NewRecorder()
 	_ = h.ServeHTTPOrError(w, r)
-	assert.False(t, strings.Contains(w.Body.String(), "secret-token-do-not-leak"))
+	assert.NotContains(t, w.Body.String(), "secret-token-do-not-leak")
 }

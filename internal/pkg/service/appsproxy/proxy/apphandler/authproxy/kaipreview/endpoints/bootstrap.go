@@ -13,7 +13,7 @@ import (
 //go:embed template/bootstrap.gohtml
 var bootstrapFS embed.FS
 
-var bootstrapTmpl = template.Must(template.ParseFS(bootstrapFS, "template/bootstrap.gohtml"))
+var bootstrapTmpl = template.Must(template.ParseFS(bootstrapFS, "template/bootstrap.gohtml")) //nolint:gochecknoglobals // template must be parsed at package init
 
 type BootstrapHandler struct {
 	allowedOrigins []string
@@ -23,10 +23,14 @@ type BootstrapHandler struct {
 }
 
 func NewBootstrapHandler(allowedOrigins []string, devMode DevModeChecker, appID string) *BootstrapHandler {
-	bs, _ := json.Marshal(allowedOrigins) // []string round-trip never errors for []string
+	bs, err := json.Marshal(allowedOrigins)
+	if err != nil {
+		// []string marshalling never fails; this is a safety guard.
+		bs = []byte("[]")
+	}
 	return &BootstrapHandler{
 		allowedOrigins: allowedOrigins,
-		originsJSON:    template.JS(bs),
+		originsJSON:    template.JS(bs), //nolint:gosec // G203: bs is json.Marshal output of config-supplied URL strings, safe to embed as JS literal
 		devMode:        devMode,
 		appID:          appID,
 	}
