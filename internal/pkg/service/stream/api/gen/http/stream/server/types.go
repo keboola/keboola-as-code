@@ -3193,10 +3193,11 @@ func NewUpdateSourceSettingsPayload(body *UpdateSourceSettingsRequestBody, branc
 }
 
 // NewTestSourcePayload builds a stream service TestSource endpoint payload.
-func NewTestSourcePayload(branchID string, sourceID string, storageAPIToken string) *stream.TestSourcePayload {
+func NewTestSourcePayload(branchID string, sourceID string, signal *string, storageAPIToken string) *stream.TestSourcePayload {
 	v := &stream.TestSourcePayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
+	v.Signal = signal
 	v.StorageAPIToken = storageAPIToken
 
 	return v

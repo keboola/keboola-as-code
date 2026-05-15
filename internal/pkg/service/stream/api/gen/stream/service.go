@@ -54,19 +54,29 @@ type Service interface {
 
 	// For OTLP sources the body must be a single **flattened OTLP record** — a
 	// JSON object with the same shape that the source produces internally for each
-	// log record, metric data point, or span. Example flattened log record:
+	// log record, metric data point, or span. Attributes, resource, and scope are
+	// nested objects (not dotted keys); reference them in column mappings as
+	// `Body('attributes')['user.id']`, `Body('resource')['service.name']`,
+	// `Body('scope')['name']`, etc. Example flattened log record:
 	// ```json
 	// {
 	// "timestamp": "2024-01-15T10:30:00Z",
-	// "body": "User logged in",
+	// "observed_timestamp": "2024-01-15T10:30:00Z",
+	// "severity_number": 9,
 	// "severity_text": "INFO",
-	// "attr.user.id": "user-123",
-	// "resource.service.name": "auth-service"
+	// "body": "User logged in",
+	// "flags": 0,
+	// "attributes": {"user.id": "user-123"},
+	// "resource": {"service.name": "auth-service"},
+	// "scope": {"name": "github.com/my/auth", "version": "1.2.3"}
 	// }
 	// ```
 	// Do not send a raw OTLP protobuf or the multi-record envelope produced by an
 	// OTel SDK — the test endpoint intentionally evaluates one already-flattened
-	// record so the response is deterministic.
+	// record so the response is deterministic. For OTLP sources, the `signal`
+	// query parameter selects which signal type the request simulates for sink
+	// routing (`logs` by default); sinks whose `allowedSignals` filter rejects
+	// that signal are skipped in the result.
 	TestSource(context.Context, dependencies.SourceRequestScope, *TestSourcePayload, io.ReadCloser) (res *TestResult, err error)
 	// Clears all statistics of the source.
 	SourceStatisticsClear(context.Context, dependencies.SourceRequestScope, *SourceStatisticsClearPayload) (err error)
@@ -901,6 +911,10 @@ type TestSourcePayload struct {
 	StorageAPIToken string
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
+	// OTLP signal type to simulate for sink routing. Only applies to OTLP sources
+	// — ignored for HTTP sources. Defaults to "logs" if omitted. Sinks whose
+	// `allowedSignals` filter rejects this signal are skipped in the result.
+	Signal *string
 }
 
 // UndeleteSinkPayload is the payload type of the stream service UndeleteSink

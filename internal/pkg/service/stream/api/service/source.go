@@ -303,7 +303,7 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 	return s.mapper.NewTaskResponse(t)
 }
 
-func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.TestSourcePayload, _ io.ReadCloser) (res *api.TestResult, err error) {
+func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.TestSourcePayload, _ io.ReadCloser) (res *api.TestResult, err error) {
 	source, err := s.definition.Source().Get(d.SourceKey()).Do(ctx).ResultOrErr()
 	if err != nil {
 		return nil, err
@@ -324,7 +324,13 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 		// OTLP record (the same structure that FlattenLogs/Metrics/Traces produces).
 		// This lets API callers test their jsonnet column expressions against a
 		// realistic flat payload without having to send a real protobuf batch.
-		recordCtx, err = recordctx.FromOTLPTestRequest(ctx, d.Clock().Now(), req)
+		// The signal selector is validated by the Goa enum; default to "logs"
+		// when the query parameter is omitted.
+		signal := "logs"
+		if payload != nil && payload.Signal != nil {
+			signal = *payload.Signal
+		}
+		recordCtx, err = recordctx.FromOTLPTestRequest(ctx, d.Clock().Now(), req, signal)
 		if err != nil {
 			return nil, svcerrors.NewBadRequestError(err)
 		}

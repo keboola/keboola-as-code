@@ -65,7 +65,11 @@ func FromOTLP(
 // same format a real OTLP batch would yield after decoding and flattening.
 // This lets users call the /test endpoint to validate their column templates
 // against a representative sample payload.
-func FromOTLPTestRequest(ctx context.Context, now time.Time, req *http.Request) (Context, error) {
+// FromOTLPTestRequest reads the request body as a flat OTLP record and wraps it
+// in a record context tagged with the given signal. Caller is responsible for
+// validating signal (the Goa enum on TestSourcePayload.Signal does that for the
+// public API; pass "logs" as the documented default when the field is omitted).
+func FromOTLPTestRequest(ctx context.Context, now time.Time, req *http.Request, signal string) (Context, error) {
 	bodyBytes := make([]byte, 0)
 	if req.Body != nil {
 		var err error
@@ -95,15 +99,6 @@ func FromOTLPTestRequest(ctx context.Context, now time.Time, req *http.Request) 
 		clientIP = net.ParseIP(host)
 	}
 
-	// Signal can be selected via ?signal=logs|metrics|traces so the test endpoint
-	// reflects the same per-signal sink filtering that real ingestion applies.
-	// Default to "logs" for back-compat with existing API callers.
-	signal := req.URL.Query().Get("signal")
-	switch signal {
-	case "logs", "metrics", "traces":
-	default:
-		signal = "logs"
-	}
 	return FromOTLP(ctx, now, clientIP, headers, bodyMap, signal), nil
 }
 
