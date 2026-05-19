@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/jonboulle/clockwork"
 
@@ -60,7 +59,6 @@ func NewManager(d dependencies) *Manager {
 		panic("appsproxy: StorageAPIURL is required for kai-preview Storage token verification")
 	}
 	storageAPIURL := cfg.StorageAPIURL.String()
-	storageTokenHTTPClient := &http.Client{Timeout: 5 * time.Second}
 	return &Manager{
 		config:           cfg,
 		telemetry:        d.Telemetry(),
@@ -72,7 +70,7 @@ func NewManager(d dependencies) *Manager {
 			return &appHandlerWrapper{lock: &sync.Mutex{}}
 		}),
 		clock:                d.Clock(),
-		storageTokenVerifier: kaipreview.NewHTTPStorageTokenVerifier(storageAPIURL, storageTokenHTTPClient),
+		storageTokenVerifier: kaipreview.NewSDKStorageTokenVerifier(storageAPIURL),
 	}
 }
 
