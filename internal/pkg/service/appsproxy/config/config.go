@@ -25,7 +25,7 @@ type Config struct {
 	Upstream         Upstream          `configKey:"-" configUsage:"Configuration options for upstream"`
 	SandboxesAPI     SandboxesAPI      `configKey:"sandboxesAPI"`
 	CsrfTokenSalt    string            `configKey:"csrfTokenSalt" configUsage:"Salt used for generating CSRF tokens" validate:"required" sensitive:"true"`
-	StorageAPIURL    *url.URL          `configKey:"storageApiUrl" configUsage:"Base URL of the Keboola Storage API used for Storage token verification (kai-preview flow). E.g. https://connection.keboola.com" validate:"required"`
+	StorageAPIURL    *url.URL          `configKey:"storageApiUrl" configUsage:"Base URL of the Keboola Storage API for this stack, used for Storage token verification (kai-preview flow). Must match the stack the proxy fronts — e.g. https://connection.eu-central-1.keboola.com for an EU stack. No default; required." validate:"required"`
 	KaiPreview       KaiPreview        `configKey:"kaiPreview" configUsage:"kai-preview iframe-auth configuration."`
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`
@@ -88,10 +88,9 @@ func New() Config {
 		KaiPreview: KaiPreview{
 			SessionTTL: 4 * time.Hour,
 		},
-		StorageAPIURL: &url.URL{
-			Scheme: "https",
-			Host:   "connection.keboola.com",
-		},
+		// StorageAPIURL has no default — operator must set it explicitly per stack.
+		// A hardcoded default would silently mis-verify Storage tokens on every
+		// non-default stack, producing a clean 401 with no actionable error.
 	}
 }
 
