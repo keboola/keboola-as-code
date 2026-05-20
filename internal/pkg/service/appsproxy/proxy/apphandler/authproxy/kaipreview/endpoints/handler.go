@@ -8,6 +8,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 )
@@ -29,6 +30,7 @@ type DevModeCheckerFunc func(ctx context.Context, appID string) bool
 func (f DevModeCheckerFunc) IsDevMode(ctx context.Context, appID string) bool { return f(ctx, appID) }
 
 type HandlerDeps struct {
+	Logger               log.Logger
 	Clock                clockwork.Clock
 	StorageTokenVerifier kaipreview.StorageTokenVerifier
 	DevMode              DevModeChecker
@@ -53,17 +55,18 @@ type Handler struct {
 func NewHandler(deps HandlerDeps) *Handler {
 	return &Handler{
 		handshakeToken: NewHandshakeTokenHandler(HandshakeTokenDeps{
-			Clock: deps.Clock, StorageTokenVerifier: deps.StorageTokenVerifier, DevMode: deps.DevMode, CORS: deps.CORS,
+			Logger: deps.Logger, Clock: deps.Clock, StorageTokenVerifier: deps.StorageTokenVerifier,
+			DevMode: deps.DevMode, CORS: deps.CORS,
 			HandshakeKey: deps.HandshakeKey, AppID: deps.AppID, AppProjectID: deps.AppProjectID,
 		}),
 		bootstrap: NewBootstrapHandler(deps.AllowedOrigins, deps.DevMode, deps.AppID),
 		exchange: NewExchangeHandler(ExchangeDeps{
-			Clock: deps.Clock, DevMode: deps.DevMode,
+			Logger: deps.Logger, Clock: deps.Clock, DevMode: deps.DevMode,
 			HandshakeKey: deps.HandshakeKey, SessionKey: deps.SessionKey, SessionTTL: deps.SessionTTL,
 			AppID: deps.AppID, AppProjectID: deps.AppProjectID,
 		}),
 		refresh: NewRefreshHandler(RefreshDeps{
-			Clock: deps.Clock, DevMode: deps.DevMode,
+			Logger: deps.Logger, Clock: deps.Clock, DevMode: deps.DevMode,
 			SessionKey: deps.SessionKey, SessionTTL: deps.SessionTTL, CORS: deps.CORS,
 			AppID: deps.AppID, AppProjectID: deps.AppProjectID,
 		}),

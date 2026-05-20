@@ -52,6 +52,7 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 		upstream:           appUpstream,
 		authHandlerPerRule: make(map[ruleIndex]chain.Handler),
 		kaiPreview: kpendpoints.NewHandler(kpendpoints.HandlerDeps{
+			Logger:               manager.logger,
 			Clock:                manager.clock,
 			StorageTokenVerifier: manager.storageTokenVerifier,
 			DevMode:              devModeChecker,
@@ -219,7 +220,7 @@ func (h *appHandler) serveKaiPreview(w http.ResponseWriter, req *http.Request) (
 		string(h.app.ID),
 		h.app.ProjectID,
 	); ok {
-		h.maybeRefreshSessionCookie(w, claims)
+		h.maybeRefreshSessionCookie(w, req, claims)
 		return true, h.upstream.ServeHTTPOrError(w, req)
 	}
 	// 3. Iframe document load on a dev-mode app with no session → serve bootstrap shim.
@@ -233,7 +234,7 @@ func (h *appHandler) serveKaiPreview(w http.ResponseWriter, req *http.Request) (
 
 // maybeRefreshSessionCookie re-mints the session JWT when the session has passed its midpoint.
 // If minting fails, the existing cookie is left in place (it is still valid).
-func (h *appHandler) maybeRefreshSessionCookie(w http.ResponseWriter, claims *kaipreview.SessionClaims) {
+func (h *appHandler) maybeRefreshSessionCookie(w http.ResponseWriter, req *http.Request, claims *kaipreview.SessionClaims) {
 	if !claims.NeedsRefresh(h.manager.clock.Now()) {
 		return
 	}
@@ -246,6 +247,10 @@ func (h *appHandler) maybeRefreshSessionCookie(w http.ResponseWriter, claims *ka
 	)
 	if err == nil {
 		kaipreview.SetSessionCookie(w, newJWT, h.manager.config.KaiPreview.SessionTTL)
+		h.manager.logger.With(
+			attribute.String("appID", string(h.app.ID)),
+			attribute.String("projectID", h.app.ProjectID),
+		).Debug(req.Context(), "kai-preview: sliding session refresh")
 	}
 }
 

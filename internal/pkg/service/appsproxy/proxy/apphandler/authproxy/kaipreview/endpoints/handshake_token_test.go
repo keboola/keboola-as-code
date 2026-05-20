@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 )
 
@@ -49,6 +50,7 @@ func newTestHandshakeHandler(tokenValid bool, storageTokenProject string, devMod
 		verifier = &stubStorageTokenVerifier{err: errStubUnauth}
 	}
 	return NewHandshakeTokenHandler(HandshakeTokenDeps{
+		Logger:               log.NewNopLogger(),
 		Clock:                clockwork.NewFakeClock(),
 		StorageTokenVerifier: verifier,
 		DevMode:              &stubDevModeChecker{devMode: devMode},

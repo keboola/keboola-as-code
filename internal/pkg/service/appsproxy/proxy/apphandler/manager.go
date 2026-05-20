@@ -9,6 +9,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
@@ -25,6 +26,7 @@ import (
 )
 
 type Manager struct {
+	logger               log.Logger
 	config               config.Config
 	telemetry            telemetry.Telemetry
 	configLoader         appconfig.Loader
@@ -44,6 +46,7 @@ type appHandlerWrapper struct {
 }
 
 type dependencies interface {
+	Logger() log.Logger
 	Clock() clockwork.Clock
 	Config() config.Config
 	Telemetry() telemetry.Telemetry
@@ -60,6 +63,7 @@ func NewManager(d dependencies) *Manager {
 	}
 	storageAPIURL := cfg.StorageAPIURL.String()
 	return &Manager{
+		logger:           d.Logger(),
 		config:           cfg,
 		telemetry:        d.Telemetry(),
 		configLoader:     d.AppConfigLoader(),

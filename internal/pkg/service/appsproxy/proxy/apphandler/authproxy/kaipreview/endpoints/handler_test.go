@@ -10,11 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 )
 
 func newTestCompositeHandler() *Handler {
 	return NewHandler(HandlerDeps{
+		Logger:               log.NewNopLogger(),
 		Clock:                clockwork.NewFakeClock(),
 		StorageTokenVerifier: &stubStorageTokenVerifier{projectID: "proj-456"},
 		DevMode:              &stubDevModeChecker{devMode: true},
