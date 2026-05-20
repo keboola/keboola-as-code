@@ -30,8 +30,8 @@ func SetSessionCookie(w http.ResponseWriter, jwt string, ttl time.Duration) {
 }
 
 // ClearSessionCookie writes a cookie that invalidates any existing kai-preview
-// session cookie on the same host. Used by the exchange endpoint on validation
-// failure and by future sign-out flows.
+// session cookie on the same host. Called by SetSessionCookie when ttl <= 0,
+// and available for future sign-out flows.
 func ClearSessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:        SessionCookieName,

@@ -55,5 +55,6 @@ func (c *CORS) WriteResponseHeaders(w http.ResponseWriter, origin string, withCr
 	if withCredentials {
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 	}
-	w.Header().Set("Vary", "Origin")
+	// Add (not Set) so we don't clobber any Vary value upstream middleware may have appended.
+	w.Header().Add("Vary", "Origin")
 }

@@ -26,16 +26,20 @@ func TestSetSessionCookie_Attributes(t *testing.T) {
 	cookies := resp.Cookies()
 	require.Len(t, cookies, 1)
 	c := cookies[0]
+	// Strip parser-populated fields so we can compare the cookie shape directly.
+	c.Raw = ""
+	c.Unparsed = nil
 
-	assert.Equal(t, SessionCookieName, c.Name)
-	assert.Equal(t, jwt, c.Value)
-	assert.Equal(t, "/", c.Path)
-	assert.True(t, c.Secure)
-	assert.True(t, c.HttpOnly)
-	assert.Equal(t, http.SameSiteNoneMode, c.SameSite)
-	assert.True(t, c.Partitioned)
-	assert.Empty(t, c.Domain, "must be host-only — no Domain attribute")
-	assert.Equal(t, int(ttl.Seconds()), c.MaxAge)
+	assert.Equal(t, &http.Cookie{
+		Name:        SessionCookieName,
+		Value:       jwt,
+		Path:        "/",
+		Secure:      true,
+		HttpOnly:    true,
+		SameSite:    http.SameSiteNoneMode,
+		Partitioned: true,
+		MaxAge:      int(ttl.Seconds()),
+	}, c)
 }
 
 func TestReadSessionCookie_Present(t *testing.T) {
