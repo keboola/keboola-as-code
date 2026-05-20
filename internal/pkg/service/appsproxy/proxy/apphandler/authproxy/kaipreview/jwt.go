@@ -22,18 +22,38 @@ const (
 
 // HandshakeClaims carries the authorization scope from mint to exchange.
 type HandshakeClaims struct {
+	// Ver is the JWT schema version. Always 1 for this iteration.
+	// A version field lets old and new proxies coexist during rolling deploys
+	// when the claim shape changes in a future release.
+	Ver       int    `json:"ver"`
 	AppID     string `json:"appId"`
 	ProjectID string `json:"project"`
 	Purpose   string `json:"purpose"`
+	// Reserved for future identity propagation per the dev-iframe-auth design spec
+	// ("Possible future extensions"). Not populated today; omitempty ensures
+	// wire format is unchanged until a consumer is ready.
+	Email string   `json:"email,omitempty"`
+	Name  string   `json:"name,omitempty"`
+	Roles []string `json:"roles,omitempty"`
 	jwt.RegisteredClaims
 }
 
 // SessionClaims carries the authorization scope inside the session cookie.
 type SessionClaims struct {
+	// Ver is the JWT schema version. Always 1 for this iteration.
+	// A version field lets old and new proxies coexist during rolling deploys
+	// when the claim shape changes in a future release.
+	Ver       int    `json:"ver"`
 	AppID     string `json:"appId"`
 	ProjectID string `json:"project"`
 	Purpose   string `json:"purpose"`
 	TTL       int64  `json:"ttlS"` // total intended lifetime in seconds (for halfway-refresh detection)
+	// Reserved for future identity propagation per the dev-iframe-auth design spec
+	// ("Possible future extensions"). Not populated today; omitempty ensures
+	// wire format is unchanged until a consumer is ready.
+	Email string   `json:"email,omitempty"`
+	Name  string   `json:"name,omitempty"`
+	Roles []string `json:"roles,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -53,6 +73,7 @@ func MintHandshakeJWT(key string, clock clockwork.Clock, appID, projectID string
 		return "", errors.Errorf("kai-preview: generate jti: %w", err)
 	}
 	claims := HandshakeClaims{
+		Ver:       1,
 		AppID:     appID,
 		ProjectID: projectID,
 		Purpose:   purposeHandshake,
@@ -92,6 +113,7 @@ func MintSessionJWT(key string, clock clockwork.Clock, appID, projectID string, 
 		return "", errors.Errorf("kai-preview: generate jti: %w", err)
 	}
 	claims := SessionClaims{
+		Ver:       1,
 		AppID:     appID,
 		ProjectID: projectID,
 		Purpose:   purposeSession,

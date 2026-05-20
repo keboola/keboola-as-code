@@ -24,10 +24,15 @@ func TestHandshakeJWT_RoundTrip(t *testing.T) {
 
 	claims, err := VerifyHandshakeJWT(testHandshakeKey, clock, token)
 	require.NoError(t, err)
+	assert.Equal(t, 1, claims.Ver)
 	assert.Equal(t, "app-123", claims.AppID)
 	assert.Equal(t, "proj-456", claims.ProjectID)
 	assert.Equal(t, "kai-preview-handshake", claims.Purpose)
 	assert.NotEmpty(t, claims.ID)
+	// Reserved identity fields must be empty by default.
+	assert.Empty(t, claims.Email)
+	assert.Empty(t, claims.Name)
+	assert.Empty(t, claims.Roles)
 }
 
 func TestHandshakeJWT_ExpiredAfter60s(t *testing.T) {
@@ -64,9 +69,14 @@ func TestSessionJWT_RoundTrip(t *testing.T) {
 
 	claims, err := VerifySessionJWT(testSessionKey, clock, token)
 	require.NoError(t, err)
+	assert.Equal(t, 1, claims.Ver)
 	assert.Equal(t, "app-123", claims.AppID)
 	assert.Equal(t, "proj-456", claims.ProjectID)
 	assert.Equal(t, "kai-preview-session", claims.Purpose)
+	// Reserved identity fields must be empty by default.
+	assert.Empty(t, claims.Email)
+	assert.Empty(t, claims.Name)
+	assert.Empty(t, claims.Roles)
 }
 
 func TestSessionJWT_ExpiredAfterTTL(t *testing.T) {
