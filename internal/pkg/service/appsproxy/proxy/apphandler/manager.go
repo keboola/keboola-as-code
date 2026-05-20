@@ -56,12 +56,15 @@ type dependencies interface {
 	AppConfigLoader() appconfig.Loader
 }
 
-func NewManager(d dependencies) *Manager {
+func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
 	cfg := d.Config()
 	if cfg.StorageAPIURL == nil {
-		panic("appsproxy: StorageAPIURL is required for kai-preview Storage token verification")
+		return nil, errors.New("appsproxy: StorageAPIURL is required for kai-preview Storage token verification")
 	}
-	storageAPIURL := cfg.StorageAPIURL.String()
+	verifier, err := kaipreview.NewSDKStorageTokenVerifier(ctx, cfg.StorageAPIURL.String())
+	if err != nil {
+		return nil, err
+	}
 	return &Manager{
 		logger:           d.Logger(),
 		config:           cfg,
@@ -74,8 +77,8 @@ func NewManager(d dependencies) *Manager {
 			return &appHandlerWrapper{lock: &sync.Mutex{}}
 		}),
 		clock:                d.Clock(),
-		storageTokenVerifier: kaipreview.NewSDKStorageTokenVerifier(storageAPIURL),
-	}
+		storageTokenVerifier: verifier,
+	}, nil
 }
 
 func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {

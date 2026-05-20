@@ -23,22 +23,23 @@ type StorageTokenVerifyResult struct {
 }
 
 type SDKStorageTokenVerifier struct {
-	storageAPIHost string
+	publicAPI *keboola.PublicAPI
 }
 
-func NewSDKStorageTokenVerifier(storageAPIHost string) *SDKStorageTokenVerifier {
-	return &SDKStorageTokenVerifier{storageAPIHost: storageAPIHost}
+// NewSDKStorageTokenVerifier loads the Storage API index once and reuses the
+// resulting PublicAPI client for all token verifications. We use NewPublicAPI
+// (not NewPublicAPIFromIndex with nil) so the SDK's documented invariants hold
+// for every method on the client, not just token verify.
+func NewSDKStorageTokenVerifier(ctx context.Context, storageAPIHost string) (*SDKStorageTokenVerifier, error) {
+	publicAPI, err := keboola.NewPublicAPI(ctx, storageAPIHost)
+	if err != nil {
+		return nil, errors.Errorf("kai-preview: build Storage API client: %w", err)
+	}
+	return &SDKStorageTokenVerifier{publicAPI: publicAPI}, nil
 }
 
 func (v *SDKStorageTokenVerifier) Verify(ctx context.Context, token string) (*StorageTokenVerifyResult, error) {
-	// NewPublicAPIFromIndex is called with a nil index because VerifyTokenRequest
-	// only needs the Storage API base URL ("v2/storage"), which is constructed
-	// directly from the host and does not require the index.
-	// Note: if the SDK changes so that a nil index causes a panic or incorrect
-	// base URL construction, this call will break — audit when upgrading
-	// the keboola-sdk-go dependency.
-	publicAPI := keboola.NewPublicAPIFromIndex(v.storageAPIHost, nil)
-	result, err := publicAPI.VerifyTokenRequest(token).Send(ctx)
+	result, err := v.publicAPI.VerifyTokenRequest(token).Send(ctx)
 	if err != nil {
 		return nil, errors.Errorf("kai-preview: SDK Storage token verify: %w", err)
 	}
