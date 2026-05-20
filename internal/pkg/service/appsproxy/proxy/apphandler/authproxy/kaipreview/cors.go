@@ -19,7 +19,10 @@ func (c *CORS) IsAllowed(origin string) bool {
 
 // HandlePreflight returns true when the request was a preflight OPTIONS and was handled.
 // Caller should return immediately if true. Returns false for non-OPTIONS requests.
-func (c *CORS) HandlePreflight(w http.ResponseWriter, r *http.Request) bool {
+// withCredentials controls whether Access-Control-Allow-Credentials: true is emitted.
+// Use false for endpoints authenticated by request header (e.g. mint/handshake-token which
+// uses X-StorageApi-Token), and true for cookie-authenticated endpoints (e.g. refresh).
+func (c *CORS) HandlePreflight(w http.ResponseWriter, r *http.Request, withCredentials bool) bool {
 	if r.Method != http.MethodOptions {
 		return false
 	}
@@ -29,7 +32,9 @@ func (c *CORS) HandlePreflight(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	if withCredentials {
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+	}
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "X-StorageApi-Token, Content-Type")
 	w.Header().Set("Access-Control-Max-Age", "600")
@@ -39,11 +44,16 @@ func (c *CORS) HandlePreflight(w http.ResponseWriter, r *http.Request) bool {
 
 // WriteResponseHeaders sets the CORS response headers on a regular (non-preflight) response.
 // Call this from the actual handler before writing the body.
-func (c *CORS) WriteResponseHeaders(w http.ResponseWriter, origin string) {
+// withCredentials controls whether Access-Control-Allow-Credentials: true is emitted.
+// Use false for endpoints authenticated by request header (e.g. mint/handshake-token), and
+// true for cookie-authenticated endpoints (e.g. refresh).
+func (c *CORS) WriteResponseHeaders(w http.ResponseWriter, origin string, withCredentials bool) {
 	if !c.IsAllowed(origin) {
 		return
 	}
 	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	if withCredentials {
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+	}
 	w.Header().Set("Vary", "Origin")
 }
