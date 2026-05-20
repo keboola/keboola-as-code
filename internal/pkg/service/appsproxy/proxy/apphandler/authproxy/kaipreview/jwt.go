@@ -4,13 +4,12 @@
 package kaipreview
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jonboulle/clockwork"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -56,17 +55,13 @@ func (c SessionClaims) NeedsRefresh(now time.Time) bool {
 
 func MintHandshakeJWT(key string, clock clockwork.Clock, appID, projectID string) (string, error) {
 	now := clock.Now()
-	jti, err := randomHex(16)
-	if err != nil {
-		return "", errors.Errorf("kai-preview: generate jti: %w", err)
-	}
 	claims := HandshakeClaims{
 		Ver:       1,
 		AppID:     appID,
 		ProjectID: projectID,
 		Purpose:   purposeHandshake,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ID:        jti,
+			ID:        idgenerator.Random(20),
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(handshakeTTL)),
 		},
@@ -96,10 +91,6 @@ func VerifyHandshakeJWT(key string, clock clockwork.Clock, raw string) (*Handsha
 
 func MintSessionJWT(key string, clock clockwork.Clock, appID, projectID string, ttl time.Duration) (string, error) {
 	now := clock.Now()
-	jti, err := randomHex(16)
-	if err != nil {
-		return "", errors.Errorf("kai-preview: generate jti: %w", err)
-	}
 	claims := SessionClaims{
 		Ver:       1,
 		AppID:     appID,
@@ -107,7 +98,7 @@ func MintSessionJWT(key string, clock clockwork.Clock, appID, projectID string, 
 		Purpose:   purposeSession,
 		TTL:       int64(ttl.Seconds()),
 		RegisteredClaims: jwt.RegisteredClaims{
-			ID:        jti,
+			ID:        idgenerator.Random(20),
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
 		},
@@ -133,12 +124,4 @@ func VerifySessionJWT(key string, clock clockwork.Clock, raw string) (*SessionCl
 		return nil, errors.Errorf("kai-preview: session JWT has wrong purpose: %q", claims.Purpose)
 	}
 	return claims, nil
-}
-
-func randomHex(n int) (string, error) {
-	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(b), nil
 }

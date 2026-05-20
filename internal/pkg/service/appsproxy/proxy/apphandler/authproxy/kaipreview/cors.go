@@ -26,8 +26,12 @@ func (c *CORS) HandlePreflight(w http.ResponseWriter, r *http.Request, withCrede
 	if r.Method != http.MethodOptions {
 		return false
 	}
+	// Emit Vary: Origin on every response (allowed or 403) so shared caches don't
+	// key only on URL and serve a 403 cached for one origin to a different origin.
+	w.Header().Add("Vary", "Origin")
 	origin := r.Header.Get("Origin")
 	if !c.IsAllowed(origin) {
+		w.Header().Set("Cache-Control", "no-store")
 		http.Error(w, "origin not allowed", http.StatusForbidden)
 		return true
 	}
@@ -48,6 +52,10 @@ func (c *CORS) HandlePreflight(w http.ResponseWriter, r *http.Request, withCrede
 // Use false for endpoints authenticated by request header (e.g. mint/handshake-token), and
 // true for cookie-authenticated endpoints (e.g. refresh).
 func (c *CORS) WriteResponseHeaders(w http.ResponseWriter, origin string, withCredentials bool) {
+	// Vary: Origin is emitted unconditionally — the response can depend on the Origin
+	// header regardless of whether this particular origin is allowed, so caches must
+	// key by it. Add (not Set) so we don't clobber any Vary upstream middleware appended.
+	w.Header().Add("Vary", "Origin")
 	if !c.IsAllowed(origin) {
 		return
 	}
@@ -55,6 +63,4 @@ func (c *CORS) WriteResponseHeaders(w http.ResponseWriter, origin string, withCr
 	if withCredentials {
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 	}
-	// Add (not Set) so we don't clobber any Vary value upstream middleware may have appended.
-	w.Header().Add("Vary", "Origin")
 }
