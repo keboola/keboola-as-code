@@ -38,9 +38,11 @@ type HandlerDeps struct {
 	HandshakeKey         string
 	SessionKey           string
 	SessionTTL           time.Duration
-	AllowedOrigins       []string
-	AppID                string
-	AppProjectID         string
+	// AllowedFrameAncestors controls the bootstrap CSP frame-ancestors and shim origin list.
+	// Distinct from AllowedOrigins (which is fed to CORS) to allow different operator configs.
+	AllowedFrameAncestors []string
+	AppID                 string
+	AppProjectID          string
 }
 
 // Handler is the per-app composite handler that serves all four kai-preview
@@ -57,9 +59,10 @@ func NewHandler(deps HandlerDeps) *Handler {
 		handshakeToken: NewHandshakeTokenHandler(HandshakeTokenDeps{
 			Logger: deps.Logger, Clock: deps.Clock, StorageTokenVerifier: deps.StorageTokenVerifier,
 			DevMode: deps.DevMode, CORS: deps.CORS,
-			HandshakeKey: deps.HandshakeKey, AppID: deps.AppID, AppProjectID: deps.AppProjectID,
+			HandshakeKey: deps.HandshakeKey, SessionTTL: deps.SessionTTL,
+			AppID: deps.AppID, AppProjectID: deps.AppProjectID,
 		}),
-		bootstrap: NewBootstrapHandler(deps.AllowedOrigins, deps.DevMode, deps.AppID),
+		bootstrap: NewBootstrapHandler(deps.AllowedFrameAncestors, deps.DevMode, deps.AppID),
 		exchange: NewExchangeHandler(ExchangeDeps{
 			Logger: deps.Logger, Clock: deps.Clock, DevMode: deps.DevMode,
 			HandshakeKey: deps.HandshakeKey, SessionKey: deps.SessionKey, SessionTTL: deps.SessionTTL,

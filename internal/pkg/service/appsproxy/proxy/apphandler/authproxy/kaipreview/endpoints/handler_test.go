@@ -20,13 +20,13 @@ func newTestCompositeHandler() *Handler {
 		Clock:                clockwork.NewFakeClock(),
 		StorageTokenVerifier: &stubStorageTokenVerifier{projectID: "proj-456"},
 		DevMode:              &stubDevModeChecker{devMode: true},
-		CORS:                 kaipreview.NewCORS([]string{"https://connection.keboola.com"}),
-		HandshakeKey:         testHandshakeKey,
-		SessionKey:           testSessionKey,
-		SessionTTL:           4 * time.Hour,
-		AllowedOrigins:       []string{"https://connection.keboola.com"},
-		AppID:                "app-123",
-		AppProjectID:         "proj-456",
+		CORS:                  kaipreview.NewCORS([]string{"https://connection.keboola.com"}),
+		HandshakeKey:          testHandshakeKey,
+		SessionKey:            testSessionKey,
+		SessionTTL:            4 * time.Hour,
+		AllowedFrameAncestors: []string{"https://connection.keboola.com"},
+		AppID:                 "app-123",
+		AppProjectID:          "proj-456",
 	})
 }
 
