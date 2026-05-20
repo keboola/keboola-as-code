@@ -29,12 +29,6 @@ type HandshakeClaims struct {
 	AppID     string `json:"appId"`
 	ProjectID string `json:"project"`
 	Purpose   string `json:"purpose"`
-	// Reserved for future identity propagation per the dev-iframe-auth design spec
-	// ("Possible future extensions"). Not populated today; omitempty ensures
-	// wire format is unchanged until a consumer is ready.
-	Email string   `json:"email,omitempty"`
-	Name  string   `json:"name,omitempty"`
-	Roles []string `json:"roles,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -48,12 +42,6 @@ type SessionClaims struct {
 	ProjectID string `json:"project"`
 	Purpose   string `json:"purpose"`
 	TTL       int64  `json:"ttlS"` // total intended lifetime in seconds (for halfway-refresh detection)
-	// Reserved for future identity propagation per the dev-iframe-auth design spec
-	// ("Possible future extensions"). Not populated today; omitempty ensures
-	// wire format is unchanged until a consumer is ready.
-	Email string   `json:"email,omitempty"`
-	Name  string   `json:"name,omitempty"`
-	Roles []string `json:"roles,omitempty"`
 	jwt.RegisteredClaims
 }
 
