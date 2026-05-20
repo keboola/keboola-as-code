@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
@@ -56,6 +57,7 @@ func newTestHandshakeHandler(tokenValid bool, storageTokenProject string, devMod
 		DevMode:              &stubDevModeChecker{devMode: devMode},
 		CORS:                 kaipreview.NewCORS([]string{"https://connection.keboola.com"}),
 		HandshakeKey:         testHandshakeKey,
+		SessionTTL:           4 * time.Hour,
 		AppID:                "app-123",
 		AppProjectID:         "proj-456",
 	})
@@ -74,12 +76,21 @@ func TestHandshakeTokenHandler_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "https://connection.keboola.com", w.Header().Get("Access-Control-Allow-Origin"))
+	// Mint uses header auth — ACAC must NOT be set (C2: no credentials on mint preflight).
+	assert.Empty(t, w.Header().Get("Access-Control-Allow-Credentials"),
+		"mint response must NOT set Access-Control-Allow-Credentials (header-auth endpoint)")
 
+	// I2: response shape must be {token, jti, sessionTtlSeconds}.
 	var body struct {
-		Token string `json:"token"`
+		Token             string `json:"token"`
+		JTI               string `json:"jti"`
+		SessionTTLSeconds int    `json:"sessionTtlSeconds"`
 	}
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
 	require.NotEmpty(t, body.Token)
+	assert.NotEmpty(t, body.JTI, "jti must be present so SPA can correlate logs")
+	assert.Equal(t, int((4*time.Hour).Seconds()), body.SessionTTLSeconds,
+		"sessionTtlSeconds must match configured SessionTTL so SPA can derive heartbeat cadence")
 }
 
 func TestHandshakeTokenHandler_PreflightOptions(t *testing.T) {

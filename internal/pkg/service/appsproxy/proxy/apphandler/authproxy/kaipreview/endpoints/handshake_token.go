@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/jonboulle/clockwork"
 	"go.opentelemetry.io/otel/attribute"
@@ -26,6 +27,7 @@ type HandshakeTokenDeps struct {
 	DevMode              DevModeChecker
 	CORS                 *kaipreview.CORS
 	HandshakeKey         string
+	SessionTTL           time.Duration
 	AppID                string
 	AppProjectID         string
 }
@@ -39,7 +41,8 @@ func NewHandshakeTokenHandler(deps HandshakeTokenDeps) *HandshakeTokenHandler {
 }
 
 func (h *HandshakeTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Request) error {
-	if h.deps.CORS.HandlePreflight(w, r) {
+	// Mint authenticates by X-StorageApi-Token header, not by cookie — no ACAC on preflight.
+	if h.deps.CORS.HandlePreflight(w, r, false) {
 		return nil
 	}
 	if r.Method != http.MethodPost {
@@ -55,7 +58,8 @@ func (h *HandshakeTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.
 	}
 	// All remaining responses are to an allowed origin — emit CORS headers now so the
 	// SPA can read status codes and bodies of auth-failure responses, not just successes.
-	h.deps.CORS.WriteResponseHeaders(w, origin)
+	// Mint uses header auth; no credentials header needed on the actual response either.
+	h.deps.CORS.WriteResponseHeaders(w, origin, false)
 
 	// Dev-mode gate first: pretend the endpoint doesn't exist on non-dev apps.
 	if !h.deps.DevMode.IsDevMode(r.Context(), h.deps.AppID) {
@@ -96,12 +100,14 @@ func (h *HandshakeTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.
 		return errors.Errorf("kai-preview: mint handshake JWT: %w", err)
 	}
 
-	// Extract jti from the minted token for logging (non-sensitive).
+	// Extract jti from the minted token for logging and response (non-sensitive).
+	var jti string
 	if claims, parseErr := kaipreview.VerifyHandshakeJWT(h.deps.HandshakeKey, h.deps.Clock, mintedJWT); parseErr == nil {
+		jti = claims.ID
 		h.deps.Logger.With(
 			attribute.String("appID", h.deps.AppID),
 			attribute.String("projectID", h.deps.AppProjectID),
-			attribute.String("jti", claims.ID),
+			attribute.String("jti", jti),
 		).Info(r.Context(), "kai-preview: minted handshake JWT")
 	}
 
@@ -109,8 +115,21 @@ func (h *HandshakeTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(map[string]string{"token": mintedJWT}); err != nil {
+	// Response shape: {token, jti, sessionTtlSeconds}.
+	// The SPA uses sessionTtlSeconds to derive its heartbeat cadence (divide by 2).
+	// jti is included so the SPA can correlate logs across the handshake.
+	resp := struct {
+		Token             string `json:"token"`
+		JTI               string `json:"jti"`
+		SessionTTLSeconds int    `json:"sessionTtlSeconds"`
+	}{
+		Token:             mintedJWT,
+		JTI:               jti,
+		SessionTTLSeconds: int(h.deps.SessionTTL.Seconds()),
+	}
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		return errors.Errorf("kai-preview: write handshake token response: %w", err)
 	}
 	return nil
 }
+

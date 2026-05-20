@@ -32,7 +32,8 @@ func NewRefreshHandler(deps RefreshDeps) *RefreshHandler {
 }
 
 func (h *RefreshHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Request) error {
-	if h.deps.CORS.HandlePreflight(w, r) {
+	// Refresh authenticates by session cookie — emit ACAC so the SPA can send cookies cross-origin.
+	if h.deps.CORS.HandlePreflight(w, r, true) {
 		return nil
 	}
 	if r.Method != http.MethodPost {
@@ -47,7 +48,7 @@ func (h *RefreshHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Request
 	}
 	// All remaining responses are to an allowed origin — emit CORS headers now so the
 	// SPA can read status codes and bodies of auth-failure responses, not just successes.
-	h.deps.CORS.WriteResponseHeaders(w, origin)
+	h.deps.CORS.WriteResponseHeaders(w, origin, true)
 
 	if !h.deps.DevMode.IsDevMode(r.Context(), h.deps.AppID) {
 		h.deps.Logger.With(attribute.String("appID", h.deps.AppID)).
@@ -89,6 +90,7 @@ func (h *RefreshHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.Request
 	h.deps.Logger.With(
 		attribute.String("appID", h.deps.AppID),
 		attribute.String("projectID", h.deps.AppProjectID),
+		attribute.String("jti", claims.ID),
 	).Debug(r.Context(), "kai-preview: refreshed session cookie")
 
 	w.Header().Set("Cache-Control", "no-store")
