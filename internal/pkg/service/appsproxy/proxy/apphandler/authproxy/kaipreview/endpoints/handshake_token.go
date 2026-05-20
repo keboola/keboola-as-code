@@ -132,4 +132,3 @@ func (h *HandshakeTokenHandler) ServeHTTPOrError(w http.ResponseWriter, r *http.
 	}
 	return nil
 }
-

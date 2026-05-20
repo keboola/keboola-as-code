@@ -31,11 +31,11 @@ func NewSDKStorageTokenVerifier(storageAPIHost string) *SDKStorageTokenVerifier 
 }
 
 func (v *SDKStorageTokenVerifier) Verify(ctx context.Context, token string) (*StorageTokenVerifyResult, error) {
-	// TODO(SDK): NewPublicAPIFromIndex is called with a nil index because
-	// VerifyTokenRequest only needs the Storage API base URL ("v2/storage"),
-	// which is constructed directly from the host and does not require the index.
-	// If the SDK ever changes so that a nil index causes a panic or incorrect
-	// base URL construction, this call will break silently — audit when upgrading
+	// NewPublicAPIFromIndex is called with a nil index because VerifyTokenRequest
+	// only needs the Storage API base URL ("v2/storage"), which is constructed
+	// directly from the host and does not require the index.
+	// Note: if the SDK changes so that a nil index causes a panic or incorrect
+	// base URL construction, this call will break — audit when upgrading
 	// the keboola-sdk-go dependency.
 	publicAPI := keboola.NewPublicAPIFromIndex(v.storageAPIHost, nil)
 	result, err := publicAPI.VerifyTokenRequest(token).Send(ctx)

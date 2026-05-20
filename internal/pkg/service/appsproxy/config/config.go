@@ -33,10 +33,10 @@ type Config struct {
 
 // KaiPreview configures the stateless iframe-auth path for the kai-preview flow.
 type KaiPreview struct {
-	HandshakeSigningKey   string        `configKey:"handshakeSigningKey" configUsage:"HMAC key for kai-preview handshake JWT (30-60s lifetime)." validate:"required" sensitive:"true"`
-	SessionSigningKey     string        `configKey:"sessionSigningKey" configUsage:"HMAC key for kai-preview session cookie JWT." validate:"required" sensitive:"true"`
-	SessionTTL            time.Duration `configKey:"sessionTTL" configUsage:"Lifetime of the kai-preview session cookie (sliding)." validate:"required,minDuration=1m"`
-	AllowedOrigins        []string      `configKey:"allowedOrigins" configUsage:"Origins allowed to mint kai-preview embed tokens (e.g. https://connection.keboola.com)." validate:"required,min=1,dive,http_url"`
+	HandshakeSigningKey string        `configKey:"handshakeSigningKey" configUsage:"HMAC key for kai-preview handshake JWT (30-60s lifetime)." validate:"required" sensitive:"true"`
+	SessionSigningKey   string        `configKey:"sessionSigningKey" configUsage:"HMAC key for kai-preview session cookie JWT." validate:"required" sensitive:"true"`
+	SessionTTL          time.Duration `configKey:"sessionTTL" configUsage:"Lifetime of the kai-preview session cookie (sliding)." validate:"required,minDuration=1m"`
+	AllowedOrigins      []string      `configKey:"allowedOrigins" configUsage:"Origins allowed to mint kai-preview embed tokens (e.g. https://connection.keboola.com)." validate:"required,min=1,dive,http_url"`
 	// AllowedFrameAncestors is the list of origins permitted in the bootstrap page's
 	// Content-Security-Policy frame-ancestors directive and in the JS shim's ALLOWED_ORIGINS.
 	// When empty (the common case), Normalize() copies AllowedOrigins here for backward

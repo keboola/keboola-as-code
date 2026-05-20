@@ -63,8 +63,8 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 			// AllowedFrameAncestors drives the bootstrap CSP + shim origin list.
 			// AllowedOrigins is fed to CORS only (mint/refresh endpoints).
 			AllowedFrameAncestors: manager.config.KaiPreview.AllowedFrameAncestors,
-			AppID:                string(app.ID),
-			AppProjectID:         app.ProjectID,
+			AppID:                 string(app.ID),
+			AppProjectID:          app.ProjectID,
 		}),
 	}
 

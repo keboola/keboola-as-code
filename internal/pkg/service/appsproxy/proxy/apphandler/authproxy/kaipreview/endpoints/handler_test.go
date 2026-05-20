@@ -16,10 +16,10 @@ import (
 
 func newTestCompositeHandler() *Handler {
 	return NewHandler(HandlerDeps{
-		Logger:               log.NewNopLogger(),
-		Clock:                clockwork.NewFakeClock(),
-		StorageTokenVerifier: &stubStorageTokenVerifier{projectID: "proj-456"},
-		DevMode:              &stubDevModeChecker{devMode: true},
+		Logger:                log.NewNopLogger(),
+		Clock:                 clockwork.NewFakeClock(),
+		StorageTokenVerifier:  &stubStorageTokenVerifier{projectID: "proj-456"},
+		DevMode:               &stubDevModeChecker{devMode: true},
 		CORS:                  kaipreview.NewCORS([]string{"https://connection.keboola.com"}),
 		HandshakeKey:          testHandshakeKey,
 		SessionKey:            testSessionKey,

@@ -89,7 +89,7 @@ func TestHandshakeTokenHandler_Success(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
 	require.NotEmpty(t, body.Token)
 	assert.NotEmpty(t, body.JTI, "jti must be present so SPA can correlate logs")
-	assert.Equal(t, int((4*time.Hour).Seconds()), body.SessionTTLSeconds,
+	assert.Equal(t, int((4 * time.Hour).Seconds()), body.SessionTTLSeconds,
 		"sessionTtlSeconds must match configured SessionTTL so SPA can derive heartbeat cadence")
 }
 
