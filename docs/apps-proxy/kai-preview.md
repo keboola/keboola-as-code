@@ -56,7 +56,7 @@ the frame).
 | `kaiPreview.sessionSigningKey`   | *(required)* | HMAC-SHA256 key for the session cookie JWT |
 | `kaiPreview.sessionTTL`          | `4h`          | Sliding session cookie lifetime |
 | `kaiPreview.allowedOrigins`      | *(required)* | Origins permitted to call `handshake-token` and `refresh`, e.g. `https://connection.keboola.com` |
-| `storageApiUrl`                  | `https://connection.keboola.com` | Storage API base URL used to verify Storage tokens in `handshake-token` |
+| `storageApiUrl`                  | *(required)*                     | Storage API base URL used to verify Storage tokens in `handshake-token`. Must be set per stack — there is no default value and the proxy will refuse to start without it |
 
 ### 4.2 Provisioning new signing keys
 
