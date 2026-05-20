@@ -57,14 +57,12 @@ func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handle
 			StorageTokenVerifier: manager.storageTokenVerifier,
 			DevMode:              devModeChecker,
 			CORS:                 kaipreview.NewCORS(manager.config.KaiPreview.AllowedOrigins),
-			HandshakeKey:         manager.config.KaiPreview.HandshakeSigningKey,
-			SessionKey:           manager.config.KaiPreview.SessionSigningKey,
-			SessionTTL:           manager.config.KaiPreview.SessionTTL,
-			// AllowedFrameAncestors drives the bootstrap CSP + shim origin list.
-			// AllowedOrigins is fed to CORS only (mint/refresh endpoints).
-			AllowedFrameAncestors: manager.config.KaiPreview.AllowedFrameAncestors,
-			AppID:                 string(app.ID),
-			AppProjectID:          app.ProjectID,
+			HandshakeKey:   manager.config.KaiPreview.HandshakeSigningKey,
+			SessionKey:     manager.config.KaiPreview.SessionSigningKey,
+			SessionTTL:     manager.config.KaiPreview.SessionTTL,
+			AllowedOrigins: manager.config.KaiPreview.AllowedOrigins,
+			AppID:          string(app.ID),
+			AppProjectID:   app.ProjectID,
 		}),
 	}
 

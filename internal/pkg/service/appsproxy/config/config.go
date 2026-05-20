@@ -36,14 +36,7 @@ type KaiPreview struct {
 	HandshakeSigningKey string        `configKey:"handshakeSigningKey" configUsage:"HMAC key for kai-preview handshake JWT (30-60s lifetime)." validate:"required" sensitive:"true"`
 	SessionSigningKey   string        `configKey:"sessionSigningKey" configUsage:"HMAC key for kai-preview session cookie JWT." validate:"required" sensitive:"true"`
 	SessionTTL          time.Duration `configKey:"sessionTTL" configUsage:"Lifetime of the kai-preview session cookie (sliding)." validate:"required,minDuration=1m"`
-	AllowedOrigins      []string      `configKey:"allowedOrigins" configUsage:"Origins allowed to mint kai-preview embed tokens (e.g. https://connection.keboola.com)." validate:"required,min=1,dive,http_url"`
-	// AllowedFrameAncestors is the list of origins permitted in the bootstrap page's
-	// Content-Security-Policy frame-ancestors directive and in the JS shim's ALLOWED_ORIGINS.
-	// When empty (the common case), Normalize() copies AllowedOrigins here for backward
-	// compatibility with existing operator deployments that set only allowedOrigins.
-	// Operators that need a stricter CSP boundary (e.g. different IDE staging/prod origins)
-	// can set this independently.
-	AllowedFrameAncestors []string `configKey:"allowedFrameAncestors" configUsage:"Origins permitted as frame-ancestors in the bootstrap CSP (defaults to allowedOrigins when unset)."`
+	AllowedOrigins      []string      `configKey:"allowedOrigins" configUsage:"Origins allowed to embed apps via kai-preview and mint handshake tokens (e.g. https://connection.keboola.com). Drives both the CORS allowlist and the bootstrap CSP frame-ancestors directive." validate:"required,min=1,dive,http_url"`
 }
 
 type API struct {
@@ -95,9 +88,6 @@ func New() Config {
 		KaiPreview: KaiPreview{
 			SessionTTL: 4 * time.Hour,
 		},
-		// StorageAPIURL has no default — operator must set it explicitly per stack.
-		// A hardcoded default would silently mis-verify Storage tokens on every
-		// non-default stack, producing a clean 401 with no actionable error.
 	}
 }
 
@@ -107,16 +97,6 @@ func (c *Config) Normalize() {
 func (c *KaiPreview) Normalize() {
 	for i, o := range c.AllowedOrigins {
 		c.AllowedOrigins[i] = strings.TrimRight(o, "/")
-	}
-	for i, o := range c.AllowedFrameAncestors {
-		c.AllowedFrameAncestors[i] = strings.TrimRight(o, "/")
-	}
-	// Default AllowedFrameAncestors to AllowedOrigins so operators that set only
-	// allowedOrigins don't need to change their configuration.
-	if len(c.AllowedFrameAncestors) == 0 {
-		dst := make([]string, len(c.AllowedOrigins))
-		copy(dst, c.AllowedOrigins)
-		c.AllowedFrameAncestors = dst
 	}
 }
 

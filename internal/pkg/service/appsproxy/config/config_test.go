@@ -51,50 +51,6 @@ func TestKaiPreviewConfig_NormalizeStripsTrailingSlash(t *testing.T) {
 	assert.Equal(t, "https://staging.keboola.com", cfg.KaiPreview.AllowedOrigins[1])
 }
 
-func TestKaiPreviewConfig_FrameAncestorsDefaultsToAllowedOrigins(t *testing.T) {
-	t.Parallel()
-	cfg := config.New()
-	cfg.CookieSecretSalt = "x"
-	cfg.CsrfTokenSalt = "x"
-	cfg.SandboxesAPI = config.SandboxesAPI{URL: "https://example", Token: "t"}
-	cfg.K8s = config.K8s{AppsNamespace: "ns"}
-	storageURL, _ := url.Parse("https://connection.keboola.com")
-	cfg.StorageAPIURL = storageURL
-	cfg.KaiPreview = config.KaiPreview{
-		HandshakeSigningKey: "k1",
-		SessionSigningKey:   "k2",
-		SessionTTL:          4 * time.Hour,
-		AllowedOrigins:      []string{"https://connection.keboola.com", "https://staging.keboola.com"},
-		// AllowedFrameAncestors intentionally left empty — must default to AllowedOrigins.
-	}
-	err := configmap.ValidateAndNormalize(&cfg)
-	require.NoError(t, err)
-	assert.Equal(t, cfg.KaiPreview.AllowedOrigins, cfg.KaiPreview.AllowedFrameAncestors,
-		"AllowedFrameAncestors must default to AllowedOrigins when unset")
-}
-
-func TestKaiPreviewConfig_FrameAncestorsIndependentWhenSet(t *testing.T) {
-	t.Parallel()
-	cfg := config.New()
-	cfg.CookieSecretSalt = "x"
-	cfg.CsrfTokenSalt = "x"
-	cfg.SandboxesAPI = config.SandboxesAPI{URL: "https://example", Token: "t"}
-	cfg.K8s = config.K8s{AppsNamespace: "ns"}
-	storageURL, _ := url.Parse("https://connection.keboola.com")
-	cfg.StorageAPIURL = storageURL
-	cfg.KaiPreview = config.KaiPreview{
-		HandshakeSigningKey:   "k1",
-		SessionSigningKey:     "k2",
-		SessionTTL:            4 * time.Hour,
-		AllowedOrigins:        []string{"https://connection.keboola.com", "https://staging.keboola.com"},
-		AllowedFrameAncestors: []string{"https://connection.keboola.com"},
-	}
-	err := configmap.ValidateAndNormalize(&cfg)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"https://connection.keboola.com"}, cfg.KaiPreview.AllowedFrameAncestors,
-		"AllowedFrameAncestors must remain independent when explicitly set")
-}
-
 func TestConfig_RequiresStorageAPIURL(t *testing.T) {
 	t.Parallel()
 	cfg := config.New()
