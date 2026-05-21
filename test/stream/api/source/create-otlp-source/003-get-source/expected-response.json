@@ -1,0 +1,36 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-otlp-source",
+  "type": "otlp",
+  "name": "My OTLP Source",
+  "description": "",
+  "otlp": {
+    "url": "https://stream-in.keboola.local/otlp/%%TEST_KBC_PROJECT_ID%%/my-otlp-source/%s",
+    "baseUrl": "https://stream-in.keboola.local/otlp/%%TEST_KBC_PROJECT_ID%%/my-otlp-source",
+    "secret": "%s"
+  },
+  "version": {
+    "number": 1,
+    "hash": "%s",
+    "description": "New source.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  }
+}

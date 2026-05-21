@@ -1354,9 +1354,37 @@ paths:
             tags:
                 - test
             summary: Test source payload mapping
-            description: Tests configured mapping of the source and its sinks.
+            description: |-
+                Tests configured mapping of the source and its sinks against an example request body.
+
+                For HTTP sources the body is the raw payload that an HTTP client would send (treated as a single record).
+
+                For OTLP sources the body must be a single **flattened OTLP record** — a JSON object with the same shape that the source produces internally for each log record, metric data point, or span. Attributes, resource, and scope are nested objects (not dotted keys); reference them in column mappings as `Body('attributes')['user.id']`, `Body('resource')['service.name']`, `Body('scope')['name']`, etc. Example flattened log record:
+                ```json
+                {
+                  "timestamp": "2024-01-15T10:30:00Z",
+                  "observed_timestamp": "2024-01-15T10:30:00Z",
+                  "severity_number": 9,
+                  "severity_text": "INFO",
+                  "body": "User logged in",
+                  "flags": 0,
+                  "attributes": {"user.id": "user-123"},
+                  "resource": {"service.name": "auth-service"},
+                  "scope": {"name": "github.com/my/auth", "version": "1.2.3"}
+                }
+                ```
+                Do not send a raw OTLP protobuf or the multi-record envelope produced by an OTel SDK — the test endpoint intentionally evaluates one already-flattened record so the response is deterministic. For OTLP sources, the `signal` query parameter selects which signal type the request simulates for sink routing (`logs` by default); sinks whose `allowedSignals` filter rejects that signal are skipped in the result.
             operationId: TestSource
             parameters:
+                - name: signal
+                  in: query
+                  description: OTLP signal type — one of logs, metrics, or traces.
+                  required: false
+                  type: string
+                  enum:
+                    - logs
+                    - metrics
+                    - traces
                 - name: branchId
                   in: path
                   description: ID of the branch or "default".
@@ -1725,6 +1753,18 @@ definitions:
         title: AggregatedSink
         type: object
         properties:
+            allowedSignals:
+                type: array
+                items:
+                    type: string
+                    example: logs
+                    enum:
+                        - logs
+                        - metrics
+                        - traces
+                description: Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
+                example:
+                    - logs
             branchId:
                 type: integer
                 example: 345
@@ -1780,6 +1820,8 @@ definitions:
             type: table
             name: Raw Data Sink
             description: The sink stores records to a table.
+            allowedSignals:
+                - logs
             table:
                 type: keboola
                 tableId: in.c-bucket.table
@@ -1939,6 +1981,8 @@ definitions:
                 example: Github Webhook Source
                 minLength: 1
                 maxLength: 40
+            otlp:
+                $ref: '#/definitions/OTLPSource'
             projectId:
                 type: integer
                 example: 123
@@ -1955,6 +1999,8 @@ definitions:
                       type: table
                       name: Raw Data Sink
                       description: The sink stores records to a table.
+                      allowedSignals:
+                        - logs
                       table:
                         type: keboola
                         tableId: in.c-bucket.table
@@ -2087,184 +2133,41 @@ definitions:
                 example: http
                 enum:
                     - http
+                    - otlp
             version:
                 $ref: '#/definitions/Version'
         description: Source of data for further processing, start of the stream, max 100 sources per a branch.
         example:
-            projectId: 123
-            branchId: 345
-            sourceId: github-webhook-source
-            type: http
-            name: Github Webhook Source
-            description: The source receives events from Github.
-            http:
-                url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-            version:
-                number: 3
-                hash: f43e93acd97eceb3
-                description: The reason for the last change was...
-                at: "2022-04-28T14:20:04.000Z"
-                by:
-                    type: user
-                    tokenId: "896455"
-                    tokenDesc: john.green@company.com
-                    userId: "578621"
-                    userName: John Green
+            branchId: 5678
             created:
-                at: "2022-04-28T14:20:04.000Z"
+                at: "2024-01-15T10:00:00.000Z"
                 by:
-                    type: user
-                    tokenId: "896455"
                     tokenDesc: john.green@company.com
+                    tokenId: "896455"
+                    type: user
                     userId: "578621"
                     userName: John Green
-            deleted:
-                at: "2022-04-28T14:20:04.000Z"
+            description: ""
+            name: My OTLP Source
+            otlp:
+                baseUrl: https://stream-in.keboola.com/otlp/1234/my-otlp-source
+                secret: EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                url: https://stream-in.keboola.com/otlp/1234/my-otlp-source/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+            projectId: 1234
+            sinks: []
+            sourceId: my-otlp-source
+            type: otlp
+            version:
+                at: "2024-01-15T10:00:00.000Z"
                 by:
-                    type: user
-                    tokenId: "896455"
                     tokenDesc: john.green@company.com
+                    tokenId: "896455"
+                    type: user
                     userId: "578621"
                     userName: John Green
-            disabled:
-                at: "2022-04-28T14:20:04.000Z"
-                by:
-                    type: user
-                    tokenId: "896455"
-                    tokenDesc: john.green@company.com
-                    userId: "578621"
-                    userName: John Green
-                reason: Disabled for recurring problems.
-            sinks:
-                - projectId: 123
-                  branchId: 345
-                  sourceId: github-webhook-source
-                  sinkId: github-pr-table-sink
-                  type: table
-                  name: Raw Data Sink
-                  description: The sink stores records to a table.
-                  table:
-                    type: keboola
-                    tableId: in.c-bucket.table
-                    mapping:
-                        columns:
-                            - type: uuid
-                              name: id-col
-                            - type: datetime
-                              name: datetime-col
-                            - type: ip
-                              name: ip-col
-                            - type: headers
-                              name: headers-col
-                            - type: body
-                              name: body-col
-                            - type: path
-                              name: path-col
-                              path: foo.bar[0]
-                              rawString: true
-                              defaultValue: ""
-                            - type: template
-                              name: template-col
-                              template:
-                                language: jsonnet
-                                content: body.foo + "-" + body.bar
-                  version:
-                    number: 3
-                    hash: f43e93acd97eceb3
-                    description: The reason for the last change was...
-                    at: "2022-04-28T14:20:04.000Z"
-                    by:
-                        type: user
-                        tokenId: "896455"
-                        tokenDesc: john.green@company.com
-                        userId: "578621"
-                        userName: John Green
-                  created:
-                    at: "2022-04-28T14:20:04.000Z"
-                    by:
-                        type: user
-                        tokenId: "896455"
-                        tokenDesc: john.green@company.com
-                        userId: "578621"
-                        userName: John Green
-                  deleted:
-                    at: "2022-04-28T14:20:04.000Z"
-                    by:
-                        type: user
-                        tokenId: "896455"
-                        tokenDesc: john.green@company.com
-                        userId: "578621"
-                        userName: John Green
-                  disabled:
-                    at: "2022-04-28T14:20:04.000Z"
-                    by:
-                        type: user
-                        tokenId: "896455"
-                        tokenDesc: john.green@company.com
-                        userId: "578621"
-                        userName: John Green
-                    reason: Disabled for recurring problems.
-                  statistics:
-                    total:
-                        firstRecordAt: "2022-04-28T14:20:04.000Z"
-                        lastRecordAt: "2022-04-28T14:20:04.000Z"
-                        recordsCount: 1
-                        compressedSize: 1
-                        uncompressedSize: 1
-                    levels:
-                        local:
-                            firstRecordAt: "2022-04-28T14:20:04.000Z"
-                            lastRecordAt: "2022-04-28T14:20:04.000Z"
-                            recordsCount: 1
-                            compressedSize: 1
-                            uncompressedSize: 1
-                        staging:
-                            firstRecordAt: "2022-04-28T14:20:04.000Z"
-                            lastRecordAt: "2022-04-28T14:20:04.000Z"
-                            recordsCount: 1
-                            compressedSize: 1
-                            uncompressedSize: 1
-                        target:
-                            firstRecordAt: "2022-04-28T14:20:04.000Z"
-                            lastRecordAt: "2022-04-28T14:20:04.000Z"
-                            recordsCount: 1
-                            compressedSize: 1
-                            uncompressedSize: 1
-                    files:
-                        - state: writing
-                          openedAt: "2022-04-28T14:20:04.000Z"
-                          closingAt: "2022-04-28T14:20:04.000Z"
-                          importingAt: "2022-04-28T14:20:04.000Z"
-                          importedAt: "2022-04-28T14:20:04.000Z"
-                          retryAttempt: 3
-                          retryReason: network problem
-                          retryAfter: "2022-04-28T14:20:04.000Z"
-                          statistics:
-                            total:
-                                firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                recordsCount: 1
-                                compressedSize: 1
-                                uncompressedSize: 1
-                            levels:
-                                local:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
-                                staging:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
-                                target:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
+                description: New source.
+                hash: f43e93acd97eceb3
+                number: 1
         required:
             - projectId
             - branchId
@@ -2294,180 +2197,64 @@ definitions:
                 items:
                     $ref: '#/definitions/AggregatedSource'
                 example:
-                    - projectId: 123
-                      branchId: 345
-                      sourceId: github-webhook-source
-                      type: http
-                      name: Github Webhook Source
-                      description: The source receives events from Github.
-                      http:
-                        url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-                      version:
-                        number: 3
-                        hash: f43e93acd97eceb3
-                        description: The reason for the last change was...
-                        at: "2022-04-28T14:20:04.000Z"
-                        by:
-                            type: user
-                            tokenId: "896455"
-                            tokenDesc: john.green@company.com
-                            userId: "578621"
-                            userName: John Green
+                    - branchId: 5678
                       created:
-                        at: "2022-04-28T14:20:04.000Z"
+                        at: "2024-01-15T10:00:00.000Z"
                         by:
-                            type: user
-                            tokenId: "896455"
                             tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
                             userId: "578621"
                             userName: John Green
-                      deleted:
-                        at: "2022-04-28T14:20:04.000Z"
+                      description: ""
+                      http:
+                        url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                      name: My HTTP Source
+                      projectId: 1234
+                      sinks: []
+                      sourceId: my-http-source
+                      type: http
+                      version:
+                        at: "2024-01-15T10:00:00.000Z"
                         by:
-                            type: user
-                            tokenId: "896455"
                             tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
                             userId: "578621"
                             userName: John Green
-                      disabled:
-                        at: "2022-04-28T14:20:04.000Z"
+                        description: New source.
+                        hash: f43e93acd97eceb3
+                        number: 1
+                    - branchId: 5678
+                      created:
+                        at: "2024-01-15T10:00:00.000Z"
                         by:
-                            type: user
-                            tokenId: "896455"
                             tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
                             userId: "578621"
                             userName: John Green
-                        reason: Disabled for recurring problems.
-                      sinks:
-                        - projectId: 123
-                          branchId: 345
-                          sourceId: github-webhook-source
-                          sinkId: github-pr-table-sink
-                          type: table
-                          name: Raw Data Sink
-                          description: The sink stores records to a table.
-                          table:
-                            type: keboola
-                            tableId: in.c-bucket.table
-                            mapping:
-                                columns:
-                                    - type: uuid
-                                      name: id-col
-                                    - type: datetime
-                                      name: datetime-col
-                                    - type: ip
-                                      name: ip-col
-                                    - type: headers
-                                      name: headers-col
-                                    - type: body
-                                      name: body-col
-                                    - type: path
-                                      name: path-col
-                                      path: foo.bar[0]
-                                      rawString: true
-                                      defaultValue: ""
-                                    - type: template
-                                      name: template-col
-                                      template:
-                                        language: jsonnet
-                                        content: body.foo + "-" + body.bar
-                          version:
-                            number: 3
-                            hash: f43e93acd97eceb3
-                            description: The reason for the last change was...
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          created:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          deleted:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                          disabled:
-                            at: "2022-04-28T14:20:04.000Z"
-                            by:
-                                type: user
-                                tokenId: "896455"
-                                tokenDesc: john.green@company.com
-                                userId: "578621"
-                                userName: John Green
-                            reason: Disabled for recurring problems.
-                          statistics:
-                            total:
-                                firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                recordsCount: 1
-                                compressedSize: 1
-                                uncompressedSize: 1
-                            levels:
-                                local:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
-                                staging:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
-                                target:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
-                            files:
-                                - state: writing
-                                  openedAt: "2022-04-28T14:20:04.000Z"
-                                  closingAt: "2022-04-28T14:20:04.000Z"
-                                  importingAt: "2022-04-28T14:20:04.000Z"
-                                  importedAt: "2022-04-28T14:20:04.000Z"
-                                  retryAttempt: 3
-                                  retryReason: network problem
-                                  retryAfter: "2022-04-28T14:20:04.000Z"
-                                  statistics:
-                                    total:
-                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                        recordsCount: 1
-                                        compressedSize: 1
-                                        uncompressedSize: 1
-                                    levels:
-                                        local:
-                                            firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                            lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                            recordsCount: 1
-                                            compressedSize: 1
-                                            uncompressedSize: 1
-                                        staging:
-                                            firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                            lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                            recordsCount: 1
-                                            compressedSize: 1
-                                            uncompressedSize: 1
-                                        target:
-                                            firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                            lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                            recordsCount: 1
-                                            compressedSize: 1
-                                            uncompressedSize: 1
+                      description: ""
+                      name: My OTLP Source
+                      otlp:
+                        baseUrl: https://stream-in.keboola.com/otlp/1234/my-otlp-source
+                        secret: EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                        url: https://stream-in.keboola.com/otlp/1234/my-otlp-source/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                      projectId: 1234
+                      sinks: []
+                      sourceId: my-otlp-source
+                      type: otlp
+                      version:
+                        at: "2024-01-15T10:00:00.000Z"
+                        by:
+                            tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
+                            userId: "578621"
+                            userName: John Green
+                        description: New source.
+                        hash: f43e93acd97eceb3
+                        number: 1
         example:
             projectId: 123
             branchId: 345
@@ -2477,180 +2264,64 @@ definitions:
                 afterId: my-object-123
                 lastId: my-object-456
             sources:
-                - projectId: 123
-                  branchId: 345
-                  sourceId: github-webhook-source
-                  type: http
-                  name: Github Webhook Source
-                  description: The source receives events from Github.
-                  http:
-                    url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-                  version:
-                    number: 3
-                    hash: f43e93acd97eceb3
-                    description: The reason for the last change was...
-                    at: "2022-04-28T14:20:04.000Z"
-                    by:
-                        type: user
-                        tokenId: "896455"
-                        tokenDesc: john.green@company.com
-                        userId: "578621"
-                        userName: John Green
+                - branchId: 5678
                   created:
-                    at: "2022-04-28T14:20:04.000Z"
+                    at: "2024-01-15T10:00:00.000Z"
                     by:
-                        type: user
-                        tokenId: "896455"
                         tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
                         userId: "578621"
                         userName: John Green
-                  deleted:
-                    at: "2022-04-28T14:20:04.000Z"
+                  description: ""
+                  http:
+                    url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                  name: My HTTP Source
+                  projectId: 1234
+                  sinks: []
+                  sourceId: my-http-source
+                  type: http
+                  version:
+                    at: "2024-01-15T10:00:00.000Z"
                     by:
-                        type: user
-                        tokenId: "896455"
                         tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
                         userId: "578621"
                         userName: John Green
-                  disabled:
-                    at: "2022-04-28T14:20:04.000Z"
+                    description: New source.
+                    hash: f43e93acd97eceb3
+                    number: 1
+                - branchId: 5678
+                  created:
+                    at: "2024-01-15T10:00:00.000Z"
                     by:
-                        type: user
-                        tokenId: "896455"
                         tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
                         userId: "578621"
                         userName: John Green
-                    reason: Disabled for recurring problems.
-                  sinks:
-                    - projectId: 123
-                      branchId: 345
-                      sourceId: github-webhook-source
-                      sinkId: github-pr-table-sink
-                      type: table
-                      name: Raw Data Sink
-                      description: The sink stores records to a table.
-                      table:
-                        type: keboola
-                        tableId: in.c-bucket.table
-                        mapping:
-                            columns:
-                                - type: uuid
-                                  name: id-col
-                                - type: datetime
-                                  name: datetime-col
-                                - type: ip
-                                  name: ip-col
-                                - type: headers
-                                  name: headers-col
-                                - type: body
-                                  name: body-col
-                                - type: path
-                                  name: path-col
-                                  path: foo.bar[0]
-                                  rawString: true
-                                  defaultValue: ""
-                                - type: template
-                                  name: template-col
-                                  template:
-                                    language: jsonnet
-                                    content: body.foo + "-" + body.bar
-                      version:
-                        number: 3
-                        hash: f43e93acd97eceb3
-                        description: The reason for the last change was...
-                        at: "2022-04-28T14:20:04.000Z"
-                        by:
-                            type: user
-                            tokenId: "896455"
-                            tokenDesc: john.green@company.com
-                            userId: "578621"
-                            userName: John Green
-                      created:
-                        at: "2022-04-28T14:20:04.000Z"
-                        by:
-                            type: user
-                            tokenId: "896455"
-                            tokenDesc: john.green@company.com
-                            userId: "578621"
-                            userName: John Green
-                      deleted:
-                        at: "2022-04-28T14:20:04.000Z"
-                        by:
-                            type: user
-                            tokenId: "896455"
-                            tokenDesc: john.green@company.com
-                            userId: "578621"
-                            userName: John Green
-                      disabled:
-                        at: "2022-04-28T14:20:04.000Z"
-                        by:
-                            type: user
-                            tokenId: "896455"
-                            tokenDesc: john.green@company.com
-                            userId: "578621"
-                            userName: John Green
-                        reason: Disabled for recurring problems.
-                      statistics:
-                        total:
-                            firstRecordAt: "2022-04-28T14:20:04.000Z"
-                            lastRecordAt: "2022-04-28T14:20:04.000Z"
-                            recordsCount: 1
-                            compressedSize: 1
-                            uncompressedSize: 1
-                        levels:
-                            local:
-                                firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                recordsCount: 1
-                                compressedSize: 1
-                                uncompressedSize: 1
-                            staging:
-                                firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                recordsCount: 1
-                                compressedSize: 1
-                                uncompressedSize: 1
-                            target:
-                                firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                recordsCount: 1
-                                compressedSize: 1
-                                uncompressedSize: 1
-                        files:
-                            - state: writing
-                              openedAt: "2022-04-28T14:20:04.000Z"
-                              closingAt: "2022-04-28T14:20:04.000Z"
-                              importingAt: "2022-04-28T14:20:04.000Z"
-                              importedAt: "2022-04-28T14:20:04.000Z"
-                              retryAttempt: 3
-                              retryReason: network problem
-                              retryAfter: "2022-04-28T14:20:04.000Z"
-                              statistics:
-                                total:
-                                    firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                    lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                    recordsCount: 1
-                                    compressedSize: 1
-                                    uncompressedSize: 1
-                                levels:
-                                    local:
-                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                        recordsCount: 1
-                                        compressedSize: 1
-                                        uncompressedSize: 1
-                                    staging:
-                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                        recordsCount: 1
-                                        compressedSize: 1
-                                        uncompressedSize: 1
-                                    target:
-                                        firstRecordAt: "2022-04-28T14:20:04.000Z"
-                                        lastRecordAt: "2022-04-28T14:20:04.000Z"
-                                        recordsCount: 1
-                                        compressedSize: 1
-                                        uncompressedSize: 1
+                  description: ""
+                  name: My OTLP Source
+                  otlp:
+                    baseUrl: https://stream-in.keboola.com/otlp/1234/my-otlp-source
+                    secret: EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                    url: https://stream-in.keboola.com/otlp/1234/my-otlp-source/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                  projectId: 1234
+                  sinks: []
+                  sourceId: my-otlp-source
+                  type: otlp
+                  version:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
+                    description: New source.
+                    hash: f43e93acd97eceb3
+                    number: 1
         required:
             - projectId
             - branchId
@@ -2953,10 +2624,10 @@ definitions:
             url:
                 type: string
                 description: URL of the HTTP source. Contains secret used for authentication.
-                example: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+                example: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
         description: HTTP source details for "type" = "http".
         example:
-            url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
+            url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
         required:
             - url
     Level:
@@ -3026,6 +2697,31 @@ definitions:
                 recordsCount: 1
                 compressedSize: 1
                 uncompressedSize: 1
+    OTLPSource:
+        title: OTLPSource
+        type: object
+        properties:
+            baseUrl:
+                type: string
+                description: 'Endpoint URL without the secret. Use this together with the `secret` field via the `Authorization: Bearer <secret>` header so the secret stays out of access/CDN/APM logs. The OpenTelemetry SDK appends /v1/logs, /v1/metrics, or /v1/traces automatically.'
+                example: https://stream-in.keboola.com/otlp/123/my-source
+            secret:
+                type: string
+                description: '48-character secret authenticating writes to this source. Send it as `Authorization: Bearer <secret>` to the `baseUrl`.'
+                example: EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+            url:
+                type: string
+                description: Endpoint URL with the secret embedded as the last path segment. Convenient for SDKs that authenticate by URL only. The OpenTelemetry SDK automatically appends /v1/logs, /v1/metrics, or /v1/traces based on the signal type — do not append a signal path yourself. Most SDK exporters reject or silently strip the suffix.
+                example: https://stream-in.keboola.com/otlp/123/my-source/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+        description: OTLP/HTTP source details for "type" = "otlp".
+        example:
+            url: https://stream-in.keboola.com/otlp/123/my-source/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+            baseUrl: https://stream-in.keboola.com/otlp/123/my-source
+            secret: EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+        required:
+            - url
+            - baseUrl
+            - secret
     PaginatedResponse:
         title: PaginatedResponse
         type: object
@@ -3185,6 +2881,18 @@ definitions:
         title: Sink
         type: object
         properties:
+            allowedSignals:
+                type: array
+                items:
+                    type: string
+                    example: logs
+                    enum:
+                        - logs
+                        - metrics
+                        - traces
+                description: Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
+                example:
+                    - logs
             branchId:
                 type: integer
                 example: 345
@@ -3237,6 +2945,8 @@ definitions:
             type: table
             name: Raw Data Sink
             description: The sink stores records to a table.
+            allowedSignals:
+                - logs
             table:
                 type: keboola
                 tableId: in.c-bucket.table
@@ -3571,6 +3281,8 @@ definitions:
                       type: table
                       name: Raw Data Sink
                       description: The sink stores records to a table.
+                      allowedSignals:
+                        - logs
                       table:
                         type: keboola
                         tableId: in.c-bucket.table
@@ -3654,6 +3366,8 @@ definitions:
                   type: table
                   name: Raw Data Sink
                   description: The sink stores records to a table.
+                  allowedSignals:
+                    - logs
                   table:
                     type: keboola
                     tableId: in.c-bucket.table
@@ -3748,6 +3462,8 @@ definitions:
                 example: Github Webhook Source
                 minLength: 1
                 maxLength: 40
+            otlp:
+                $ref: '#/definitions/OTLPSource'
             projectId:
                 type: integer
                 example: 123
@@ -3762,54 +3478,40 @@ definitions:
                 example: http
                 enum:
                     - http
+                    - otlp
             version:
                 $ref: '#/definitions/Version'
         description: Source of data for further processing, start of the stream, max 100 sources per a branch.
         example:
-            projectId: 123
-            branchId: 345
-            sourceId: github-webhook-source
-            type: http
-            name: Github Webhook Source
-            description: The source receives events from Github.
-            http:
-                url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-            version:
-                number: 3
-                hash: f43e93acd97eceb3
-                description: The reason for the last change was...
-                at: "2022-04-28T14:20:04.000Z"
-                by:
-                    type: user
-                    tokenId: "896455"
-                    tokenDesc: john.green@company.com
-                    userId: "578621"
-                    userName: John Green
+            branchId: 5678
             created:
-                at: "2022-04-28T14:20:04.000Z"
+                at: "2024-01-15T10:00:00.000Z"
                 by:
-                    type: user
-                    tokenId: "896455"
                     tokenDesc: john.green@company.com
+                    tokenId: "896455"
+                    type: user
                     userId: "578621"
                     userName: John Green
-            deleted:
-                at: "2022-04-28T14:20:04.000Z"
+            description: ""
+            name: My OTLP Source
+            otlp:
+                baseUrl: https://stream-in.keboola.com/otlp/1234/my-otlp-source
+                secret: EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                url: https://stream-in.keboola.com/otlp/1234/my-otlp-source/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+            projectId: 1234
+            sourceId: my-otlp-source
+            type: otlp
+            version:
+                at: "2024-01-15T10:00:00.000Z"
                 by:
-                    type: user
-                    tokenId: "896455"
                     tokenDesc: john.green@company.com
+                    tokenId: "896455"
+                    type: user
                     userId: "578621"
                     userName: John Green
-            disabled:
-                at: "2022-04-28T14:20:04.000Z"
-                by:
-                    type: user
-                    tokenId: "896455"
-                    tokenDesc: john.green@company.com
-                    userId: "578621"
-                    userName: John Green
-                reason: Disabled for recurring problems.
+                description: New source.
+                hash: f43e93acd97eceb3
+                number: 1
         required:
             - projectId
             - branchId
@@ -3838,50 +3540,62 @@ definitions:
                 items:
                     $ref: '#/definitions/Source'
                 example:
-                    - projectId: 123
-                      branchId: 345
-                      sourceId: github-webhook-source
-                      type: http
-                      name: Github Webhook Source
-                      description: The source receives events from Github.
-                      http:
-                        url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-                      version:
-                        number: 3
-                        hash: f43e93acd97eceb3
-                        description: The reason for the last change was...
-                        at: "2022-04-28T14:20:04.000Z"
-                        by:
-                            type: user
-                            tokenId: "896455"
-                            tokenDesc: john.green@company.com
-                            userId: "578621"
-                            userName: John Green
+                    - branchId: 5678
                       created:
-                        at: "2022-04-28T14:20:04.000Z"
+                        at: "2024-01-15T10:00:00.000Z"
                         by:
-                            type: user
-                            tokenId: "896455"
                             tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
                             userId: "578621"
                             userName: John Green
-                      deleted:
-                        at: "2022-04-28T14:20:04.000Z"
+                      description: ""
+                      http:
+                        url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                      name: My HTTP Source
+                      projectId: 1234
+                      sourceId: my-http-source
+                      type: http
+                      version:
+                        at: "2024-01-15T10:00:00.000Z"
                         by:
-                            type: user
-                            tokenId: "896455"
                             tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
                             userId: "578621"
                             userName: John Green
-                      disabled:
-                        at: "2022-04-28T14:20:04.000Z"
+                        description: New source.
+                        hash: f43e93acd97eceb3
+                        number: 1
+                    - branchId: 5678
+                      created:
+                        at: "2024-01-15T10:00:00.000Z"
                         by:
-                            type: user
-                            tokenId: "896455"
                             tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
                             userId: "578621"
                             userName: John Green
-                        reason: Disabled for recurring problems.
+                      description: ""
+                      name: My OTLP Source
+                      otlp:
+                        baseUrl: https://stream-in.keboola.com/otlp/1234/my-otlp-source
+                        secret: EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                        url: https://stream-in.keboola.com/otlp/1234/my-otlp-source/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                      projectId: 1234
+                      sourceId: my-otlp-source
+                      type: otlp
+                      version:
+                        at: "2024-01-15T10:00:00.000Z"
+                        by:
+                            tokenDesc: john.green@company.com
+                            tokenId: "896455"
+                            type: user
+                            userId: "578621"
+                            userName: John Green
+                        description: New source.
+                        hash: f43e93acd97eceb3
+                        number: 1
         example:
             projectId: 123
             branchId: 345
@@ -3891,50 +3605,62 @@ definitions:
                 afterId: my-object-123
                 lastId: my-object-456
             sources:
-                - projectId: 123
-                  branchId: 345
-                  sourceId: github-webhook-source
-                  type: http
-                  name: Github Webhook Source
-                  description: The source receives events from Github.
-                  http:
-                    url: https://stream-in.keboola.com/G0lpTbz0vhakDicfoDQQ3BCzGYdW3qewd1D3eUbqETygHKGb
-                  version:
-                    number: 3
-                    hash: f43e93acd97eceb3
-                    description: The reason for the last change was...
-                    at: "2022-04-28T14:20:04.000Z"
-                    by:
-                        type: user
-                        tokenId: "896455"
-                        tokenDesc: john.green@company.com
-                        userId: "578621"
-                        userName: John Green
+                - branchId: 5678
                   created:
-                    at: "2022-04-28T14:20:04.000Z"
+                    at: "2024-01-15T10:00:00.000Z"
                     by:
-                        type: user
-                        tokenId: "896455"
                         tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
                         userId: "578621"
                         userName: John Green
-                  deleted:
-                    at: "2022-04-28T14:20:04.000Z"
+                  description: ""
+                  http:
+                    url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                  name: My HTTP Source
+                  projectId: 1234
+                  sourceId: my-http-source
+                  type: http
+                  version:
+                    at: "2024-01-15T10:00:00.000Z"
                     by:
-                        type: user
-                        tokenId: "896455"
                         tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
                         userId: "578621"
                         userName: John Green
-                  disabled:
-                    at: "2022-04-28T14:20:04.000Z"
+                    description: New source.
+                    hash: f43e93acd97eceb3
+                    number: 1
+                - branchId: 5678
+                  created:
+                    at: "2024-01-15T10:00:00.000Z"
                     by:
-                        type: user
-                        tokenId: "896455"
                         tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
                         userId: "578621"
                         userName: John Green
-                    reason: Disabled for recurring problems.
+                  description: ""
+                  name: My OTLP Source
+                  otlp:
+                    baseUrl: https://stream-in.keboola.com/otlp/1234/my-otlp-source
+                    secret: EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                    url: https://stream-in.keboola.com/otlp/1234/my-otlp-source/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                  projectId: 1234
+                  sourceId: my-otlp-source
+                  type: otlp
+                  version:
+                    at: "2024-01-15T10:00:00.000Z"
+                    by:
+                        tokenDesc: john.green@company.com
+                        tokenId: "896455"
+                        type: user
+                        userId: "578621"
+                        userName: John Green
+                    description: New source.
+                    hash: f43e93acd97eceb3
+                    number: 1
         required:
             - projectId
             - branchId
@@ -3944,6 +3670,18 @@ definitions:
         title: StreamCreateSinkRequestBody
         type: object
         properties:
+            allowedSignals:
+                type: array
+                items:
+                    type: string
+                    example: logs
+                    enum:
+                        - logs
+                        - metrics
+                        - traces
+                description: Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
+                example:
+                    - logs
             description:
                 type: string
                 description: Description of the source.
@@ -3973,6 +3711,8 @@ definitions:
             type: table
             name: Raw Data Sink
             description: The sink stores records to a table.
+            allowedSignals:
+                - logs
             table:
                 type: keboola
                 tableId: in.c-bucket.table
@@ -4027,6 +3767,7 @@ definitions:
                 example: http
                 enum:
                     - http
+                    - otlp
         example:
             sourceId: github-webhook-source
             type: http
@@ -4039,6 +3780,18 @@ definitions:
         title: StreamUpdateSinkRequestBody
         type: object
         properties:
+            allowedSignals:
+                type: array
+                items:
+                    type: string
+                    example: logs
+                    enum:
+                        - logs
+                        - metrics
+                        - traces
+                description: Restricts the sink to specific OTLP signal types. Empty (default) accepts all signals. Only relevant for OTLP sources; HTTP sources ignore this field.
+                example:
+                    - logs
             changeDescription:
                 type: string
                 description: Description of the modification, description of the version.
@@ -4066,6 +3819,8 @@ definitions:
             type: table
             name: Raw Data Sink
             description: The sink stores records to a table.
+            allowedSignals:
+                - logs
             table:
                 type: keboola
                 tableId: in.c-bucket.table
@@ -4135,6 +3890,7 @@ definitions:
                 example: http
                 enum:
                     - http
+                    - otlp
         example:
             changeDescription: Renamed.
             type: http

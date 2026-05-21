@@ -55,9 +55,18 @@ func (m *Mapper) NewAggregationSource(entity definition.Source) (*api.Aggregated
 		if err != nil {
 			return nil, err
 		}
-		out.HTTP = &api.HTTPSource{
-			URL: u,
+		out.HTTP = &api.HTTPSource{URL: u}
+	case definition.SourceTypeOTLP:
+		publicURL := m.httpSourcePublicURL.String()
+		u, err := entity.FormatOTLPSourceURL(publicURL)
+		if err != nil {
+			return nil, err
 		}
+		baseURL, err := entity.FormatOTLPSourceBaseURL(publicURL)
+		if err != nil {
+			return nil, err
+		}
+		out.Otlp = &api.OTLPSource{URL: u, BaseURL: baseURL, Secret: entity.OTLP.Secret}
 	default:
 		return nil, svcerrors.NewBadRequestError(errors.Errorf(`unexpected "type" "%s"`, out.Type.String()))
 	}
@@ -67,16 +76,17 @@ func (m *Mapper) NewAggregationSource(entity definition.Source) (*api.Aggregated
 
 func (m *Mapper) NewAggregationSinkResponse(entity repository.SinkWithStatistics) (*api.AggregatedSink, error) {
 	out := &api.AggregatedSink{
-		ProjectID:   entity.ProjectID,
-		BranchID:    entity.BranchID,
-		SourceID:    entity.SourceID,
-		SinkID:      entity.SinkID,
-		Name:        entity.Name,
-		Description: entity.Description,
-		Created:     m.NewCreatedResponse(entity.Created),
-		Version:     m.NewVersionResponse(entity.Version),
-		Deleted:     m.NewDeletedResponse(entity.SoftDeletable),
-		Disabled:    m.NewDisabledResponse(entity.Switchable),
+		ProjectID:      entity.ProjectID,
+		BranchID:       entity.BranchID,
+		SourceID:       entity.SourceID,
+		SinkID:         entity.SinkID,
+		Name:           entity.Name,
+		Description:    entity.Description,
+		AllowedSignals: stringsToSignals(entity.AllowedSignals),
+		Created:        m.NewCreatedResponse(entity.Created),
+		Version:        m.NewVersionResponse(entity.Version),
+		Deleted:        m.NewDeletedResponse(entity.SoftDeletable),
+		Disabled:       m.NewDisabledResponse(entity.Switchable),
 	}
 
 	if entity.Statistics.Total != nil {

@@ -17,16 +17,17 @@ import (
 
 func (m *Mapper) NewSinkResponse(entity definition.Sink) (*api.Sink, error) {
 	out := &api.Sink{
-		ProjectID:   entity.ProjectID,
-		BranchID:    entity.BranchID,
-		SourceID:    entity.SourceID,
-		SinkID:      entity.SinkID,
-		Name:        entity.Name,
-		Description: entity.Description,
-		Created:     m.NewCreatedResponse(entity.Created),
-		Version:     m.NewVersionResponse(entity.Version),
-		Deleted:     m.NewDeletedResponse(entity.SoftDeletable),
-		Disabled:    m.NewDisabledResponse(entity.Switchable),
+		ProjectID:      entity.ProjectID,
+		BranchID:       entity.BranchID,
+		SourceID:       entity.SourceID,
+		SinkID:         entity.SinkID,
+		Name:           entity.Name,
+		Description:    entity.Description,
+		AllowedSignals: stringsToSignals(entity.AllowedSignals),
+		Created:        m.NewCreatedResponse(entity.Created),
+		Version:        m.NewVersionResponse(entity.Version),
+		Deleted:        m.NewDeletedResponse(entity.SoftDeletable),
+		Disabled:       m.NewDisabledResponse(entity.Switchable),
 	}
 
 	// Type

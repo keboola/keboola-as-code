@@ -1,0 +1,64 @@
+{
+  "path": "/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-otlp-source/sinks",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "name": "My Sink",
+    "type": "table",
+    "table": {
+      "type": "keboola",
+      "tableId": "in.c-otlp.logs",
+      "mapping": {
+        "columns": [
+          {
+            "type": "datetime",
+            "name": "datetime"
+          },
+          {
+            "type": "template",
+            "name": "severity",
+            "template": {
+              "language": "jsonnet",
+              "content": "Body('severity_text')"
+            }
+          },
+          {
+            "type": "template",
+            "name": "message",
+            "template": {
+              "language": "jsonnet",
+              "content": "Body('body')"
+            }
+          },
+          {
+            "type": "template",
+            "name": "service",
+            "template": {
+              "language": "jsonnet",
+              "content": "Body('resource')['service.name']"
+            }
+          },
+          {
+            "type": "template",
+            "name": "otlp_timestamp",
+            "template": {
+              "language": "jsonnet",
+              "content": "Body('timestamp')"
+            }
+          },
+          {
+            "type": "template",
+            "name": "user_id",
+            "template": {
+              "language": "jsonnet",
+              "content": "Body('attributes')['user.id']"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

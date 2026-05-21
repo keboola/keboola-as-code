@@ -303,8 +303,9 @@ func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.Sourc
 	return s.mapper.NewTaskResponse(t)
 }
 
-func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.TestSourcePayload, _ io.ReadCloser) (res *api.TestResult, err error) {
-	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
+func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.TestSourcePayload, _ io.ReadCloser) (res *api.TestResult, err error) {
+	source, err := s.definition.Source().Get(d.SourceKey()).Do(ctx).ResultOrErr()
+	if err != nil {
 		return nil, err
 	}
 
@@ -317,9 +318,44 @@ func (s *service) TestSource(ctx context.Context, d dependencies.SourceRequestSc
 	req := d.Request()
 	req.Header.Del("x-storageapi-token")
 
-	recordCtx := recordctx.FromHTTP(d.Clock().Now(), req)
+	var recordCtx recordctx.Context
+	if source.Type == definition.SourceTypeOTLP {
+		// For OTLP sources the test body is interpreted as an already-flattened
+		// OTLP record (the same structure that FlattenLogs/Metrics/Traces produces).
+		// This lets API callers test their jsonnet column expressions against a
+		// realistic flat payload without having to send a real protobuf batch.
+		// The signal selector is validated by the Goa enum; default to "logs"
+		// when the query parameter is omitted.
+		signal := "logs"
+		if payload != nil && payload.Signal != nil {
+			signal = string(*payload.Signal)
+		}
+		recordCtx, err = recordctx.FromOTLPTestRequest(ctx, d.Clock().Now(), req, signal)
+		if err != nil {
+			return nil, svcerrors.NewBadRequestError(err)
+		}
+		// Sinks whose AllowedSignals filter rejects this signal would be skipped
+		// during real ingestion; rendering them here would surface mapping errors
+		// from sinks that never see this record at runtime.
+		sinks = filterSinksBySignal(sinks, recordCtx.Signal())
+	} else {
+		recordCtx = recordctx.FromHTTP(d.Clock().Now(), req)
+	}
 
 	return s.mapper.NewTestResultResponse(d.SourceKey(), sinks, recordCtx)
+}
+
+// filterSinksBySignal keeps only sinks whose AcceptsSignal returns true.
+// Delegates to definition.SignalAccepted so the /test endpoint stays in lock
+// step with the runtime router's per-signal dispatch decision.
+func filterSinksBySignal(sinks []definition.Sink, signal string) []definition.Sink {
+	out := make([]definition.Sink, 0, len(sinks))
+	for _, sink := range sinks {
+		if sink.AcceptsSignal(signal) {
+			out = append(out, sink)
+		}
+	}
+	return out
 }
 
 func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.SourceRequestScope, payload *api.SourceStatisticsClearPayload) (err error) {

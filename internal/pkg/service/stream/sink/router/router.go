@@ -219,10 +219,15 @@ func (r *Router) DispatchToSource(sourceKey key.SourceKey, c recordctx.Context) 
 	}
 
 	// Write to sinks in parallel
+	signal := c.Signal()
 	var lock sync.Mutex
 	var wg sync.WaitGroup
 	for _, sink := range source.sinks {
 		if !sink.enabled {
+			continue
+		}
+
+		if !definition.SignalAccepted(sink.allowedSignals, signal) {
 			continue
 		}
 

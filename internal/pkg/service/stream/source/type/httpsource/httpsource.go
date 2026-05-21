@@ -20,11 +20,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	definitionRepo "github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/dispatcher"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/source/type/otlpsource"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -105,7 +107,7 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 		recordCtx := recordctx.FromFastHTTP(ctx, d.Clock().Now(), c.RequestCtx)
 
 		// Dispatch request to all sinks
-		result, err := dp.Dispatch(keboola.ProjectID(projectIDInt), sourceID, secret, recordCtx)
+		result, err := dp.Dispatch(keboola.ProjectID(projectIDInt), sourceID, secret, definition.SourceTypeHTTP, recordCtx)
 		if err != nil {
 			// Create an enriched context.Context for logging this specific error event.
 			errorLoggingCtx := ctxattr.ContextWith(ctx,
@@ -147,6 +149,28 @@ func Start(ctx context.Context, d dependencies, cfg Config) error {
 
 		return nil
 	})
+
+	// Native OTLP/HTTP endpoints. The OTLP transport rides on the existing
+	// HTTP source (same server, same dispatcher) — the only new pieces are
+	// route registration, OTLP decoding, record flattening, and OTLP-conformant
+	// response construction.
+	//
+	// Two route shapes are registered for each signal: one with the secret in
+	// the URL path (curl-friendly, but leaks into access/CDN logs) and one
+	// without (header-auth via `Authorization: Bearer <secret>`).
+	otlpHandler := otlpsource.New(ctx, logger, d.Clock(), dp, errorHandler)
+	router.Options("/otlp/<projectID>/<sourceID>/<secret>/v1/logs", otlpHandler.HandleOptions)
+	router.Post("/otlp/<projectID>/<sourceID>/<secret>/v1/logs", otlpHandler.HandleLogs)
+	router.Options("/otlp/<projectID>/<sourceID>/<secret>/v1/metrics", otlpHandler.HandleOptions)
+	router.Post("/otlp/<projectID>/<sourceID>/<secret>/v1/metrics", otlpHandler.HandleMetrics)
+	router.Options("/otlp/<projectID>/<sourceID>/<secret>/v1/traces", otlpHandler.HandleOptions)
+	router.Post("/otlp/<projectID>/<sourceID>/<secret>/v1/traces", otlpHandler.HandleTraces)
+	router.Options("/otlp/<projectID>/<sourceID>/v1/logs", otlpHandler.HandleOptions)
+	router.Post("/otlp/<projectID>/<sourceID>/v1/logs", otlpHandler.HandleLogs)
+	router.Options("/otlp/<projectID>/<sourceID>/v1/metrics", otlpHandler.HandleOptions)
+	router.Post("/otlp/<projectID>/<sourceID>/v1/metrics", otlpHandler.HandleMetrics)
+	router.Options("/otlp/<projectID>/<sourceID>/v1/traces", otlpHandler.HandleOptions)
+	router.Post("/otlp/<projectID>/<sourceID>/v1/traces", otlpHandler.HandleTraces)
 
 	// Prepare HTTP server
 	readBufferSize, err := safecast.Convert[int](cfg.ReadBufferSize.Bytes())

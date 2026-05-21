@@ -48,6 +48,10 @@ func (c *httpContext) Timestamp() time.Time {
 	return c.timestamp
 }
 
+func (c *httpContext) Signal() string {
+	return ""
+}
+
 func (c *httpContext) ClientIP() net.IP {
 	c.lock.Lock()
 	defer c.lock.Unlock()

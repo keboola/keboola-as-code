@@ -1,0 +1,15 @@
+{
+  "path": "/v1/branches/%%TEST_DEFAULT_BRANCH_ID%%/sources/my-otlp-source/test",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "severity_text": "WARN",
+    "body": "disk space low",
+    "timestamp": "2024-06-01T12:00:00Z",
+    "resource": {"service.name": "storage-service"},
+    "attributes": {"user.id": "u-42"}
+  }
+}

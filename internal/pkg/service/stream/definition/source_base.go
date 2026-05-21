@@ -23,6 +23,7 @@ type Source struct {
 	// Source type specific fields
 
 	HTTP *HTTPSource `json:"http,omitempty" validate:"required_if=Type http"`
+	OTLP *OTLPSource `json:"otlp,omitempty" validate:"required_if=Type otlp"`
 }
 
 func (s *Source) FormatHTTPSourceURL(httpSourcePublicURL string) (string, error) {

@@ -1,0 +1,5 @@
+{
+  "statusCode": 422,
+  "error": "stream.api.unprocessableContent",
+  "message": "Invalid value for column \"service\": path \"resource\" not found in the body."
+}

@@ -37,9 +37,10 @@ type Dispatcher struct {
 }
 
 type sourceData struct {
-	sourceKey key.SourceKey
-	enabled   bool
-	secret    string
+	sourceKey  key.SourceKey
+	sourceType definition.SourceType
+	enabled    bool
+	secret     string
 }
 
 type dependencies interface {
@@ -69,15 +70,24 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 				return sourceKey(source.SourceKey)
 			},
 			func(key string, source definition.Source, rawValue *op.KeyValue, oldValue **sourceData) *sourceData {
+				var secret string
+				switch source.Type {
+				case definition.SourceTypeHTTP:
+					secret = source.HTTP.Secret
+				case definition.SourceTypeOTLP:
+					secret = source.OTLP.Secret
+				}
 				return &sourceData{
-					sourceKey: source.SourceKey,
-					enabled:   source.IsEnabled(),
-					secret:    source.HTTP.Secret,
+					sourceKey:  source.SourceKey,
+					sourceType: source.Type,
+					enabled:    source.IsEnabled(),
+					secret:     secret,
 				}
 			},
 		).
 			WithFilter(func(event etcdop.WatchEvent[definition.Source]) bool {
-				return event.Value.Type == definition.SourceTypeHTTP
+				t := event.Value.Type
+				return t == definition.SourceTypeHTTP || t == definition.SourceTypeOTLP
 			}).
 			BuildMirror()
 		if err := <-dp.sources.StartMirroring(ctx, &dp.wg, dp.logger, d.Telemetry(), d.WatchTelemetryInterval()); err != nil {
@@ -88,7 +98,23 @@ func New(d dependencies, logger log.Logger) (*Dispatcher, error) {
 	return dp, nil
 }
 
-func (d *Dispatcher) Dispatch(projectID keboola.ProjectID, sourceID key.SourceID, secret string, c recordctx.Context) (*sinkRouter.SourcesResult, error) {
+// ValidateSource checks that projectID/sourceID/secret refer to an active source
+// of the given expected type, without dispatching any record. The OTLP handler
+// calls it on every request before decoding the body so unauthenticated callers
+// get a deterministic 404 instead of consuming decode CPU.
+func (d *Dispatcher) ValidateSource(projectID keboola.ProjectID, sourceID key.SourceID, secret string, expectedType definition.SourceType) error {
+	d.wg.Add(1)
+	defer d.wg.Done()
+
+	if d.isClosed() {
+		return ShutdownError{}
+	}
+
+	_, err := d.lookupSources(projectID, sourceID, secret, expectedType)
+	return err
+}
+
+func (d *Dispatcher) Dispatch(projectID keboola.ProjectID, sourceID key.SourceID, secret string, expectedType definition.SourceType, c recordctx.Context) (*sinkRouter.SourcesResult, error) {
 	d.wg.Add(1)
 	defer d.wg.Done()
 
@@ -97,12 +123,29 @@ func (d *Dispatcher) Dispatch(projectID keboola.ProjectID, sourceID key.SourceID
 		return nil, ShutdownError{}
 	}
 
+	matchedSources, err := d.lookupSources(projectID, sourceID, secret, expectedType)
+	if err != nil {
+		return nil, err
+	}
+
+	// Dispatch to all sources in all branches
+	return d.sinkRouter.DispatchToSources(matchedSources, c), nil
+}
+
+// lookupSources returns all enabled source keys matching projectID/sourceID/secret
+// AND the expected source type — so an HTTP secret cannot be used to authenticate
+// to /otlp/... endpoints and vice versa.
+func (d *Dispatcher) lookupSources(projectID keboola.ProjectID, sourceID key.SourceID, secret string, expectedType definition.SourceType) ([]key.SourceKey, error) {
 	// Get all relevant sources from all branches
 	disabled := 0
 	var matchedSources []key.SourceKey
 	d.sources.WalkPrefix(sourceKeyPrefix(projectID, sourceID), func(key string, source *sourceData) (stop bool) {
-		// Secret is now immutable and should be now same in all branches.
-		// If in the future we would allow secrete to be regenerated in the main/dev branch, it will still work correctly.
+		// Secret is now immutable and should be the same in all branches.
+		// If in the future we would allow secret to be regenerated in the main/dev branch, it will still work correctly.
+		// The source type must also match — the secret is namespaced by transport.
+		if source.sourceType != expectedType {
+			return false
+		}
 		if source.secret == secret {
 			if source.enabled {
 				matchedSources = append(matchedSources, source.sourceKey)
@@ -122,8 +165,7 @@ func (d *Dispatcher) Dispatch(projectID keboola.ProjectID, sourceID key.SourceID
 		}
 	}
 
-	// Dispatch to all sources in all branches
-	return d.sinkRouter.DispatchToSources(matchedSources, c), nil
+	return matchedSources, nil
 }
 
 func (d *Dispatcher) Close(ctx context.Context) error {

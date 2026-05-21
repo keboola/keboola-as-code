@@ -767,6 +767,7 @@ func DecodeTestSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		var (
 			branchID        string
 			sourceID        string
+			signal          *string
 			storageAPIToken string
 			err             error
 
@@ -780,6 +781,15 @@ func DecodeTestSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		if utf8.RuneCountInString(sourceID) > 48 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
 		}
+		signalRaw := r.URL.Query().Get("signal")
+		if signalRaw != "" {
+			signal = &signalRaw
+		}
+		if signal != nil {
+			if !(*signal == "logs" || *signal == "metrics" || *signal == "traces") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("signal", *signal, []any{"logs", "metrics", "traces"}))
+			}
+		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
 			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
@@ -787,7 +797,7 @@ func DecodeTestSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		if err != nil {
 			return payload, err
 		}
-		payload = NewTestSourcePayload(branchID, sourceID, storageAPIToken)
+		payload = NewTestSourcePayload(branchID, sourceID, signal, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
@@ -3600,6 +3610,9 @@ func marshalStreamSourceToSourceResponseBody(v *stream.Source) *SourceResponseBo
 	if v.HTTP != nil {
 		res.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(v.HTTP)
 	}
+	if v.Otlp != nil {
+		res.Otlp = marshalStreamOTLPSourceToOTLPSourceResponseBody(v.Otlp)
+	}
 	if v.Version != nil {
 		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
 	}
@@ -3624,6 +3637,21 @@ func marshalStreamHTTPSourceToHTTPSourceResponseBody(v *stream.HTTPSource) *HTTP
 	}
 	res := &HTTPSourceResponseBody{
 		URL: v.URL,
+	}
+
+	return res
+}
+
+// marshalStreamOTLPSourceToOTLPSourceResponseBody builds a value of type
+// *OTLPSourceResponseBody from a value of type *stream.OTLPSource.
+func marshalStreamOTLPSourceToOTLPSourceResponseBody(v *stream.OTLPSource) *OTLPSourceResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &OTLPSourceResponseBody{
+		URL:     v.URL,
+		BaseURL: v.BaseURL,
+		Secret:  v.Secret,
 	}
 
 	return res
@@ -3940,6 +3968,12 @@ func marshalStreamSinkToSinkResponseBody(v *stream.Sink) *SinkResponseBody {
 		Name:        v.Name,
 		Description: v.Description,
 	}
+	if v.AllowedSignals != nil {
+		res.AllowedSignals = make([]string, len(v.AllowedSignals))
+		for i, val := range v.AllowedSignals {
+			res.AllowedSignals[i] = string(val)
+		}
+	}
 	if v.Table != nil {
 		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)
 	}
@@ -4066,6 +4100,9 @@ func marshalStreamAggregatedSourceToAggregatedSourceResponseBody(v *stream.Aggre
 	if v.HTTP != nil {
 		res.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(v.HTTP)
 	}
+	if v.Otlp != nil {
+		res.Otlp = marshalStreamOTLPSourceToOTLPSourceResponseBody(v.Otlp)
+	}
 	if v.Version != nil {
 		res.Version = marshalStreamVersionToVersionResponseBody(v.Version)
 	}
@@ -4105,6 +4142,12 @@ func marshalStreamAggregatedSinkToAggregatedSinkResponseBody(v *stream.Aggregate
 		Type:        string(v.Type),
 		Name:        v.Name,
 		Description: v.Description,
+	}
+	if v.AllowedSignals != nil {
+		res.AllowedSignals = make([]string, len(v.AllowedSignals))
+		for i, val := range v.AllowedSignals {
+			res.AllowedSignals[i] = string(val)
+		}
 	}
 	if v.Table != nil {
 		res.Table = marshalStreamTableSinkToTableSinkResponseBody(v.Table)
