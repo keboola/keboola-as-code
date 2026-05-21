@@ -18,6 +18,11 @@ type Sink struct {
 	Description string               `json:"description,omitempty" validate:"max=4096"`
 	Config      configpatch.PatchKVs `json:"config,omitempty"` // see stream/config/config.Patch
 
+	// AllowedSignals filters which OTLP signal types this sink accepts.
+	// Empty means accept all records (HTTP sources and all OTLP signals).
+	// Valid values: "logs", "metrics", "traces".
+	AllowedSignals []string `json:"allowedSignals,omitempty" validate:"dive,oneof=logs metrics traces"`
+
 	// Sink type specific fields
 
 	Table *TableSink `json:"table,omitempty" validate:"required_if=Type table"`
