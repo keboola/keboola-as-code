@@ -3355,6 +3355,135 @@ func TestKaiPreviewSlidingRefresh(t *testing.T) {
 	assert.Empty(t, mocked.DebugLogger().ErrorMessages())
 }
 
+// TestWebsocketActivityTracking verifies the per-frame WebSocket activity-tracking
+// behavior introduced by wsactivity:
+//
+//  1. The initial handshake produces exactly one Sandboxes Service notify (from the
+//     GotConn ClientTrace hook).
+//  2. An open but otherwise IDLE WebSocket past the per-app 30 s notify throttle
+//     window must NOT produce additional notifies. This is the regression test for
+//     the removed 30 s ticker — the customer's "forgotten browser tab" case from
+//     SUPPORT-16324 / PROF-104.
+//  3. A real data frame past the throttle window MUST produce a second notify,
+//     proving the per-frame path is wired end-to-end through the wrapped conn.
+//
+// The test uses an injected FakeClock so the notify throttle can be advanced
+// deterministically without sleeping for 30 s of real time.
+//
+// Note on protocol-level pings: the "control frames ignored" property is unit-tested
+// in wsactivity (TestWrap_OnlyControlFrames_NoCallbacks). A full integration test of
+// that property would require driving ping/pong through coder/websocket with a
+// custom server handler, which is fragile w.r.t. the library's read-loop semantics.
+// The (idle WS + advanced clock → count unchanged) check below is sufficient for
+// the actual customer-visible behavior.
+func TestWebsocketActivityTracking(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+
+	fakeClock := clockwork.NewFakeClock()
+
+	// Standard testing scaffold: apps API + upstream app server + secrets + config.
+	tmpDir := t.TempDir()
+	pm, _ := server.NewPortManager(t, tmpDir, "appsproxy")
+	appsAPI := testutil.StartDataAppsAPI(t, pm)
+	t.Cleanup(func() { appsAPI.Close() })
+	appServer := testutil.StartAppServer(t, pm)
+	t.Cleanup(func() { appServer.Close() })
+
+	providers := testAuthProviders(t, pm)
+	appURL := testutil.AppServerURL(t, appServer)
+	apps := testDataApps(appURL, providers)
+	appsAPI.Register(apps)
+
+	secret := make([]byte, 32)
+	_, err := rand.Read(secret)
+	require.NoError(t, err)
+	csrfSecret := make([]byte, 32)
+	_, err = rand.Read(csrfSecret)
+	require.NoError(t, err)
+
+	cfg := config.New()
+	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
+	cfg.CookieSecretSalt = string(secret)
+	cfg.CsrfTokenSalt = string(csrfSecret)
+	cfg.SandboxesAPI.URL = appsAPI.URL
+
+	d, mocked := proxyDependencies.NewMockedServiceScopeWithK8sObjects(
+		t, ctx, cfg,
+		makeDefaultK8sObjects(apps, appURL.String()),
+		dependencies.WithRealHTTPClient(),
+		dependencies.WithClock(fakeClock),
+	)
+	defer func() {
+		d.Process().Shutdown(ctx, errors.New("bye bye"))
+		d.Process().WaitForShutdown()
+	}()
+
+	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
+	logger.SetOutput(loggerWriter)
+	logger.SetErrOutput(loggerWriter)
+	handler := proxy.NewHandler(ctx, d)
+
+	var lc net.ListenConfig
+	l, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	proxySrv := &httptest.Server{
+		Listener: l,
+		Config:   &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ErrorLog: log.NewStdErrorLogger(d.Logger())},
+	}
+	proxySrv.StartTLS()
+	t.Cleanup(func() { proxySrv.Close() })
+
+	proxyURL, err := url.Parse(proxySrv.URL)
+	require.NoError(t, err)
+	client := createHTTPClient(t, proxyURL)
+	registerDefaultK8sApps(t, d.AppStateWatcher())
+
+	// notifyCount is locked behind the testutil mutex so it is safe to read
+	// concurrently with the in-flight notify goroutine driven by data frames.
+	notifyCount := func() int { return appsAPI.NotificationsCount("123") }
+
+	wsCtx, wsCancel := context.WithTimeout(ctx, time.Minute)
+	defer wsCancel()
+
+	// Open the idle WebSocket. The handshake's GotConn ClientTrace hook fires
+	// u.notify once, producing the first Sandboxes Service PATCH call.
+	c, _, err := websocket.Dial(
+		wsCtx,
+		"wss://public-123.hub.keboola.local/ws-idle",
+		&websocket.DialOptions{HTTPClient: client},
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = c.Close(websocket.StatusNormalClosure, "") })
+
+	require.Eventually(t, func() bool { return notifyCount() == 1 }, 5*time.Second, 10*time.Millisecond,
+		"handshake should produce exactly one notify (from GotConn)")
+
+	// Regression check for the removed 30 s ticker: advance the fake clock
+	// well past the throttle window with NO activity, then verify the notify
+	// count did not move. Under the old presence-based tracking the ticker
+	// would have fired notify here just because the connection was open.
+	fakeClock.Advance(31 * time.Second)
+	// Yield wall-clock time long enough that any (hypothetical) periodic
+	// goroutine driven by real time would have had a chance to fire. 250 ms
+	// is plenty — the old ticker slept 30 s of real time, so even a
+	// dramatically accelerated variant would tick within this window.
+	time.Sleep(250 * time.Millisecond)
+	assert.Equal(t, 1, notifyCount(),
+		"idle WS past the throttle window must NOT trigger a notify (ticker must be removed)")
+
+	// Write a real data frame (text message). The proxy observes a non-control
+	// opcode (0x1) in the client→server direction, fires u.notify, and — since
+	// fakeClock is past the throttle window — the throttle gate opens and we
+	// get a second PATCH call to apps API.
+	require.NoError(t, c.Write(wsCtx, websocket.MessageText, []byte("hello data")))
+
+	require.Eventually(t, func() bool { return notifyCount() == 2 }, 5*time.Second, 10*time.Millisecond,
+		"data-frame activity past the throttle window must produce a second notify")
+
+	assert.Empty(t, mocked.DebugLogger().ErrorMessages())
+}
+
 // makeDefaultK8sObjects converts a slice of app configs into K8s unstructured App CRD objects
 // with Running state and the given upstream URL. Pass the result to NewMockedServiceScopeWithK8sObjects
 // so the fake client is pre-populated before the informer starts.
