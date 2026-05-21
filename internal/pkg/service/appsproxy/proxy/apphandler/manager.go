@@ -7,11 +7,15 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/jonboulle/clockwork"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
@@ -22,13 +26,16 @@ import (
 )
 
 type Manager struct {
-	config           config.Config
-	telemetry        telemetry.Telemetry
-	configLoader     appconfig.Loader
-	upstreamManager  *upstream.Manager
-	authProxyManager *authproxy.Manager
-	pageWriter       *pagewriter.Writer
-	handlers         *syncmap.SyncMap[api.AppID, appHandlerWrapper]
+	logger               log.Logger
+	config               config.Config
+	telemetry            telemetry.Telemetry
+	configLoader         appconfig.Loader
+	upstreamManager      *upstream.Manager
+	authProxyManager     *authproxy.Manager
+	pageWriter           *pagewriter.Writer
+	handlers             *syncmap.SyncMap[api.AppID, appHandlerWrapper]
+	clock                clockwork.Clock
+	storageTokenVerifier kaipreview.StorageTokenVerifier
 }
 
 type appHandlerWrapper struct {
@@ -39,6 +46,8 @@ type appHandlerWrapper struct {
 }
 
 type dependencies interface {
+	Logger() log.Logger
+	Clock() clockwork.Clock
 	Config() config.Config
 	Telemetry() telemetry.Telemetry
 	PageWriter() *pagewriter.Writer
@@ -47,9 +56,18 @@ type dependencies interface {
 	AppConfigLoader() appconfig.Loader
 }
 
-func NewManager(d dependencies) *Manager {
+func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
+	cfg := d.Config()
+	if cfg.StorageAPIURL == nil {
+		return nil, errors.New("appsproxy: StorageAPIURL is required for kai-preview Storage token verification")
+	}
+	verifier, err := kaipreview.NewSDKStorageTokenVerifier(ctx, cfg.StorageAPIURL.String())
+	if err != nil {
+		return nil, err
+	}
 	return &Manager{
-		config:           d.Config(),
+		logger:           d.Logger(),
+		config:           cfg,
 		telemetry:        d.Telemetry(),
 		configLoader:     d.AppConfigLoader(),
 		upstreamManager:  d.UpstreamManager(),
@@ -58,7 +76,9 @@ func NewManager(d dependencies) *Manager {
 		handlers: syncmap.New[api.AppID, appHandlerWrapper](func(api.AppID) *appHandlerWrapper {
 			return &appHandlerWrapper{lock: &sync.Mutex{}}
 		}),
-	}
+		clock:                d.Clock(),
+		storageTokenVerifier: verifier,
+	}, nil
 }
 
 func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {

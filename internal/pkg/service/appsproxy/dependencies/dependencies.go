@@ -210,7 +210,10 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.wakeupManager = wakeup.NewManager(d)
 	d.authProxyManager = authproxy.NewManager(d)
 	d.upstreamManager = upstream.NewManager(d)
-	d.appHandlers = apphandler.NewManager(d)
+	d.appHandlers, err = apphandler.NewManager(ctx, d)
+	if err != nil {
+		return nil, err
+	}
 
 	return d, nil
 }

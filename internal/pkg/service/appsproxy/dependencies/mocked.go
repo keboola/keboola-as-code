@@ -77,6 +77,20 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	if cfg.SandboxesAPI.Token == "" {
 		cfg.SandboxesAPI.Token = "my-token"
 	}
+	if cfg.StorageAPIURL == nil {
+		var err error
+		cfg.StorageAPIURL, err = url.Parse("https://connection.keboola.com")
+		require.NoError(tb, err)
+	}
+	if cfg.KaiPreview.HandshakeSigningKey == "" {
+		cfg.KaiPreview.HandshakeSigningKey = "test-handshake-signing-key-for-mocked-scope"
+	}
+	if cfg.KaiPreview.SessionSigningKey == "" {
+		cfg.KaiPreview.SessionSigningKey = "test-session-signing-key-for-mocked-scope"
+	}
+	if len(cfg.KaiPreview.AllowedOrigins) == 0 {
+		cfg.KaiPreview.AllowedOrigins = []string{"https://connection.keboola.com"}
+	}
 	if cfg.K8s.AppsNamespace == "" {
 		cfg.K8s.AppsNamespace = "keboola"
 	}

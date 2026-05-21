@@ -56,6 +56,14 @@ services:
       - APPS_PROXY_API_PUBLIC_URL=https://hub.keboola.local
       - APPS_PROXY_SANDBOXES_API_URL=http://sandboxesmock:1080/
       - APPS_PROXY_COOKIE_SECRET_SALT=secret
+      # kai-preview: required config for the dev-mode iframe-auth flow.
+      # Storage API URL is per-stack in production; for local dev we point at the
+      # canonical default. Signing keys are throwaway local values.
+      - APPS_PROXY_STORAGE_API_URL=https://connection.keboola.com
+      - APPS_PROXY_KAI_PREVIEW_HANDSHAKE_SIGNING_KEY=local-dev-handshake-key
+      - APPS_PROXY_KAI_PREVIEW_SESSION_SIGNING_KEY=local-dev-session-key
+      - APPS_PROXY_KAI_PREVIEW_SESSION_TTL=4h
+      - APPS_PROXY_KAI_PREVIEW_ALLOWED_ORIGINS=https://localhost:3000
       # Disable DataDog integration
       - TEMPLATES_DATADOG_ENABLED=false
       - STREAM_DATADOG_ENABLED=false

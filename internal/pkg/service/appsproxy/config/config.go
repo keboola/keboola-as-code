@@ -2,6 +2,7 @@ package config
 
 import (
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
@@ -24,8 +25,18 @@ type Config struct {
 	Upstream         Upstream          `configKey:"-" configUsage:"Configuration options for upstream"`
 	SandboxesAPI     SandboxesAPI      `configKey:"sandboxesAPI"`
 	CsrfTokenSalt    string            `configKey:"csrfTokenSalt" configUsage:"Salt used for generating CSRF tokens" validate:"required" sensitive:"true"`
+	StorageAPIURL    *url.URL          `configKey:"storageApiUrl" configUsage:"Base URL of the Keboola Storage API for this stack, used for Storage token verification (kai-preview flow). Must match the stack the proxy fronts — e.g. https://connection.eu-central-1.keboola.com for an EU stack. No default; required." validate:"required"`
+	KaiPreview       KaiPreview        `configKey:"kaiPreview" configUsage:"kai-preview iframe-auth configuration."`
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`
+}
+
+// KaiPreview configures the stateless iframe-auth path for the kai-preview flow.
+type KaiPreview struct {
+	HandshakeSigningKey string        `configKey:"handshakeSigningKey" configUsage:"HMAC key for kai-preview handshake JWT (30-60s lifetime)." validate:"required" sensitive:"true"`
+	SessionSigningKey   string        `configKey:"sessionSigningKey" configUsage:"HMAC key for kai-preview session cookie JWT." validate:"required" sensitive:"true"`
+	SessionTTL          time.Duration `configKey:"sessionTTL" configUsage:"Lifetime of the kai-preview session cookie (sliding)." validate:"required,minDuration=1m"`
+	AllowedOrigins      []string      `configKey:"allowedOrigins" configUsage:"Origins allowed to embed apps via kai-preview and mint handshake tokens (e.g. https://connection.keboola.com). Drives both the CORS allowlist and the bootstrap CSP frame-ancestors directive." validate:"required,min=1,dive,http_url"`
 }
 
 type API struct {
@@ -74,10 +85,19 @@ func New() Config {
 				Host:   "localhost:8000",
 			},
 		},
+		KaiPreview: KaiPreview{
+			SessionTTL: 4 * time.Hour,
+		},
 	}
 }
 
 func (c *Config) Normalize() {
+}
+
+func (c *KaiPreview) Normalize() {
+	for i, o := range c.AllowedOrigins {
+		c.AllowedOrigins[i] = strings.TrimRight(o, "/")
+	}
 }
 
 func (c *API) Normalize() {
