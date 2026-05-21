@@ -171,10 +171,26 @@ func TestWrap_Close_DelegatesToInner(t *testing.T) {
 
 func TestWrap_ShortWrite_DoesNotDoubleFeed(t *testing.T) {
 	t.Parallel()
-	// Inner Write returns half of p with io.ErrShortWrite. The parser must
-	// only see the bytes that actually reached the inner writer, so that the
-	// caller's retry with the unwritten tail doesn't cause double-counting.
-	frame := buildFrame(t, 0x1, true, 10, true) // total ~20 bytes
+	// Property under test: when the inner Write reports a short write
+	// (n < len(p)), the wrapper must only feed p[:n] to the parser. A buggy
+	// implementation that feeds the entire p on every Write would, on the
+	// caller's retry with p[n:], cause the parser to re-walk those bytes —
+	// resynchronising mid-payload as if a new frame had started, and firing
+	// spurious callbacks.
+	//
+	// For a single masked text frame with payloadLen=10 the total frame is
+	// 16 bytes (1+1+4 mask key + 10 payload). The half-point at 8 lands one
+	// byte past the end of the header — so the header is already complete in
+	// the first chunk and the callback fires there. The test still detects
+	// the double-feed bug: under the buggy path the parser would re-walk the
+	// last 8 bytes (mask bytes 0xDE 0xAD 0xBE 0xEF + payload 0..1 in this
+	// helper's deterministic fill), interpret 0xDE & 0x0F = 0xE as a new
+	// (reserved control) opcode header, and either fire extra callbacks
+	// (for reserved data opcodes 0x0..0x7 in different fill positions) or
+	// at minimum count more than 1 if any retry-fed prefix happens to
+	// constitute a non-control opcode. We assert the strict invariant of
+	// exactly one callback across the whole write+retry.
+	frame := buildFrame(t, 0x1, true, 10, true) // total 16 bytes
 	rwc := &fakeRWC{
 		rBuf:       &bytes.Buffer{},
 		wBuf:       &bytes.Buffer{},
@@ -188,9 +204,7 @@ func TestWrap_ShortWrite_DoesNotDoubleFeed(t *testing.T) {
 	require.ErrorIs(t, err, io.ErrShortWrite)
 	assert.Equal(t, len(frame)/2, n)
 
-	// The first half includes only the partial header; the parser shouldn't
-	// have fired a callback yet (it needs the full header).
-	// Now simulate the caller retrying with the unwritten tail (no shortWrite
+	// Simulate the caller retrying with the unwritten tail (no shortWrite
 	// this time so it succeeds completely).
 	rwc.shortWrite = false
 	rest := frame[n:]
