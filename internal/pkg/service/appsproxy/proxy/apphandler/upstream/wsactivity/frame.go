@@ -104,16 +104,18 @@ func (fp *frameParser) Feed(p []byte) {
 
 		case stateExtLen:
 			// Consume as many extLen bytes as available in p[i:].
+			// `need` is bounded by extLenBytes (≤8) and `n` is bounded by `need`,
+			// so the conversions below cannot overflow uint8.
 			need := int(fp.extLenBytes - fp.extLenRead)
 			avail := len(p) - i
 			n := need
 			if avail < n {
 				n = avail
 			}
-			for k := 0; k < n; k++ {
+			for k := range n {
 				fp.extLenAccum = (fp.extLenAccum << 8) | uint64(p[i+k])
 			}
-			fp.extLenRead += uint8(n)
+			fp.extLenRead += uint8(n) //nolint:gosec // n ≤ need ≤ extLenBytes ≤ 8
 			i += n
 			if fp.extLenRead == fp.extLenBytes {
 				fp.payloadLeft = fp.extLenAccum
@@ -121,26 +123,32 @@ func (fp *frameParser) Feed(p []byte) {
 			}
 
 		case stateMaskKey:
+			// `need` is bounded by 4 and `n` is bounded by `need`,
+			// so the conversion below cannot overflow uint8.
 			need := int(4 - fp.maskKeyRead)
 			avail := len(p) - i
 			n := need
 			if avail < n {
 				n = avail
 			}
-			fp.maskKeyRead += uint8(n)
+			fp.maskKeyRead += uint8(n) //nolint:gosec // n ≤ need ≤ 4
 			i += n
 			if fp.maskKeyRead == 4 {
 				fp.afterHeaderComplete()
 			}
 
 		case statePayload:
-			avail := uint64(len(p) - i)
+			// len(p)-i is non-negative by the outer loop condition (i < len(p))
+			// and bounded by len(p), so the uint64 cast cannot overflow.
+			// drop is then bounded by avail, so converting it back to int for
+			// the index advance cannot overflow either.
+			avail := uint64(len(p) - i) //nolint:gosec // len(p)-i ≥ 0 by loop condition
 			drop := avail
 			if fp.payloadLeft < drop {
 				drop = fp.payloadLeft
 			}
 			fp.payloadLeft -= drop
-			i += int(drop)
+			i += int(drop) //nolint:gosec // drop ≤ avail = uint64(len(p)-i), fits in int
 			if fp.payloadLeft == 0 {
 				fp.state = stateHeader0
 			}

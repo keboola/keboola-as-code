@@ -72,11 +72,11 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 		}
 	})
 
-	// /ws-idle accepts a WebSocket and keeps it open without sending any data
-	// frames. It only echoes the client's reads so that c.Ping/c.Write from the
-	// test side work normally (the library auto-pongs reading from this side).
-	// Used by tests that need to distinguish data-frame activity from idle WS
-	// with only protocol-level ping/pong traffic.
+	// /ws-idle accepts a WebSocket and keeps it open without ever writing.
+	// It drains incoming frames in a Read loop so that coder/websocket's
+	// internal frame reader can auto-respond to client pings with pongs;
+	// no data leaves the server side. Used by tests that need an idle
+	// WebSocket holding a connection open with no data-frame activity.
 	mux.HandleFunc("/ws-idle", func(w http.ResponseWriter, r *http.Request) {
 		c, err := websocket.Accept(w, r, nil)
 		require.NoError(t, err)

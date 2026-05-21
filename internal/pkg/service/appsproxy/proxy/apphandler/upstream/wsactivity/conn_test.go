@@ -2,12 +2,13 @@ package wsactivity
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // fakeRWC is a minimal io.ReadWriteCloser used to drive the wrapper from
@@ -136,12 +137,21 @@ func TestWrap_OnlyControlFrames_NoCallbacks(t *testing.T) {
 func TestWrap_PassThroughGolden(t *testing.T) {
 	t.Parallel()
 	// Random-ish stream of mixed frames — the wrapper must not mutate any byte.
-	var stream []byte
-	stream = append(stream, buildFrame(t, 0x1, true, 7, true)...)
-	stream = append(stream, buildFrame(t, 0x9, true, 0, false)...)
-	stream = append(stream, buildFrame(t, 0x2, false, 200, true)...) // 16-bit len
-	stream = append(stream, buildFrame(t, 0x0, true, 100, true)...)
-	stream = append(stream, buildFrame(t, 0x8, true, 2, false)...) // close
+	parts := [][]byte{
+		buildFrame(t, 0x1, true, 7, true),
+		buildFrame(t, 0x9, true, 0, false),
+		buildFrame(t, 0x2, false, 200, true), // 16-bit len
+		buildFrame(t, 0x0, true, 100, true),
+		buildFrame(t, 0x8, true, 2, false), // close
+	}
+	total := 0
+	for _, p := range parts {
+		total += len(p)
+	}
+	stream := make([]byte, 0, total)
+	for _, p := range parts {
+		stream = append(stream, p...)
+	}
 
 	rwc := newFakeRWC(stream)
 	c := Wrap(rwc, func() {})

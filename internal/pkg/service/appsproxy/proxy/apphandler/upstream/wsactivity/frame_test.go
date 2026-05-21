@@ -103,9 +103,10 @@ func TestFrameParser_ExtLen64_NoAllocation_HugeLen(t *testing.T) {
 	frame := buildFrame(t, 0x2, true, 0, false) // baseline header
 	// Patch the 7-bit length field to 127 and append a huge 64-bit length.
 	huge := uint64(1) << 50 // 1 PiB — clearly non-allocatable
-	patched := []byte{frame[0], 127}
 	extLen := make([]byte, 8)
 	binary.BigEndian.PutUint64(extLen, huge)
+	patched := make([]byte, 0, 2+len(extLen))
+	patched = append(patched, frame[0], 127)
 	patched = append(patched, extLen...)
 
 	count := 0
@@ -230,7 +231,7 @@ func TestFrameParser_MixedDataAndControl(t *testing.T) {
 	pong := buildFrame(t, 0xA, true, 0, false)
 	data := buildFrame(t, 0x1, true, 12, false)
 
-	var stream []byte
+	stream := make([]byte, 0, 3*len(ping)+len(pong)*2+len(data))
 	stream = append(stream, ping...)
 	stream = append(stream, pong...)
 	stream = append(stream, ping...)

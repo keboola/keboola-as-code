@@ -3309,22 +3309,27 @@ func TestKaiPreviewSlidingRefresh(t *testing.T) {
 //
 //  1. The initial handshake produces exactly one Sandboxes Service notify (from the
 //     GotConn ClientTrace hook).
-//  2. An open but otherwise IDLE WebSocket past the per-app 30 s notify throttle
-//     window must NOT produce additional notifies. This is the regression test for
-//     the removed 30 s ticker — the customer's "forgotten browser tab" case from
-//     SUPPORT-16324 / PROF-104.
+//  2. An idle WebSocket — connection open, no data frames exchanged — does NOT
+//     spontaneously increment the notify count past the throttle window. The
+//     customer-visible goal of the change (forgotten browser tab no longer blocks
+//     auto-suspend) is that an idle connection produces zero activity-driven
+//     notifies; this test confirms that for the per-frame path.
 //  3. A real data frame past the throttle window MUST produce a second notify,
 //     proving the per-frame path is wired end-to-end through the wrapped conn.
 //
 // The test uses an injected FakeClock so the notify throttle can be advanced
 // deterministically without sleeping for 30 s of real time.
 //
-// Note on protocol-level pings: the "control frames ignored" property is unit-tested
-// in wsactivity (TestWrap_OnlyControlFrames_NoCallbacks). A full integration test of
-// that property would require driving ping/pong through coder/websocket with a
-// custom server handler, which is fragile w.r.t. the library's read-loop semantics.
-// The (idle WS + advanced clock → count unchanged) check below is sufficient for
-// the actual customer-visible behavior.
+// Caveat on (2): this is not a hard regression test against re-introducing a real-
+// time ticker (the previous implementation slept 30 s of wall-clock time). The
+// 250 ms wall-clock yield only catches accidentally short-period real-time goroutines;
+// a future 30 s ticker would still pass this test. Catching that regression
+// reliably would require making the ticker interval injectable. Code review is
+// expected to catch any reintroduction of presence-based polling.
+//
+// The "control frames are ignored" property is covered separately by
+// wsactivity's TestWrap_OnlyControlFrames_NoCallbacks unit test, which can do
+// the assertion without driving ping/pong through coder/websocket's read loop.
 func TestWebsocketActivityTracking(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
@@ -3408,18 +3413,16 @@ func TestWebsocketActivityTracking(t *testing.T) {
 	require.Eventually(t, func() bool { return notifyCount() == 1 }, 5*time.Second, 10*time.Millisecond,
 		"handshake should produce exactly one notify (from GotConn)")
 
-	// Regression check for the removed 30 s ticker: advance the fake clock
-	// well past the throttle window with NO activity, then verify the notify
-	// count did not move. Under the old presence-based tracking the ticker
-	// would have fired notify here just because the connection was open.
+	// Advance the fake clock past the per-app throttle window. From now on,
+	// any activity-driven notify will pass the throttle gate. With no
+	// frames flowing through the wrapper, the count must stay at 1.
 	fakeClock.Advance(31 * time.Second)
-	// Yield wall-clock time long enough that any (hypothetical) periodic
-	// goroutine driven by real time would have had a chance to fire. 250 ms
-	// is plenty — the old ticker slept 30 s of real time, so even a
-	// dramatically accelerated variant would tick within this window.
+	// Brief wall-clock yield so that any short-period goroutine that mistakenly
+	// fired on connection presence (rather than per-frame) would surface. See
+	// the doc comment caveat — this does NOT catch a 30 s real-time ticker.
 	time.Sleep(250 * time.Millisecond)
 	assert.Equal(t, 1, notifyCount(),
-		"idle WS past the throttle window must NOT trigger a notify (ticker must be removed)")
+		"idle WS past the throttle window must NOT trigger an activity-driven notify")
 
 	// Write a real data frame (text message). The proxy observes a non-control
 	// opcode (0x1) in the client→server direction, fires u.notify, and — since
