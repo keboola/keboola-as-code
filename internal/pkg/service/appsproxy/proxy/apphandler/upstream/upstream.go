@@ -3,13 +3,13 @@ package upstream
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptrace"
 	"net/http/httputil"
 	"net/url"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream/wsactivity"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -50,13 +51,12 @@ type Manager struct {
 }
 
 type AppUpstream struct {
-	manager       *Manager
-	app           api.AppConfig
-	target        *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
-	handler       *chain.Chain
-	wsHandler     *chain.Chain
-	cancelWs      context.CancelCauseFunc
-	activeWsCount atomic.Int64
+	manager   *Manager
+	app       api.AppConfig
+	target    *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
+	handler   *chain.Chain
+	wsHandler *chain.Chain
+	cancelWs  context.CancelCauseFunc
 }
 
 type dependencies interface {
@@ -123,20 +123,9 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
 	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
 
-	// Call notify while there is an active websocket connection
-	go func(ctx context.Context) {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				if upstream.activeWsCount.Load() > 0 {
-					upstream.notify(ctx)
-				}
-				time.Sleep(30 * time.Second)
-			}
-		}
-	}(ctx)
+	// WebSocket activity tracking is per-frame (see newWebsocketProxy).
+	// No periodic ticker is needed — idle connections (only ping/pong) must
+	// not keep the app alive.
 
 	return upstream, nil
 }
@@ -258,6 +247,40 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 		}
 	}
 
+	// Per-frame WebSocket activity tracking.
+	//
+	// httputil.ReverseProxy.handleUpgradeResponse type-asserts res.Body to
+	// io.ReadWriteCloser and uses it as the upstream end of a bidirectional
+	// copy with the hijacked client conn. Wrapping res.Body once therefore
+	// observes both directions of the WebSocket stream:
+	//
+	//   - Read on the wrapped RWC = server→client bytes (unmasked frames),
+	//   - Write on the wrapped RWC = client→server bytes (masked frames).
+	//
+	// wsactivity.Wrap parses frame headers in both directions and invokes
+	// the callback once per non-control frame. notify.Manager already
+	// throttles per app to one outbound call per 30s, so we can fire the
+	// callback per frame without flooding the Sandboxes Service.
+	proxy.ModifyResponse = func(res *http.Response) error {
+		if res.StatusCode != http.StatusSwitchingProtocols {
+			return nil
+		}
+		rwc, ok := res.Body.(io.ReadWriteCloser)
+		if !ok {
+			// httputil.ReverseProxy itself requires this assertion to succeed
+			// for a 101 response; if it doesn't, the proxy errors out anyway.
+			// We just skip wrapping and let the proxy report the error.
+			return nil
+		}
+		// Bind the callback to the request context so notify() can decorate
+		// its span/log with the right request attributes. notify() itself
+		// uses context.WithoutCancel, so the in-flight call survives the WS
+		// timeout and any per-request cancellation.
+		reqCtx := res.Request.Context()
+		res.Body = wsactivity.Wrap(rwc, func() { u.notify(reqCtx) })
+		return nil
+	}
+
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := ctxattr.ContextWith(req.Context(), attribute.Bool(attrWebsocket, true))
@@ -266,9 +289,6 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 
 			ctx, c := context.WithCancelCause(ctx)
 			u.cancelWs = c
-
-			u.activeWsCount.Add(1)
-			defer u.activeWsCount.Add(-1)
 
 			proxy.ServeHTTP(w, req.WithContext(ctx))
 			return nil
