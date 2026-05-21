@@ -1,0 +1,37 @@
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "branchId": %%TEST_DEFAULT_BRANCH_ID%%,
+  "sourceId": "my-source",
+  "sinkId": "my-job-trigger-sink",
+  "type": "jobTrigger",
+  "name": "My Job Trigger Sink",
+  "description": "",
+  "jobTrigger": {
+    "componentId": "keboola.ex-http",
+    "configId": "my-config-123",
+    "branchId": %%TEST_DEFAULT_BRANCH_ID%%
+  },
+  "version": {
+    "number": 1,
+    "hash": "%s",
+    "description": "New sink.",
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  },
+  "created": {
+    "at": "%s",
+    "by": {
+      "type": "user",
+      "tokenId": "%s",
+      "tokenDesc": "%s",
+      "userId": "%s",
+      "userName": "%s"
+    }
+  }
+}

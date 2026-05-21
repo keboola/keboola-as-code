@@ -12,6 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/pipeline"
 	sinkRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/router"
+	jobTriggerSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/jobtriggersink"
+	kaiAgentSink "github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/kaiagentsink"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
 	storageRouter "github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/router"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/encoding"
@@ -97,6 +99,16 @@ func newSourceScope(svcScp ServiceScope, distScp dependencies.DistributionScope,
 		}
 		return nil, pipeline.NoOpenerFoundError{SinkType: sinkType}
 	})
+
+	sinkLoader := jobTriggerSink.SinkLoader(func(ctx context.Context, k key.SinkKey) (definition.Sink, error) {
+		return d.DefinitionRepository().Sink().Get(k).Do(ctx).ResultOrErr()
+	})
+	d.Plugins().RegisterSinkPipelineOpener(jobTriggerSink.NewOpener(d.Logger(), d.JobTriggerBridge(), sinkLoader))
+
+	kaiAgentLoader := kaiAgentSink.SinkLoader(func(ctx context.Context, k key.SinkKey) (definition.Sink, error) {
+		return d.DefinitionRepository().Sink().Get(k).Do(ctx).ResultOrErr()
+	})
+	d.Plugins().RegisterSinkPipelineOpener(kaiAgentSink.NewOpener(d.Logger(), d.KaiAgentBridge(), kaiAgentLoader))
 
 	return d, nil
 }
