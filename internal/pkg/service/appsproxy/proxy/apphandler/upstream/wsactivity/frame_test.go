@@ -113,8 +113,11 @@ func TestFrameParser_ExtLen64_NoAllocation_HugeLen(t *testing.T) {
 	p := newFrameParser(func() { count++ })
 	p.Feed(patched)
 	assert.Equal(t, 1, count, "callback must fire once on header completion")
-	assert.Equal(t, statePayload, p.state, "must be draining payload")
+	// Header is fully consumed and parser is now draining the payload — never
+	// allocating a buffer for it, just decrementing payloadLeft as bytes arrive.
 	assert.Equal(t, huge, p.payloadLeft, "must record full payload length")
+	assert.Equal(t, 0, p.headerLen, "header buffer must be reset after header completion")
+	assert.Equal(t, 0, p.headerNeed, "headerNeed must be reset after header completion")
 }
 
 func TestFrameParser_MaskedFrame(t *testing.T) {
