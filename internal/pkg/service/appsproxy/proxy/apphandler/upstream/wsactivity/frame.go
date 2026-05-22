@@ -7,10 +7,13 @@
 //     invokes a callback exactly once per non-control frame ("data frame"), and
 //   - a passthrough net-conn wrapper (conn.go) that drives one parser per direction.
 //
-// The parser does not inspect or buffer payload bytes; it only walks frame headers and
-// decrements a payload counter as bytes flow through. This makes it safe against
-// attacker-controlled payload lengths (which can reach 2^63-1 per RFC 6455).
+// The parser does not inspect or buffer payload bytes; it only buffers the frame
+// header (at most 14 bytes per RFC 6455) and decrements a payload counter as bytes
+// flow through. This makes it safe against attacker-controlled payload lengths
+// (which can reach 2^63-1 per RFC 6455).
 package wsactivity
+
+import "encoding/binary"
 
 // FrameCallback is invoked once per non-control frame (opcode bit 0x8 unset)
 // at the moment its header has been fully parsed. Implementations must be
@@ -18,32 +21,36 @@ package wsactivity
 // writes bytes through the wrapped connection.
 type FrameCallback func()
 
-// parserState enumerates the positions of the RFC 6455 frame state machine.
-type parserState uint8
-
 const (
-	stateHeader0 parserState = iota // expect byte 0: FIN/RSV/OPCODE
-	stateHeader1                    // expect byte 1: MASK/PAYLOAD_LEN_7
-	stateExtLen                     // accumulate 2 or 8 extended length bytes
-	stateMaskKey                    // accumulate 4 masking-key bytes (only if MASK=1)
-	statePayload                    // drain payload bytes
-)
+	// maxHeaderBytes is the upper bound on a single WebSocket frame header:
+	//   2 base bytes + up to 8 extended-length bytes + up to 4 mask-key bytes.
+	maxHeaderBytes = 14
 
-const (
 	// maskBit is the high bit of byte 1.
 	maskBit = 0x80
-	// lenMask is the low 7 bits of byte 1.
+	// lenMask is the low 7 bits of byte 1 (the 7-bit payload-length field).
 	lenMask = 0x7F
 	// controlBit identifies control frames per RFC 6455 §5.2 (opcode & 0x8).
 	controlBit = 0x8
+
+	// payloadLen16 and payloadLen64 are the sentinel values of the 7-bit length
+	// field that select 16-bit and 64-bit extended payload-length encodings.
+	payloadLen16 = 126
+	payloadLen64 = 127
 )
 
 // frameParser is a stateful, allocation-free RFC 6455 frame header parser.
 //
 // It is fed an arbitrary byte stream via Feed and invokes onDataFrame exactly
 // once per non-control frame (opcodes 0x0..0x7), at the moment the frame
-// header is fully parsed. Payload bytes are not buffered or inspected — they
-// are skipped via a counter.
+// header is fully parsed. Payload bytes are not inspected — they are skipped
+// via a counter.
+//
+// Implicit state is encoded in three fields:
+//   - payloadLeft > 0 → currently draining a payload (header already fired);
+//   - headerNeed == 0 → waiting for the first 2 header bytes to know total
+//     header length;
+//   - headerLen < headerNeed → still accumulating header bytes.
 //
 // The parser holds no resync logic. A malformed stream desynchronizes the
 // parser indefinitely; the connection endpoints (browser, upstream) will
@@ -52,16 +59,13 @@ const (
 type frameParser struct {
 	onDataFrame FrameCallback
 
-	state parserState
+	// header buffers the current frame's header bytes. Indexed via headerLen,
+	// decoded all at once when headerLen reaches headerNeed.
+	header     [maxHeaderBytes]byte
+	headerLen  int
+	headerNeed int // 0 until the 7-bit length field has been read
 
-	// Current frame metadata, populated as the header is parsed.
-	opcode      byte
-	masked      bool
-	extLenBytes uint8  // 0, 2, or 8
-	extLenRead  uint8  // bytes of extLen consumed so far
-	extLenAccum uint64 // accumulated extended-length value
-	maskKeyRead uint8  // 0..4
-	payloadLeft uint64 // bytes of payload still to drain
+	payloadLeft uint64 // bytes of the current payload still to drain
 }
 
 // newFrameParser returns a parser that calls onDataFrame once per non-control frame.
@@ -72,112 +76,97 @@ func newFrameParser(onDataFrame FrameCallback) *frameParser {
 // Feed advances the parser through the bytes in p. It never reads or modifies
 // p beyond walking its bytes and never allocates based on payload length.
 func (fp *frameParser) Feed(p []byte) {
-	for i := 0; i < len(p); {
-		switch fp.state {
-		case stateHeader0:
-			fp.opcode = p[i] & 0x0F
-			fp.state = stateHeader1
-			i++
-
-		case stateHeader1:
-			b := p[i]
-			fp.masked = b&maskBit != 0
-			length7 := b & lenMask
-			switch {
-			case length7 < 126:
-				fp.extLenBytes = 0
-				fp.payloadLeft = uint64(length7)
-			case length7 == 126:
-				fp.extLenBytes = 2
-			default: // 127
-				fp.extLenBytes = 8
-			}
-			fp.extLenRead = 0
-			fp.extLenAccum = 0
-			fp.maskKeyRead = 0
-			if fp.extLenBytes == 0 {
-				fp.afterLengthKnown()
-			} else {
-				fp.state = stateExtLen
-			}
-			i++
-
-		case stateExtLen:
-			// Consume as many extLen bytes as available in p[i:].
-			// `need` is bounded by extLenBytes (≤8) and `n` is bounded by `need`,
-			// so the conversions below cannot overflow uint8.
-			need := int(fp.extLenBytes - fp.extLenRead)
-			avail := len(p) - i
-			n := need
-			if avail < n {
-				n = avail
-			}
-			for k := range n {
-				fp.extLenAccum = (fp.extLenAccum << 8) | uint64(p[i+k])
-			}
-			fp.extLenRead += uint8(n) //nolint:gosec // n ≤ need ≤ extLenBytes ≤ 8
-			i += n
-			if fp.extLenRead == fp.extLenBytes {
-				fp.payloadLeft = fp.extLenAccum
-				fp.afterLengthKnown()
-			}
-
-		case stateMaskKey:
-			// `need` is bounded by 4 and `n` is bounded by `need`,
-			// so the conversion below cannot overflow uint8.
-			need := int(4 - fp.maskKeyRead)
-			avail := len(p) - i
-			n := need
-			if avail < n {
-				n = avail
-			}
-			fp.maskKeyRead += uint8(n) //nolint:gosec // n ≤ need ≤ 4
-			i += n
-			if fp.maskKeyRead == 4 {
-				fp.afterHeaderComplete()
-			}
-
-		case statePayload:
-			// len(p)-i is non-negative by the outer loop condition (i < len(p))
-			// and bounded by len(p), so the uint64 cast cannot overflow.
-			// drop is then bounded by avail, so converting it back to int for
-			// the index advance cannot overflow either.
-			avail := uint64(len(p) - i) //nolint:gosec // len(p)-i ≥ 0 by loop condition
-			drop := avail
-			if fp.payloadLeft < drop {
-				drop = fp.payloadLeft
-			}
-			fp.payloadLeft -= drop
-			i += int(drop) //nolint:gosec // drop ≤ avail = uint64(len(p)-i), fits in int
-			if fp.payloadLeft == 0 {
-				fp.state = stateHeader0
-			}
+	for len(p) > 0 {
+		// Phase 1: drain payload of the current frame, if any. Once payloadLeft
+		// hits zero the parser is back at the start of a new header.
+		if fp.payloadLeft > 0 {
+			p = fp.drainPayload(p)
+			continue
 		}
+
+		// Phase 2: accumulate at least the first 2 bytes of the next header so
+		// we can compute the header's total length.
+		if fp.headerNeed == 0 {
+			p = fp.fillHeader(p, 2)
+			if fp.headerLen < 2 {
+				return // need more bytes; come back on the next Feed call
+			}
+			fp.headerNeed = headerLengthFromByte1(fp.header[1])
+		}
+
+		// Phase 3: finish accumulating the rest of the header.
+		p = fp.fillHeader(p, fp.headerNeed)
+		if fp.headerLen < fp.headerNeed {
+			return // need more bytes; come back on the next Feed call
+		}
+
+		fp.completeHeader()
 	}
 }
 
-// afterLengthKnown is called once payload length is known (either after byte 1
-// for 7-bit length, or after the extended-length bytes for 16/64-bit length).
-// It advances to either stateMaskKey or directly to header-complete handling.
-func (fp *frameParser) afterLengthKnown() {
-	if fp.masked {
-		fp.state = stateMaskKey
-		return
+// drainPayload consumes up to payloadLeft bytes from the front of p and returns
+// the rest. Bytes are not inspected.
+func (fp *frameParser) drainPayload(p []byte) []byte {
+	n := uint64(len(p))
+	if n > fp.payloadLeft {
+		n = fp.payloadLeft
 	}
-	fp.afterHeaderComplete()
+	fp.payloadLeft -= n
+	return p[n:]
 }
 
-// afterHeaderComplete is called when the entire frame header has been parsed.
-// It fires the data-frame callback (if applicable) and transitions to payload
-// drain or directly back to stateHeader0 for zero-length payloads.
-func (fp *frameParser) afterHeaderComplete() {
-	// Non-control frames have the high bit of the 4-bit opcode unset.
-	if fp.opcode&controlBit == 0 && fp.onDataFrame != nil {
+// fillHeader copies bytes from p into the header buffer until either p is
+// exhausted or headerLen reaches target. Returns the remaining slice of p.
+func (fp *frameParser) fillHeader(p []byte, target int) []byte {
+	if fp.headerLen >= target {
+		return p
+	}
+	n := copy(fp.header[fp.headerLen:target], p)
+	fp.headerLen += n
+	return p[n:]
+}
+
+// headerLengthFromByte1 returns the total header length implied by byte 1 of
+// the frame (the MASK bit + 7-bit length field). Result is in [2, 14].
+func headerLengthFromByte1(b byte) int {
+	n := 2
+	switch b & lenMask {
+	case payloadLen16:
+		n += 2
+	case payloadLen64:
+		n += 8
+	}
+	if b&maskBit != 0 {
+		n += 4
+	}
+	return n
+}
+
+// completeHeader decodes the buffered header, fires the data-frame callback
+// (if applicable), primes payloadLeft for the next drain phase, and resets
+// header accumulation for the next frame.
+func (fp *frameParser) completeHeader() {
+	opcode := fp.header[0] & 0x0F
+	b1 := fp.header[1]
+
+	var payloadLen uint64
+	switch b1 & lenMask {
+	case payloadLen16:
+		payloadLen = uint64(binary.BigEndian.Uint16(fp.header[2:4]))
+	case payloadLen64:
+		payloadLen = binary.BigEndian.Uint64(fp.header[2:10])
+	default:
+		payloadLen = uint64(b1 & lenMask)
+	}
+	// The mask key, if present, sits in the last 4 bytes of the header and is
+	// of no interest to the observer — we only need its length, which is
+	// already accounted for in headerLengthFromByte1.
+
+	if opcode&controlBit == 0 && fp.onDataFrame != nil {
 		fp.onDataFrame()
 	}
-	if fp.payloadLeft == 0 {
-		fp.state = stateHeader0
-		return
-	}
-	fp.state = statePayload
+
+	fp.payloadLeft = payloadLen
+	fp.headerLen = 0
+	fp.headerNeed = 0
 }
