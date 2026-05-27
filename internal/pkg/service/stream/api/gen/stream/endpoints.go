@@ -34,6 +34,7 @@ type Endpoints struct {
 	SourceStatisticsClear goa.Endpoint
 	DisableSource         goa.Endpoint
 	EnableSource          goa.Endpoint
+	RotateSourceSecret    goa.Endpoint
 	UndeleteSource        goa.Endpoint
 	ListSourceVersions    goa.Endpoint
 	SourceVersionDetail   goa.Endpoint
@@ -88,6 +89,7 @@ func NewEndpoints(s Service) *Endpoints {
 		SourceStatisticsClear: NewSourceStatisticsClearEndpoint(s, a.APIKeyAuth),
 		DisableSource:         NewDisableSourceEndpoint(s, a.APIKeyAuth),
 		EnableSource:          NewEnableSourceEndpoint(s, a.APIKeyAuth),
+		RotateSourceSecret:    NewRotateSourceSecretEndpoint(s, a.APIKeyAuth),
 		UndeleteSource:        NewUndeleteSourceEndpoint(s, a.APIKeyAuth),
 		ListSourceVersions:    NewListSourceVersionsEndpoint(s, a.APIKeyAuth),
 		SourceVersionDetail:   NewSourceVersionDetailEndpoint(s, a.APIKeyAuth),
@@ -131,6 +133,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.SourceStatisticsClear = m(e.SourceStatisticsClear)
 	e.DisableSource = m(e.DisableSource)
 	e.EnableSource = m(e.EnableSource)
+	e.RotateSourceSecret = m(e.RotateSourceSecret)
 	e.UndeleteSource = m(e.UndeleteSource)
 	e.ListSourceVersions = m(e.ListSourceVersions)
 	e.SourceVersionDetail = m(e.SourceVersionDetail)
@@ -420,6 +423,26 @@ func NewEnableSourceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) go
 		}
 		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
 		return s.EnableSource(ctx, deps, p)
+	}
+}
+
+// NewRotateSourceSecretEndpoint returns an endpoint function that calls the
+// method "RotateSourceSecret" of service "stream".
+func NewRotateSourceSecretEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*RotateSourceSecretPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.SourceRequestScopeCtxKey).(dependencies.SourceRequestScope)
+		return s.RotateSourceSecret(ctx, deps, p)
 	}
 }
 

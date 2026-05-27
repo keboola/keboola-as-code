@@ -378,6 +378,21 @@ var _ = Service("stream", func() {
 		})
 	})
 
+	Method("RotateSourceSecret", func() {
+		Meta("openapi:summary", "Rotate source secret")
+		Description("Regenerate the source's 48-character secret without recreating the source.\n\n" +
+			"The sourceId is preserved; only the secret (and the URL that embeds it) changes. " +
+			"The previous secret stops working immediately, so all producers must be updated with the new URL.")
+		Result(Source)
+		Payload(GetSourceRequest)
+		HTTP(func() {
+			POST("/branches/{branchId}/sources/{sourceId}/rotate-secret")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			SourceNotFoundError()
+		})
+	})
+
 	Method("UndeleteSource", func() {
 		Meta("openapi:summary", "Undelete source")
 		Description("Undelete the source.")

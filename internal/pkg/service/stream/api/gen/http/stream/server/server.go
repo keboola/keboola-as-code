@@ -37,6 +37,7 @@ type Server struct {
 	SourceStatisticsClear http.Handler
 	DisableSource         http.Handler
 	EnableSource          http.Handler
+	RotateSourceSecret    http.Handler
 	UndeleteSource        http.Handler
 	ListSourceVersions    http.Handler
 	SourceVersionDetail   http.Handler
@@ -135,6 +136,7 @@ func New(
 			{"SourceStatisticsClear", "DELETE", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear"},
 			{"DisableSource", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/disable"},
 			{"EnableSource", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/enable"},
+			{"RotateSourceSecret", "POST", "/v1/branches/{branchId}/sources/{sourceId}/rotate-secret"},
 			{"UndeleteSource", "PUT", "/v1/branches/{branchId}/sources/{sourceId}/undelete"},
 			{"ListSourceVersions", "GET", "/v1/branches/{branchId}/sources/{sourceId}/versions"},
 			{"SourceVersionDetail", "GET", "/v1/branches/{branchId}/sources/{sourceId}/versions/{versionNumber}"},
@@ -169,6 +171,7 @@ func New(
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/disable"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/enable"},
+			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/rotate-secret"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/undelete"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/versions"},
 			{"CORS", "OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/versions/{versionNumber}"},
@@ -214,6 +217,7 @@ func New(
 		SourceStatisticsClear: NewSourceStatisticsClearHandler(e.SourceStatisticsClear, mux, decoder, encoder, errhandler, formatter),
 		DisableSource:         NewDisableSourceHandler(e.DisableSource, mux, decoder, encoder, errhandler, formatter),
 		EnableSource:          NewEnableSourceHandler(e.EnableSource, mux, decoder, encoder, errhandler, formatter),
+		RotateSourceSecret:    NewRotateSourceSecretHandler(e.RotateSourceSecret, mux, decoder, encoder, errhandler, formatter),
 		UndeleteSource:        NewUndeleteSourceHandler(e.UndeleteSource, mux, decoder, encoder, errhandler, formatter),
 		ListSourceVersions:    NewListSourceVersionsHandler(e.ListSourceVersions, mux, decoder, encoder, errhandler, formatter),
 		SourceVersionDetail:   NewSourceVersionDetailHandler(e.SourceVersionDetail, mux, decoder, encoder, errhandler, formatter),
@@ -266,6 +270,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.SourceStatisticsClear = m(s.SourceStatisticsClear)
 	s.DisableSource = m(s.DisableSource)
 	s.EnableSource = m(s.EnableSource)
+	s.RotateSourceSecret = m(s.RotateSourceSecret)
 	s.UndeleteSource = m(s.UndeleteSource)
 	s.ListSourceVersions = m(s.ListSourceVersions)
 	s.SourceVersionDetail = m(s.SourceVersionDetail)
@@ -312,6 +317,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountSourceStatisticsClearHandler(mux, h.SourceStatisticsClear)
 	MountDisableSourceHandler(mux, h.DisableSource)
 	MountEnableSourceHandler(mux, h.EnableSource)
+	MountRotateSourceSecretHandler(mux, h.RotateSourceSecret)
 	MountUndeleteSourceHandler(mux, h.UndeleteSource)
 	MountListSourceVersionsHandler(mux, h.ListSourceVersions)
 	MountSourceVersionDetailHandler(mux, h.SourceVersionDetail)
@@ -1084,6 +1090,59 @@ func NewEnableSourceHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "EnableSource")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountRotateSourceSecretHandler configures the mux to serve the "stream"
+// service "RotateSourceSecret" endpoint.
+func MountRotateSourceSecretHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleStreamOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/branches/{branchId}/sources/{sourceId}/rotate-secret", f)
+}
+
+// NewRotateSourceSecretHandler creates a HTTP handler which loads the HTTP
+// request and calls the "stream" service "RotateSourceSecret" endpoint.
+func NewRotateSourceSecretHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeRotateSourceSecretRequest(mux, decoder)
+		encodeResponse = EncodeRotateSourceSecretResponse(encoder)
+		encodeError    = EncodeRotateSourceSecretError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "RotateSourceSecret")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "stream")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -2393,6 +2452,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/statistics/clear", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/disable", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/enable", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/rotate-secret", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/undelete", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/versions", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/branches/{branchId}/sources/{sourceId}/versions/{versionNumber}", h.ServeHTTP)

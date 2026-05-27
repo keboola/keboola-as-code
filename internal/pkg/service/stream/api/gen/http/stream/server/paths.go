@@ -89,6 +89,11 @@ func EnableSourceStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/enable", branchID, sourceID)
 }
 
+// RotateSourceSecretStreamPath returns the URL path to the stream service RotateSourceSecret HTTP endpoint.
+func RotateSourceSecretStreamPath(branchID string, sourceID string) string {
+	return fmt.Sprintf("/v1/branches/%v/sources/%v/rotate-secret", branchID, sourceID)
+}
+
 // UndeleteSourceStreamPath returns the URL path to the stream service UndeleteSource HTTP endpoint.
 func UndeleteSourceStreamPath(branchID string, sourceID string) string {
 	return fmt.Sprintf("/v1/branches/%v/sources/%v/undelete", branchID, sourceID)
