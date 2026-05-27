@@ -3226,10 +3226,11 @@ func NewGetSourcePayload(branchID string, sourceID string, storageAPIToken strin
 }
 
 // NewDeleteSourcePayload builds a stream service DeleteSource endpoint payload.
-func NewDeleteSourcePayload(branchID string, sourceID string, storageAPIToken string) *stream.DeleteSourcePayload {
+func NewDeleteSourcePayload(branchID string, sourceID string, cascade bool, storageAPIToken string) *stream.DeleteSourcePayload {
 	v := &stream.DeleteSourcePayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
+	v.Cascade = cascade
 	v.StorageAPIToken = storageAPIToken
 
 	return v

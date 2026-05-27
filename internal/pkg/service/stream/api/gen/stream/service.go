@@ -41,6 +41,10 @@ type Service interface {
 	// Get the source definition.
 	GetSource(context.Context, dependencies.SourceRequestScope, *GetSourcePayload) (res *Source, err error)
 	// Delete the source.
+
+	// With `cascade=true` the source and its sinks are hard-deleted (so the same
+	// name can be reused immediately) and the destination Keboola tables and their
+	// bucket are deleted as well.
 	DeleteSource(context.Context, dependencies.SourceRequestScope, *DeleteSourcePayload) (res *Task, err error)
 	// Get source settings.
 	GetSourceSettings(context.Context, dependencies.SourceRequestScope, *GetSourceSettingsPayload) (res *SettingsResult, err error)
@@ -312,6 +316,9 @@ type DeleteSourcePayload struct {
 	StorageAPIToken string
 	BranchID        BranchIDOrDefault
 	SourceID        SourceID
+	// Also delete the destination Keboola tables and bucket, and hard-delete the
+	// source so it can be recreated with the same name.
+	Cascade bool
 }
 
 // Information about the deleted entity.

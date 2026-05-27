@@ -491,6 +491,7 @@ func DecodeDeleteSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 		var (
 			branchID        string
 			sourceID        string
+			cascade         bool
 			storageAPIToken string
 			err             error
 
@@ -504,6 +505,16 @@ func DecodeDeleteSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 		if utf8.RuneCountInString(sourceID) > 48 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("sourceId", sourceID, utf8.RuneCountInString(sourceID), 48, false))
 		}
+		{
+			cascadeRaw := r.URL.Query().Get("cascade")
+			if cascadeRaw != "" {
+				v, err2 := strconv.ParseBool(cascadeRaw)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("cascade", cascadeRaw, "boolean"))
+				}
+				cascade = v
+			}
+		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
 			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
@@ -511,7 +522,7 @@ func DecodeDeleteSourceRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 		if err != nil {
 			return payload, err
 		}
-		payload = NewDeleteSourcePayload(branchID, sourceID, storageAPIToken)
+		payload = NewDeleteSourcePayload(branchID, sourceID, cascade, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]

@@ -256,11 +256,17 @@ var _ = Service("stream", func() {
 
 	Method("DeleteSource", func() {
 		Meta("openapi:summary", "Delete source")
-		Description("Delete the source.")
+		Description("Delete the source.\n\n" +
+			"With `cascade=true` the source and its sinks are hard-deleted (so the same name can be reused " +
+			"immediately) and the destination Keboola tables and their bucket are deleted as well.")
 		Result(Task)
-		Payload(GetSourceRequest)
+		Payload(DeleteSourceRequest)
 		HTTP(func() {
 			DELETE("/branches/{branchId}/sources/{sourceId}")
+			Param("cascade", Boolean, func() {
+				Description("Also delete the destination Keboola tables and bucket, and hard-delete the source so it can be recreated with the same name.")
+				Example(true)
+			})
 			Meta("openapi:tag:configuration")
 			Response(StatusAccepted)
 			SourceNotFoundError()
@@ -1091,6 +1097,15 @@ var CreateSourceRequest = Type("CreateSourceRequest", func() {
 
 var GetSourceRequest = Type("GetSourceRequest", func() {
 	SourceKeyRequest()
+})
+
+var DeleteSourceRequest = Type("DeleteSourceRequest", func() {
+	SourceKeyRequest()
+	Attribute("cascade", Boolean, func() {
+		Description("Also delete the destination Keboola tables and bucket, and hard-delete the source so it can be recreated with the same name.")
+		Default(false)
+		Example(true)
+	})
 })
 
 var ListSourcesRequest = Type("ListSourcesRequest", func() {
