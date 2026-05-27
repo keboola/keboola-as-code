@@ -29,6 +29,8 @@ func TestBootstrapHandler_ServesHTMLWithCSP(t *testing.T) {
 	assert.Contains(t, body, "https://connection.keboola.com", "shim must restrict postMessage targetOrigin")
 	assert.NotContains(t, body, `targetOrigin: "*"`, "shim must NEVER postMessage with wildcard targetOrigin")
 	assert.NotContains(t, strings.ToLower(body), "innerhtml", "shim must not write user-supplied data via innerHTML")
+	assert.Contains(t, body, `sessionStorage.removeItem(LOOP_KEY)`, "shim must reset loop counter on canonical bootstrap loads")
+	assert.Contains(t, body, `"/_proxy/kai-preview/bootstrap"`, "shim must check exact bootstrap path for counter reset")
 }
 
 func TestBootstrapHandler_WrongMethod(t *testing.T) {

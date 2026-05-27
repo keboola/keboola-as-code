@@ -74,10 +74,10 @@
     // exchange → … Detect this with sessionStorage and bail out early.
     var LOOP_KEY = "kbc-kai-preview-attempts";
     try {
-      // Reset the counter when loaded at the canonical kai-preview path (fresh
+      // Reset the counter when loaded at the canonical bootstrap path (fresh
       // handshake initiated by kbc-ui).  In a redirect loop the shim is served
       // as a fallback at "/" so the counter keeps accumulating there.
-      if (window.location.pathname.indexOf("/_proxy/kai-preview/") === 0) {
+      if (window.location.pathname === "/_proxy/kai-preview/bootstrap") {
         sessionStorage.removeItem(LOOP_KEY);
       }
       var attempts = parseInt(sessionStorage.getItem(LOOP_KEY) || "0", 10);
