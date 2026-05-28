@@ -713,6 +713,119 @@ paths:
                                 message: Source "github-pull-requests" not found.
             security:
                 - storage-api-token: []
+    /v1/branches/{branchId}/sources/{sourceId}/rotate-secret:
+        post:
+            tags:
+                - configuration
+            summary: Rotate source secret
+            description: |-
+                Regenerate the source's 48-character secret without recreating the source.
+
+                The sourceId is preserved; only the secret (and the URL that embeds it) changes. The previous secret stops working immediately, so all producers must be updated with the new URL.
+            operationId: RotateSourceSecret
+            parameters:
+                - name: branchId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                  example: default
+                - name: sourceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+                  example: github-webhook-source
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Source'
+                            examples:
+                                http_source:
+                                    summary: http_source
+                                    description: HTTP source response shape.
+                                    value:
+                                        branchId: 5678
+                                        created:
+                                            at: "2024-01-15T10:00:00.000Z"
+                                            by:
+                                                tokenDesc: john.green@company.com
+                                                tokenId: "896455"
+                                                type: user
+                                                userId: "578621"
+                                                userName: John Green
+                                        description: ""
+                                        http:
+                                            url: https://stream-in.keboola.com/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                                        name: My HTTP Source
+                                        projectId: 1234
+                                        sourceId: my-http-source
+                                        type: http
+                                        version:
+                                            at: "2024-01-15T10:00:00.000Z"
+                                            by:
+                                                tokenDesc: john.green@company.com
+                                                tokenId: "896455"
+                                                type: user
+                                                userId: "578621"
+                                                userName: John Green
+                                            description: New source.
+                                            hash: f43e93acd97eceb3
+                                            number: 1
+                                otlp_source:
+                                    summary: otlp_source
+                                    description: OTLP source response shape.
+                                    value:
+                                        branchId: 5678
+                                        created:
+                                            at: "2024-01-15T10:00:00.000Z"
+                                            by:
+                                                tokenDesc: john.green@company.com
+                                                tokenId: "896455"
+                                                type: user
+                                                userId: "578621"
+                                                userName: John Green
+                                        description: ""
+                                        name: My OTLP Source
+                                        otlp:
+                                            baseUrl: https://stream-in.keboola.com/otlp/1234/my-otlp-source
+                                            secret: EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                                            url: https://stream-in.keboola.com/otlp/1234/my-otlp-source/EXAMPLE-SECRET-PLACEHOLDER-XXXXXXXXXXXXXXXXXXXXX
+                                        projectId: 1234
+                                        sourceId: my-otlp-source
+                                        type: otlp
+                                        version:
+                                            at: "2024-01-15T10:00:00.000Z"
+                                            by:
+                                                tokenDesc: john.green@company.com
+                                                tokenId: "896455"
+                                                type: user
+                                                userId: "578621"
+                                                userName: John Green
+                                            description: New source.
+                                            hash: f43e93acd97eceb3
+                                            number: 1
+                "404":
+                    description: 'stream.api.sourceNotFound: Source not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+                            example:
+                                statusCode: 404
+                                error: stream.api.sourceNotFound
+                                message: Source "github-pull-requests" not found.
+            security:
+                - storage-api-token: []
     /v1/branches/{branchId}/sources/{sourceId}/settings:
         get:
             tags:

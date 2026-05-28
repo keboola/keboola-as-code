@@ -295,6 +295,27 @@ type EnableSourceResponseBody struct {
 	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
+// RotateSourceSecretResponseBody is the type of the "stream" service
+// "RotateSourceSecret" endpoint HTTP response body.
+type RotateSourceSecretResponseBody struct {
+	ProjectID int    `form:"projectId" json:"projectId" xml:"projectId"`
+	BranchID  int    `form:"branchId" json:"branchId" xml:"branchId"`
+	SourceID  string `form:"sourceId" json:"sourceId" xml:"sourceId"`
+	Type      string `form:"type" json:"type" xml:"type"`
+	// Human readable name of the source.
+	Name string `form:"name" json:"name" xml:"name"`
+	// Description of the source.
+	Description string `form:"description" json:"description" xml:"description"`
+	// HTTP source details for "type" = "http".
+	HTTP *HTTPSourceResponseBody `form:"http,omitempty" json:"http,omitempty" xml:"http,omitempty"`
+	// OTLP source details for "type" = "otlp".
+	Otlp     *OTLPSourceResponseBody     `form:"otlp,omitempty" json:"otlp,omitempty" xml:"otlp,omitempty"`
+	Version  *VersionResponseBody        `form:"version" json:"version" xml:"version"`
+	Created  *CreatedEntityResponseBody  `form:"created" json:"created" xml:"created"`
+	Deleted  *DeletedEntityResponseBody  `form:"deleted,omitempty" json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Disabled *DisabledEntityResponseBody `form:"disabled,omitempty" json:"disabled,omitempty" xml:"disabled,omitempty"`
+}
+
 // UndeleteSourceResponseBody is the type of the "stream" service
 // "UndeleteSource" endpoint HTTP response body.
 type UndeleteSourceResponseBody struct {
@@ -810,6 +831,18 @@ type DisableSourceStreamAPISourceNotFoundResponseBody struct {
 // service "EnableSource" endpoint HTTP response body for the
 // "stream.api.sourceNotFound" error.
 type EnableSourceStreamAPISourceNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// RotateSourceSecretStreamAPISourceNotFoundResponseBody is the type of the
+// "stream" service "RotateSourceSecret" endpoint HTTP response body for the
+// "stream.api.sourceNotFound" error.
+type RotateSourceSecretStreamAPISourceNotFoundResponseBody struct {
 	// HTTP status code.
 	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
 	// Name of error.
@@ -1963,6 +1996,38 @@ func NewEnableSourceResponseBody(res *stream.Task) *EnableSourceResponseBody {
 	return body
 }
 
+// NewRotateSourceSecretResponseBody builds the HTTP response body from the
+// result of the "RotateSourceSecret" endpoint of the "stream" service.
+func NewRotateSourceSecretResponseBody(res *stream.Source) *RotateSourceSecretResponseBody {
+	body := &RotateSourceSecretResponseBody{
+		ProjectID:   int(res.ProjectID),
+		BranchID:    int(res.BranchID),
+		SourceID:    string(res.SourceID),
+		Type:        string(res.Type),
+		Name:        res.Name,
+		Description: res.Description,
+	}
+	if res.HTTP != nil {
+		body.HTTP = marshalStreamHTTPSourceToHTTPSourceResponseBody(res.HTTP)
+	}
+	if res.Otlp != nil {
+		body.Otlp = marshalStreamOTLPSourceToOTLPSourceResponseBody(res.Otlp)
+	}
+	if res.Version != nil {
+		body.Version = marshalStreamVersionToVersionResponseBody(res.Version)
+	}
+	if res.Created != nil {
+		body.Created = marshalStreamCreatedEntityToCreatedEntityResponseBody(res.Created)
+	}
+	if res.Deleted != nil {
+		body.Deleted = marshalStreamDeletedEntityToDeletedEntityResponseBody(res.Deleted)
+	}
+	if res.Disabled != nil {
+		body.Disabled = marshalStreamDisabledEntityToDisabledEntityResponseBody(res.Disabled)
+	}
+	return body
+}
+
 // NewUndeleteSourceResponseBody builds the HTTP response body from the result
 // of the "UndeleteSource" endpoint of the "stream" service.
 func NewUndeleteSourceResponseBody(res *stream.Task) *UndeleteSourceResponseBody {
@@ -2573,6 +2638,18 @@ func NewDisableSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericErro
 // body from the result of the "EnableSource" endpoint of the "stream" service.
 func NewEnableSourceStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *EnableSourceStreamAPISourceNotFoundResponseBody {
 	body := &EnableSourceStreamAPISourceNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
+// NewRotateSourceSecretStreamAPISourceNotFoundResponseBody builds the HTTP
+// response body from the result of the "RotateSourceSecret" endpoint of the
+// "stream" service.
+func NewRotateSourceSecretStreamAPISourceNotFoundResponseBody(res *stream.GenericError) *RotateSourceSecretStreamAPISourceNotFoundResponseBody {
+	body := &RotateSourceSecretStreamAPISourceNotFoundResponseBody{
 		StatusCode: res.StatusCode,
 		Name:       res.Name,
 		Message:    res.Message,
@@ -3231,6 +3308,17 @@ func NewDisableSourcePayload(branchID string, sourceID string, storageAPIToken s
 // NewEnableSourcePayload builds a stream service EnableSource endpoint payload.
 func NewEnableSourcePayload(branchID string, sourceID string, storageAPIToken string) *stream.EnableSourcePayload {
 	v := &stream.EnableSourcePayload{}
+	v.BranchID = stream.BranchIDOrDefault(branchID)
+	v.SourceID = stream.SourceID(sourceID)
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewRotateSourceSecretPayload builds a stream service RotateSourceSecret
+// endpoint payload.
+func NewRotateSourceSecretPayload(branchID string, sourceID string, storageAPIToken string) *stream.RotateSourceSecretPayload {
+	v := &stream.RotateSourceSecretPayload{}
 	v.BranchID = stream.BranchIDOrDefault(branchID)
 	v.SourceID = stream.SourceID(sourceID)
 	v.StorageAPIToken = storageAPIToken

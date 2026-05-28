@@ -84,6 +84,12 @@ type Service interface {
 	DisableSource(context.Context, dependencies.SourceRequestScope, *DisableSourcePayload) (res *Task, err error)
 	// Enables the source.
 	EnableSource(context.Context, dependencies.SourceRequestScope, *EnableSourcePayload) (res *Task, err error)
+	// Regenerate the source's 48-character secret without recreating the source.
+
+	// The sourceId is preserved; only the secret (and the URL that embeds it)
+	// changes. The previous secret stops working immediately, so all producers
+	// must be updated with the new URL.
+	RotateSourceSecret(context.Context, dependencies.SourceRequestScope, *RotateSourceSecretPayload) (res *Source, err error)
 	// Undelete the source.
 	UndeleteSource(context.Context, dependencies.SourceRequestScope, *UndeleteSourcePayload) (res *Task, err error)
 	// List all source versions.
@@ -152,7 +158,7 @@ const ServiceName = "stream"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [38]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "ListDeletedSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "DisableSource", "EnableSource", "UndeleteSource", "ListSourceVersions", "SourceVersionDetail", "RollbackSourceVersion", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "ListDeletedSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "DisableSink", "EnableSink", "UndeleteSink", "ListSinkVersions", "SinkVersionDetail", "RollbackSinkVersion", "GetTask", "AggregationSources"}
+var MethodNames = [39]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "CreateSource", "UpdateSource", "ListSources", "ListDeletedSources", "GetSource", "DeleteSource", "GetSourceSettings", "UpdateSourceSettings", "TestSource", "SourceStatisticsClear", "DisableSource", "EnableSource", "RotateSourceSecret", "UndeleteSource", "ListSourceVersions", "SourceVersionDetail", "RollbackSourceVersion", "CreateSink", "GetSink", "GetSinkSettings", "UpdateSinkSettings", "ListSinks", "ListDeletedSinks", "UpdateSink", "DeleteSink", "SinkStatisticsTotal", "SinkStatisticsFiles", "SinkStatisticsClear", "DisableSink", "EnableSink", "UndeleteSink", "ListSinkVersions", "SinkVersionDetail", "RollbackSinkVersion", "GetTask", "AggregationSources"}
 
 // A mapping from imported data to a destination table.
 type AggregatedSink struct {
@@ -565,6 +571,14 @@ type RollbackSourceVersionPayload struct {
 	SourceID        SourceID
 	// Version number counted from 1.
 	VersionNumber definition.VersionNumber
+}
+
+// RotateSourceSecretPayload is the payload type of the stream service
+// RotateSourceSecret method.
+type RotateSourceSecretPayload struct {
+	StorageAPIToken string
+	BranchID        BranchIDOrDefault
+	SourceID        SourceID
 }
 
 // ServiceDetail is the result type of the stream service ApiVersionIndex

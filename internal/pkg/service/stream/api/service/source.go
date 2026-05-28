@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
@@ -16,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/sink/type/tablesink/keboola/bridge"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 //nolint:dupl // CreateSink method is similar
@@ -515,6 +517,44 @@ func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequest
 	}
 
 	return s.mapper.NewTaskResponse(t)
+}
+
+func (s *service) RotateSourceSecret(ctx context.Context, d dependencies.SourceRequestScope, _ *api.RotateSourceSecretPayload) (*api.Source, error) {
+	// If user is not admin deny access for write
+	token := d.StorageAPIToken()
+	if token.Admin == nil || token.Admin.Role != adminRole {
+		return nil, svcerrors.NewForbiddenError(s.adminError)
+	}
+
+	if err := s.sourceMustExist(ctx, d.SourceKey()); err != nil {
+		return nil, err
+	}
+
+	// Rotating the secret is a single atomic update (no provisioning), so it runs synchronously and
+	// returns the updated source with the refreshed URL. The ingest dispatcher mirrors source secrets
+	// from etcd, so the new secret takes effect - and the old one stops working - once this commits.
+	source, err := s.definition.Source().
+		Update(d.SourceKey(), d.Clock().Now(), d.RequestUser(), "Rotated secret.", rotateSourceSecret).
+		Do(ctx).ResultOrErr()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.NewSourceResponse(source)
+}
+
+// rotateSourceSecret regenerates the 48-character secret of an HTTP or OTLP source, leaving the rest
+// of the source unchanged.
+func rotateSourceSecret(source definition.Source) (definition.Source, error) {
+	switch source.Type {
+	case definition.SourceTypeHTTP:
+		source.HTTP.Secret = idgenerator.StreamHTTPSourceSecret()
+	case definition.SourceTypeOTLP:
+		source.OTLP.Secret = idgenerator.StreamHTTPSourceSecret()
+	default:
+		return definition.Source{}, svcerrors.NewBadRequestError(errors.Errorf(`cannot rotate secret of source type "%s"`, source.Type))
+	}
+	return source, nil
 }
 
 func (s *service) UndeleteSource(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.UndeleteSourcePayload) (*api.Task, error) {
