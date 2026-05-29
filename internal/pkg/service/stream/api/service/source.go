@@ -6,6 +6,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
@@ -174,7 +176,7 @@ func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestSco
 	return s.mapper.NewSourceResponse(source)
 }
 
-func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, _ *api.DeleteSourcePayload) (*api.Task, error) {
+func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DeleteSourcePayload) (*api.Task, error) {
 	// If user is not admin deny access for write
 	token := d.StorageAPIToken()
 	if token.Admin == nil || token.Admin.Role != adminRole {
@@ -186,6 +188,8 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 		return nil, err
 	}
 
+	cascade := payload.Cascade
+
 	// Delete source in a task
 	t, err := s.startTask(ctx, taskConfig{
 		Type:      "delete.source",
@@ -194,7 +198,26 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 		ObjectKey: d.SourceKey(),
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			start := time.Now()
-			source, err := s.definition.Source().SoftDelete(d.SourceKey(), s.clock.Now(), d.RequestUser()).Do(ctx).ResultOrErr()
+
+			var err error
+			var source definition.Source
+
+			// In cascade mode, serialize against concurrent sink create/update on this source
+			// (sink.go uses the same lock key) and capture every sink the source owns - active
+			// AND already-soft-deleted - so their destination tables are included in cleanup.
+			var ownedSinks []definition.Sink
+			if cascade {
+				var unlock func()
+				unlock, ownedSinks, err = s.lockAndListAllSinks(ctx, d.SourceKey())
+				if unlock != nil {
+					defer unlock()
+				}
+			}
+
+			if err == nil {
+				source, err = s.definition.Source().SoftDelete(d.SourceKey(), s.clock.Now(), d.RequestUser()).Do(ctx).ResultOrErr()
+			}
+
 			formatMsg := func(err error) string {
 				if err != nil {
 					return "Source delete failed."
@@ -204,6 +227,9 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 			}
 
 			defer func() {
+				// Use the request-scope key for telemetry: if any pre-SoftDelete step fails, the
+				// captured "source" is zero and source.SourceKey.String() would panic via
+				// SourceID.String. d.SourceKey() is always populated from the request.
 				sErr := bridge.SendEvent(
 					ctx,
 					logger,
@@ -215,8 +241,8 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 					bridge.Params{
 						ProjectID:  d.ProjectID(),
 						BranchID:   d.Branch().BranchID,
-						SourceID:   source.SourceID,
-						SourceKey:  source.SourceKey,
+						SourceID:   d.SourceKey().SourceID,
+						SourceKey:  d.SourceKey(),
 						SourceName: source.Name,
 					},
 				)
@@ -229,8 +255,27 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 				return task.ErrResult(err)
 			}
 
-			result := task.OkResult("Source has been deleted successfully.")
+			if !cascade {
+				result := task.OkResult("Source has been deleted successfully.")
+				return s.mapper.WithTaskOutputs(result, d.SourceKey())
+			}
+
+			// Hard-delete the definitions so the same name can be reused immediately.
+			if err = s.purgeSourceDefinitions(ctx, d.SourceKey()); err != nil {
+				return task.ErrResult(err)
+			}
+
+			// Delete the destination Keboola tables and bucket. Failures here are not fatal -
+			// the source is already gone, so report partial success instead of a generic error.
+			result := task.OkResult("Source and its destination tables and bucket have been deleted.")
 			result = s.mapper.WithTaskOutputs(result, d.SourceKey())
+			if cleanupErr := s.cascadeDeleteKeboolaResources(ctx, d.KeboolaProjectAPI(), ownedSinks); cleanupErr != nil {
+				logger.Warnf(ctx, "cascade cleanup incomplete: %v", cleanupErr)
+				// The source is already deleted; keep the task outputs so clients retain its reference.
+				errResult := task.ErrResult(errors.Errorf("source deleted, but some destination resources could not be removed: %w", cleanupErr))
+				return s.mapper.WithTaskOutputs(errResult, d.SourceKey())
+			}
+
 			return result
 		},
 	})
@@ -239,6 +284,91 @@ func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequest
 	}
 
 	return s.mapper.NewTaskResponse(t)
+}
+
+// lockAndListAllSinks acquires the same distlock that sink create/update uses (see sink.go) and
+// returns every sink belonging to the source, from both the active and the deleted prefix. The
+// returned unlock function (non-nil iff the lock was acquired) MUST be deferred by the caller so
+// it releases the lock when the surrounding operation ends. The two prefixes never share a
+// SinkKey, so a plain concatenation is sufficient (no dedup).
+func (s *service) lockAndListAllSinks(ctx context.Context, sourceKey key.SourceKey) (unlock func(), sinks []definition.Sink, err error) {
+	lock := s.locks.NewMutex(fmt.Sprintf("api.source.sinks.%s", sourceKey))
+	if err = lock.Lock(ctx); err != nil {
+		return nil, nil, err
+	}
+	unlock = func() {
+		if uErr := lock.Unlock(ctx); uErr != nil {
+			s.logger.Warnf(ctx, "cannot unlock lock %q: %s", lock.Key(), uErr)
+		}
+	}
+
+	active, err := s.definition.Sink().List(sourceKey).Do(ctx).All()
+	if err != nil {
+		return unlock, nil, err
+	}
+	deleted, err := s.definition.Sink().ListDeleted(sourceKey).Do(ctx).All()
+	if err != nil {
+		return unlock, nil, err
+	}
+
+	sinks = append(sinks, active...)
+	sinks = append(sinks, deleted...)
+	return unlock, sinks, nil
+}
+
+// purgeSourceDefinitions hard-deletes the source and all its sinks from etcd (after a preceding
+// SoftDelete), so the same key can be recreated fresh instead of being revived by Create.
+func (s *service) purgeSourceDefinitions(ctx context.Context, k key.SourceKey) error {
+	if err := s.definition.Sink().PurgeAllFrom(k).Do(ctx).Err(); err != nil {
+		return err
+	}
+	return s.definition.Source().Purge(k).Do(ctx).Err()
+}
+
+// cascadeDeleteKeboolaResources force-deletes the destination Keboola tables of the given sinks and
+// their (deduplicated) buckets. Already-missing resources are ignored; remaining failures are
+// collected so the caller can report what could not be removed.
+func (s *service) cascadeDeleteKeboolaResources(ctx context.Context, api *keboola.AuthorizedAPI, sinks []definition.Sink) error {
+	tableKeys, bucketKeys := collectKeboolaTableResources(sinks)
+
+	errs := errors.NewMultiError()
+	for _, tableKey := range tableKeys {
+		if err := api.DeleteTableRequest(tableKey, keboola.WithForce()).SendOrErr(ctx); err != nil && !isResourceNotFound(err) {
+			errs.Append(errors.Errorf(`cannot delete table "%s": %w`, tableKey.TableID, err))
+		}
+	}
+	for _, bucketKey := range bucketKeys {
+		if err := api.DeleteBucketRequest(bucketKey, keboola.WithForce()).SendOrErr(ctx); err != nil && !isResourceNotFound(err) {
+			errs.Append(errors.Errorf(`cannot delete bucket "%s": %w`, bucketKey.BucketID, err))
+		}
+	}
+	return errs.ErrorOrNil()
+}
+
+// collectKeboolaTableResources returns the destination tables of the Keboola table sinks and their
+// deduplicated buckets, preserving sink order (OTLP sources own several tables in a single bucket).
+func collectKeboolaTableResources(sinks []definition.Sink) (tableKeys []keboola.TableKey, bucketKeys []keboola.BucketKey) {
+	seenBuckets := make(map[keboola.BucketID]bool)
+	for _, sink := range sinks {
+		if sink.Type != definition.SinkTypeTable || sink.Table == nil || sink.Table.Type != definition.TableTypeKeboola || sink.Table.Keboola == nil {
+			continue
+		}
+		tableKey := keboola.TableKey{BranchID: sink.BranchID, TableID: sink.Table.Keboola.TableID}
+		tableKeys = append(tableKeys, tableKey)
+		bucketKey := tableKey.BucketKey()
+		if !seenBuckets[bucketKey.BucketID] {
+			seenBuckets[bucketKey.BucketID] = true
+			bucketKeys = append(bucketKeys, bucketKey)
+		}
+	}
+	return tableKeys, bucketKeys
+}
+
+// isResourceNotFound reports whether the error is a Storage API "not found" error for a table or
+// bucket, in which case cascade deletion can treat it as already done.
+func isResourceNotFound(err error) bool {
+	var apiErr *keboola.StorageError
+	return errors.As(err, &apiErr) && (apiErr.ErrCode == "storage.tables.notFound" || apiErr.ErrCode == "storage.buckets.notFound")
 }
 
 func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, _ *api.GetSourceSettingsPayload) (*api.SettingsResult, error) {

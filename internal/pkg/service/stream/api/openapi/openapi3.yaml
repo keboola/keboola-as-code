@@ -351,9 +351,22 @@ paths:
             tags:
                 - configuration
             summary: Delete source
-            description: Delete the source.
+            description: |-
+                Delete the source.
+
+                With `cascade=true` the source and its sinks are hard-deleted (so the same name can be reused immediately) and the destination Keboola tables and their bucket are deleted as well.
             operationId: DeleteSource
             parameters:
+                - name: cascade
+                  in: query
+                  description: Also delete the destination Keboola tables and bucket, and hard-delete the source so it can be recreated with the same name.
+                  allowEmptyValue: true
+                  schema:
+                    type: boolean
+                    description: Also delete the destination Keboola tables and bucket, and hard-delete the source so it can be recreated with the same name.
+                    default: false
+                    example: true
+                  example: true
                 - name: branchId
                   in: path
                   required: true
@@ -4138,6 +4151,31 @@ components:
             required:
                 - at
                 - by
+        DeleteSourceRequest:
+            type: object
+            properties:
+                branchId:
+                    type: string
+                    description: ID of the branch or "default".
+                    example: default
+                cascade:
+                    type: boolean
+                    description: Also delete the destination Keboola tables and bucket, and hard-delete the source so it can be recreated with the same name.
+                    default: false
+                    example: true
+                sourceId:
+                    type: string
+                    description: Unique ID of the source.
+                    example: github-webhook-source
+                    minLength: 1
+                    maxLength: 48
+            example:
+                branchId: default
+                sourceId: github-webhook-source
+                cascade: true
+            required:
+                - branchId
+                - sourceId
         DeletedEntity:
             type: object
             properties:
