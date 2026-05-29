@@ -1929,6 +1929,67 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 			expectedNotifications: map[string]int{},
 		},
+		{
+			// Background-poll endpoints emitted by data-app frontends
+			// (Streamlit's /_stcore/health and /_stcore/host-config) fire
+			// independently of user interaction — every WS reconnect cycle
+			// while the tab stays open. Apps-proxy must NOT count them as
+			// activity, otherwise auto-suspend never triggers.
+			name: "public-app-framework-background-poll-skips-notify",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				// Three background-poll requests against a Running app. Each
+				// reaches the upstream (GotConn fires), but the new filter in
+				// trace() must skip notify for these paths. The upstream test
+				// server has no handler for them, so we accept whatever status
+				// it returns — what matters is the notify count below.
+				for _, path := range []string{"/_stcore/health", "/_stcore/host-config", "/_stcore/health"} {
+					request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local"+path, nil)
+					require.NoError(t, err)
+					response, err := client.Do(request)
+					require.NoError(t, err)
+					_ = response.Body.Close()
+				}
+			},
+			expectedNotifications: map[string]int{},
+		},
+		{
+			// On a Suspended app, framework background polls must NOT trigger
+			// wakeup — otherwise a forgotten tab whose frontend keeps polling
+			// every WS reconnect cycle would re-wake the app indefinitely,
+			// defeating auto-suspend. Apps-proxy replies 503 with Retry-After
+			// and leaves the app alone. Meaningful user actions (refresh, GET
+			// / etc.) continue to wake the app via the default branch.
+			name: "public-app-framework-background-poll-on-suspended-returns-503-no-wakeup",
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				patch := []byte(`{"status":{"currentState":"Stopped"}}`)
+				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+					t.Context(), "app-123", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
+					return ok && info.ActualState == k8sapp.AppActualStateStopped
+				}, 5*time.Second, 50*time.Millisecond)
+			},
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/_stcore/health", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				defer response.Body.Close()
+
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				assert.Equal(t, "60", response.Header.Get("Retry-After"))
+
+				// Body is empty — the spinner page (served on the default
+				// suspended branch) would contain "Starting your application..."
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Empty(t, body, "filtered path must not return the spinner page")
+				assert.NotContains(t, string(body), "Starting your application...")
+			},
+			expectedNotifications: map[string]int{},
+		},
 
 		{
 			name: "private-one-provider-selector",

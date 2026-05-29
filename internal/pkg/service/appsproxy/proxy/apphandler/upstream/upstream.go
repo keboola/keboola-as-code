@@ -144,6 +144,16 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 			// disabled — only the owner of the dev/prod switch may bring
 			// the app back to Running.
 			u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
+		case isFrameworkBackgroundPoll(req.URL.Path):
+			// Auto-suspended app + framework background poll (e.g. Streamlit's
+			// /_stcore/health emitted by the frontend on its WS reconnect
+			// cycle while the tab stays open). Returning a wakeup here would
+			// defeat auto-suspend on every forgotten tab. Reply 503 with
+			// Retry-After so the client backs off — the user has to perform a
+			// meaningful action (refresh, click) to wake the app, which lands
+			// on a non-poll path and falls into the default branch below.
+			rw.Header().Set("Retry-After", "60")
+			rw.WriteHeader(http.StatusServiceUnavailable)
 		default:
 			u.wakeup(ctx, errors.Errorf("app state is %s", appInfo.ActualState))
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
@@ -303,10 +313,20 @@ func (u *AppUpstream) trace() chain.Middleware {
 	return func(next chain.Handler) chain.Handler {
 		return chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := req.Context()
+			// Capture the path at request scope — it must be available inside
+			// the GotConn callback closure below, which only receives a
+			// connInfo argument.
+			reqPath := req.URL.Path
 
-			// Trace connection events
+			// Trace connection events. Background polls emitted by data-app
+			// frontends independent of user interaction (see
+			// isFrameworkBackgroundPoll) are not considered activity and do
+			// not bump lastRequestTimestamp.
 			reqCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
 				GotConn: func(connInfo httptrace.GotConnInfo) {
+					if isFrameworkBackgroundPoll(reqPath) {
+						return
+					}
 					u.notify(ctx)
 				},
 			})
@@ -350,5 +370,26 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 func (u *AppUpstream) Cancel(err error) {
 	if u.cancelWs != nil {
 		u.cancelWs(err)
+	}
+}
+
+// isFrameworkBackgroundPoll reports whether the given URL path is a known
+// data-app frontend background-poll endpoint that fires independently of user
+// interaction.
+//
+// Currently covers Streamlit's /_stcore/health and /_stcore/host-config. These
+// are emitted on every WebSocket (re)connect — including the periodic ~20 min
+// reconnect cycle imposed by an external idle timeout — and would otherwise
+// either bump lastRequestTimestamp on a Running app (defeating auto-suspend)
+// or wake a Suspended one (defeating it again). Apps-proxy treats them as
+// non-activity: notify is skipped on a Running app and the request is rejected
+// with 503 Retry-After on a Suspended one, requiring the user to perform a
+// meaningful action (refresh, click into the UI) to wake the app.
+func isFrameworkBackgroundPoll(path string) bool {
+	switch path {
+	case "/_stcore/health", "/_stcore/host-config":
+		return true
+	default:
+		return false
 	}
 }
