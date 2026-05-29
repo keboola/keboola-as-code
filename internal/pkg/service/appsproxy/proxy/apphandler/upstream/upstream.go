@@ -144,13 +144,14 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 		case isFrameworkBackgroundPoll(req.URL.Path):
 			// Auto-suspended app + framework background poll (e.g. Streamlit's
 			// /_stcore/health emitted by the frontend on its WS reconnect
-			// cycle while the tab stays open). Returning a wakeup here would
-			// defeat auto-suspend on every forgotten tab. Reply 503 with
-			// Retry-After so the client backs off — the user has to perform a
-			// meaningful action (refresh, click) to wake the app, which lands
-			// on a non-poll path and falls into the default branch below.
-			rw.Header().Set("Retry-After", "60")
-			rw.WriteHeader(http.StatusServiceUnavailable)
+			// cycle while the tab stays open). Triggering a wakeup here would
+			// defeat auto-suspend on every forgotten tab, so instead we serve a
+			// 503 with a plain-text message that the frontend shows in its
+			// connection modal ("paused due to inactivity, refresh to start").
+			// The user has to perform a meaningful action (reload) to wake the
+			// app, which lands on a non-poll path (GET /) and falls into the
+			// default branch below.
+			u.manager.pageWriter.WriteSuspendedPage(rw)
 		default:
 			u.wakeup(ctx, errors.Errorf("app state is %s", appInfo.ActualState))
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)

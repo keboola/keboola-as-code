@@ -1956,9 +1956,10 @@ func TestAppProxyRouter(t *testing.T) {
 			// On a Suspended app, framework background polls must NOT trigger
 			// wakeup — otherwise a forgotten tab whose frontend keeps polling
 			// every WS reconnect cycle would re-wake the app indefinitely,
-			// defeating auto-suspend. Apps-proxy replies 503 with Retry-After
-			// and leaves the app alone. Meaningful user actions (refresh, GET
-			// / etc.) continue to wake the app via the default branch.
+			// defeating auto-suspend. Apps-proxy replies 503 with a plain-text
+			// "paused due to inactivity, refresh to start" message (shown in the
+			// frontend's connection modal) and leaves the app alone. Meaningful
+			// user actions (refresh → GET /) wake the app via the default branch.
 			name: "public-app-framework-background-poll-on-suspended-returns-503-no-wakeup",
 			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				patch := []byte(`{"status":{"currentState":"Stopped"}}`)
@@ -1979,13 +1980,18 @@ func TestAppProxyRouter(t *testing.T) {
 				defer response.Body.Close()
 
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
-				assert.Equal(t, "60", response.Header.Get("Retry-After"))
+				assert.NotEmpty(t, response.Header.Get("Retry-After"), "should advise the client to back off")
+				assert.Equal(t, "text/plain; charset=utf-8", response.Header.Get("Content-Type"),
+					"must be plain text — the frontend modal does not render HTML")
 
-				// Body is empty — the spinner page (served on the default
-				// suspended branch) would contain "Starting your application..."
+				// Body carries the user-facing "paused, refresh to start" message
+				// that the frontend shows in its connection modal. It must NOT be
+				// the spinner page ("Starting your application...") served by the
+				// default branch, which would imply the app is auto-restarting.
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Empty(t, body, "filtered path must not return the spinner page")
+				assert.Contains(t, string(body), "Refresh the page",
+					"should instruct the user to reload")
 				assert.NotContains(t, string(body), "Starting your application...")
 			},
 			expectedNotifications: map[string]int{},
