@@ -150,10 +150,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 		switch {
 		case appInfo.ActualState == k8sapp.AppActualStateStarting:
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
-		case appInfo.DevMode, !appInfo.AutoRestartEnabled:
-			// In DEV mode (per App CRD spec.devMode.enabled) auto-resume is
-			// disabled — only the owner of the dev/prod switch may bring
-			// the app back to Running.
+		case !appInfo.AutoRestartEnabled:
 			u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
 		default:
 			u.wakeup(ctx, errors.Errorf("app state is %s", appInfo.ActualState))

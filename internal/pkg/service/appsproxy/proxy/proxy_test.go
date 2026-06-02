@@ -2400,9 +2400,10 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{},
 		},
 		{
-			// DEV mode app that is Stopped — proxy must not auto-resume it
-			// and must show the "Application Disabled" page.
-			name: "dev-mode-no-wakeup",
+			// DEV mode app that is Stopped — the proxy must auto-resume it
+			// (trigger a wakeup and show the spinner page). autoRestartEnabled
+			// is absent here, so it defaults to true.
+			name: "dev-mode-auto-resume",
 			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				patch := []byte(`{"spec":{"devMode":{"enabled":true}},"status":{"currentState":"Stopped"}}`)
 				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
@@ -2411,7 +2412,48 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
 					info, ok := watcher.GetState(t.Context(), api.AppID("devmode"))
-					return ok && info.DevMode && info.ActualState == k8sapp.AppActualStateStopped
+					// AutoRestartEnabled must default to true (spec omits it).
+					return ok && info.DevMode && info.AutoRestartEnabled && info.ActualState == k8sapp.AppActualStateStopped
+				}, 5*time.Second, 50*time.Millisecond)
+			},
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://dev-devmode.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "Starting your application...")
+				assert.NotContains(t, string(body), "Application Disabled")
+
+				// Confirm the app was auto-resumed: the wakeup patches the App
+				// CRD's spec.state to Running (asynchronously).
+				require.Eventually(t, func() bool {
+					obj, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Get(t.Context(), "app-devmode", metav1.GetOptions{})
+					if err != nil {
+						return false
+					}
+					state, found, err := unstructured.NestedString(obj.Object, "spec", "state")
+					return err == nil && found && state == string(k8sapp.AppActualStateRunning)
+				}, 5*time.Second, 50*time.Millisecond, "expected wakeup to patch spec.state=Running")
+			},
+			expectedNotifications: map[string]int{},
+		},
+		{
+			// DEV mode app that is Stopped AND has autoRestartEnabled=false —
+			// the app must NOT be woken and must show the "Application
+			// Disabled" page.
+			name: "dev-mode-restart-disabled",
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				patch := []byte(`{"spec":{"devMode":{"enabled":true},"autoRestartEnabled":false},"status":{"currentState":"Stopped"}}`)
+				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+					t.Context(), "app-devmode", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(t.Context(), api.AppID("devmode"))
+					return ok && info.DevMode && !info.AutoRestartEnabled && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
 			},
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
@@ -2424,10 +2466,19 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Application Disabled")
 
-				// Confirm the app was not auto-resumed: state remains Stopped.
-				info, ok := watcher.GetState(t.Context(), api.AppID("devmode"))
-				require.True(t, ok)
-				assert.Equal(t, k8sapp.AppActualStateStopped, info.ActualState)
+				// Confirm the app was NOT auto-resumed: the wakeup must never
+				// patch the App CRD's spec.state to Running.
+				require.Never(t, func() bool {
+					obj, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Get(t.Context(), "app-devmode", metav1.GetOptions{})
+					if err != nil {
+						return false
+					}
+					state, found, err := unstructured.NestedString(obj.Object, "spec", "state")
+					// A non-string spec.state (err != nil) could only come from
+					// an unexpected patch — treat it as "resumed" so a decode
+					// error cannot mask a real wakeup.
+					return err != nil || (found && state == string(k8sapp.AppActualStateRunning))
+				}, time.Second, 50*time.Millisecond, "app must not be auto-resumed")
 			},
 			expectedNotifications: map[string]int{},
 		},

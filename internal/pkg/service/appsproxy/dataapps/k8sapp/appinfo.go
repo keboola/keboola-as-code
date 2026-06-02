@@ -69,8 +69,7 @@ type AppInfo struct {
 	ActualState        AppActualState
 	AutoRestartEnabled bool
 	// DevMode mirrors spec.devMode.enabled from the App CRD. When true the
-	// proxy does not auto-resume a Stopped app — only the owner of the
-	// dev/prod switch may trigger a restart.
+	// proxy enables the kai-preview iframe-auth path for the app.
 	DevMode bool
 	// UpstreamTarget is the pre-parsed URL from .status.appsProxy.upstreamUrl.
 	// Nil when the field is absent or unparseable.
