@@ -1990,7 +1990,7 @@ func TestAppProxyRouter(t *testing.T) {
 				// default branch, which would imply the app is auto-restarting.
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Refresh the page",
+				assert.Contains(t, string(body), "Reload the page",
 					"should instruct the user to reload")
 				assert.NotContains(t, string(body), "Starting your application...")
 			},

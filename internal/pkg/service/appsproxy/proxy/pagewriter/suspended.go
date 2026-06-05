@@ -17,7 +17,11 @@ import (
 // the health-check response body in a modal that does not render HTML — the
 // same reason the spinner/restart messages are plain text for these paths.
 // See IsStreamlitHealthCheck and AJDA-1935.
-const suspendedMessage = "The application was paused due to inactivity. Refresh the page to start it again."
+// Kept short on purpose: data-app frontends (Streamlit) show this in a
+// connection modal that wraps text but has limited height, so a long message
+// ends up behind a scrollbar. The modal renders the body as plain text — it
+// does not honor newlines or HTML, so wording is the only lever for length.
+const suspendedMessage = "App paused. Reload the page to restart."
 
 // suspendedRetryAfter is advisory back-off for the polling client. It does not
 // cause the app to restart — only a user-initiated reload does.
