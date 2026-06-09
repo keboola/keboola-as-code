@@ -25,6 +25,23 @@
             "col1",
             "col2"
           ],
+          "definition": {
+            "primaryKeysNames": [
+              "col1",
+              "col2"
+            ],
+            "columns": [
+              {
+                "name": "col1"
+              },
+              {
+                "name": "col2"
+              },
+              {
+                "name": "col3"
+              }
+            ]
+          },
           "columns": [
             "col1",
             "col2",
