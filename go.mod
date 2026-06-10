@@ -1,6 +1,6 @@
 module github.com/keboola/keboola-as-code
 
-go 1.26.2
+go 1.26.3
 
 replace github.com/google/go-jsonnet => github.com/keboola/go-jsonnet v0.22.1-0.20260427095904-b7e5c35127af
 
@@ -44,7 +44,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-cloud-encrypt v0.0.0-20250422071622-41a5d5547c43
 	github.com/keboola/go-utils v1.4.0
-	github.com/keboola/keboola-sdk-go/v2 v2.19.0
+	github.com/keboola/keboola-sdk-go/v2 v2.20.1
 	github.com/keboola/keboola-sdk-go/v2/transfer v1.1.0
 	github.com/klauspost/compress v1.18.5
 	github.com/klauspost/pgzip v1.2.6

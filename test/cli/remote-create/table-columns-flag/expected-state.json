@@ -22,6 +22,20 @@
           "name": "table1",
           "displayName": "table1",
           "primaryKey": [],
+          "definition": {
+            "primaryKeysNames": [],
+            "columns": [
+              {
+                "name": "col1"
+              },
+              {
+                "name": "col2"
+              },
+              {
+                "name": "col3"
+              }
+            ]
+          },
           "columns": [
             "col1",
             "col2",

@@ -25,6 +25,29 @@
             "Id",
             "Name"
           ],
+          "definition": {
+            "primaryKeysNames": [
+              "Id",
+              "Name"
+            ],
+            "columns": [
+              {
+                "name": "Id"
+              },
+              {
+                "name": "Name"
+              },
+              {
+                "name": "Region"
+              },
+              {
+                "name": "Status"
+              },
+              {
+                "name": "First_Order"
+              }
+            ]
+          },
           "columns": [
             "Id",
             "Name",

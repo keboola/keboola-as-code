@@ -22,6 +22,26 @@
           "name": "data",
           "displayName": "data",
           "primaryKey": [],
+          "definition": {
+            "primaryKeysNames": [],
+            "columns": [
+              {
+                "name": "Status"
+              },
+              {
+                "name": "Region"
+              },
+              {
+                "name": "Name"
+              },
+              {
+                "name": "Id"
+              },
+              {
+                "name": "First_Order"
+              }
+            ]
+          },
           "columns": [
             "Status",
             "Region",
