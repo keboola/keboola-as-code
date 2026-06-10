@@ -1929,6 +1929,73 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 			expectedNotifications: map[string]int{},
 		},
+		{
+			// Background-poll endpoints emitted by data-app frontends
+			// (Streamlit's /_stcore/health and /_stcore/host-config) fire
+			// independently of user interaction — every WS reconnect cycle
+			// while the tab stays open. Apps-proxy must NOT count them as
+			// activity, otherwise auto-suspend never triggers.
+			name: "public-app-framework-background-poll-skips-notify",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				// Three background-poll requests against a Running app. Each
+				// reaches the upstream (GotConn fires), but the new filter in
+				// trace() must skip notify for these paths. The upstream test
+				// server has no handler for them, so we accept whatever status
+				// it returns — what matters is the notify count below.
+				for _, path := range []string{"/_stcore/health", "/_stcore/host-config", "/_stcore/health"} {
+					request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local"+path, nil)
+					require.NoError(t, err)
+					response, err := client.Do(request)
+					require.NoError(t, err)
+					_ = response.Body.Close()
+				}
+			},
+			expectedNotifications: map[string]int{},
+		},
+		{
+			// On a Suspended app, framework background polls must NOT trigger
+			// wakeup — otherwise a forgotten tab whose frontend keeps polling
+			// every WS reconnect cycle would re-wake the app indefinitely,
+			// defeating auto-suspend. Apps-proxy replies 503 with a plain-text
+			// "paused due to inactivity, refresh to start" message (shown in the
+			// frontend's connection modal) and leaves the app alone. Meaningful
+			// user actions (refresh → GET /) wake the app via the default branch.
+			name: "public-app-framework-background-poll-on-suspended-returns-503-no-wakeup",
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				patch := []byte(`{"status":{"currentState":"Stopped"}}`)
+				_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+					t.Context(), "app-123", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
+					return ok && info.ActualState == k8sapp.AppActualStateStopped
+				}, 5*time.Second, 50*time.Millisecond)
+			},
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/_stcore/health", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				defer response.Body.Close()
+
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				assert.NotEmpty(t, response.Header.Get("Retry-After"), "should advise the client to back off")
+				assert.Equal(t, "text/plain; charset=utf-8", response.Header.Get("Content-Type"),
+					"must be plain text — the frontend modal does not render HTML")
+
+				// Body carries the user-facing "paused, refresh to start" message
+				// that the frontend shows in its connection modal. It must NOT be
+				// the spinner page ("Starting your application...") served by the
+				// default branch, which would imply the app is auto-restarting.
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "Reload the page",
+					"should instruct the user to reload")
+				assert.NotContains(t, string(body), "Starting your application...")
+			},
+			expectedNotifications: map[string]int{},
+		},
 
 		{
 			name: "private-one-provider-selector",
@@ -3351,6 +3418,138 @@ func TestKaiPreviewSlidingRefresh(t *testing.T) {
 	assert.Equal(t, "devmode", newClaims.AppID)
 	assert.Equal(t, "123", newClaims.ProjectID)
 	assert.False(t, newClaims.NeedsRefresh(fakeClock.Now()), "newly minted JWT should not need refresh immediately")
+
+	assert.Empty(t, mocked.DebugLogger().ErrorMessages())
+}
+
+// TestWebsocketActivityTracking verifies the per-frame WebSocket activity-tracking
+// behavior introduced by wsactivity:
+//
+//  1. The initial handshake produces exactly one Sandboxes Service notify (from the
+//     GotConn ClientTrace hook).
+//  2. An idle WebSocket — connection open, no data frames exchanged — does NOT
+//     spontaneously increment the notify count past the throttle window. The
+//     customer-visible goal of the change (forgotten browser tab no longer blocks
+//     auto-suspend) is that an idle connection produces zero activity-driven
+//     notifies; this test confirms that for the per-frame path.
+//  3. A real data frame past the throttle window MUST produce a second notify,
+//     proving the per-frame path is wired end-to-end through the wrapped conn.
+//
+// The test uses an injected FakeClock so the notify throttle can be advanced
+// deterministically without sleeping for 30 s of real time.
+//
+// Caveat on (2): this is not a hard regression test against re-introducing a real-
+// time ticker (the previous implementation slept 30 s of wall-clock time). The
+// 250 ms wall-clock yield only catches accidentally short-period real-time goroutines;
+// a future 30 s ticker would still pass this test. Catching that regression
+// reliably would require making the ticker interval injectable. Code review is
+// expected to catch any reintroduction of presence-based polling.
+//
+// The "control frames are ignored" property is covered separately by
+// wsactivity's TestWrap_OnlyControlFrames_NoCallbacks unit test, which can do
+// the assertion without driving ping/pong through coder/websocket's read loop.
+func TestWebsocketActivityTracking(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+
+	fakeClock := clockwork.NewFakeClock()
+
+	// Standard testing scaffold: apps API + upstream app server + secrets + config.
+	tmpDir := t.TempDir()
+	pm, _ := server.NewPortManager(t, tmpDir, "appsproxy")
+	appsAPI := testutil.StartDataAppsAPI(t, pm)
+	t.Cleanup(func() { appsAPI.Close() })
+	appServer := testutil.StartAppServer(t, pm)
+	t.Cleanup(func() { appServer.Close() })
+
+	providers := testAuthProviders(t, pm)
+	appURL := testutil.AppServerURL(t, appServer)
+	apps := testDataApps(appURL, providers)
+	appsAPI.Register(apps)
+
+	secret := make([]byte, 32)
+	_, err := rand.Read(secret)
+	require.NoError(t, err)
+	csrfSecret := make([]byte, 32)
+	_, err = rand.Read(csrfSecret)
+	require.NoError(t, err)
+
+	cfg := config.New()
+	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
+	cfg.CookieSecretSalt = string(secret)
+	cfg.CsrfTokenSalt = string(csrfSecret)
+	cfg.SandboxesAPI.URL = appsAPI.URL
+
+	d, mocked := proxyDependencies.NewMockedServiceScopeWithK8sObjects(
+		t, ctx, cfg,
+		makeDefaultK8sObjects(apps, appURL.String()),
+		dependencies.WithRealHTTPClient(),
+		dependencies.WithClock(fakeClock),
+	)
+	defer func() {
+		d.Process().Shutdown(ctx, errors.New("bye bye"))
+		d.Process().WaitForShutdown()
+	}()
+
+	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
+	logger.SetOutput(loggerWriter)
+	logger.SetErrOutput(loggerWriter)
+	handler := proxy.NewHandler(ctx, d)
+
+	var lc net.ListenConfig
+	l, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	proxySrv := &httptest.Server{
+		Listener: l,
+		Config:   &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ErrorLog: log.NewStdErrorLogger(d.Logger())},
+	}
+	proxySrv.StartTLS()
+	t.Cleanup(func() { proxySrv.Close() })
+
+	proxyURL, err := url.Parse(proxySrv.URL)
+	require.NoError(t, err)
+	client := createHTTPClient(t, proxyURL)
+	registerDefaultK8sApps(t, d.AppStateWatcher())
+
+	// notifyCount is locked behind the testutil mutex so it is safe to read
+	// concurrently with the in-flight notify goroutine driven by data frames.
+	notifyCount := func() int { return appsAPI.NotificationsCount("123") }
+
+	wsCtx, wsCancel := context.WithTimeout(ctx, time.Minute)
+	defer wsCancel()
+
+	// Open the idle WebSocket. The handshake's GotConn ClientTrace hook fires
+	// u.notify once, producing the first Sandboxes Service PATCH call.
+	c, _, err := websocket.Dial(
+		wsCtx,
+		"wss://public-123.hub.keboola.local/ws-idle",
+		&websocket.DialOptions{HTTPClient: client},
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = c.Close(websocket.StatusNormalClosure, "") })
+
+	require.Eventually(t, func() bool { return notifyCount() == 1 }, 5*time.Second, 10*time.Millisecond,
+		"handshake should produce exactly one notify (from GotConn)")
+
+	// Advance the fake clock past the per-app throttle window. From now on,
+	// any activity-driven notify will pass the throttle gate. With no
+	// frames flowing through the wrapper, the count must stay at 1.
+	fakeClock.Advance(31 * time.Second)
+	// Brief wall-clock yield so that any short-period goroutine that mistakenly
+	// fired on connection presence (rather than per-frame) would surface. See
+	// the doc comment caveat — this does NOT catch a 30 s real-time ticker.
+	time.Sleep(250 * time.Millisecond)
+	assert.Equal(t, 1, notifyCount(),
+		"idle WS past the throttle window must NOT trigger an activity-driven notify")
+
+	// Write a real data frame (text message). The proxy observes a non-control
+	// opcode (0x1) in the client→server direction, fires u.notify, and — since
+	// fakeClock is past the throttle window — the throttle gate opens and we
+	// get a second PATCH call to apps API.
+	require.NoError(t, c.Write(wsCtx, websocket.MessageText, []byte("hello data")))
+
+	require.Eventually(t, func() bool { return notifyCount() == 2 }, 5*time.Second, 10*time.Millisecond,
+		"data-frame activity past the throttle window must produce a second notify")
 
 	assert.Empty(t, mocked.DebugLogger().ErrorMessages())
 }

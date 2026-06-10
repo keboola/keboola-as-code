@@ -3,13 +3,13 @@ package upstream
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptrace"
 	"net/http/httputil"
 	"net/url"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream/wsactivity"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -50,13 +51,12 @@ type Manager struct {
 }
 
 type AppUpstream struct {
-	manager       *Manager
-	app           api.AppConfig
-	target        *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
-	handler       *chain.Chain
-	wsHandler     *chain.Chain
-	cancelWs      context.CancelCauseFunc
-	activeWsCount atomic.Int64
+	manager   *Manager
+	app       api.AppConfig
+	target    *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
+	handler   *chain.Chain
+	wsHandler *chain.Chain
+	cancelWs  context.CancelCauseFunc
 }
 
 type dependencies interface {
@@ -123,20 +123,9 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
 	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
 
-	// Call notify while there is an active websocket connection
-	go func(ctx context.Context) {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				if upstream.activeWsCount.Load() > 0 {
-					upstream.notify(ctx)
-				}
-				time.Sleep(30 * time.Second)
-			}
-		}
-	}(ctx)
+	// WebSocket activity tracking is per-frame (see newWebsocketProxy).
+	// No periodic ticker is needed — idle connections (only ping/pong) must
+	// not keep the app alive.
 
 	return upstream, nil
 }
@@ -152,6 +141,17 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
 		case !appInfo.AutoRestartEnabled:
 			u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
+		case isFrameworkBackgroundPoll(req.URL.Path):
+			// Auto-suspended app + framework background poll (e.g. Streamlit's
+			// /_stcore/health emitted by the frontend on its WS reconnect
+			// cycle while the tab stays open). Triggering a wakeup here would
+			// defeat auto-suspend on every forgotten tab, so instead we serve a
+			// 503 with a plain-text message that the frontend shows in its
+			// connection modal ("paused due to inactivity, refresh to start").
+			// The user has to perform a meaningful action (reload) to wake the
+			// app, which lands on a non-poll path (GET /) and falls into the
+			// default branch below.
+			u.manager.pageWriter.WriteSuspendedPage(rw)
 		default:
 			u.wakeup(ctx, errors.Errorf("app state is %s", appInfo.ActualState))
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
@@ -255,6 +255,40 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 		}
 	}
 
+	// Per-frame WebSocket activity tracking.
+	//
+	// httputil.ReverseProxy.handleUpgradeResponse type-asserts res.Body to
+	// io.ReadWriteCloser and uses it as the upstream end of a bidirectional
+	// copy with the hijacked client conn. Wrapping res.Body once therefore
+	// observes both directions of the WebSocket stream:
+	//
+	//   - Read on the wrapped RWC = server→client bytes (unmasked frames),
+	//   - Write on the wrapped RWC = client→server bytes (masked frames).
+	//
+	// wsactivity.Wrap parses frame headers in both directions and invokes
+	// the callback once per non-control frame. notify.Manager already
+	// throttles per app to one outbound call per 30s, so we can fire the
+	// callback per frame without flooding the Sandboxes Service.
+	proxy.ModifyResponse = func(res *http.Response) error {
+		if res.StatusCode != http.StatusSwitchingProtocols {
+			return nil
+		}
+		rwc, ok := res.Body.(io.ReadWriteCloser)
+		if !ok {
+			// httputil.ReverseProxy itself requires this assertion to succeed
+			// for a 101 response; if it doesn't, the proxy errors out anyway.
+			// We just skip wrapping and let the proxy report the error.
+			return nil
+		}
+		// Bind the callback to the request context so notify() can decorate
+		// its span/log with the right request attributes. notify() itself
+		// uses context.WithoutCancel, so the in-flight call survives the WS
+		// timeout and any per-request cancellation.
+		reqCtx := res.Request.Context()
+		res.Body = wsactivity.Wrap(rwc, func() { u.notify(reqCtx) })
+		return nil
+	}
+
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := ctxattr.ContextWith(req.Context(), attribute.Bool(attrWebsocket, true))
@@ -263,9 +297,6 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 
 			ctx, c := context.WithCancelCause(ctx)
 			u.cancelWs = c
-
-			u.activeWsCount.Add(1)
-			defer u.activeWsCount.Add(-1)
 
 			proxy.ServeHTTP(w, req.WithContext(ctx))
 			return nil
@@ -280,10 +311,20 @@ func (u *AppUpstream) trace() chain.Middleware {
 	return func(next chain.Handler) chain.Handler {
 		return chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := req.Context()
+			// Capture the path at request scope — it must be available inside
+			// the GotConn callback closure below, which only receives a
+			// connInfo argument.
+			reqPath := req.URL.Path
 
-			// Trace connection events
+			// Trace connection events. Background polls emitted by data-app
+			// frontends independent of user interaction (see
+			// isFrameworkBackgroundPoll) are not considered activity and do
+			// not bump lastRequestTimestamp.
 			reqCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
 				GotConn: func(connInfo httptrace.GotConnInfo) {
+					if isFrameworkBackgroundPoll(reqPath) {
+						return
+					}
 					u.notify(ctx)
 				},
 			})
@@ -327,5 +368,26 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 func (u *AppUpstream) Cancel(err error) {
 	if u.cancelWs != nil {
 		u.cancelWs(err)
+	}
+}
+
+// isFrameworkBackgroundPoll reports whether the given URL path is a known
+// data-app frontend background-poll endpoint that fires independently of user
+// interaction.
+//
+// Currently covers Streamlit's /_stcore/health and /_stcore/host-config. These
+// are emitted on every WebSocket (re)connect — including the periodic ~20 min
+// reconnect cycle imposed by an external idle timeout — and would otherwise
+// either bump lastRequestTimestamp on a Running app (defeating auto-suspend)
+// or wake a Suspended one (defeating it again). Apps-proxy treats them as
+// non-activity: notify is skipped on a Running app and the request is rejected
+// with 503 Retry-After on a Suspended one, requiring the user to perform a
+// meaningful action (refresh, click into the UI) to wake the app.
+func isFrameworkBackgroundPoll(path string) bool {
+	switch path {
+	case "/_stcore/health", "/_stcore/host-config":
+		return true
+	default:
+		return false
 	}
 }
