@@ -147,7 +147,8 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 			// cycle while the tab stays open). Triggering a wakeup here would
 			// defeat auto-suspend on every forgotten tab, so instead we serve a
 			// 503 with a plain-text message that the frontend shows in its
-			// connection modal ("paused due to inactivity, refresh to start").
+			// connection modal ("went to sleep due to inactivity, refresh to
+			// resume").
 			// The user has to perform a meaningful action (reload) to wake the
 			// app, which lands on a non-poll path (GET /) and falls into the
 			// default branch below.

@@ -1957,7 +1957,7 @@ func TestAppProxyRouter(t *testing.T) {
 			// wakeup — otherwise a forgotten tab whose frontend keeps polling
 			// every WS reconnect cycle would re-wake the app indefinitely,
 			// defeating auto-suspend. Apps-proxy replies 503 with a plain-text
-			// "paused due to inactivity, refresh to start" message (shown in the
+			// "went to sleep due to inactivity, refresh to resume" message (shown in the
 			// frontend's connection modal) and leaves the app alone. Meaningful
 			// user actions (refresh → GET /) wake the app via the default branch.
 			name: "public-app-framework-background-poll-on-suspended-returns-503-no-wakeup",
@@ -1984,14 +1984,14 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "text/plain; charset=utf-8", response.Header.Get("Content-Type"),
 					"must be plain text — the frontend modal does not render HTML")
 
-				// Body carries the user-facing "paused, refresh to start" message
+				// Body carries the user-facing "went to sleep, refresh to resume" message
 				// that the frontend shows in its connection modal. It must NOT be
 				// the spinner page ("Starting your application...") served by the
 				// default branch, which would imply the app is auto-restarting.
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Reload the page",
-					"should instruct the user to reload")
+				assert.Contains(t, string(body), "Refresh the page",
+					"should instruct the user to refresh")
 				assert.NotContains(t, string(body), "Starting your application...")
 			},
 			expectedNotifications: map[string]int{},
