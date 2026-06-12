@@ -14,7 +14,6 @@
 #### Templates Service
 
 - Provides CLI commands and API for creating templates from existing [Keboola](https://www.keboola.com/product/overview) project and their usage in other projects.
-- See [user documentation](https://developers.keboola.com/cli/templates/).
 - See **[architecture overview](./docs/templates/overview.md)** for more details.
 
 ### Stream Service
