@@ -121,10 +121,10 @@ These commands operate on the local project directory.
     *   `kbc local validate row`: Validates config row files. [https://developers.keboola.com/cli/commands/local/validate/row/](https://developers.keboola.com/cli/commands/local/validate/row/)
     *   `kbc local validate schema`: Validates schemas defined in configuration files. [https://developers.keboola.com/cli/commands/local/validate/schema/](https://developers.keboola.com/cli/commands/local/validate/schema/)
 *   `kbc local fix-paths`:  Automatically fixes paths in the local project to adhere to Keboola's naming conventions. [https://developers.keboola.com/cli/commands/local/fix-paths/](https://developers.keboola.com/cli/commands/local/fix-paths/)
-*   `kbc local template`: Commands for working with templates locally. [https://developers.keboola.com/cli/commands/local/template/](https://developers.keboola.com/cli/commands/local/template/)
-    *   `kbc local template delete <template-instance-id>`: Deletes a template instance. [https://developers.keboola.com/cli/commands/local/template/delete/](https://developers.keboola.com/cli/commands/local/template/delete/)
-    *   `kbc local template list`: Lists used templates in the project. [https://developers.keboola.com/cli/commands/local/template/list/](https://developers.keboola.com/cli/commands/local/template/list/)
-    *   `kbc local template use <repository-name> <template-id> <version>`: Applies a template to the project. [https://developers.keboola.com/cli/commands/local/template/use/](https://developers.keboola.com/cli/commands/local/template/use/)
+*   `kbc local template`: Commands for working with templates locally.
+    *   `kbc local template delete <template-instance-id>`: Deletes a template instance.
+    *   `kbc local template list`: Lists used templates in the project.
+    *   `kbc local template use <repository-name> <template-id> <version>`: Applies a template to the project.
 
 ### Examples of Local Commands with Flags
 
@@ -173,14 +173,14 @@ These commands interact directly with the remote Keboola project.
 
 These commands are used for managing templates and template repositories.
 
-*   `kbc template repository`: Commands for managing template repositories. [https://developers.keboola.com/cli/commands/template/repository/](https://developers.keboola.com/cli/commands/template/repository/)
-    *   `kbc template repository init`: Initializes a new template repository in the local directory. [https://developers.keboola.com/cli/commands/template/repository/init/](https://developers.keboola.com/cli/commands/template/repository/init/)
-*   `kbc template create`: Creates a new template in a template repository. [https://developers.keboola.com/cli/commands/template/create/](https://developers.keboola.com/cli/commands/template/create/)
-*   `kbc template describe <repository-name> <template-id> <version>`: Describes a template. [https://developers.keboola.com/cli/commands/template/describe/](https://developers.keboola.com/cli/commands/template/describe/)
-*   `kbc template list [repository-name]`: Lists templates in a repository or all repositories. [https://developers.keboola.com/cli/commands/template/list/](https://developers.keboola.com/cli/commands/template/list/)
-*   `kbc template test`: Commands for testing templates. [https://developers.keboola.com/cli/commands/template/test/](https://developers.keboola.com/cli/commands/template/test/)
-    *   `kbc template test create`: Creates template tests. [https://developers.keboola.com/cli/commands/template/test/create/](https://developers.keboola.com/cli/commands/template/test/create/)
-    *   `kbc template test run`: Runs template tests. [https://developers.keboola.com/cli/commands/template/test/run/](https://developers.keboola.com/cli/commands/template/test/run/)
+*   `kbc template repository`: Commands for managing template repositories.
+    *   `kbc template repository init`: Initializes a new template repository in the local directory.
+*   `kbc template create`: Creates a new template in a template repository.
+*   `kbc template describe <repository-name> <template-id> <version>`: Describes a template.
+*   `kbc template list [repository-name]`: Lists templates in a repository or all repositories.
+*   `kbc template test`: Commands for testing templates.
+    *   `kbc template test create`: Creates template tests.
+    *   `kbc template test run`: Runs template tests.
 
 ### 6. `ci` - CI/CD Commands
 
@@ -215,8 +215,6 @@ Keboola Templates allow you to create reusable configurations. The CLI provides 
 *   Use templates to quickly set up new configurations.
 *   Manage template repositories.
 *   Test templates.
-
-Refer to: [https://developers.keboola.com/cli/templates/](https://developers.keboola.com/cli/templates/) and [https://developers.keboola.com/cli/templates/tutorial/](https://developers.keboola.com/cli/templates/tutorial/)
 
 ## Important Notes for AI Agents
 
