@@ -149,7 +149,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 			// 503 with a plain-text message that the frontend shows in its
 			// connection modal ("went to sleep due to inactivity, refresh to
 			// resume").
-			// The user has to perform a meaningful action (reload) to wake the
+			// The user has to perform a meaningful action (refresh) to wake the
 			// app, which lands on a non-poll path (GET /) and falls into the
 			// default branch below.
 			u.manager.pageWriter.WriteSuspendedPage(rw)

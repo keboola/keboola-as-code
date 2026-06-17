@@ -1992,6 +1992,8 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Refresh the page",
 					"should instruct the user to refresh")
+				assert.Contains(t, string(body), "auto-sleep timeout can be increased or disabled",
+					"should include the prevention hint about the auto-sleep timeout")
 				assert.NotContains(t, string(body), "Starting your application...")
 			},
 			expectedNotifications: map[string]int{},

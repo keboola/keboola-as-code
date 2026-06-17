@@ -10,8 +10,8 @@ import (
 // has been auto-suspended for inactivity. apps-proxy deliberately does NOT
 // auto-restart the app from these background polls — doing so would defeat
 // auto-suspend for forgotten tabs, which keep polling regardless of whether a
-// user is present. The user must reload the page to start the app again
-// (a reload hits GET / which is treated as real activity and triggers wakeup).
+// user is present. The user must refresh the page to start the app again
+// (a refresh hits GET / which is treated as real activity and triggers wakeup).
 //
 // The message is plain text on purpose: data-app frontends (Streamlit) display
 // the health-check response body in their connection-error modal, which never
@@ -24,7 +24,7 @@ const suspendedMessage = "App went to sleep due to inactivity. Refresh the page 
 	"To avoid this, the auto-sleep timeout can be increased or disabled in the app settings."
 
 // suspendedRetryAfter is advisory back-off for the polling client. It does not
-// cause the app to restart — only a user-initiated reload does.
+// cause the app to restart — only a user-initiated refresh does.
 const suspendedRetryAfter = 60 * time.Second
 
 // WriteSuspendedPage responds to a data-app frontend background poll for an
