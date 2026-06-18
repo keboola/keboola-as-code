@@ -1557,6 +1557,8 @@ type TableColumnResponseBody struct {
 	Path *string `form:"path,omitempty" json:"path,omitempty" xml:"path,omitempty"`
 	// Fallback value if path doesn't exist.
 	DefaultValue *string `form:"defaultValue,omitempty" json:"defaultValue,omitempty" xml:"defaultValue,omitempty"`
+	// Set to true if the column is part of the table's primary key.
+	PrimaryKey *bool `form:"primaryKey,omitempty" json:"primaryKey,omitempty" xml:"primaryKey,omitempty"`
 	// Set to true if path value should use raw string instead of json-encoded
 	// value.
 	RawString *bool `form:"rawString,omitempty" json:"rawString,omitempty" xml:"rawString,omitempty"`
@@ -1717,6 +1719,8 @@ type TableColumnRequestBody struct {
 	Path *string `form:"path,omitempty" json:"path,omitempty" xml:"path,omitempty"`
 	// Fallback value if path doesn't exist.
 	DefaultValue *string `form:"defaultValue,omitempty" json:"defaultValue,omitempty" xml:"defaultValue,omitempty"`
+	// Set to true if the column is part of the table's primary key.
+	PrimaryKey *bool `form:"primaryKey,omitempty" json:"primaryKey,omitempty" xml:"primaryKey,omitempty"`
 	// Set to true if path value should use raw string instead of json-encoded
 	// value.
 	RawString *bool `form:"rawString,omitempty" json:"rawString,omitempty" xml:"rawString,omitempty"`

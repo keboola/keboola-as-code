@@ -3955,6 +3955,7 @@ func unmarshalTableColumnRequestBodyToStreamTableColumn(v *TableColumnRequestBod
 		Name:         *v.Name,
 		Path:         v.Path,
 		DefaultValue: v.DefaultValue,
+		PrimaryKey:   v.PrimaryKey,
 		RawString:    v.RawString,
 	}
 	if v.Template != nil {
@@ -4024,6 +4025,7 @@ func marshalStreamTableColumnToTableColumnResponseBody(v *stream.TableColumn) *T
 		Name:         v.Name,
 		Path:         v.Path,
 		DefaultValue: v.DefaultValue,
+		PrimaryKey:   v.PrimaryKey,
 		RawString:    v.RawString,
 	}
 	if v.Template != nil {

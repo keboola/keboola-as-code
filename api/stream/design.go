@@ -1562,7 +1562,7 @@ var TableColumns = Type("TableColumns", ArrayOf(TableColumn), func() {
 	MinLength(minLength)
 	MaxLength(maxLength)
 	Example(column.Columns{
-		column.UUID{Name: "id-col"},
+		column.UUID{Name: "id-col", PrimaryKey: true},
 		column.Datetime{Name: "datetime-col"},
 		column.IP{Name: "ip-col"},
 		column.Headers{Name: "headers-col"},
@@ -1591,6 +1591,10 @@ var TableColumn = Type("TableColumn", func() {
 	Attribute("defaultValue", String, func() {
 		Description("Fallback value if path doesn't exist.")
 		Example("1")
+	})
+	Attribute("primaryKey", Boolean, func() {
+		Description("Set to true if the column is part of the table's primary key.")
+		Example(true)
 	})
 	Attribute("rawString", Boolean, func() {
 		Description("Set to true if path value should use raw string instead of json-encoded value.")

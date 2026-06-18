@@ -115,6 +115,11 @@ func (m *Mapper) newTableMappingResponse(entity table.Mapping) (out api.TableMap
 			Name: input.ColumnName(),
 		}
 
+		if input.IsPrimaryKey() {
+			pk := true
+			output.PrimaryKey = &pk
+		}
+
 		if v, ok := input.(column.Path); ok {
 			output.Path = &v.Path
 			output.RawString = &v.RawString
