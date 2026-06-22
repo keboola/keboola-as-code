@@ -72,17 +72,26 @@ func NewProjectDeps(ctx context.Context, prjScp projectScopeDeps, tokenStr strin
 		return nil, err
 	}
 
+	ctx = setProjectScopeTelemetry(ctx, *token)
+
+	prjScp.Logger().Debugf(ctx, "Storage API token is valid.")
+	prjScp.Logger().Debugf(ctx, `Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
+
+	return newProjectScope(ctx, prjScp, *token, opts...)
+}
+
+// setProjectScopeTelemetry records project/token attributes on the context and the
+// request span once the token is known. Shared by the legacy verify path
+// (NewProjectDeps) and the programmatic-token exchange path (ExchangeProgrammaticToken)
+// so both produce identical telemetry.
+func setProjectScopeTelemetry(ctx context.Context, token keboola.Token) context.Context {
 	ctx = ctxattr.ContextWith(
 		ctx,
 		attribute.String("projectId", cast.ToString(token.Owner.ID)),
 		attribute.String("tokenId", token.ID),
 	)
 
-	prjScp.Logger().Debugf(ctx, "Storage API token is valid.")
-	prjScp.Logger().Debugf(ctx, `Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
-
-	// Set attributes after token verification
-	if reqSpan != nil {
+	if reqSpan, _ := middleware.RequestSpan(ctx); reqSpan != nil {
 		reqSpan.SetAttributes(
 			attribute.String("keboola.project.id", cast.ToString(token.Owner.ID)),
 			attribute.String("keboola.project.name", token.Owner.Name),
@@ -92,7 +101,7 @@ func NewProjectDeps(ctx context.Context, prjScp projectScopeDeps, tokenStr strin
 		)
 	}
 
-	return newProjectScope(ctx, prjScp, *token, opts...)
+	return ctx
 }
 
 func newProjectScope(ctx context.Context, prjScp projectScopeDeps, token keboola.Token, opts ...ProjectScopeOption) (*projectScope, error) {

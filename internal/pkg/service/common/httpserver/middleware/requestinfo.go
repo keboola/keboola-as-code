@@ -12,7 +12,11 @@ import (
 )
 
 const (
-	RequestIDHeader      = "X-Request-Id"
+	RequestIDHeader = "X-Request-Id"
+	// ProjectIDHeader names the target project for a programmatic-token request.
+	// Programmatic tokens (kbc_at_*/kbc_pat_*) are not project-scoped on their own,
+	// so the client must name the project to exchange them against.
+	ProjectIDHeader      = "X-KBC-ProjectId"
 	RequestCtxKey        = ctxKey("request")
 	RequestIDCtxKey      = ctxKey("request-id")
 	RequestURLCtxKey     = ctxKey("request-url")
@@ -52,6 +56,15 @@ func RequestIDFromContext(ctx context.Context) string {
 func RequestValue(ctx context.Context) (*http.Request, bool) {
 	v, ok := ctx.Value(RequestCtxKey).(*http.Request)
 	return v, ok
+}
+
+// ProjectIDFromHeader returns the target project ID from the X-KBC-ProjectId
+// header of the in-flight request, or "" if the request or header is absent.
+func ProjectIDFromHeader(ctx context.Context) string {
+	if req, ok := RequestValue(ctx); ok {
+		return req.Header.Get(ProjectIDHeader)
+	}
+	return ""
 }
 
 func ResponseWriter(ctx context.Context) http.ResponseWriter {
