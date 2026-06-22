@@ -131,7 +131,9 @@ services:
       ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
       ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
       ETCD_DISABLE_STORE_MEMBER_ID: "true"
-      ETCD_MAX_TXN_OPS: "128"
+      # Match the production limit (provisioning/common/etcd/values.yaml) so the dev/compose
+      # environment does not false-fail (or mask) transaction-size issues differently than prod.
+      ETCD_MAX_TXN_OPS: "1024"
 
   k6:
     volumes:
