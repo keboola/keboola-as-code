@@ -1373,7 +1373,7 @@ func HandleTemplatesOrigin(h http.Handler) http.Handler {
 			if acrm := r.Header.Get("Access-Control-Request-Method"); acrm != "" {
 				// We are handling a preflight request
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
-				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-StorageApi-Token")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-StorageApi-Token, X-KBC-ProjectId")
 				w.WriteHeader(204)
 				return
 			}

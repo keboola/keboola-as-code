@@ -2,10 +2,14 @@ package dependencies
 
 import (
 	"context"
+	"net/http"
+	"strconv"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	svcerrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
@@ -25,12 +29,33 @@ func NewProjectRequestScope(ctx context.Context, pubScp PublicRequestScope, toke
 	ctx, span := pubScp.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.NewProjectRequestScope")
 	defer span.End(&err)
 
-	prjScp, err := dependencies.NewProjectDeps(ctx, pubScp, tokenStr)
+	prjScp, err := resolveProjectScope(ctx, pubScp, tokenStr)
 	if err != nil {
 		return nil, err
 	}
 
 	return newProjectRequestScope(pubScp, prjScp), nil
+}
+
+// resolveProjectScope builds the project scope from the request token. A
+// programmatic token (kbc_at_*/kbc_pat_*) is exchanged for the project's Storage
+// token via Connection's auth-bridge (project named by the X-KBC-ProjectId
+// header); a legacy Storage token takes the normal verify path. The master-token
+// requirement is preserved either way.
+func resolveProjectScope(ctx context.Context, pubScp PublicRequestScope, tokenStr string) (dependencies.ProjectScope, error) {
+	if !dependencies.IsProgrammaticToken(tokenStr) {
+		return dependencies.NewProjectDeps(ctx, pubScp, tokenStr)
+	}
+
+	projectID, err := strconv.Atoi(middleware.ProjectIDFromHeader(ctx))
+	if err != nil || projectID <= 0 {
+		return nil, svcerrors.WrapWithStatusCode(
+			errors.Errorf("programmatic token request missing valid %s header", middleware.ProjectIDHeader),
+			http.StatusBadRequest,
+		)
+	}
+
+	return dependencies.ExchangeProgrammaticToken(ctx, pubScp, pubScp.APIConfig().API.KubernetesTokenPath, tokenStr, projectID)
 }
 
 func newProjectRequestScope(pubScp PublicRequestScope, prjScp dependencies.ProjectScope) *projectRequestScope {

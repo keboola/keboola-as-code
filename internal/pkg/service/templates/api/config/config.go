@@ -31,6 +31,11 @@ type API struct {
 	Listen    string          `configKey:"listen" configUsage:"Listen address of the configuration HTTP API." validate:"required,hostname_port"`
 	PublicURL *url.URL        `configKey:"publicUrl" configUsage:"Public URL of the configuration HTTP API for link generation." validate:"required"`
 	Task      task.NodeConfig `configKey:"task" configUsage:"Background tasks configuration." validate:"required"`
+	// KubernetesTokenPath points to a projected Kubernetes ServiceAccount token whose
+	// mapping carries the internal:auth-bridge:resolve-storage-token scope. When set,
+	// programmatic tokens (kbc_at_*/kbc_pat_*) are exchanged for the project's Storage
+	// token via Connection's auth-bridge; empty disables programmatic-token support.
+	KubernetesTokenPath string `configKey:"kubernetesTokenPath" configUsage:"Path to a projected Kubernetes ServiceAccount token enabling programmatic-token (kbc_at_*/kbc_pat_*) exchange; empty disables it."`
 }
 
 func New() Config {
