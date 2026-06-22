@@ -37,7 +37,25 @@ func (r *Repository) Undelete(k key.SourceKey, now time.Time, by definition.By) 
 
 func (r *Repository) undeleteSourcesOnBranchUndelete() {
 	r.plugins.Collection().OnBranchUndelete(func(ctx context.Context, now time.Time, by definition.By, old, updated *definition.Branch) error {
-		op.AtomicOpCtxFrom(ctx).AddFrom(r.undeleteAllFrom(updated.BranchKey, now, by, false))
+		// Decoupled cascade, mirroring deleteSourcesOnBranchDelete: undelete each source in its own
+		// transaction to keep the per-transaction operation count within the etcd limit for large
+		// branches. undeleteAllFrom(sourceKey, false) skips sources that were deleted directly (not as
+		// part of this branch's cascade), preserving the original undelete semantics.
+		//
+		// Like the delete cascade, these per-source undeletes commit before the branch undelete
+		// transaction. If the branch undelete collides/retries/fails, the branch stays DELETED with a
+		// subset of its sources undeleted: an incomplete undelete that the next undelete attempt
+		// completes (the branch is still undeletable). The undelete is idempotent (sources already
+		// active are skipped via the directly flag), so the state is observable but not corrupt.
+		var sources []definition.Source
+		if err := r.ListDeleted(updated.BranchKey).WithAllTo(&sources).Do(ctx).Err(); err != nil {
+			return err
+		}
+		for i := range sources {
+			if err := r.undeleteAllFrom(sources[i].SourceKey, now, by, false).Do(ctx).Err(); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 }
