@@ -98,6 +98,9 @@ type APIScope interface {
 	dependencies.TaskScope
 	APIPublicURL() *url.URL
 	HTTPSourcePublicURL() *url.URL
+	// KubernetesTokenPath is the projected ServiceAccount token path enabling
+	// programmatic-token exchange; empty disables it (see config.API).
+	KubernetesTokenPath() string
 }
 
 type PublicRequestScope interface {
