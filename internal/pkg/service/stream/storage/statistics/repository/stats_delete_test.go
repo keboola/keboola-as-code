@@ -531,7 +531,7 @@ func TestRepository_RollupStatisticsOnFileDelete_NearTxnLimit(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Advance(time.Hour)
-		require.NoError(t, statsRepo.ResetAllSinksStats([]key.SinkKey{sinkKey}).Do(ctx).Err())
+		require.NoError(t, statsRepo.ResetAllSinksStats(ctx, []key.SinkKey{sinkKey}))
 
 		stats, err := statsRepo.SinkStats(ctx, sinkKey)
 		require.NoError(t, err)
@@ -545,8 +545,9 @@ func TestRepository_RollupStatisticsOnFileDelete_NearTxnLimit(t *testing.T) {
 	}
 }
 
-// TestRepository_RollupStatisticsOnFileDelete_LevelTarget_TxnLimit tests statistics reset above the transaction limit.
-func TestRepository_RollupStatisticsOnFileDelete_AboveTxnLimit(t *testing.T) {
+// TestRepository_ResetAllSinksStats_BoundedTxnSize verifies that resetting statistics for a sink with
+// many slices stays within the etcd per-transaction operation limit (regression: it previously exceeded it).
+func TestRepository_ResetAllSinksStats_BoundedTxnSize(t *testing.T) {
 	t.Parallel()
 
 	// How many files and slices to create
@@ -670,7 +671,8 @@ func TestRepository_RollupStatisticsOnFileDelete_AboveTxnLimit(t *testing.T) {
 	// -----------------------------------------------------------------------------------------------------------------
 	{
 		clk.Advance(time.Hour)
-		err := statsRepo.ResetAllSinksStats([]key.SinkKey{sinkKey}).Do(ctx).Err()
-		require.Error(t, err, "Received unexpected error:\netcdserver: too many operations in txn request")
+		// Previously this exceeded the etcd per-transaction operation limit. The reset is now bounded
+		// (SkipPrefixKeysCheck + per-sink transactions), so it must succeed within the limit.
+		require.NoError(t, statsRepo.ResetAllSinksStats(ctx, []key.SinkKey{sinkKey}))
 	}
 }
