@@ -676,3 +676,132 @@ func TestRepository_ResetAllSinksStats_BoundedTxnSize(t *testing.T) {
 		require.NoError(t, statsRepo.ResetAllSinksStats(ctx, []key.SinkKey{sinkKey}))
 	}
 }
+
+// TestRepository_RollupStatisticsOnFileDelete_ManySlices_BoundedTxnSize verifies that deleting a file
+// whose slices each have target-level statistics stays within the etcd per-transaction limit. The
+// statistics rollup reads all per-slice stats under the file (a prefix GetAll); without
+// SkipPrefixKeysCheck on the file delete this emits one IF condition per slice, so the file delete
+// transaction would exceed the limit for a file with many slices.
+func TestRepository_RollupStatisticsOnFileDelete_ManySlices_BoundedTxnSize(t *testing.T) {
+	t.Parallel()
+
+	// Number of slices in one file. Each slice gets a target-level statistics record, so the rollup on
+	// file delete reads sliceCount keys. Without SkipPrefixKeysCheck that would add one IF condition per
+	// slice to the file delete transaction; the test asserts the op count does not scale with sliceCount.
+	// (The count is kept modest because moving this many slices to the target level is itself a separate,
+	// not-yet-bounded batch - see the deferred file rotation / slice close path.)
+	const sliceCount = 10
+
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+
+	clk := clockwork.NewFakeClockAt(utctime.MustParse("2000-01-01T01:00:00.000Z").Time())
+	by := test.ByUser()
+
+	// Fixtures
+	projectID := keboola.ProjectID(123)
+	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 456}
+	sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: "my-source"}
+	sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: "my-sink"}
+
+	d, mocked := dependencies.NewMockedStorageScope(t, ctx, commonDeps.WithClock(clk))
+	client := mocked.TestEtcdClient()
+	defRepo := d.DefinitionRepository()
+	storageRepo := d.StorageRepository()
+	fileRepo := storageRepo.File()
+	sliceRepo := storageRepo.Slice()
+	volumeRepo := storageRepo.Volume()
+	statsRepo := d.StatisticsRepository()
+
+	// Register active volume
+	{
+		session, err := concurrency.NewSession(client)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, session.Close()) }()
+		test.RegisterWriterVolumes(t, ctx, volumeRepo, session, 1)
+	}
+
+	// Create branch, source, sink (opens the file with one slice)
+	var fileKey model.FileKey
+	{
+		branch := test.NewBranch(branchKey)
+		require.NoError(t, defRepo.Branch().Create(&branch, clk.Now(), by).Do(ctx).Err())
+		source := test.NewSource(sourceKey)
+		require.NoError(t, defRepo.Source().Create(&source, clk.Now(), by, "Create source").Do(ctx).Err())
+		sink := dummy.NewSinkWithLocalStorage(sinkKey)
+		require.NoError(t, defRepo.Sink().Create(&sink, clk.Now(), by, "Create sink").Do(ctx).Err())
+		files, err := fileRepo.ListIn(sinkKey).Do(ctx).All()
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+		fileKey = files[0].FileKey
+	}
+
+	// Grow the file up to sliceCount slices
+	var sliceKeys []model.SliceKey
+	{
+		slices, err := sliceRepo.ListIn(fileKey).Do(ctx).All()
+		require.NoError(t, err)
+		require.Len(t, slices, 1)
+		current := slices[0].SliceKey
+		for range sliceCount - 1 {
+			clk.Advance(time.Hour)
+			require.NoError(t, sliceRepo.Rotate(current, clk.Now()).Do(ctx).Err())
+			latest, err := sliceRepo.ListIn(fileKey).Do(ctx).All()
+			require.NoError(t, err)
+			current = latest[len(latest)-1].SliceKey
+		}
+		all, err := sliceRepo.ListIn(fileKey).Do(ctx).All()
+		require.NoError(t, err)
+		require.Len(t, all, sliceCount)
+		for _, s := range all {
+			sliceKeys = append(sliceKeys, s.SliceKey)
+		}
+	}
+
+	// Write statistics for each slice
+	{
+		stats := make([]statistics.PerSlice, 0, len(sliceKeys))
+		for _, sliceKey := range sliceKeys {
+			stats = append(stats, statistics.PerSlice{
+				SliceKey:         sliceKey,
+				FirstRecordAt:    utctime.MustParse("2000-01-01T01:00:00.000Z"),
+				LastRecordAt:     utctime.MustParse("2000-01-01T02:00:00.000Z"),
+				RecordsCount:     1,
+				UncompressedSize: 1,
+				CompressedSize:   1,
+			})
+		}
+		require.NoError(t, statsRepo.Put(ctx, "test-node", stats))
+	}
+
+	// Move all statistics to the target level
+	{
+		require.NoError(t, defRepo.Sink().Disable(sinkKey, clk.Now(), by, "some reason").Do(ctx).Err())
+		clk.Advance(time.Hour)
+		for _, sliceKey := range sliceKeys {
+			require.NoError(t, sliceRepo.SwitchToUploading(sliceKey, clk.Now(), false).Do(ctx).Err())
+		}
+		clk.Advance(time.Hour)
+		for _, sliceKey := range sliceKeys {
+			require.NoError(t, sliceRepo.SwitchToUploaded(sliceKey, clk.Now()).Do(ctx).Err())
+		}
+		clk.Advance(time.Hour)
+		require.NoError(t, fileRepo.SwitchToImporting(fileKey, clk.Now(), false).Do(ctx).Err())
+		clk.Advance(time.Hour)
+		require.NoError(t, fileRepo.SwitchToImported(fileKey, clk.Now()).Do(ctx).Err())
+	}
+
+	// Delete the file - the rollup reads all target-level per-slice stats; the op count must stay bounded
+	clk.Advance(time.Hour)
+	result := fileRepo.Delete(fileKey, clk.Now()).Do(ctx)
+	require.NoError(t, result.Err())
+
+	// The file delete transaction op count must not scale with the number of slices/stats under the file.
+	// Without SkipPrefixKeysCheck it would be ~sliceCount (one IF condition per target stat key).
+	require.Less(t, result.MaxOps(), sliceCount, "file delete op count must not scale with slice count")
+
+	// The file is gone
+	files, err := fileRepo.ListIn(sinkKey).Do(ctx).All()
+	require.NoError(t, err)
+	require.Empty(t, files)
+}
