@@ -11,7 +11,7 @@ import (
 func TestBearerToken_extract(t *testing.T) {
 	t.Parallel()
 	assert.Equal(t, "kbc_at_x", bearerToken("Bearer kbc_at_x"))
-	assert.Equal(t, "kbc_at_x", bearerToken("bearer kbc_at_x")) // case-insensitive scheme
+	assert.Equal(t, "kbc_at_x", bearerToken("bearer kbc_at_x"))   // case-insensitive scheme
 	assert.Equal(t, "kbc_at_x", bearerToken("Bearer  kbc_at_x ")) // trims surrounding spaces
 	assert.Empty(t, bearerToken(""))
 	assert.Empty(t, bearerToken("Bearer"))
@@ -27,7 +27,7 @@ func TestBearerToken_promotesToHeader(t *testing.T) {
 		h := BearerToken(tokenHeader)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 			seen = r.Header.Get(tokenHeader)
 		}))
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 		setup(req)
 		h.ServeHTTP(httptest.NewRecorder(), req)
 		return seen
