@@ -115,6 +115,13 @@ func (r *Repository) save(ctx context.Context, now time.Time, old, updated *mode
 func (r *Repository) update(k model.FileKey, now time.Time, updateFn func(model.File) (model.File, error)) *op.AtomicOp[model.File] {
 	var old, updated model.File
 	return op.Atomic(r.client, &updated).
+		// SkipPrefixKeysCheck: on file delete the statistics rollup plugin reads all per-slice stats
+		// under the file (a prefix GetAll). With the per-key check enabled, one IF condition would be
+		// generated per slice, growing the write transaction op count with the slice count and risking
+		// the etcd per-transaction limit. The file is locked during the update, so the per-key guards
+		// (which only detect concurrent deletion of an individual key) are unnecessary; modifications
+		// to the prefix are still detected.
+		SkipPrefixKeysCheck().
 		// Read entity for modification
 		Read(func(ctx context.Context) op.Op {
 			return r.Get(k).WithResultTo(&old)

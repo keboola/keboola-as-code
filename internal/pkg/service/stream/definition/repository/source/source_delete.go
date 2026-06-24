@@ -26,7 +26,28 @@ func (r *Repository) SoftDelete(k key.SourceKey, now time.Time, by definition.By
 
 func (r *Repository) deleteSourcesOnBranchDelete() {
 	r.plugins.Collection().OnBranchDelete(func(ctx context.Context, now time.Time, by definition.By, original, deleted *definition.Branch) error {
-		op.AtomicOpCtxFrom(ctx).AddFrom(r.softDeleteAllFrom(deleted.BranchKey, now, by, false))
+		// Decoupled cascade: delete each source in its own transaction, independent of the branch
+		// delete transaction. A branch may have up to MaxSourcesPerBranch sources, each cascading to
+		// up to MaxSinksPerSource sinks; keeping the whole subtree in one atomic transaction exceeds
+		// the etcd per-transaction operation limit. Each per-source delete (source + its sinks) stays
+		// within the limit.
+		//
+		// These per-source deletes commit BEFORE the branch delete transaction (this callback runs
+		// during its generation) - deliberately "children first". If the branch delete then collides,
+		// is retried, or fails, the branch stays ACTIVE with a subset of its sources deleted: an
+		// incomplete delete that the next delete attempt completes (the branch is still deletable, and
+		// soft-delete is monotonic and idempotent, so only the remaining active sources are deleted).
+		// It never leaves active sources orphaned under an already-deleted branch, which the reverse
+		// ordering (cascade after commit) would. The incomplete state is observable but not corrupt.
+		var sources []definition.Source
+		if err := r.List(deleted.BranchKey).WithAllTo(&sources).Do(ctx).Err(); err != nil {
+			return err
+		}
+		for i := range sources {
+			if err := r.softDeleteAllFrom(sources[i].SourceKey, now, by, false).Do(ctx).Err(); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 }

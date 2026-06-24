@@ -1,6 +1,7 @@
 package sink_test
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -161,6 +162,62 @@ func TestSinkRepository_DeleteSinksOnSourceDelete_DeleteSource(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, sink3.IsDeleted())
 		assert.False(t, sink3.IsDeletedDirectly())
+	}
+}
+
+// TestSinkRepository_DeleteBranch_BoundedTxnSize verifies that deleting a branch with many sources and
+// sinks stays within the etcd per-transaction operation limit. The cascade is decoupled so each source
+// (with its sinks) is deleted in its own transaction; previously the whole subtree was one transaction,
+// which exceeded the limit. Success against the test etcd proves each per-source transaction is bounded.
+func TestSinkRepository_DeleteBranch_BoundedTxnSize(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	now := utctime.MustParse("2000-01-01T01:00:00.000Z").Time()
+	by := test.ByUser()
+
+	// The total sink count across all sources (sourcesCount * sinksPerSource * 2 ops) is large enough
+	// that deleting the whole subtree in one transaction would exceed the etcd per-transaction limit,
+	// while each per-source cascade stays comfortably under it.
+	const sourcesCount = 4
+	const sinksPerSource = 25
+
+	d, _ := dependencies.NewMockedServiceScope(t, ctx)
+	defRepo := d.DefinitionRepository()
+	branchRepo := defRepo.Branch()
+	sourceRepo := defRepo.Source()
+	sinkRepo := defRepo.Sink()
+
+	// Fixtures
+	projectID := keboola.ProjectID(123)
+	branchKey := key.BranchKey{ProjectID: projectID, BranchID: 567}
+
+	// Create branch, sources and sinks
+	branch := test.NewBranch(branchKey)
+	require.NoError(t, branchRepo.Create(&branch, now, by).Do(ctx).Err())
+	sinkKeys := make([]key.SinkKey, 0, sourcesCount*sinksPerSource)
+	for s := range sourcesCount {
+		sourceKey := key.SourceKey{BranchKey: branchKey, SourceID: key.SourceID(fmt.Sprintf("my-source-%d", s))}
+		source := test.NewSource(sourceKey)
+		require.NoError(t, sourceRepo.Create(&source, now, by, "Create source").Do(ctx).Err())
+		for k := range sinksPerSource {
+			sinkKey := key.SinkKey{SourceKey: sourceKey, SinkID: key.SinkID(fmt.Sprintf("my-sink-%d", k))}
+			sink := dummy.NewSink(sinkKey)
+			require.NoError(t, sinkRepo.Create(&sink, now, by, "Create sink").Do(ctx).Err())
+			sinkKeys = append(sinkKeys, sinkKey)
+		}
+	}
+
+	// Delete the branch - must succeed despite the large subtree
+	now = now.Add(time.Hour)
+	require.NoError(t, branchRepo.SoftDelete(branchKey, now, by).Do(ctx).Err())
+
+	// All sinks must be soft-deleted as part of the cascade
+	for _, sinkKey := range sinkKeys {
+		deleted, err := sinkRepo.GetDeleted(sinkKey).Do(ctx).ResultOrErr()
+		require.NoError(t, err)
+		assert.True(t, deleted.IsDeleted())
+		assert.False(t, deleted.IsDeletedDirectly())
 	}
 }
 

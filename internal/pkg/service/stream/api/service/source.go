@@ -511,10 +511,12 @@ func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.Sour
 		sinkKeys = append(sinkKeys, sink.SinkKey)
 	}
 
-	result := d.StatisticsRepository().ResetAllSinksStats(sinkKeys).Do(ctx)
-	s.logger.Infof(ctx, `Statistics clear for source "%s" used %d operations`, d.SourceKey().String(), result.MaxOps())
+	if err := d.StatisticsRepository().ResetAllSinksStats(ctx, sinkKeys); err != nil {
+		return err
+	}
 
-	return result.Err()
+	s.logger.Infof(ctx, `Statistics clear for source "%s" reset %d sinks`, d.SourceKey().String(), len(sinkKeys))
+	return nil
 }
 
 func (s *service) DisableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DisableSourcePayload) (*api.Task, error) {
