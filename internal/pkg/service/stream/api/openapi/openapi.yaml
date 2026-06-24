@@ -1885,6 +1885,7 @@ definitions:
                     columns:
                         - type: uuid
                           name: id-col
+                          primaryKey: true
                         - type: datetime
                           name: datetime-col
                         - type: ip
@@ -2064,6 +2065,7 @@ definitions:
                             columns:
                                 - type: uuid
                                   name: id-col
+                                  primaryKey: true
                                 - type: datetime
                                   name: datetime-col
                                 - type: ip
@@ -3010,6 +3012,7 @@ definitions:
                     columns:
                         - type: uuid
                           name: id-col
+                          primaryKey: true
                         - type: datetime
                           name: datetime-col
                         - type: ip
@@ -3346,6 +3349,7 @@ definitions:
                             columns:
                                 - type: uuid
                                   name: id-col
+                                  primaryKey: true
                                 - type: datetime
                                   name: datetime-col
                                 - type: ip
@@ -3431,6 +3435,7 @@ definitions:
                         columns:
                             - type: uuid
                               name: id-col
+                              primaryKey: true
                             - type: datetime
                               name: datetime-col
                             - type: ip
@@ -3776,6 +3781,7 @@ definitions:
                     columns:
                         - type: uuid
                           name: id-col
+                          primaryKey: true
                         - type: datetime
                           name: datetime-col
                         - type: ip
@@ -3884,6 +3890,7 @@ definitions:
                     columns:
                         - type: uuid
                           name: id-col
+                          primaryKey: true
                         - type: datetime
                           name: datetime-col
                         - type: ip
@@ -3988,6 +3995,10 @@ definitions:
                 type: string
                 description: Path to the value.
                 example: foo.bar[0]
+            primaryKey:
+                type: boolean
+                description: Set to true if the column is part of the table's primary key.
+                example: true
             rawString:
                 type: boolean
                 description: Set to true if path value should use raw string instead of json-encoded value.
@@ -4012,6 +4023,7 @@ definitions:
             name: id-col
             path: foo.bar[0]
             defaultValue: "1"
+            primaryKey: true
             rawString: true
             template:
                 language: jsonnet
@@ -4051,6 +4063,7 @@ definitions:
                 example:
                     - type: uuid
                       name: id-col
+                      primaryKey: true
                     - type: datetime
                       name: datetime-col
                     - type: ip
@@ -4076,6 +4089,7 @@ definitions:
             columns:
                 - type: uuid
                   name: id-col
+                  primaryKey: true
                 - type: datetime
                   name: datetime-col
                 - type: ip
@@ -4118,6 +4132,7 @@ definitions:
                 columns:
                     - type: uuid
                       name: id-col
+                      primaryKey: true
                     - type: datetime
                       name: datetime-col
                     - type: ip
@@ -4162,6 +4177,7 @@ definitions:
                 columns:
                     - type: uuid
                       name: id-col
+                      primaryKey: true
                     - type: datetime
                       name: datetime-col
                     - type: ip
@@ -4206,6 +4222,7 @@ definitions:
                 columns:
                     - type: uuid
                       name: id-col
+                      primaryKey: true
                     - type: datetime
                       name: datetime-col
                     - type: ip

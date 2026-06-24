@@ -813,6 +813,8 @@ type TableColumn struct {
 	Path *string
 	// Fallback value if path doesn't exist.
 	DefaultValue *string
+	// Set to true if the column is part of the table's primary key.
+	PrimaryKey *bool
 	// Set to true if path value should use raw string instead of json-encoded
 	// value.
 	RawString *bool
