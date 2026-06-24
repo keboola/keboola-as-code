@@ -96,6 +96,8 @@ api:
         cleanupEnabled: true
         # How often will old tasks be deleted. Validation rules: required
         cleanupInterval: 1h0m0s
+    # Path to a projected Kubernetes ServiceAccount token enabling programmatic-token (kbc_at_*/kbc_pat_*) exchange; empty disables it.
+    kubernetesTokenPath: ""
 distribution:
     # The maximum time to wait for creating a new session. Validation rules: required,minDuration=1s,maxDuration=1m
     grantTimeout: 5s

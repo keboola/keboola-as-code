@@ -114,7 +114,7 @@ var _ = Service("stream", func() {
 	Description("A service for continuously importing data to the Keboola platform.")
 	// CORS
 	cors.Origin("*", func() {
-		cors.Headers("Content-Type", "X-StorageApi-Token")
+		cors.Headers("Content-Type", "X-StorageApi-Token", "X-KBC-ProjectId")
 		cors.Methods("GET", "POST", "PATCH", "DELETE")
 	})
 

@@ -20,6 +20,7 @@ type apiScope struct {
 	logger              log.Logger
 	apiPublicURL        *url.URL
 	httpSourcePublicURL *url.URL
+	kubernetesTokenPath string
 }
 
 func NewAPIScope(serviceScp ServiceScope, distScp dependencies.DistributionScope, taskScp dependencies.TaskScope, cfg config.Config) (v APIScope, err error) {
@@ -61,6 +62,8 @@ func newAPIScope(svcScope ServiceScope, distScp dependencies.DistributionScope, 
 	d.apiPublicURL = cfg.API.PublicURL
 
 	d.httpSourcePublicURL = cfg.Source.HTTP.PublicURL
+
+	d.kubernetesTokenPath = cfg.API.KubernetesTokenPath
 	return d
 }
 
@@ -76,4 +79,8 @@ func (v *apiScope) APIPublicURL() *url.URL {
 func (v *apiScope) HTTPSourcePublicURL() *url.URL {
 	out, _ := url.Parse(v.httpSourcePublicURL.String()) // clone
 	return out
+}
+
+func (v *apiScope) KubernetesTokenPath() string {
+	return v.kubernetesTokenPath
 }

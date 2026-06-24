@@ -46,6 +46,9 @@ func Start(ctx context.Context, d dependencies.APIScope, cfg config.Config) erro
 			}),
 		},
 		BeforeLoggerMiddlewares: []middleware.Middleware{
+			// Accept a programmatic token sent as `Authorization: Bearer <token>` by
+			// promoting it into the storage-token header before anything reads it.
+			middleware.BearerToken(StorageTokenHeader),
 			// Inject PublicRequestScope early so ProjectScope middleware can use it.
 			func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

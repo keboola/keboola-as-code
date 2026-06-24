@@ -88,7 +88,7 @@ var _ = Service("templates", func() {
 	Description("Service for applying templates to Keboola projects.")
 	// CORS
 	cors.Origin("*", func() {
-		cors.Headers("Content-Type", "X-StorageApi-Token")
+		cors.Headers("Content-Type", "X-StorageApi-Token", "X-KBC-ProjectId")
 		cors.Methods("GET", "POST", "PUT", "DELETE")
 	})
 
