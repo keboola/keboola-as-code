@@ -21,7 +21,6 @@ const (
 type AppConfigResult struct {
 	AppID     api.AppID
 	AppConfig api.AppConfig
-	Modified  bool
 	Err       error
 }
 
@@ -39,11 +38,10 @@ func Middleware(configLoader Loader, host string) middleware.Middleware {
 			if ok {
 				ctx := req.Context()
 
-				appConfig, modified, err := configLoader.GetConfig(ctx, appID)
+				appConfig, err := configLoader.GetConfig(ctx, appID)
 				result := AppConfigResult{
 					AppID:     appID,
 					AppConfig: appConfig,
-					Modified:  modified,
 					Err:       err,
 				}
 
