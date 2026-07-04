@@ -190,7 +190,7 @@ require (
 	golang.org/x/net v0.53.0
 	golang.org/x/sys v0.43.0
 	golang.org/x/term v0.42.0
-	golang.org/x/text v0.36.0
+	golang.org/x/text v0.37.0
 	golang.org/x/time v0.15.0 // indirect
 	golang.org/x/tools v0.44.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
@@ -388,7 +388,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.39.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.9.0
 	gocloud.dev v0.45.0 // indirect
-	golang.org/x/image v0.39.0 // indirect
+	golang.org/x/image v0.41.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/perf v0.0.0-20260409210113-8e83ce0f7b1c // indirect
 	google.golang.org/api v0.275.0 // indirect
