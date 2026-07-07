@@ -29,7 +29,6 @@ type attempt struct {
 	delay             time.Duration
 	responses         []*http.Response
 	expectedErrorCode int
-	expectedModified  bool
 }
 
 func TestLoader_LoadConfig(t *testing.T) {
@@ -80,7 +79,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 200, appPayload, `"etag-value"`, "max-age=60"),
 					},
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  true,
 				},
 			},
 		},
@@ -92,11 +90,9 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 200, appPayload, `"etag-value"`, "max-age=60"),
 					},
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  true,
 				},
 				{
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  false,
 				},
 			},
 		},
@@ -108,7 +104,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 200, appPayload, `"etag-value"`, "max-age=60"),
 					},
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  true,
 				},
 				{
 					delay: 10 * time.Minute,
@@ -117,11 +112,9 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
 					},
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  false,
 				},
 				{
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  false,
 				},
 				{
 					delay: 31 * time.Second,
@@ -129,7 +122,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
 					},
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  false,
 				},
 			},
 		},
@@ -141,7 +133,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 200, appPayload, `"etag-value"`, "max-age=60"),
 					},
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  true,
 				},
 				{
 					delay: 10 * time.Minute,
@@ -149,11 +140,9 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 200, map[string]any{"upstreamAppUrl": "http://new-app.local"}, `"etag-new-value"`, "max-age=60"),
 					},
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  true,
 				},
 				{
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  false,
 				},
 			},
 		},
@@ -165,7 +154,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 200, appPayload, `"etag-value"`, "max-age=60"),
 					},
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  true,
 				},
 				{
 					delay: 10 * time.Minute,
@@ -178,7 +166,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 500, map[string]any{}, "", ""),
 					},
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  false,
 				},
 				{
 					delay: time.Hour,
@@ -191,7 +178,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 500, map[string]any{}, "", ""),
 					},
 					expectedErrorCode: 500,
-					expectedModified:  false,
 				},
 			},
 		},
@@ -203,12 +189,10 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 200, appPayload, `"etag-value"`, "max-age=7200"),
 					},
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  true,
 				},
 				{
 					delay:             59 * time.Minute,
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  false,
 				},
 				{
 					delay: 2 * time.Minute,
@@ -216,7 +200,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 						newResponse(t, 304, map[string]any{}, `"etag-value"`, "max-age=30"),
 					},
 					expectedErrorCode: 0, // no error expected
-					expectedModified:  false,
 				},
 			},
 		},
@@ -244,7 +227,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 					httpmock.ResponderFromMultipleResponses(attempt.responses, t.Log),
 				)
 
-				cfg, modified, err := loader.GetConfig(ctx, appID)
+				cfg, err := loader.GetConfig(ctx, appID)
 				if attempt.expectedErrorCode != 0 {
 					require.Error(t, err)
 					var apiErr *api.Error
@@ -255,7 +238,6 @@ func TestLoader_LoadConfig(t *testing.T) {
 					require.NoError(t, err)
 					assert.NotEmpty(t, cfg)
 				}
-				assert.Equal(t, attempt.expectedModified, modified)
 				assert.Equal(t, len(attempt.responses), transport.GetTotalCallCount())
 			}
 		})
@@ -293,7 +275,7 @@ func TestLoader_LoadConfig_Race(t *testing.T) {
 	// Load configuration 10x in parallel
 	for range 10 {
 		wg.Go(func() {
-			cfg, _, err := loader.GetConfig(ctx, appID)
+			cfg, err := loader.GetConfig(ctx, appID)
 			require.NoError(t, err)
 			assert.Equal(t, "http://app.local", cfg.UpstreamAppURL)
 			counter.Add(1)
@@ -305,6 +287,49 @@ func TestLoader_LoadConfig_Race(t *testing.T) {
 
 	// Check total requests count
 	assert.Equal(t, int64(10), counter.Load())
+}
+
+// TestLoader_GetConfig_RefreshSurvivesRequestCancellation verifies that the config
+// refresh is not aborted when the originating request's context is canceled (e.g. the
+// browser disconnects during an OAuth redirect). The refresh must run on a context
+// detached from the request so the shared cache is still updated with the new config.
+func TestLoader_GetConfig_RefreshSurvivesRequestCancellation(t *testing.T) {
+	t.Parallel()
+
+	appID := api.AppID("test")
+	appPayload := map[string]any{
+		"appId":          appID.String(),
+		"appName":        "my-test",
+		"projectId":      "123",
+		"upstreamAppUrl": "http://app.local",
+	}
+
+	clk := clockwork.NewFakeClock()
+	d, mock := dependencies.NewMockedServiceScope(t, t.Context(), config.New(), commonDeps.WithClock(clk))
+
+	transport := mock.MockedHTTPTransport()
+	transport.RegisterResponder(
+		http.MethodGet,
+		fmt.Sprintf("%s/apps/%s/proxy-config", mock.TestConfig().SandboxesAPI.URL, appID),
+		// Fail if the request context is canceled; succeed otherwise. This detects
+		// whether the refresh runs on the (canceled) request context or a detached one.
+		func(req *http.Request) (*http.Response, error) {
+			if err := req.Context().Err(); err != nil {
+				return nil, err
+			}
+			return newResponse(t, http.StatusOK, appPayload, `"etag-value"`, "max-age=60"), nil
+		},
+	)
+	loader := d.AppConfigLoader()
+
+	// Simulate a client that disconnected before the refresh completes.
+	reqCtx, cancel := context.WithCancelCause(t.Context())
+	cancel(context.Canceled)
+
+	cfg, err := loader.GetConfig(reqCtx, appID)
+	require.NoError(t, err)
+	assert.Equal(t, "http://app.local", cfg.UpstreamAppURL)
+	assert.Equal(t, 1, transport.GetTotalCallCount())
 }
 
 func newResponse(t *testing.T, code int, body map[string]any, eTag string, cacheControl string) *http.Response {

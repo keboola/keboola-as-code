@@ -18,7 +18,7 @@ import (
 
 type testLoader struct{}
 
-func (l *testLoader) GetConfig(ctx context.Context, appID api.AppID) (out api.AppConfig, modified bool, err error) {
+func (l *testLoader) GetConfig(ctx context.Context, appID api.AppID) (out api.AppConfig, err error) {
 	switch appID {
 	case "1":
 		return api.AppConfig{
@@ -27,7 +27,7 @@ func (l *testLoader) GetConfig(ctx context.Context, appID api.AppID) (out api.Ap
 			AppSlug:        new("app-1"),
 			ProjectID:      "1",
 			UpstreamAppURL: "https://internal.app-1.example.com",
-		}, false, nil
+		}, nil
 	case "changed":
 		return api.AppConfig{
 			ID:             "2",
@@ -35,9 +35,9 @@ func (l *testLoader) GetConfig(ctx context.Context, appID api.AppID) (out api.Ap
 			AppSlug:        new("app-2"),
 			ProjectID:      "2",
 			UpstreamAppURL: "https://internal.app-2.example.com",
-		}, true, nil
+		}, nil
 	default:
-		return api.AppConfig{}, false, errors.New("error")
+		return api.AppConfig{}, errors.New("error")
 	}
 }
 

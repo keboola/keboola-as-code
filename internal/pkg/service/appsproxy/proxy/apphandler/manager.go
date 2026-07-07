@@ -43,6 +43,15 @@ type appHandlerWrapper struct {
 	handler     http.Handler
 	cancel      context.CancelCauseFunc
 	handlerHash string // hash of UpstreamTarget + E2BAccessToken; handler is recreated when it changes
+	configETag  string // ETag of the app config the handler was built from; handler is recreated when it changes
+}
+
+// needsRebuild reports whether the cached handler must be recreated.
+// The handler is keyed on config identity (the config ETag) and the upstream
+// hash, so any config change is picked up on the next request without relying
+// on a one-shot "modified" signal from the config loader.
+func (w *appHandlerWrapper) needsRebuild(configETag, currentHash string) bool {
+	return w.handler == nil || w.configETag != configETag || w.handlerHash != currentHash
 }
 
 type dependencies interface {
@@ -94,15 +103,17 @@ func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResu
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.AppID}, result.Err)
 	}
 
-	// Create a new handler when config changed, upstream URL changed, or E2B token changed.
+	// Create a new handler when the config changed (ETag), upstream URL changed, or E2B token changed.
 	// Only a hash is stored so raw secrets don't linger in the wrapper.
 	currentHash := handlerHash(m.upstreamManager.AppInfo(ctx, result.AppID))
-	if wrapper.handler == nil || result.Modified || wrapper.handlerHash != currentHash {
+	configETag := result.AppConfig.ETag()
+	if wrapper.needsRebuild(configETag, currentHash) {
 		if wrapper.cancel != nil {
 			wrapper.cancel(errors.New("configuration changed"))
 		}
 		wrapper.handler, wrapper.cancel = m.newHandler(ctx, result.AppConfig)
 		wrapper.handlerHash = currentHash
+		wrapper.configETag = configETag
 	}
 
 	return wrapper.handler
