@@ -11,11 +11,6 @@
 - See [user documentation](https://developers.keboola.com/cli/).
 - See **[architecture overview](./docs/cli/overview.md)** for more details.
 
-#### Templates Service
-
-- Provides CLI commands and API for creating templates from existing [Keboola](https://www.keboola.com/product/overview) project and their usage in other projects.
-- See **[architecture overview](./docs/templates/overview.md)** for more details.
-
 ### Stream Service
 
 - A Proxy API to stream of collected data and their import to Storage tables in batches.
