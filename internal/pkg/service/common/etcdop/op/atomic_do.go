@@ -108,34 +108,34 @@ func (v *AtomicOp[R]) writeIfConditions(tracker *TrackerKV, readRev int64) (cmps
 			// We can verify that an individual key was deleted, its MOD == 0.
 			cmps = append(cmps,
 				// The key/prefix must exist, version must be NOT equal to 0.
-				etcd.Cmp{
+				etcd.FromCompare(&etcdserverpb.Compare{
 					Target:      etcdserverpb.Compare_MOD,
 					Result:      etcdserverpb.Compare_GREATER,
 					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
 					Key:         op.Key,
 					RangeEnd:    op.RangeEnd, // may be empty
-				},
+				}),
 				// The key/prefix cannot be modified between GET and UPDATE phase.
 				// Mod revision of the item must be less or equal to header.Revision.
-				etcd.Cmp{
+				etcd.FromCompare(&etcdserverpb.Compare{
 					Target:      etcdserverpb.Compare_MOD,
 					Result:      etcdserverpb.Compare_LESS, // see +1 bellow, so less or equal to header.Revision
 					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: readRev + 1},
 					Key:         op.Key,
 					RangeEnd:    op.RangeEnd, // may be empty
-				},
+				}),
 			)
 
 			// See SkipPrefixKeysCheck method documentation, by default, the feature is enabled.
 			if v.checkPrefixKey {
 				if op.RangeEnd != nil {
 					for _, kv := range op.KVs {
-						cmps = append(cmps, etcd.Cmp{
+						cmps = append(cmps, etcd.FromCompare(&etcdserverpb.Compare{
 							Target:      etcdserverpb.Compare_MOD,
 							Result:      etcdserverpb.Compare_GREATER,
 							TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
 							Key:         kv.Key,
-						})
+						}))
 					}
 				}
 			}
@@ -143,13 +143,13 @@ func (v *AtomicOp[R]) writeIfConditions(tracker *TrackerKV, readRev int64) (cmps
 			cmps = append(cmps,
 				// IF: modification version == 0
 				// The key/range doesn't exist.
-				etcd.Cmp{
+				etcd.FromCompare(&etcdserverpb.Compare{
 					Target:      etcdserverpb.Compare_MOD,
 					Result:      etcdserverpb.Compare_EQUAL,
 					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 0},
 					Key:         op.Key,
 					RangeEnd:    op.RangeEnd, // may be empty
-				},
+				}),
 			)
 		default:
 			panic(errors.Errorf(`unexpected state, operation type "%v"`, op.Type))

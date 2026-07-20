@@ -81,6 +81,11 @@ func (v *TrackerKV) Get(ctx context.Context, key string, opts ...etcd.OpOption) 
 	return r.Get(), err
 }
 
+// GetStream is not supported, streamed reads cannot be tracked for the AtomicOp IF conditions.
+func (v *TrackerKV) GetStream(ctx context.Context, key string, opts ...etcd.OpOption) (etcd.GetStreamChan, error) {
+	return nil, errors.New("GetStream is not supported by TrackerKV, use Get")
+}
+
 func (v *TrackerKV) Delete(ctx context.Context, key string, opts ...etcd.OpOption) (*etcd.DeleteResponse, error) {
 	r, err := v.Do(ctx, etcd.OpDelete(key, opts...))
 	return r.Del(), err
