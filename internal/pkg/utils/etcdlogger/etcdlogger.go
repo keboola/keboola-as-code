@@ -204,8 +204,9 @@ func (v *kvWrapper) start(op *etcd.Op, opName, key, value string) string {
 		out.WriteString("  ➡️  IF:")
 		for i, item := range cmpOps {
 			out.WriteString("\n")
+			cmp := item.GetCompare()
 			var expectedResult string
-			switch v := item.TargetUnion.(type) {
+			switch v := cmp.TargetUnion.(type) {
 			case *etcdserverpb.Compare_Version:
 				expectedResult = fmt.Sprintf(`%v`, v.Version)
 			case *etcdserverpb.Compare_CreateRevision:
@@ -217,9 +218,9 @@ func (v *kvWrapper) start(op *etcd.Op, opName, key, value string) string {
 			case *etcdserverpb.Compare_Lease:
 				expectedResult = fmt.Sprintf(`%v`, v.Lease)
 			default:
-				panic(errors.Errorf(`unexpected type "%T"`, item.TargetUnion))
+				panic(errors.Errorf(`unexpected type "%T"`, cmp.TargetUnion))
 			}
-			fmt.Fprintf(&out, "  %03d %s %s %v %s", i+1, keyToStr(item.Key, item.RangeEnd), item.Target, item.Result, expectedResult)
+			fmt.Fprintf(&out, "  %03d %s %s %v %s", i+1, keyToStr(cmp.Key, cmp.RangeEnd), cmp.Target, cmp.Result, expectedResult)
 		}
 	}
 

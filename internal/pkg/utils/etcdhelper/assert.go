@@ -280,7 +280,7 @@ func ExpectModificationInPrefix(t *testing.T, client *etcd.Client, pfx string, o
 		if resp.Err() != nil {
 			t.Fatal(resp.Err())
 		}
-		return &resp.Header
+		return resp.Header
 	}
 
 	return nil
