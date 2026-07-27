@@ -83,6 +83,12 @@ tasks:
     cmds:
       - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/apps-proxy
 
+  build-cli:
+    vars:
+      BUILD_TARGET_PATH: '{{ .BUILD_TARGET_PATH | default "./target/cli/kbc" }}'
+    cmds:
+      - CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o {{ .BUILD_TARGET_PATH }} ./cmd/kbc
+
   run-apps-proxy:
     cmds:
       - go tool air -c ./provisioning/apps-proxy/dev/.air.toml

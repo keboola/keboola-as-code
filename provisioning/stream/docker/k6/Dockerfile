@@ -1,4 +1,4 @@
-FROM grafana/xk6:master AS build
+FROM grafana/xk6:latest AS build
 
 RUN xk6 build \
     --with github.com/LeonAdato/xk6-output-statsd@latest \
