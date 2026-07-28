@@ -12,6 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -78,11 +80,18 @@ func find(ctx context.Context, logger log.Logger, workingDir string) (string, er
 	actualDir := workingDir
 
 	for {
-		// Check ".keboola" dir
+		// Check ".keboola" dir, it must contain a project or a repository manifest,
+		// otherwise it is an unrelated directory that only happens to be named ".keboola"
+		// (for example a config dir created by some other tool) and must not be mistaken for a project root.
 		metadataDir := filepath.Join(actualDir, filesystem.MetadataDir)
 		if stat, err := os.Stat(metadataDir); err == nil {
 			if stat.IsDir() {
-				return actualDir, nil
+				projectManifestPath := filepath.Join(actualDir, filesystem.FromSlash(projectManifest.Path()))
+				repositoryManifestPath := filepath.Join(actualDir, filesystem.FromSlash(repositoryManifest.Path()))
+				if isFile(projectManifestPath) || isFile(repositoryManifestPath) {
+					return actualDir, nil
+				}
+				logger.Debugf(ctx, "Found \"%s\" dir, but it contains no manifest, ignoring", metadataDir)
 			} else {
 				logger.Debugf(ctx, "Expected dir, but found file at \"%s\"", metadataDir)
 			}
@@ -112,4 +121,10 @@ func find(ctx context.Context, logger log.Logger, workingDir string) (string, er
 	}
 
 	return workingDir, nil
+}
+
+// isFile - true if path exists, and it is a regular file.
+func isFile(path string) bool {
+	stat, err := os.Stat(path)
+	return err == nil && !stat.IsDir()
 }
