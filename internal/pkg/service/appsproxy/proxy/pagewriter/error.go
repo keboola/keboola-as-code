@@ -39,7 +39,7 @@ func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, ap
 	pw.WriteError(w, req, &app, svcerrors.
 		NewBadGatewayError(errors.New("request to application failed")).
 		WithUserMessage("Request to application failed.").
-		WithLogMessage("badGateway: "+errors.Format(err, errors.FormatWithUnwrap(), errors.FormatWithStack())))
+		WithLogMessage(errors.Format(err, errors.FormatWithUnwrap(), errors.FormatWithStack())))
 }
 
 func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.AppConfig, err error) {

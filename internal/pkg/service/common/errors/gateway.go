@@ -37,19 +37,23 @@ func (e BadGatewayError) WithUserMessage(msg string) BadGatewayError {
 	return e
 }
 
-// WithLogMessage sets the message written to the log, instead of the wrapped
+// WithLogMessage sets the detail written to the log, instead of the wrapped
 // error. Use it when the wrapped error must not reach the user, so the wrapped
 // error can be replaced by a safe one and its details kept for the log only.
+// Pass the raw detail; ErrorLogMessage adds the error name prefix.
 func (e BadGatewayError) WithLogMessage(msg string) BadGatewayError {
 	e.logMessage = msg
 	return e
 }
 
 func (e BadGatewayError) ErrorLogMessage() string {
-	if e.logMessage != "" {
-		return e.logMessage
+	// Mirrors the "<name>: <detail>" format WriteError applies to errors that
+	// do not implement WithLogMessage, so logs stay consistent either way.
+	detail := e.logMessage
+	if detail == "" {
+		detail = errors.Format(e.err, errors.FormatWithUnwrap(), errors.FormatWithStack())
 	}
-	return errors.Format(e.err, errors.FormatWithUnwrap(), errors.FormatWithStack())
+	return e.ErrorName() + ": " + detail
 }
 
 func (e BadGatewayError) ErrorUserMessage() string {
