@@ -363,6 +363,28 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{},
 		},
 		{
+			// The upstream sees the internal upstream address in its Host header
+			// (see "forwarded-headers-http"), so absolute URLs it builds from Host
+			// point at the internal address. Apps-proxy must rewrite such
+			// Location headers to the public app URL instead of passing them
+			// through to the client.
+			name: "public-app-absolute-redirect-does-not-leak-upstream-host",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/redirect", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusMovedPermanently, response.StatusCode)
+
+				location := response.Header.Get("Location")
+				assert.NotContains(t, location, appServer.Listener.Addr().String())
+				assert.Equal(t, "https://public-123.hub.keboola.local/redirect/", location)
+			},
+			expectedNotifications: map[string]int{
+				"123": 1,
+			},
+		},
+		{
 			name: "public-app-sub-url",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// Request to public app

@@ -215,8 +215,47 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 	}
 }
 
+// rewriteRedirectLocation replaces the upstream address in URL-bearing response
+// headers with the public URL of the app, the equivalent of nginx
+// "proxy_redirect".
+//
+// The outbound Host header is rewritten to the upstream hostname (see
+// newReverseProxy), so an app that builds absolute URLs from Host — typically a
+// framework canonicalizing a missing trailing slash — answers with the internal
+// K8s service name and backend port. Without this rewrite the proxy passes such
+// a header through and discloses the internal address to the client.
+//
+// Only URLs pointing at the upstream itself are rewritten, so redirects to third
+// parties (OAuth providers, CDNs) are left intact. Absolute URLs embedded in
+// response bodies are not covered.
+func (u *AppUpstream) rewriteRedirectLocation(res *http.Response) error {
+	if u.target == nil {
+		return nil
+	}
+
+	baseURL := u.app.BaseURL(u.manager.config.API.PublicURL)
+	for _, header := range []string{"Location", "Content-Location"} {
+		value := res.Header.Get(header)
+		if value == "" {
+			continue
+		}
+
+		parsed, err := url.Parse(value)
+		if err != nil || !strings.EqualFold(parsed.Host, u.target.Host) {
+			continue
+		}
+
+		parsed.Scheme = baseURL.Scheme
+		parsed.Host = baseURL.Host
+		res.Header.Set(header, parsed.String())
+	}
+
+	return nil
+}
+
 func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 	proxy := u.newReverseProxy()
+	proxy.ModifyResponse = u.rewriteRedirectLocation
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -272,7 +311,8 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	// callback per frame without flooding the Sandboxes Service.
 	proxy.ModifyResponse = func(res *http.Response) error {
 		if res.StatusCode != http.StatusSwitchingProtocols {
-			return nil
+			// A failed handshake is a regular response and can carry a redirect.
+			return u.rewriteRedirectLocation(res)
 		}
 		rwc, ok := res.Body.(io.ReadWriteCloser)
 		if !ok {

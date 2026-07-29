@@ -95,6 +95,19 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 		}
 	})
 
+	// /redirect mimics slash-canonicalization redirects emitted by common app
+	// frameworks (Starlette redirect_slashes, Django APPEND_SLASH, nginx
+	// absolute_redirect on): the Location is an absolute URL built from the
+	// Host header the app received.
+	mux.HandleFunc("/redirect", func(w http.ResponseWriter, r *http.Request) {
+		lock.Lock()
+		requests = append(requests, r)
+		lock.Unlock()
+
+		w.Header().Set("Location", "http://"+r.Host+r.URL.Path+"/")
+		w.WriteHeader(http.StatusMovedPermanently)
+	})
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		lock.Lock()
 		defer lock.Unlock()
