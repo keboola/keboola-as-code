@@ -356,6 +356,9 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), `Request to application failed.`)
+
+				// The error page must not disclose the internal upstream address.
+				assert.NotContains(t, string(body), appServer.Listener.Addr().String())
 			},
 			expectedNotifications: map[string]int{},
 		},
