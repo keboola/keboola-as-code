@@ -32,7 +32,14 @@ func (pw *Writer) ProxyErrorHandlerFor(app api.AppConfig) func(w http.ResponseWr
 }
 
 func (pw *Writer) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, app api.AppConfig, err error) {
-	pw.WriteError(w, req, &app, svcerrors.NewBadGatewayError(err).WithUserMessage("Request to application failed."))
+	// The transport error names the internal upstream address (K8s service DNS
+	// name, pod IP, backend port). The error page is rendered for anonymous
+	// clients too, so the error is kept for the log only and replaced by a
+	// generic one for the page.
+	pw.WriteError(w, req, &app, svcerrors.
+		NewBadGatewayError(errors.New("request to application failed")).
+		WithUserMessage("Request to application failed.").
+		WithLogMessage(errors.Format(err, errors.FormatWithUnwrap(), errors.FormatWithStack())))
 }
 
 func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.AppConfig, err error) {

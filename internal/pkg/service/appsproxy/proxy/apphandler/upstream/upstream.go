@@ -54,6 +54,7 @@ type AppUpstream struct {
 	manager   *Manager
 	app       api.AppConfig
 	target    *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
+	baseURL   *url.URL // public URL of the app, resolved at creation; see rewriteRedirectLocation
 	handler   *chain.Chain
 	wsHandler *chain.Chain
 	cancelWs  context.CancelCauseFunc
@@ -119,6 +120,7 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 		manager: m,
 		app:     app,
 		target:  target,
+		baseURL: app.BaseURL(m.config.API.PublicURL),
 	}
 	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
 	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
@@ -215,8 +217,50 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 	}
 }
 
+// rewriteRedirectLocation replaces the upstream address in URL-bearing response
+// headers with the public URL of the app, the equivalent of nginx
+// "proxy_redirect".
+//
+// The outbound Host header is rewritten to the upstream hostname (see
+// newReverseProxy), so an app that builds absolute URLs from Host — typically a
+// framework canonicalizing a missing trailing slash — answers with the internal
+// K8s service name and backend port. Without this rewrite the proxy passes such
+// a header through and discloses the internal address to the client.
+//
+// Only URLs pointing at the upstream itself are rewritten, so redirects to third
+// parties (OAuth providers, CDNs) are left intact. Absolute URLs embedded in
+// response bodies are not covered.
+//
+// This runs for every upstream response, so it must stay allocation-free on the
+// common path where no such header is present: baseURL is resolved once at
+// creation and the headers are only parsed once a value is actually found.
+func (u *AppUpstream) rewriteRedirectLocation(res *http.Response) error {
+	if u.target == nil {
+		return nil
+	}
+
+	for _, header := range [...]string{"Location", "Content-Location"} {
+		value := res.Header.Get(header)
+		if value == "" {
+			continue
+		}
+
+		parsed, err := url.Parse(value)
+		if err != nil || !strings.EqualFold(parsed.Host, u.target.Host) {
+			continue
+		}
+
+		parsed.Scheme = u.baseURL.Scheme
+		parsed.Host = u.baseURL.Host
+		res.Header.Set(header, parsed.String())
+	}
+
+	return nil
+}
+
 func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 	proxy := u.newReverseProxy()
+	proxy.ModifyResponse = u.rewriteRedirectLocation
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -272,7 +316,8 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	// callback per frame without flooding the Sandboxes Service.
 	proxy.ModifyResponse = func(res *http.Response) error {
 		if res.StatusCode != http.StatusSwitchingProtocols {
-			return nil
+			// A failed handshake is a regular response and can carry a redirect.
+			return u.rewriteRedirectLocation(res)
 		}
 		rwc, ok := res.Body.(io.ReadWriteCloser)
 		if !ok {
