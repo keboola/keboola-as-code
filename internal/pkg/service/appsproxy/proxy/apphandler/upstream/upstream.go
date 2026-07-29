@@ -54,6 +54,7 @@ type AppUpstream struct {
 	manager   *Manager
 	app       api.AppConfig
 	target    *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
+	baseURL   *url.URL // public URL of the app, resolved at creation; see rewriteRedirectLocation
 	handler   *chain.Chain
 	wsHandler *chain.Chain
 	cancelWs  context.CancelCauseFunc
@@ -119,6 +120,7 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream 
 		manager: m,
 		app:     app,
 		target:  target,
+		baseURL: app.BaseURL(m.config.API.PublicURL),
 	}
 	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
 	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
@@ -228,13 +230,16 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 // Only URLs pointing at the upstream itself are rewritten, so redirects to third
 // parties (OAuth providers, CDNs) are left intact. Absolute URLs embedded in
 // response bodies are not covered.
+//
+// This runs for every upstream response, so it must stay allocation-free on the
+// common path where no such header is present: baseURL is resolved once at
+// creation and the headers are only parsed once a value is actually found.
 func (u *AppUpstream) rewriteRedirectLocation(res *http.Response) error {
 	if u.target == nil {
 		return nil
 	}
 
-	baseURL := u.app.BaseURL(u.manager.config.API.PublicURL)
-	for _, header := range []string{"Location", "Content-Location"} {
+	for _, header := range [...]string{"Location", "Content-Location"} {
 		value := res.Header.Get(header)
 		if value == "" {
 			continue
@@ -245,8 +250,8 @@ func (u *AppUpstream) rewriteRedirectLocation(res *http.Response) error {
 			continue
 		}
 
-		parsed.Scheme = baseURL.Scheme
-		parsed.Host = baseURL.Host
+		parsed.Scheme = u.baseURL.Scheme
+		parsed.Host = u.baseURL.Host
 		res.Header.Set(header, parsed.String())
 	}
 
