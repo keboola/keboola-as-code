@@ -1948,7 +1948,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Starting your application...")
+				assert.Contains(t, string(body), "<title>Starting</title>")
 
 				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
 			},
@@ -2011,7 +2011,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Body carries the user-facing "went to sleep, refresh to resume" message
 				// that the frontend shows in its connection modal. It must NOT be
-				// the spinner page ("Starting your application...") served by the
+				// the spinner page ("<title>Starting</title>") served by the
 				// default branch, which would imply the app is auto-restarting.
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
@@ -2019,7 +2019,7 @@ func TestAppProxyRouter(t *testing.T) {
 					"should instruct the user to refresh")
 				assert.Contains(t, string(body), "auto-sleep timeout can be increased or disabled",
 					"should include the prevention hint about the auto-sleep timeout")
-				assert.NotContains(t, string(body), "Starting your application...")
+				assert.NotContains(t, string(body), "<title>Starting</title>")
 			},
 			expectedNotifications: map[string]int{},
 		},
@@ -2196,7 +2196,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err = io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Starting your application...")
+				assert.Contains(t, string(body), "<title>Starting</title>")
 
 				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
 			},
@@ -2518,7 +2518,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Starting your application...")
+				assert.Contains(t, string(body), "<title>Starting</title>")
 				assert.NotContains(t, string(body), "Application Disabled")
 
 				// Confirm the app was auto-resumed: the wakeup patches the App
