@@ -100,7 +100,13 @@ func (c AppConfig) Telemetry() []attribute.KeyValue {
 // eTag is used to detect modifications, if the eTag match, the NotModifiedError is returned.
 func (a *API) GetAppConfig(appID AppID, eTag string) request.APIRequest[*AppConfig] {
 	result := &AppConfig{}
-	return request.NewAPIRequest(result, a.newRequest().
+
+	req, err := a.newRequest()
+	if err != nil {
+		return request.NewAPIRequest(result, request.NewReqDefinitionError(err))
+	}
+
+	return request.NewAPIRequest(result, req.
 		WithResult(result).
 		WithGet("apps/{appId}/proxy-config").
 		AndPathParam("appId", appID.String()).

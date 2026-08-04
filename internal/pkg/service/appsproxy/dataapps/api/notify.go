@@ -13,7 +13,12 @@ type notifyBody struct {
 }
 
 func (a *API) NotifyAppUsage(appID AppID, lastRequestAt time.Time) request.APIRequest[request.NoResult] {
-	return request.NewAPIRequest(request.NoResult{}, a.newRequest().
+	req, err := a.newRequest()
+	if err != nil {
+		return request.NewAPIRequest(request.NoResult{}, request.NewReqDefinitionError(err))
+	}
+
+	return request.NewAPIRequest(request.NoResult{}, req.
 		WithPatch("apps/{appId}").
 		AndPathParam("appId", appID.String()).
 		WithJSONBody(notifyBody{

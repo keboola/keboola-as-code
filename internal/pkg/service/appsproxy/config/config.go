@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/management"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/pprof"
@@ -45,8 +47,11 @@ type API struct {
 }
 
 type SandboxesAPI struct {
-	URL   string `configKey:"url" configUsage:"Sandboxes API url." validate:"required"`
-	Token string `configKey:"token" configUsage:"Sandboxes API token." validate:"required" sensitive:"true"`
+	URL string `configKey:"url" configUsage:"Sandboxes API url." validate:"required"`
+	// KubernetesTokenPath points to a projected Kubernetes ServiceAccount token the proxy
+	// authenticates itself with. The token is read per request, so a token rotated by the
+	// kubelet is used without a restart.
+	KubernetesTokenPath string `configKey:"kubernetesTokenPath" configUsage:"Path to a projected Kubernetes ServiceAccount token used to authenticate to the Sandboxes API." validate:"required"`
 }
 
 type Upstream struct {
@@ -87,6 +92,9 @@ func New() Config {
 		},
 		KaiPreview: KaiPreview{
 			SessionTTL: 4 * time.Hour,
+		},
+		SandboxesAPI: SandboxesAPI{
+			KubernetesTokenPath: management.DefaultServiceAccountTokenPath,
 		},
 	}
 }
