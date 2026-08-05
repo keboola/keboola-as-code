@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -169,9 +170,6 @@ func (t Type) ParseValue(value any) (any, error) {
 	case TypeString:
 		return cast.ToString(value), nil
 	case TypeStringArray:
-		slice := make([]any, 0)
-		values := make(map[string]bool)
-
 		if v, ok := value.(string); ok {
 			// Split items by comma, if needed
 			var items []string
@@ -183,29 +181,23 @@ func (t Type) ParseValue(value any) (any, error) {
 			value = items
 		}
 
-		if items, ok := value.([]string); ok {
-			// Convert []string (Go type) -> []any (JSON type, used in Jsonnet template)
-			// And return only unique values.
-			for _, item := range items {
-				if !values[item] {
-					slice = append(slice, item)
-					values[item] = true
-				}
-			}
-			return slice, nil
-		} else if items, ok := value.([]any); ok {
-			// Return only unique values.
-			for _, itemRaw := range items {
-				item := itemRaw.(string)
-				if !values[item] {
-					slice = append(slice, item)
-					values[item] = true
-				}
-			}
-			return slice, nil
-		} else {
-			return nil, errors.Errorf("unexpected type \"%T\"", value)
+		// Accepts either []string (Go-native default) or []any (JSON/YAML-decoded default,
+		// via OrderedMap - which never auto-converts, see orderedmap.ToStringSlice).
+		items, err := orderedmap.ToStringSlice(value)
+		if err != nil {
+			return nil, errors.Errorf(`value "%v" is not a string array: %w`, value, err)
 		}
+
+		// Return only unique values, as []any (JSON type, used in Jsonnet template).
+		slice := make([]any, 0, len(items))
+		seen := make(map[string]bool, len(items))
+		for _, item := range items {
+			if !seen[item] {
+				slice = append(slice, item)
+				seen[item] = true
+			}
+		}
+		return slice, nil
 	case TypeObject:
 		return value, nil
 	}
