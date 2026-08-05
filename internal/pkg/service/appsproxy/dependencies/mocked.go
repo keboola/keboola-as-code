@@ -3,14 +3,17 @@ package dependencies
 import (
 	"context"
 	"net/url"
+	"os"
 	"testing"
 
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/management"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
@@ -37,6 +40,17 @@ func (v *mocked) TestFakeK8sClient() *k8sfake.FakeDynamicClient {
 // K8sDynamicClient implements k8sClientProvider, supplying the fake client to newServiceScope.
 func (v *mocked) K8sDynamicClient() dynamic.Interface {
 	return v.fakeK8sClient
+}
+
+// writeTestServiceAccountToken creates a file with a fake Kubernetes ServiceAccount token,
+// so tests exercise the same authentication path as the production code.
+func writeTestServiceAccountToken(tb testing.TB) string {
+	tb.Helper()
+
+	path := filesystem.Join(tb.TempDir(), "token")
+	require.NoError(tb, os.WriteFile(path, []byte("my-token"), 0o600))
+
+	return path
 }
 
 // NewMockedServiceScope creates a mocked ServiceScope for tests.
@@ -74,8 +88,9 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	if cfg.SandboxesAPI.URL == "" {
 		cfg.SandboxesAPI.URL = "http://sandboxes-service-api.default.svc.cluster.local"
 	}
-	if cfg.SandboxesAPI.Token == "" {
-		cfg.SandboxesAPI.Token = "my-token"
+	// The production path is not mounted in tests, so it is replaced by a temporary file.
+	if path := cfg.ConnectionServiceAccountTokenPath; path == "" || path == management.DefaultServiceAccountTokenPath {
+		cfg.ConnectionServiceAccountTokenPath = writeTestServiceAccountToken(tb)
 	}
 	if cfg.StorageAPIURL == nil {
 		var err error

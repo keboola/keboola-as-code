@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/management"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/datadog"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/pprof"
@@ -29,6 +31,8 @@ type Config struct {
 	KaiPreview       KaiPreview        `configKey:"kaiPreview" configUsage:"kai-preview iframe-auth configuration."`
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`
+
+	ConnectionServiceAccountTokenPath string `configKey:"connectionServiceAccountTokenPath" configUsage:"Path to the projected Kubernetes ServiceAccount token used to authenticate to the Keboola APIs. Read per request, so a rotated token needs no restart." validate:"required"`
 }
 
 // KaiPreview configures the stateless iframe-auth path for the kai-preview flow.
@@ -45,8 +49,7 @@ type API struct {
 }
 
 type SandboxesAPI struct {
-	URL   string `configKey:"url" configUsage:"Sandboxes API url." validate:"required"`
-	Token string `configKey:"token" configUsage:"Sandboxes API token." validate:"required" sensitive:"true"`
+	URL string `configKey:"url" configUsage:"Sandboxes API url." validate:"required"`
 }
 
 type Upstream struct {
@@ -88,6 +91,7 @@ func New() Config {
 		KaiPreview: KaiPreview{
 			SessionTTL: 4 * time.Hour,
 		},
+		ConnectionServiceAccountTokenPath: management.DefaultServiceAccountTokenPath,
 	}
 }
 

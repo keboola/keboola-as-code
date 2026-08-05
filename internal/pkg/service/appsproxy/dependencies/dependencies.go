@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/management"
 	"k8s.io/client-go/dynamic"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 
@@ -192,7 +193,13 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 		return nil, err
 	}
 
-	d.appsAPI = api.New(d.HTTPClient(), cfg.SandboxesAPI.URL, cfg.SandboxesAPI.Token)
+	// The Sandboxes API is called with the projected Kubernetes ServiceAccount token,
+	// it is read from the file per request, so a rotated token needs no restart.
+	d.appsAPI = api.New(
+		d.HTTPClient(),
+		cfg.SandboxesAPI.URL,
+		management.NewKeboolaServiceAccountAuth(cfg.ConnectionServiceAccountTokenPath),
+	)
 	d.appConfigLoader = appconfig.NewLoader(d)
 	d.notifyManager = notify.NewManager(d)
 

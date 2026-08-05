@@ -74,7 +74,7 @@ func New(opts ...Option) client.Client {
 		cl = cl.WithTelemetry(
 			conf.telemetry.TracerProvider(),
 			conf.telemetry.MeterProvider(),
-			otel.WithRedactedHeaders("X-StorageAPI-Token", "X-KBC-ManageApiToken"),
+			otel.WithRedactedHeaders("X-StorageAPI-Token", "X-KBC-ManageApiToken", "X-Kubernetes-Authorization"),
 			otel.WithPropagators(
 				// DataDog supports multiple propagations: tracecontext, B3, legacy DataDog, ...
 				// W3C tracecontext propagator (propagation.TraceContext{}) is not working with the Storage API dd-trace-php ,
