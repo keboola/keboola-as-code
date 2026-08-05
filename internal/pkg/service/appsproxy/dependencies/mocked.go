@@ -89,8 +89,8 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 		cfg.SandboxesAPI.URL = "http://sandboxes-service-api.default.svc.cluster.local"
 	}
 	// The production path is not mounted in tests, so it is replaced by a temporary file.
-	if path := cfg.SandboxesAPI.KubernetesTokenPath; path == "" || path == management.DefaultServiceAccountTokenPath {
-		cfg.SandboxesAPI.KubernetesTokenPath = writeTestServiceAccountToken(tb)
+	if path := cfg.ConnectionServiceAccountTokenPath; path == "" || path == management.DefaultServiceAccountTokenPath {
+		cfg.ConnectionServiceAccountTokenPath = writeTestServiceAccountToken(tb)
 	}
 	if cfg.StorageAPIURL == nil {
 		var err error

@@ -198,7 +198,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.appsAPI = api.New(
 		d.HTTPClient(),
 		cfg.SandboxesAPI.URL,
-		management.NewKeboolaServiceAccountAuth(cfg.SandboxesAPI.KubernetesTokenPath),
+		management.NewKeboolaServiceAccountAuth(cfg.ConnectionServiceAccountTokenPath),
 	)
 	d.appConfigLoader = appconfig.NewLoader(d)
 	d.notifyManager = notify.NewManager(d)

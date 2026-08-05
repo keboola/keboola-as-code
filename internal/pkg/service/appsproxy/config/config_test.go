@@ -19,13 +19,13 @@ func TestKaiPreviewConfig_Defaults(t *testing.T) {
 	assert.Equal(t, 4*time.Hour, cfg.KaiPreview.SessionTTL)
 }
 
-// TestSandboxesAPIConfig_KubernetesTokenPath checks that the ServiceAccount token path
+// TestConfig_ConnectionServiceAccountTokenPath checks that the ServiceAccount token path
 // defaults to the path mounted by the kbc-stacks chart and can be overridden by an ENV.
-func TestSandboxesAPIConfig_KubernetesTokenPath(t *testing.T) {
+func TestConfig_ConnectionServiceAccountTokenPath(t *testing.T) {
 	t.Parallel()
 
 	cfg := config.New()
-	assert.Equal(t, "/var/run/secrets/connection.keboola.com/serviceaccount/token", cfg.SandboxesAPI.KubernetesTokenPath)
+	assert.Equal(t, "/var/run/secrets/connection.keboola.com/serviceaccount/token", cfg.ConnectionServiceAccountTokenPath)
 
 	// Fill in the other required fields, the binding validates the whole configuration.
 	cfg.CookieSecretSalt = "x"
@@ -43,12 +43,12 @@ func TestSandboxesAPIConfig_KubernetesTokenPath(t *testing.T) {
 	}
 
 	envs := env.Empty()
-	envs.Set("APPS_PROXY_SANDBOXES_API_KUBERNETES_TOKEN_PATH", "/tmp/token")
+	envs.Set("APPS_PROXY_CONNECTION_SERVICE_ACCOUNT_TOKEN_PATH", "/tmp/token")
 	require.NoError(t, configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
 		EnvNaming: env.NewNamingConvention("APPS_PROXY_"),
 		Envs:      envs,
 	}, &cfg))
-	assert.Equal(t, "/tmp/token", cfg.SandboxesAPI.KubernetesTokenPath)
+	assert.Equal(t, "/tmp/token", cfg.ConnectionServiceAccountTokenPath)
 }
 
 func TestKaiPreviewConfig_RequiresSigningKeys(t *testing.T) {
@@ -68,7 +68,7 @@ func TestKaiPreviewConfig_NormalizeStripsTrailingSlash(t *testing.T) {
 	cfg := config.New()
 	cfg.CookieSecretSalt = "x"
 	cfg.CsrfTokenSalt = "x"
-	cfg.SandboxesAPI = config.SandboxesAPI{URL: "https://example", KubernetesTokenPath: "/var/run/secrets/token"}
+	cfg.SandboxesAPI = config.SandboxesAPI{URL: "https://example"}
 	cfg.K8s = config.K8s{AppsNamespace: "ns"}
 	storageURL, _ := url.Parse("https://connection.keboola.com")
 	cfg.StorageAPIURL = storageURL
@@ -92,7 +92,7 @@ func TestConfig_RequiresStorageAPIURL(t *testing.T) {
 	// Even with everything else valid, missing StorageAPIURL must fail validation.
 	cfg.CookieSecretSalt = "x"
 	cfg.CsrfTokenSalt = "x"
-	cfg.SandboxesAPI = config.SandboxesAPI{URL: "https://example", KubernetesTokenPath: "/var/run/secrets/token"}
+	cfg.SandboxesAPI = config.SandboxesAPI{URL: "https://example"}
 	cfg.K8s = config.K8s{AppsNamespace: "ns"}
 	cfg.KaiPreview = config.KaiPreview{
 		HandshakeSigningKey: "k1",

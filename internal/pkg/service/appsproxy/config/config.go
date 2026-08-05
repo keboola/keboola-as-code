@@ -31,6 +31,8 @@ type Config struct {
 	KaiPreview       KaiPreview        `configKey:"kaiPreview" configUsage:"kai-preview iframe-auth configuration."`
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`
+
+	ConnectionServiceAccountTokenPath string `configKey:"connectionServiceAccountTokenPath" configUsage:"Path to the projected Kubernetes ServiceAccount token used to authenticate to the Keboola APIs. Read per request, so a rotated token needs no restart." validate:"required"`
 }
 
 // KaiPreview configures the stateless iframe-auth path for the kai-preview flow.
@@ -48,10 +50,6 @@ type API struct {
 
 type SandboxesAPI struct {
 	URL string `configKey:"url" configUsage:"Sandboxes API url." validate:"required"`
-	// KubernetesTokenPath points to a projected Kubernetes ServiceAccount token the proxy
-	// authenticates itself with. The token is read per request, so a token rotated by the
-	// kubelet is used without a restart.
-	KubernetesTokenPath string `configKey:"kubernetesTokenPath" configUsage:"Path to a projected Kubernetes ServiceAccount token used to authenticate to the Sandboxes API." validate:"required"`
 }
 
 type Upstream struct {
@@ -93,9 +91,7 @@ func New() Config {
 		KaiPreview: KaiPreview{
 			SessionTTL: 4 * time.Hour,
 		},
-		SandboxesAPI: SandboxesAPI{
-			KubernetesTokenPath: management.DefaultServiceAccountTokenPath,
-		},
+		ConnectionServiceAccountTokenPath: management.DefaultServiceAccountTokenPath,
 	}
 }
 
