@@ -131,6 +131,9 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 									// Add to config
 									config.Rows = append(config.Rows, row)
 								}
+
+								// Order rows as returned by the API (RowsSortOrder), if set.
+								config.Rows = applyRowsSortOrder(config.Rows, apiConfig.RowsSortOrder)
 							}
 						}
 						return nil
@@ -192,6 +195,34 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 
 	// Add request
 	u.runGroupFor(-1).Add(req)
+}
+
+// applyRowsSortOrder reorders rows to match the API's RowsSortOrder, when present.
+// Rows not listed in sortOrder keep their relative (API-returned) position, appended at the end.
+func applyRowsSortOrder(rows []*model.ConfigRow, sortOrder []string) []*model.ConfigRow {
+	if len(sortOrder) == 0 {
+		return rows
+	}
+
+	byID := make(map[string]*model.ConfigRow, len(rows))
+	for _, row := range rows {
+		byID[string(row.ID)] = row
+	}
+
+	sorted := make([]*model.ConfigRow, 0, len(rows))
+	used := make(map[string]bool, len(rows))
+	for _, id := range sortOrder {
+		if row, found := byID[id]; found && !used[id] {
+			sorted = append(sorted, row)
+			used[id] = true
+		}
+	}
+	for _, row := range rows {
+		if !used[string(row.ID)] {
+			sorted = append(sorted, row)
+		}
+	}
+	return sorted
 }
 
 func (u *UnitOfWork) loadObject(object model.Object) error {
