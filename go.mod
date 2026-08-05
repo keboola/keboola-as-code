@@ -44,7 +44,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-cloud-encrypt v0.0.0-20250422071622-41a5d5547c43
 	github.com/keboola/go-utils v1.4.0
-	github.com/keboola/keboola-sdk-go/v2 v2.21.0
+	github.com/keboola/keboola-sdk-go/v2 v2.22.1
 	github.com/keboola/keboola-sdk-go/v2/transfer v1.1.0
 	github.com/klauspost/compress v1.18.5
 	github.com/klauspost/pgzip v1.2.6
@@ -93,7 +93,7 @@ require (
 	goa.design/goa/v3 v3.26.0
 	goa.design/plugins/v3 v3.26.0
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
-	golang.org/x/sync v0.21.0
+	golang.org/x/sync v0.22.0
 	google.golang.org/grpc v1.81.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	k8s.io/client-go v0.36.0
@@ -192,14 +192,14 @@ require (
 	github.com/tinylib/msgp v1.6.3 // indirect
 	go.uber.org/atomic v1.11.0
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.52.0
-	golang.org/x/mod v0.36.0 // indirect
-	golang.org/x/net v0.55.0
-	golang.org/x/sys v0.45.0
-	golang.org/x/term v0.43.0
-	golang.org/x/text v0.38.0
+	golang.org/x/crypto v0.54.0
+	golang.org/x/mod v0.37.0 // indirect
+	golang.org/x/net v0.57.0
+	golang.org/x/sys v0.47.0
+	golang.org/x/term v0.45.0
+	golang.org/x/text v0.40.0
 	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.45.0
+	golang.org/x/tools v0.47.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	gopkg.in/ini.v1 v1.67.1 // indirect
