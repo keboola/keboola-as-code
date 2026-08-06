@@ -19,14 +19,6 @@ func TestCliE2E(t *testing.T) {
 	skipTests := map[string]bool{
 		"push/config-data-gateway-push-and-push-dry-run": true,
 		"push/empty-data-gateway":                        true,
-		// The test project's Storage API now rejects creating classic "keboola.orchestrator"
-		// configs (HTTP 403 orchestrator.creationDisabled: "Please use Conditional Flows
-		// instead"). Unrelated to PSGO-37 - these fixtures need migrating to Conditional Flows.
-		"pull/orchestrator":         true,
-		"pull/orchestrator-partial": true,
-		"push/orchestrator":         true,
-		"push/orchestrator-partial": true,
-		"template-create/complex":   true,
 	}
 
 	runner.
