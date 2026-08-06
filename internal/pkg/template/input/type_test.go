@@ -1,11 +1,13 @@
 package input
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"slices"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -125,7 +127,7 @@ func TestType_ParseValue(t *testing.T) {
 		{TypeStringArray, []string{"a", "b"}, []any{"a", "b"}, ""},
 		{TypeStringArray, []any{}, []any{}, ""},
 		{TypeStringArray, []any{"a", "b"}, []any{"a", "b"}, ""},
-		{TypeStringArray, 123, nil, "unexpected type \"int\""},
+		{TypeStringArray, 123, nil, `value "123" is not a string array: expected []any or []string, found "int"`},
 	}
 
 	// Assert
@@ -140,6 +142,27 @@ func TestType_ParseValue(t *testing.T) {
 			assert.Equal(t, c.err, err.Error(), desc)
 		}
 	}
+}
+
+// TestType_ParseValue_StringArrayFromOrderedMapJSON is a regression test for PSGO-37: a
+// StringArray input's Default, as it actually arrives - decoded from real JSON through
+// *orderedmap.OrderedMap (which decodes every array to []any, never []string) - must round-trip
+// through ParseValue unchanged. Before PSGO-37, go-utils v1.4.1 sometimes decoded such arrays as
+// []string instead, and no test exercised this path with real, non-empty JSON content, so the
+// regression went unnoticed until it broke keboola-as-code's adoption of that release.
+func TestType_ParseValue_StringArrayFromOrderedMapJSON(t *testing.T) {
+	t.Parallel()
+
+	in := `{"default": ["tag-a", "tag-b", "tag-a"]}`
+	content := orderedmap.New()
+	require.NoError(t, json.Unmarshal([]byte(in), content))
+
+	value, found := content.Get("default")
+	require.True(t, found)
+
+	actual, err := TypeStringArray.ParseValue(value)
+	require.NoError(t, err)
+	assert.Equal(t, []any{"tag-a", "tag-b"}, actual)
 }
 
 func TestType_EmptyValue(t *testing.T) {
