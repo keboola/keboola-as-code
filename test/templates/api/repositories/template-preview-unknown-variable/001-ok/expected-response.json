@@ -1,8 +1,0 @@
-{
-  "id": "template.preview/%s",
-  "type": "template.preview",
-  "url": "https://templates.keboola.local/v1/tasks/template.preview/%s",
-  "status": "processing",
-  "isFinished": false,
-  "createdAt": "%s"
-}

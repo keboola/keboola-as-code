@@ -2,7 +2,6 @@
 
 ## Project Overview
 This is a Go-based distributed system project that provides several microservices:
-- Templates API: Manages and serves templates
 - Stream Service: Handles data streaming operations
 - Apps Proxy: Manages application proxying and routing
 
@@ -12,7 +11,7 @@ The project uses ETCD for distributed storage and synchronization, with a custom
 
 ### Core Components
 - `/api/`: API definitions and interfaces
-- `/cmd/`: Service entry points (templates-api, stream-api, apps-proxy, kbc)
+- `/cmd/`: Service entry points (stream, apps-proxy, kbc)
 - `/internal/`: Core implementation
   - `/pkg/service/`: Service implementations
   - `/pkg/telemetry/`: OpenTelemetry integration
@@ -21,7 +20,6 @@ The project uses ETCD for distributed storage and synchronization, with a custom
 ### Deployment & Infrastructure
 - `/provisioning/`: Kubernetes and deployment configurations
   - `/stream/`: Stream service deployment
-  - `/templates-api/`: Templates API deployment
   - `/apps-proxy/`: Apps Proxy deployment
   - `/cli-dist/`: CLI distribution
   - `/common/`: Shared resources

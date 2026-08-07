@@ -1,5 +1,0 @@
-{
-  parameters: {
-    "foo": "bar",
-  },
-}
