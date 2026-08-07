@@ -29,7 +29,6 @@
 //
 // Dependencies containers for services are in separate packages
 //   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies]
-//   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies]
 //   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies]
 //
 // Example of difference between CLI and API dependencies implementations:

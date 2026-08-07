@@ -53,14 +53,12 @@
 # Key Directories
 ## API Design
 - `api/`: API definitions and interfaces
-  - `templates/`: Templates API specifications
   - `stream/`: Stream API specifications
   - `appsproxy/`: Apps Proxy API specifications
   - `docs/`: API documentation in Markdown
 
 ## Main Entry Points
 - `cmd/`: Main program entry points
-  - `templates-api/`: Templates service executable
   - `stream-api/`: Stream service executable
   - `appsproxy-api/`: Apps Proxy service executable
   - `kbc/`: CLI part of Keboola Connection service
@@ -83,7 +81,6 @@
     - Data streaming functionality
     - Pipeline processing
     - Event handling and routing
-  - `templates/`: Templates service implementation
     - Template management
     - Version control integration
     - Template rendering and validation
@@ -102,7 +99,6 @@
     - Service configuration
     - Resource limits and scaling
     - Network policies
-  - `templates-api/`: Templates API service deployment
     - API server configuration
     - Storage settings
     - Service mesh integration
@@ -127,7 +123,6 @@
 - `docs/`: Project documentation in Markdown
   - Service-specific documentation:
     - `stream/`: Stream service documentation
-    - `templates/`: Templates service documentation
     - `apps-proxy/`: Apps Proxy documentation
     - `cli/`: CLI documentation
   - Core documentation files:

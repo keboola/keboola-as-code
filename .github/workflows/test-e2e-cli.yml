@@ -65,7 +65,7 @@ jobs:
           TEST_KBC_PROJECTS_LOCK_HOST: ${{ vars.TEST_KBC_PROJECTS_LOCK_HOST }}
           TEST_KBC_PROJECTS_LOCK_PASSWORD: ${{ secrets.TEST_KBC_PROJECTS_LOCK_PASSWORD }}
           TEST_KBC_PROJECTS_FILE: '${{ github.workspace }}/${{ vars.TEST_KBC_PROJECTS_FILE }}'
-          package-exception-regex: "./internal/pkg/service/appsproxy|./internal/pkg/service/stream|./internal/pkg/service/templates"
+          package-exception-regex: "./internal/pkg/service/appsproxy|./internal/pkg/service/stream"
         run: |
           set -eo pipefail
 

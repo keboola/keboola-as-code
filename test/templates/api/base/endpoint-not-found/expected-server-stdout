@@ -1,2 +1,0 @@
-{"level":"info","message":"no endpoint found for path \"/foo/bar\"","error.name":"templates.endpointNotFound"}
-{"level":"info","message":"req 404 /foo/bar","component":"api.http","http.time":"%s","http.client.ip":"127.0.0.1","http.client.agent":"%s","http.request_id":"%a"}

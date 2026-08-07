@@ -66,7 +66,6 @@ task tests
 
 ### Building (Local Development)
 - `task build-local` - Build CLI for current platform (output: `./target`)
-- `task build-templates-api` - Build Templates API service
 - `task build-stream-service` - Build Stream service
 - `task build-apps-proxy` - Build Apps Proxy service
 
@@ -106,7 +105,6 @@ All services use Docker Compose for development:
    - Templates API: `export TEMPLATES_STORAGE_API_HOST=connection.keboola.com`
    - Stream Service: `export STREAM_STORAGE_API_HOST=connection.keboola.com`
 3. Run service:
-   - `task run-templates-api` - API at http://localhost:8000/
    - `task run-stream-service` - API at http://localhost:8001/
    - `task run-apps-proxy` - Apps Proxy service
 
@@ -117,7 +115,6 @@ Services auto-reload on code changes using Air.
 - OpenAPI documentation available at `localhost:<port>/v1/documentation` when service is running
 
 ### Code Generation
-- `task generate-templates-api` - Regenerate Templates API from Goa design
 - `task generate-stream-api` - Regenerate Stream API from Goa design
 - `task generate-appsproxy-api` - Regenerate Apps Proxy API from Goa design
 - `task generate-model` - Generate domain models

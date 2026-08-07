@@ -151,9 +151,9 @@ API development uses [Goa code generator](https://goa.design/).
 
 To run the API locally:
 1. Start `bash` in the dev container, run `docker compose run --rm -u "$UID:$GID" --service-ports dev bash`.
-2. Set env var with Keboola stack: `export TEMPLATES_STORAGE_API_HOST=connection.keboola.com` (or `STREAM_STORAGE_API_HOST`)
-3. In the container run `task run-templates-api` (or `task run-stream-service`)
- - The API is exposed to `http://localhost:8000/` (or `http://localhost:8001/`
+2. Set env var with Keboola stack: `export STREAM_STORAGE_API_HOST=connection.keboola.com`
+3. In the container run `task run-stream-service`
+ - The API is exposed to `http://localhost:8001/`
  - When the code changes, the API recompiles and restarts.
 
 To run Stream Worker locally:
@@ -161,7 +161,6 @@ To run Stream Worker locally:
 2. Set env var with Keboola stack: `export STREAM_WORKER_STORAGE_API_HOST=connection.keboola.com`
 3. In the container run `task run-stream-worker`
 
-**Note:** Templates API production deployment is now managed via GitOps. Only `provisioning/templates-api/dev` and `provisioning/templates-api/docker` remain for local development.
 **Note:** Stream service production deployment is now managed via GitOps. Only `provisioning/stream/dev` and `provisioning/stream/docker` remain for local development.
 
 

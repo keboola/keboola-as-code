@@ -92,9 +92,9 @@ task tests
 # Build local CLI binary
 task build-local
 
-# Run specific service (e.g., templates API)
-export TEMPLATES_STORAGE_API_HOST=connection.keboola.com
-go run cmd/templates-api/main.go
+# Run specific service (e.g., stream service)
+export STREAM_STORAGE_API_HOST=connection.keboola.com
+go run cmd/stream/main.go
 
 # Run stream service
 export STREAM_STORAGE_API_HOST=connection.keboola.com
