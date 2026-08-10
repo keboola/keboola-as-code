@@ -123,13 +123,6 @@ h1{
   text-wrap:balance;
 }
 h1 .accent{color:var(--app-primary)}
-/* No margin here: the gap comes from a real space in the markup. A margin
-   would separate the code visually while the text content still read
-   "502Request to application failed" to a screen reader or a copy-paste. */
-h1 .code{
-  font-variant-numeric:tabular-nums;
-  color:var(--danger);
-}
 
 p.lede{
   font-size:14px;line-height:21px;
@@ -138,6 +131,9 @@ p.lede{
   max-width:40ch;
   text-wrap:pretty;
 }
+/* The failed page's lede has to explain a cause and name a next step, which is
+   two clauses; 40ch breaks that into a narrow column of four short lines. */
+.s-failed p.lede{max-width:50ch}
 
 /* --- cards (login, selector) -------------------------------------------- */
 .card{
@@ -237,6 +233,15 @@ input:focus{
   transition:filter .15s var(--ease-io);
 }
 .btn:hover,.btn:focus-visible{filter:brightness(.93)}
+/* Standalone action outside a card (error page "Try again"): sized to its
+   label, because a full-width button with nothing to align to reads as a
+   form the page doesn't have. */
+.btn--inline{
+  display:inline-flex;width:auto;
+  margin-top:0;padding:10px 20px;
+  text-decoration:none;
+}
+.actions{margin:22px 0 0}
 
 .provider{
   display:flex;align-items:center;justify-content:center;gap:9px;

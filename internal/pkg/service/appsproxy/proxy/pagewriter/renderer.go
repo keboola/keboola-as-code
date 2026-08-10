@@ -13,7 +13,10 @@ func renderPlainText(page string, status int) string {
 		return `The application has been stopped and cannot be restarted automatically.`
 
 	case "error.gohtml":
-		return fmt.Sprintf("An error occurred (status code: %d). Please try again later.", status)
+		// Same wording as the HTML page, so the Streamlit modal and the full
+		// page never explain the same failure two different ways.
+		c := copyForStatus(status)
+		return fmt.Sprintf("%s. %s (status code: %d)", c.Title, c.Guidance, status)
 
 	default:
 		return `No additional information is available.`

@@ -119,16 +119,21 @@
     </g>
   </svg></div>
 {{ if and .App .App.Name }}  <p class="eyebrow">{{ .App.Name }}</p>
-{{ end }}  <h1><span class="code">{{ .Status }}</span> {{ .StatusText }}</h1>
-  <p class="lede">Quote the exception ID below if you contact support.</p>
-{{ if .Details }}  <details class="disclosure">
+{{ end }}  <h1>{{ .Title }}</h1>
+  <p class="lede">{{ .Guidance }}</p>
+{{ if .Retryable }}  <!-- Empty href resolves to the current URL, so this reloads whatever the
+       user was trying to open, with no script and nothing reflected into the
+       markup. Only rendered where a retry can actually succeed. -->
+  <p class="actions"><a class="btn btn--inline" href="">Try again</a></p>
+{{ end }}{{ if .Details }}  <details class="disclosure">
     <summary>Technical details</summary>
     <pre>{{ .Details }}</pre>
   </details>
 {{ end }}  <div class="meta">
 {{ if and .App .App.ID .App.ProjectID }}    <div>App <b>{{ .App.ID }}</b></div>
     <div>Project <b>{{ .App.ProjectID }}</b></div>
-{{ end }}    <div>Exception <b>{{ .ExceptionID }}</b></div>
+{{ end }}    <div>Status <b>{{ .Status }} {{ .StatusText }}</b></div>
+    <div>Exception <b>{{ .ExceptionID }}</b></div>
   </div>
 </div>
 {{ template "footer" }}
