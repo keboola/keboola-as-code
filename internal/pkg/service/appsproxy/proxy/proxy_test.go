@@ -2266,7 +2266,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Basic Authentication")
+				assert.Contains(t, string(body), "<title>Login</title>")
 
 				// Fill wrong password into form
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/", bytes.NewBuffer([]byte("password=")))
@@ -2292,7 +2292,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Basic Authentication")
+				assert.Contains(t, string(body), "<title>Login</title>")
 
 				// Fill wrong password into form
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/", bytes.NewBuffer([]byte("password=def")))
@@ -2318,7 +2318,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Basic Authentication")
+				assert.Contains(t, string(body), "<title>Login</title>")
 
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/app/url", bytes.NewBuffer([]byte("password=abc")))
 				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -2365,7 +2365,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Basic Authentication")
+				assert.Contains(t, string(body), "<title>Login</title>")
 
 				// Fill correct password into form
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/_proxy/form", bytes.NewBuffer([]byte("password=abc")))
@@ -2459,7 +2459,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Basic Authentication")
+				assert.Contains(t, string(body), "<title>Login</title>")
 				require.Empty(t, response.Cookies())
 			},
 			expectedNotifications: map[string]int{},

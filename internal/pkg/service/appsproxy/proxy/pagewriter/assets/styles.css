@@ -145,12 +145,6 @@ p.lede{
   border:1px solid var(--hairline);
   border-radius:12px;
 }
-.card h2{
-  font-size:15px;font-weight:600;line-height:22px;
-  letter-spacing:-.01em;
-  margin:0 0 18px;
-  text-align:center;
-}
 
 label{
   display:block;

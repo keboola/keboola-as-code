@@ -16,7 +16,6 @@
 {{ if .App.Name }}  <p class="eyebrow">{{ .App.Name }}</p>
 {{ end }}  <h1>Choose how to sign in</h1>
   <div class="card">
-    <h2>Select a Provider</h2>
     {{ range .Providers }}
     <a href="{{ .URL }}" class="provider">{{ .Name }}</a>
     {{ end }}
