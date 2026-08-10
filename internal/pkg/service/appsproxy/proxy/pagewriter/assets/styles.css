@@ -74,23 +74,88 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 
-/* --- state wash: a whisper of colour behind the fold, per state --------- */
-body::before{
+/* --- bloom: the strip's light --------------------------------------------
+   A short gradient falling away from the top edge, set only on the two states
+   that have a strip up there. It is the strip's spill, which is why it is
+   anchored to the same edge and dies at a fixed distance rather than fading out
+   partway down the viewport.
+
+   Half the intensity of the radial wash it replaces, and 220px instead of 60vh:
+   the earlier version tinted the whole upper half of the page, which is what
+   made a diluted warm red read as chalky on white and muddy on dark. Ending it
+   well above the illustration keeps the illustration's own white plates clean.
+
+   No strip means no bloom. Action and at-rest keep the app's own background,
+   because a gradient with nothing above it is unanchored decoration again. */
+body{
+  background-image:linear-gradient(180deg, var(--bloom,transparent) 0, transparent 220px);
+  background-repeat:no-repeat;
+}
+.s-working{--bloom:color-mix(in srgb, var(--app-primary) 9%, transparent)}
+.s-failed {--bloom:color-mix(in srgb, var(--danger)      7%, transparent)}
+
+/* --- failure marker -----------------------------------------------------
+   The only page-level state chrome on any of the six pages, and only the
+   failed state gets it.
+
+   It replaces a per-state radial wash tinting the top 60vh. That wash had to
+   dilute its colour to stay behind content, and a diluted warm red reads as a
+   faded highlighter rather than an alert: 13% of --danger over white computes
+   to #FCE7E8, and over a dark --app-bg it computes to a muddy maroon, which is
+   what per-app theming would have produced. A saturated edge keeps the colour
+   legible, is anchored to something real instead of fading out at an arbitrary
+   point down the viewport, and survives any --app-bg.
+
+   Deliberately not generalised to the other three states: a blue bar across the
+   top of a loading page reads as a progress bar that never progresses. Working,
+   action and at-rest carry their state in the illustration and the heading. */
+.s-failed::after{
   content:'';
   position:fixed;
   inset:0 0 auto;
-  height:60vh;
+  height:3px;
   pointer-events:none;
-  z-index:0;
-  background:radial-gradient(120% 90% at 50% -10%,
-             var(--wash,transparent) 0%, transparent 70%);
+  z-index:2;
+  background:var(--danger);
 }
-.s-working{--wash:color-mix(in srgb, var(--app-primary) 16%, transparent)}
-.s-action {--wash:color-mix(in srgb, var(--app-primary)  9%, transparent)}
-.s-rest   {--wash:color-mix(in srgb, var(--app-text)     7%, transparent)}
-.s-failed {--wash:color-mix(in srgb, var(--danger)      13%, transparent)}
 
-body > *{position:relative;z-index:1}
+/* --- progress, same slot -------------------------------------------------
+   The working states take the same 3px strip and move it. Deliberately
+   indeterminate: the proxy learns nothing about how far a cold start has got,
+   only whether the upstream is still answering 503, so a percentage or a
+   filling bar would be invented. An indeterminate sweep claims exactly what is
+   known — this is running, duration unknown.
+
+   Together the strip becomes one signal read at a glance without scrolling:
+   moving means working, static red means failed, absent means the page is
+   waiting on the user or the app is stopped. Action and at-rest get nothing,
+   because nothing is in progress on either. ---------------------------- */
+.s-working::before,
+.s-working::after{
+  content:'';
+  position:fixed;
+  top:0;left:0;
+  height:3px;
+  pointer-events:none;
+}
+/* Track: keeps the segment reading as a bar rather than a stray dash. */
+.s-working::before{
+  right:0;
+  z-index:2;
+  background:color-mix(in srgb, var(--app-primary) 15%, transparent);
+}
+/* Segment. Travels its own width off the left edge to clear of the right one:
+   100vw / 34vw ≈ 294%, rounded up so it fully exits. */
+.s-working::after{
+  width:34%;
+  z-index:3;
+  background:var(--app-primary);
+  animation:advance 1.9s var(--ease-io) infinite;
+}
+@keyframes advance{
+  from{transform:translateX(-100%)}
+  to  {transform:translateX(300%)}
+}
 
 /* --- shell -------------------------------------------------------------- */
 .shell{
@@ -489,6 +554,12 @@ footer svg{display:block;width:72px;height:auto;fill:var(--ink-4)}
   .sheen{display:none!important}
   /* Working must not look frozen — frozen is what reads as an error. */
   .s-working .skeleton{animation:soft-pulse 2.6s var(--ease-io) infinite!important}
+  /* The progress sweep becomes a full-width bar that breathes in place: still
+     unmistakably in progress, with nothing traversing the screen. */
+  .s-working::after{
+    width:100%!important;
+    animation:soft-pulse 2.6s var(--ease-io) infinite!important;
+  }
   /* Rest must still arrive at the hollow shell, just without the journey. */
   .s-rest .mark{opacity:.8}
   .s-rest .dock,.s-rest .part,.s-rest .frame,.s-rest .wire{opacity:0!important}
