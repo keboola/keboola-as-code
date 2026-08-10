@@ -38,6 +38,7 @@ type SlicePipeline struct {
 	wg     sync.WaitGroup
 
 	lock     sync.RWMutex
+	closed   bool
 	pipeline encoding.Pipeline
 }
 
@@ -134,37 +135,51 @@ func (p *SlicePipeline) WriteRecord(c recordctx.Context) (pipelinePkg.WriteResul
 }
 
 func (p *SlicePipeline) Close(ctx context.Context, cause string) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
+	// Cancel the open-retry loop right away, without waiting for the lock, so an in-flight
+	// OpenPipeline attempt (if it respects ctx) can abort instead of running to completion.
+	p.cancel(errors.New("slice pipeline closed"))
 
-	// Stop if the pipeline is not opened
-	if p.pipeline == nil {
+	p.lock.Lock()
+	// Close may be called twice: explicitly by SinkPipeline and via the closeFunc callback
+	// the underlying encoding pipeline invokes on its own connection failure.
+	if p.closed {
+		p.lock.Unlock()
 		return
 	}
+	p.closed = true
+	pipeline := p.pipeline
+	p.pipeline = nil
+	p.lock.Unlock()
 
 	p.logger.Debugf(ctx, "closing slice pipeline: %s", cause)
 
-	// Cancel open loop, if running
-	p.cancel(errors.New("slice pipeline closed"))
+	// Wait for the open-retry goroutine to stop, whether it managed to open a pipeline or not.
 	p.wg.Wait()
 
-	// Close underlying encoding pipeline
-	ctx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("slice pipeline close timeout"))
-	defer cancel()
-	if err := p.pipeline.Close(ctx); err != nil {
-		p.logger.Errorf(ctx, "cannot close slice pipeline: %s", err)
-	} else {
-		p.logger.Infof(ctx, "closed slice pipeline: %s", cause)
+	// Close the underlying encoding pipeline, if it was opened.
+	if pipeline != nil {
+		closeCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("slice pipeline close timeout"))
+		defer cancel()
+		if err := pipeline.Close(closeCtx); err != nil {
+			p.logger.Errorf(closeCtx, "cannot close slice pipeline: %s", err)
+		} else {
+			p.logger.Infof(closeCtx, "closed slice pipeline: %s", cause)
+		}
 	}
-	p.pipeline = nil
 
-	// Notify parent SinkPipeline
+	// Notify parent SinkPipeline, even if the pipeline never finished opening.
 	p.onClose(ctx, cause)
 }
 
 func (p *SlicePipeline) tryOpen() error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+
+	// Already closed, e.g. by the encoding pipeline's own closeFunc callback, don't open a
+	// pipeline that would just have to be closed again the moment Close's wg.Wait returns.
+	if p.closed {
+		return nil
+	}
 
 	ctx := p.ctx
 
