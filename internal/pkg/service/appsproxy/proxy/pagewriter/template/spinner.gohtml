@@ -11,7 +11,32 @@
         <meta http-equiv="refresh" content="{{.MetaRefreshSeconds}}">
     </noscript>
     <script>
+        // Escalating copy. A cold start can run far longer than "a few moments",
+        // and a page that says the same thing at second 90 as at second 3 reads
+        // as stuck — perpetual motion says something is happening, not that this
+        // is progressing. Wall clock rather than a tick count, so a backgrounded
+        // tab (where setInterval is throttled) still escalates on real time.
+        var startedAt = Date.now();
+        var stage = 0;
+        var stages = [
+            {
+                after: 15,
+                text: "Still starting. This app hasn't run for a while, so it is being built from cold."
+            },
+            {
+                after: 45,
+                text: "This is taking longer than usual. It should still finish — if it doesn't, quote the IDs below to support."
+            }
+        ];
+
         setInterval(function() {
+            var lede = document.getElementById('lede');
+            var elapsed = (Date.now() - startedAt) / 1000;
+            while (lede && stage < stages.length && elapsed >= stages[stage].after) {
+                lede.textContent = stages[stage].text;
+                stage++;
+            }
+
             fetch(window.location.href).then(function (response) {
                 // Refresh the page, if the app is started
                 if (response.status !== 503) {
@@ -124,8 +149,10 @@
   </svg></div>
 {{ if .App.Name }}  <h1>Starting <span class="accent">{{ .App.Name }}</span></h1>
 {{ else }}  <h1>Starting your application</h1>
-{{ end }}  <p class="lede">Your application is being provisioned. This usually takes a few
-     moments &mdash; longer if it hasn't run recently.</p>
+{{ end }}  <!-- aria-live so the escalation is spoken, not only shown: a screen reader
+       user waiting on a slow cold start is exactly who needs to hear it. -->
+  <p class="lede" id="lede" aria-live="polite">Your application is being provisioned. This usually
+     takes a few moments &mdash; longer if it hasn't run recently.</p>
 {{ template "appmeta" . }}
 </div>
 {{ template "footer" }}
