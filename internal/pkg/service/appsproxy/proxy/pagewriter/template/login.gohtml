@@ -24,13 +24,62 @@
     {{ end }}
     <form method="POST">
       <label for="password">Password</label>
-      <input type="password" id="password" name="password" placeholder="Enter password" required />
+      <div class="field">
+        <input type="password" id="password" name="password" placeholder="Enter password"
+               autocomplete="current-password" required />
+        <!-- Hidden until the script below runs. The input type cannot be
+             switched without JavaScript, and a control that silently does
+             nothing is worse than no control at all. -->
+        <button class="reveal" id="reveal" type="button" hidden
+                aria-controls="password" aria-label="Show password">
+          <svg class="icon-show" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M2.5,12 C5,7.5 8.4,5.5 12,5.5 C15.6,5.5 19,7.5 21.5,12
+                     C19,16.5 15.6,18.5 12,18.5 C8.4,18.5 5,16.5 2.5,12 Z"/>
+            <circle cx="12" cy="12" r="3.1"/>
+          </svg>
+          <svg class="icon-hide" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4,4 L20,20"/>
+            <path d="M9.6,6 C10.4,5.7 11.2,5.5 12,5.5 C15.6,5.5 19,7.5 21.5,12
+                     C20.7,13.5 19.8,14.7 18.8,15.6"/>
+            <path d="M15.3,17.9 C14.3,18.3 13.2,18.5 12,18.5 C8.4,18.5 5,16.5 2.5,12
+                     C3.6,10 4.9,8.5 6.4,7.6"/>
+            <path d="M9.9,10 C9.4,10.5 9,11.2 9,12 C9,13.7 10.3,15 12,15
+                     C12.8,15 13.5,14.7 14,14.2"/>
+          </svg>
+        </button>
+      </div>
       {{ .CsrfField }}
       <button class="btn" type="submit" name="submit">Unlock app</button>
     </form>
+    <p class="sr-only" id="revealStatus" role="status"></p>
   </div>
 {{ template "appmeta" . }}
 </div>
 {{ template "footer" }}
+<script>
+  // Password reveal. Progressive enhancement: the button ships hidden and is
+  // only shown once this runs, so a no-JS client sees a plain password field
+  // rather than a dead toggle.
+  (function () {
+    var input = document.getElementById('password');
+    var button = document.getElementById('reveal');
+    var status = document.getElementById('revealStatus');
+    if (!input || !button) {
+      return;
+    }
+    button.hidden = false;
+    button.addEventListener('click', function () {
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      button.classList.toggle('is-visible', show);
+      // The accessible name states the action, not the state — announcing the
+      // state is the live region's job below.
+      button.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      status.textContent = show
+        ? 'Your password is visible.'
+        : 'Your password is hidden.';
+    });
+  })();
+</script>
 </body>
 </html>
