@@ -133,9 +133,55 @@
 {{ if and .App .App.ID .App.ProjectID }}    <div>App <b>{{ .App.ID }}</b></div>
     <div>Project <b>{{ .App.ProjectID }}</b></div>
 {{ end }}    <div>Status <b>{{ .Status }} {{ .StatusText }}</b></div>
-    <div>Exception <b>{{ .ExceptionID }}</b></div>
+    <div class="meta__id">
+      <span>Exception <b id="exceptionId">{{ .ExceptionID }}</b></span>
+      <!-- Hidden until the script confirms a clipboard is available. The page
+           asks the user to send this ID to support, so transcribing 30-odd
+           characters of hex by hand is the one job worth removing. -->
+      <button class="copy" id="copyException" type="button" hidden
+              aria-label="Copy exception ID">
+        <svg class="icon-copy" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect x="9" y="9" width="11" height="11" rx="2.5"/>
+          <path d="M15,5.5 A2.5,2.5 0 0 0 12.5,3 H6.5 A2.5,2.5 0 0 0 4,5.5 V14"/>
+        </svg>
+        <svg class="icon-copied" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4.5,12.5 L9.5,17.5 L19.5,6.5"/>
+        </svg>
+      </button>
+    </div>
   </div>
 </div>
 {{ template "footer" }}
+<p class="sr-only" id="copyStatus" role="status"></p>
+<script>
+  // Copy the exception ID. Progressive enhancement: the button stays hidden
+  // unless a clipboard is actually reachable, so it never offers an action it
+  // cannot perform. The ID itself is plain selectable text either way.
+  (function () {
+    var button = document.getElementById('copyException');
+    var value = document.getElementById('exceptionId');
+    var status = document.getElementById('copyStatus');
+    if (!button || !value || !navigator.clipboard) {
+      return;
+    }
+    button.hidden = false;
+    button.addEventListener('click', function () {
+      navigator.clipboard.writeText(value.textContent.trim()).then(function () {
+        button.classList.add('is-copied');
+        button.setAttribute('aria-label', 'Exception ID copied');
+        status.textContent = 'Exception ID copied to the clipboard.';
+        // Back to the offer after a beat: a permanent tick stops reading as
+        // confirmation and starts reading as the button's normal state.
+        window.setTimeout(function () {
+          button.classList.remove('is-copied');
+          button.setAttribute('aria-label', 'Copy exception ID');
+          status.textContent = '';
+        }, 2000);
+      }, function () {
+        status.textContent = 'Could not copy. Select the ID and copy it manually.';
+      });
+    });
+  })();
+</script>
 </body>
 </html>

@@ -315,6 +315,39 @@ input:focus{
 .s-failed .meta > * + *{border-left:0}
 .s-failed .meta b{color:var(--ink-1)}
 
+/* The exception ID row carries a copy button, so it lays out as a row rather
+   than a text run. Scoped to its own class: making every .meta child a flex
+   container would put a gap between each label and its value on top of the
+   space already in the markup. */
+.meta__id{
+  display:inline-flex;align-items:center;justify-content:center;gap:2px;
+}
+.copy{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:22px;
+  padding:0;
+  color:var(--ink-3);
+  background:transparent;
+  border:0;border-radius:5px;
+  cursor:pointer;
+  transition:color .15s var(--ease-io);
+}
+.copy:hover{color:var(--ink-1)}
+.copy:focus-visible{
+  outline:0;
+  color:var(--app-primary);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--app-primary) 18%, transparent);
+}
+.copy svg{
+  display:block;width:14px;height:14px;
+  fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.copy .icon-copied,.copy.is-copied .icon-copy{display:none}
+.copy.is-copied .icon-copied{display:block}
+/* Confirmation reads as confirmation only if it looks different from the offer. */
+.copy.is-copied{color:var(--app-primary)}
+
 /* --- footer ------------------------------------------------------------- */
 footer{
   display:flex;flex-direction:column;align-items:center;gap:7px;
