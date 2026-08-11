@@ -783,6 +783,16 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				wildcards.Assert(t, "%AYou do not have permission to access this resource.%A", string(body))
 
+				// The page states the cause in plain language rather than leading with
+				// the status code.
+				assert.Contains(t, string(body), html.EscapeString("You don't have access to this app"),
+					"the 403 should explain the failure, not just name it")
+
+				// A retry cannot succeed on a 403, so it must not be offered — doing so
+				// sends the user into a loop that never resolves.
+				assert.NotContains(t, string(body), "Try again",
+					"a 403 must not offer a retry")
+
 				// Request to private app
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -2267,6 +2277,14 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "<title>Login</title>")
+
+				// The reveal toggle is progressive enhancement, so it must be in the
+				// markup for the script to un-hide. Without it a typo costs a full
+				// round trip, which is the whole reason it exists.
+				assert.Contains(t, string(body), `id="reveal"`,
+					"the login form should carry the password reveal toggle")
+				assert.Contains(t, string(body), `autocomplete="current-password"`,
+					"the password field should be recognisable to password managers")
 
 				// Fill wrong password into form
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/", bytes.NewBuffer([]byte("password=")))
