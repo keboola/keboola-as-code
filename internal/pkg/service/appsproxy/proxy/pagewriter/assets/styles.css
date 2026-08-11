@@ -85,10 +85,13 @@ body{
    made a diluted warm red read as chalky on white and muddy on dark. Ending it
    well above the illustration keeps the illustration's own white plates clean.
 
-   No strip means no bloom. Action and at-rest keep the app's own background,
-   because a gradient with nothing above it is unanchored decoration again. */
-body{
-  background-image:linear-gradient(180deg, var(--bloom,transparent) 0, transparent 220px);
+   No strip means no bloom: the rule is scoped to the two states that have one,
+   so action and at-rest keep the app's own background untouched rather than
+   compositing a fully transparent gradient over it. A gradient with nothing
+   above it is unanchored decoration again, which is what went wrong before. */
+.s-working,
+.s-failed{
+  background-image:linear-gradient(180deg, var(--bloom) 0, transparent 220px);
   background-repeat:no-repeat;
 }
 .s-working{--bloom:color-mix(in srgb, var(--app-primary) 9%, transparent)}
