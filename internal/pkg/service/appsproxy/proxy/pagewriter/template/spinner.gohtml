@@ -11,39 +11,44 @@
         <meta http-equiv="refresh" content="{{.MetaRefreshSeconds}}">
     </noscript>
     <script>
-        // Escalating copy. A cold start can run far longer than "a few moments",
-        // and a page that says the same thing at second 90 as at second 3 reads
-        // as stuck — perpetual motion says something is happening, not that this
-        // is progressing. Wall clock rather than a tick count, so a backgrounded
-        // tab (where setInterval is throttled) still escalates on real time.
-        var startedAt = Date.now();
-        var stage = 0;
-        var stages = [
-            {
-                after: 15,
-                text: "Still starting. This app hasn't run for a while, so it is being built from cold."
-            },
-            {
-                after: 45,
-                text: "This is taking longer than usual. It should still finish — if it doesn't, quote the IDs below to support."
-            }
-        ];
-
-        setInterval(function() {
-            var lede = document.getElementById('lede');
-            var elapsed = (Date.now() - startedAt) / 1000;
-            while (lede && stage < stages.length && elapsed >= stages[stage].after) {
-                lede.textContent = stages[stage].text;
-                stage++;
-            }
-
-            fetch(window.location.href).then(function (response) {
-                // Refresh the page, if the app is started
-                if (response.status !== 503) {
-                    window.location.reload();
+        (function () {
+            // Escalating copy. A cold start can run far longer than "a few moments",
+            // and a page that says the same thing at second 90 as at second 3 reads
+            // as stuck — perpetual motion says something is happening, not that this
+            // is progressing. Wall clock rather than a tick count, so a backgrounded
+            // tab (where setInterval is throttled) still escalates on real time.
+            var startedAt = Date.now();
+            var stage = 0;
+            var lede = null;
+            var stages = [
+                {
+                    after: 15,
+                    text: "Still starting. This app hasn't run for a while, so it is being built from cold."
+                },
+                {
+                    after: 45,
+                    text: "This is taking longer than usual. It should still finish — if it doesn't, the app and project IDs below will help support."
                 }
-            })
-        }, {{.JSRefreshMilliseconds}})
+            ];
+
+            setInterval(function () {
+                // Cached on first use rather than resolved up front: this script runs
+                // in <head>, so the element does not exist yet when it is evaluated.
+                lede = lede || document.getElementById('lede');
+                var elapsed = (Date.now() - startedAt) / 1000;
+                while (lede && stage < stages.length && elapsed >= stages[stage].after) {
+                    lede.textContent = stages[stage].text;
+                    stage++;
+                }
+
+                fetch(window.location.href).then(function (response) {
+                    // Refresh the page, if the app is started
+                    if (response.status !== 503) {
+                        window.location.reload();
+                    }
+                })
+            }, {{.JSRefreshMilliseconds}})
+        })();
     </script>
 
     <link rel="stylesheet" href="/_proxy/assets/styles.css">
