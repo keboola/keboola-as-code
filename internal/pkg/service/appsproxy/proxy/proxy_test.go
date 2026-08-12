@@ -783,6 +783,16 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				wildcards.Assert(t, "%AYou do not have permission to access this resource.%A", string(body))
 
+				// The page states the cause in plain language rather than leading with
+				// the status code.
+				assert.Contains(t, string(body), html.EscapeString("You don't have access to this app"),
+					"the 403 should explain the failure, not just name it")
+
+				// A retry cannot succeed on a 403, so it must not be offered — doing so
+				// sends the user into a loop that never resolves.
+				assert.NotContains(t, string(body), "Try again",
+					"a 403 must not offer a retry")
+
 				// Request to private app
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
 				require.NoError(t, err)
@@ -1948,7 +1958,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Starting your application...")
+				assert.Contains(t, string(body), "<title>Starting</title>")
 
 				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
 			},
@@ -2011,7 +2021,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// Body carries the user-facing "went to sleep, refresh to resume" message
 				// that the frontend shows in its connection modal. It must NOT be
-				// the spinner page ("Starting your application...") served by the
+				// the spinner page ("<title>Starting</title>") served by the
 				// default branch, which would imply the app is auto-restarting.
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
@@ -2019,7 +2029,7 @@ func TestAppProxyRouter(t *testing.T) {
 					"should instruct the user to refresh")
 				assert.Contains(t, string(body), "auto-sleep timeout can be increased or disabled",
 					"should include the prevention hint about the auto-sleep timeout")
-				assert.NotContains(t, string(body), "Starting your application...")
+				assert.NotContains(t, string(body), "<title>Starting</title>")
 			},
 			expectedNotifications: map[string]int{},
 		},
@@ -2196,7 +2206,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err = io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Starting your application...")
+				assert.Contains(t, string(body), "<title>Starting</title>")
 
 				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
 			},
@@ -2266,7 +2276,15 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Basic Authentication")
+				assert.Contains(t, string(body), "<title>Login</title>")
+
+				// The reveal toggle is progressive enhancement, so it must be in the
+				// markup for the script to un-hide. Without it a typo costs a full
+				// round trip, which is the whole reason it exists.
+				assert.Contains(t, string(body), `id="reveal"`,
+					"the login form should carry the password reveal toggle")
+				assert.Contains(t, string(body), `autocomplete="current-password"`,
+					"the password field should be recognisable to password managers")
 
 				// Fill wrong password into form
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/", bytes.NewBuffer([]byte("password=")))
@@ -2292,7 +2310,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Basic Authentication")
+				assert.Contains(t, string(body), "<title>Login</title>")
 
 				// Fill wrong password into form
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/", bytes.NewBuffer([]byte("password=def")))
@@ -2318,7 +2336,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Basic Authentication")
+				assert.Contains(t, string(body), "<title>Login</title>")
 
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/app/url", bytes.NewBuffer([]byte("password=abc")))
 				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -2365,7 +2383,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Basic Authentication")
+				assert.Contains(t, string(body), "<title>Login</title>")
 
 				// Fill correct password into form
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/_proxy/form", bytes.NewBuffer([]byte("password=abc")))
@@ -2459,7 +2477,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Basic Authentication")
+				assert.Contains(t, string(body), "<title>Login</title>")
 				require.Empty(t, response.Cookies())
 			},
 			expectedNotifications: map[string]int{},
@@ -2518,7 +2536,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Starting your application...")
+				assert.Contains(t, string(body), "<title>Starting</title>")
 				assert.NotContains(t, string(body), "Application Disabled")
 
 				// Confirm the app was auto-resumed: the wakeup patches the App

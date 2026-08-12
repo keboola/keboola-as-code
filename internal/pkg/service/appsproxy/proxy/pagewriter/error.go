@@ -23,6 +23,66 @@ type errorPageData struct {
 	StatusText  string
 	Details     string
 	ExceptionID string
+	errorCopy
+}
+
+// errorCopy is the plain-language version of an HTTP status, for the error page.
+//
+// The audience of this page is an end user of a data app, not the person who
+// deployed it — often not a Keboola user at all. "502 Bad Gateway" tells them
+// neither what happened nor what to do next, which is what UT-4805 reported.
+// Title answers the first question, Guidance the second, and Retryable decides
+// whether offering a retry would be honest: on a 403 it would only fail again.
+//
+// The status code and its text are still rendered, demoted to the reference
+// block beside the exception ID, where support actually looks for them.
+type errorCopy struct {
+	Title     string
+	Guidance  string
+	Retryable bool
+}
+
+func copyForStatus(status int) errorCopy {
+	switch status {
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return errorCopy{
+			Title:    "You don't have access to this app",
+			Guidance: "Your account isn't allowed to open this application. Ask the person who shared it with you to give you access.",
+		}
+
+	case http.StatusNotFound:
+		return errorCopy{
+			Title:    "This app doesn't exist",
+			Guidance: "The address may be mistyped, or the application may have been deleted.",
+		}
+
+	case http.StatusRequestTimeout, http.StatusTooManyRequests:
+		return errorCopy{
+			Title:     "The app is busy right now",
+			Guidance:  "It received more requests than it could handle. Wait a few seconds, then try again.",
+			Retryable: true,
+		}
+
+	case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return errorCopy{
+			Title:     "This app isn't responding",
+			Guidance:  "The application is there, but it didn't answer in time. It may be restarting or under load — trying again usually works.",
+			Retryable: true,
+		}
+
+	default:
+		if status >= http.StatusInternalServerError {
+			return errorCopy{
+				Title:     "Something went wrong on our side",
+				Guidance:  "This isn't caused by anything you did. Try again — if it keeps happening, send the exception ID below to support.",
+				Retryable: true,
+			}
+		}
+		return errorCopy{
+			Title:    "This request couldn't be completed",
+			Guidance: "The application couldn't handle the request. Check the address you opened, then try again.",
+		}
+	}
 }
 
 func (pw *Writer) ProxyErrorHandlerFor(app api.AppConfig) func(w http.ResponseWriter, req *http.Request, err error) {
@@ -144,6 +204,7 @@ func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, app *
 		StatusText:  http.StatusText(status),
 		Details:     details,
 		ExceptionID: exceptionID,
+		errorCopy:   copyForStatus(status),
 	}
 
 	// App info is filled in for requests/errors related to an app, otherwise it is empty

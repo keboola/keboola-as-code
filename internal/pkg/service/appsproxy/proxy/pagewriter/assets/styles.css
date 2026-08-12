@@ -1,293 +1,580 @@
-:root {
-    --primary: #1f8fff;
-    --secondary: #1EC71E;
-    --secondar-hover: #179b17;
-    --error: #FFE0E6;
-    --error-bold: #FFC2CC;
-    --input: #EDF0F5;
-    --background: #f2f4f7;
-    --white: #ffffff;
-    --text: #222529;
-    --text-dark: #565c66;
-    --text-muted: #7c8594;
-    --neutral-150: #d9dde5;
-    --neutral-300: #a2aab8;
-    --shadow: 0px 3px 4px 0px rgba(34, 37, 41, 0.12);
+/* ============================================================================
+   apps-proxy page system — redesign sketch
+   Replaces the current shared styles.css across all six pagewriter templates.
+
+   Four states, one visual language:
+     .s-working   spinner, redirect          assembled + alive
+     .s-action    login, selector            assembled + waiting on you
+     .s-rest      restart_disabled           assembled + still
+     .s-failed    error                      assembled + broken
+   ========================================================================= */
+
+:root{
+  /* --- Injected by the proxy. Defaults = today's Keboola theme. Maps 1:1
+         onto the data app's Streamlit config.toml. See AppData TODO. --- */
+  --app-primary: #1F8FFF;   /* primaryColor             */
+  --app-bg:      #FFFFFF;   /* backgroundColor          */
+  --app-surface: #E6F2FF;   /* secondaryBackgroundColor */
+  --app-text:    #222529;   /* textColor                */
+
+  /* --- Semantic. Danger stays fixed: a brand colour must never be the
+         only thing signalling failure. --- */
+  --danger: #E5484D;
+
+  /* --- Derived. color-mix keeps light and dark on one code path. --- */
+  --ink-1:    var(--app-text);
+  --ink-2:    color-mix(in srgb, var(--app-text) 62%, transparent);
+  --ink-3:    color-mix(in srgb, var(--app-text) 42%, transparent);
+  --ink-4:    color-mix(in srgb, var(--app-text) 28%, transparent);
+  /* Outlines carry their weight through value rather than width. A 1px
+     hairline at 20% reads crisp and deliberate; 1.5px starts reading as a
+     wireframe, and thicker light strokes bloom on the dark themes. */
+  --hairline: color-mix(in srgb, var(--app-text) 14%, transparent);
+  --stroke:   color-mix(in srgb, var(--app-text) 20%, transparent);
+  --skeleton: color-mix(in srgb, var(--app-text) 10%, transparent);
+  --skeleton-dim: color-mix(in srgb, var(--app-text) 7%, transparent);
+  --field:    color-mix(in srgb, var(--app-text)  5%, transparent);
+  --sheen:    color-mix(in srgb, var(--app-primary) 42%, transparent);
+  --card:     color-mix(in srgb, var(--app-text)  2%, var(--app-bg));
+
+  --ease-out: cubic-bezier(.16,.78,.30,1);
+  --ease-io:  cubic-bezier(.65,0,.35,1);
+  /* Settling, for the power-down. Slow release, no rebound. */
+  --ease-settle: cubic-bezier(.36,0,.28,1);
 }
 
-body {
-    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
-    box-sizing: border-box;
-    width: 100%;
-    min-height: 100vh;
-    color: var(--text);
-    background: var(--background);
-    padding: 64px 32px 32px;
-    margin: 0;
+/* Fallbacks for engines without color-mix (pre-2023). Solid, light-theme
+   values; the custom properties above win wherever color-mix is supported. */
+@supports not (color: color-mix(in srgb, #000 50%, transparent)){
+  :root{
+    --ink-2:#5a6068; --ink-3:#878d96; --ink-4:#aab0b8;
+    --hairline:#dfe3ea; --stroke:#ccd3dd;
+    --skeleton:#e8ebf1; --skeleton-dim:#eff2f6; --field:#f3f5f9;
+    --sheen:rgba(31,143,255,.30); --card:#fcfcfd;
+  }
 }
 
-body,
-header,
-main,
-footer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+*,*::before,*::after{box-sizing:border-box}
+
+html{-webkit-text-size-adjust:100%}
+
+body{
+  margin:0;
+  min-height:100svh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:40px 24px 24px;
+  background:var(--app-bg);
+  color:var(--ink-1);
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,
+              'Helvetica Neue',Arial,'Noto Sans',sans-serif;
+  font-feature-settings:'cv05' 1,'ss01' 1;
+  text-align:center;
+  -webkit-font-smoothing:antialiased;
 }
 
-header {
-    max-width: 410px;
-    text-align: center;
+/* --- bloom: the strip's light --------------------------------------------
+   A short gradient falling away from the top edge, set only on the two states
+   that have a strip up there. It is the strip's spill, which is why it is
+   anchored to the same edge and dies at a fixed distance rather than fading out
+   partway down the viewport.
+
+   Half the intensity of the radial wash it replaces, and 220px instead of 60vh:
+   the earlier version tinted the whole upper half of the page, which is what
+   made a diluted warm red read as chalky on white and muddy on dark. Ending it
+   well above the illustration keeps the illustration's own white plates clean.
+
+   No strip means no bloom: the rule is scoped to the two states that have one,
+   so action and at-rest keep the app's own background untouched rather than
+   compositing a fully transparent gradient over it. A gradient with nothing
+   above it is unanchored decoration again, which is what went wrong before. */
+.s-working,
+.s-failed{
+  background-image:linear-gradient(180deg, var(--bloom) 0, transparent 220px);
+  background-repeat:no-repeat;
+}
+.s-working{--bloom:color-mix(in srgb, var(--app-primary) 9%, transparent)}
+.s-failed {--bloom:color-mix(in srgb, var(--danger)      7%, transparent)}
+
+/* --- failure marker -----------------------------------------------------
+   The only page-level state chrome on any of the six pages, and only the
+   failed state gets it.
+
+   It replaces a per-state radial wash tinting the top 60vh. That wash had to
+   dilute its colour to stay behind content, and a diluted warm red reads as a
+   faded highlighter rather than an alert: 13% of --danger over white computes
+   to #FCE7E8, and over a dark --app-bg it computes to a muddy maroon, which is
+   what per-app theming would have produced. A saturated edge keeps the colour
+   legible, is anchored to something real instead of fading out at an arbitrary
+   point down the viewport, and survives any --app-bg.
+
+   Deliberately not generalised to the other three states: a blue bar across the
+   top of a loading page reads as a progress bar that never progresses. Working,
+   action and at-rest carry their state in the illustration and the heading. */
+.s-failed::after{
+  content:'';
+  position:fixed;
+  inset:0 0 auto;
+  height:3px;
+  pointer-events:none;
+  z-index:2;
+  background:var(--danger);
 }
 
-header > section {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    margin-top: 12px;
-    color: var(--text-dark);
+/* --- progress, same slot -------------------------------------------------
+   The working states take the same 3px strip and move it. Deliberately
+   indeterminate: the proxy learns nothing about how far a cold start has got,
+   only whether the upstream is still answering 503, so a percentage or a
+   filling bar would be invented. An indeterminate sweep claims exactly what is
+   known — this is running, duration unknown.
+
+   Together the strip becomes one signal read at a glance without scrolling:
+   moving means working, static red means failed, absent means the page is
+   waiting on the user or the app is stopped. Action and at-rest get nothing,
+   because nothing is in progress on either. ---------------------------- */
+.s-working::before,
+.s-working::after{
+  content:'';
+  position:fixed;
+  top:0;left:0;
+  height:3px;
+  pointer-events:none;
+}
+/* Track: keeps the segment reading as a bar rather than a stray dash. */
+.s-working::before{
+  right:0;
+  z-index:2;
+  background:color-mix(in srgb, var(--app-primary) 15%, transparent);
+}
+/* Segment. Travels its own width off the left edge to clear of the right one:
+   100vw / 34vw ≈ 294%, rounded up so it fully exits. */
+.s-working::after{
+  width:34%;
+  z-index:3;
+  background:var(--app-primary);
+  animation:advance 1.9s var(--ease-io) infinite;
+}
+@keyframes advance{
+  from{transform:translateX(-100%)}
+  to  {transform:translateX(300%)}
 }
 
-main {
-    text-align: center;
-    margin: 14vh 0 32px 0;
-    padding: 32px;
-    min-width: 320px;
-    max-width: 450px;
+/* --- shell -------------------------------------------------------------- */
+.shell{
+  flex:1;
+  width:100%;
+  max-width:520px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
 }
 
-main > p:first-of-type {
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 24px;
-    color: var(--text-dark);
-    margin: 0;
+.mark{width:100%;max-width:420px;margin-bottom:34px}
+.mark svg{display:block;width:100%;height:auto;overflow:visible}
+.mark--sm{max-width:180px;margin-bottom:26px}
+.mark--xs{max-width:104px;margin-bottom:24px}
+
+.eyebrow{
+  font-size:11px;font-weight:600;line-height:16px;
+  letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);
+  margin:0 0 10px;
 }
 
-main > p:not(:last-child) {
-    margin-bottom: 16px;
+h1{
+  font-size:22px;font-weight:600;line-height:30px;
+  letter-spacing:-.016em;
+  margin:0;
+  text-wrap:balance;
+}
+h1 .accent{color:var(--app-primary)}
+
+p.lede{
+  font-size:14px;line-height:21px;
+  color:var(--ink-2);
+  margin:10px 0 0;
+  max-width:40ch;
+  text-wrap:pretty;
+}
+/* The failed page's lede has to explain a cause and name a next step, which is
+   two clauses; 40ch breaks that into a narrow column of four short lines. */
+.s-failed p.lede{max-width:50ch}
+
+/* --- cards (login, selector) -------------------------------------------- */
+.card{
+  width:100%;max-width:340px;
+  margin-top:28px;
+  padding:24px;
+  text-align:left;
+  background:var(--card);
+  border:1px solid var(--hairline);
+  border-radius:12px;
 }
 
-.exception {
-    font-size: 14px;
-    line-height: 20px;
-    margin: 0 0 16px 0;
+label{
+  display:block;
+  font-size:12px;font-weight:500;line-height:18px;
+  color:var(--ink-2);
+  margin-bottom:6px;
 }
 
-.exception::before {
-    content: 'Exception ID: ';
-    color: var(--text-dark);
+input[type=password],input[type=text]{
+  display:block;width:100%;
+  padding:10px 13px;
+  font:inherit;font-size:14px;line-height:20px;
+  color:var(--ink-1);
+  background:var(--field);
+  border:1px solid transparent;
+  border-radius:8px;
+  transition:border-color .15s var(--ease-io), box-shadow .15s var(--ease-io);
+}
+input::placeholder{color:var(--ink-4)}
+input:focus{
+  outline:0;
+  border-color:var(--app-primary);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--app-primary) 18%, transparent);
 }
 
-main > img {
-    width: 200px;
-    height: 145px;
-    object-fit: cover;
+/* --- password reveal ----------------------------------------------------
+   The toggle sits inside the field rather than beside it: it acts on the
+   field's contents, and a control parked outside reads as a second, separate
+   thing to decide about. Full field height, so the target is comfortable on
+   touch without the icon growing to match. */
+.field{position:relative}
+.field input{padding-right:44px}
+.reveal{
+  position:absolute;top:0;right:0;
+  display:flex;align-items:center;justify-content:center;
+  width:42px;height:100%;
+  padding:0;
+  color:var(--ink-3);
+  background:transparent;
+  border:0;border-radius:0 8px 8px 0;
+  cursor:pointer;
+  transition:color .15s var(--ease-io);
+}
+.reveal:hover{color:var(--ink-1)}
+.reveal:focus-visible{
+  outline:0;
+  color:var(--app-primary);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--app-primary) 18%, transparent);
+}
+.reveal svg{
+  display:block;width:17px;height:17px;
+  fill:none;stroke:currentColor;stroke-width:1.5;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+/* One icon at a time: crossed-out eye only while the password is showing. */
+.reveal .icon-hide,.reveal.is-visible .icon-show{display:none}
+.reveal.is-visible .icon-hide{display:block}
+
+/* Announced, never shown. Used by the reveal's live region. */
+.sr-only{
+  position:absolute;
+  width:1px;height:1px;
+  margin:-1px;padding:0;
+  overflow:hidden;
+  clip-path:inset(50%);
+  white-space:nowrap;
+  border:0;
 }
 
-footer {
-    margin-top: auto;
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;
+  margin-top:16px;padding:11px 16px;
+  font:inherit;font-size:13px;font-weight:600;line-height:20px;
+  letter-spacing:.01em;
+  color:var(--app-bg);
+  background:var(--app-primary);
+  border:0;border-radius:8px;
+  cursor:pointer;
+  transition:filter .15s var(--ease-io);
+}
+.btn:hover,.btn:focus-visible{filter:brightness(.93)}
+/* Standalone action outside a card (error page "Try again"): sized to its
+   label, because a full-width button with nothing to align to reads as a
+   form the page doesn't have. */
+.btn--inline{
+  display:inline-flex;width:auto;
+  margin-top:0;padding:10px 20px;
+  text-decoration:none;
+}
+.actions{margin:22px 0 0}
+
+.provider{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  padding:11px 16px;
+  font-size:13px;font-weight:500;line-height:20px;
+  color:var(--ink-1);text-decoration:none;
+  background:transparent;
+  border:1px solid var(--stroke);
+  border-radius:8px;
+  transition:border-color .15s var(--ease-io), background .15s var(--ease-io);
+}
+.provider + .provider{margin-top:8px}
+.provider:hover,.provider:focus-visible{
+  border-color:var(--app-primary);
+  background:color-mix(in srgb, var(--app-primary) 5%, transparent);
 }
 
-footer > p:first-of-type {
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 16px;
-    text-transform: uppercase;
-    color: var(--text-muted);
+/* --- alert (login error) ------------------------------------------------ */
+.alert{
+  display:flex;gap:8px;
+  margin-bottom:16px;padding:10px 12px;
+  font-size:13px;line-height:19px;text-align:left;
+  color:var(--ink-1);
+  background:color-mix(in srgb, var(--danger) 9%, transparent);
+  border:1px solid color-mix(in srgb, var(--danger) 26%, transparent);
+  border-radius:8px;
 }
 
-footer svg {
-    fill: var(--primary);
+/* --- details disclosure (error page) ------------------------------------ */
+.disclosure{width:100%;max-width:420px;margin-top:20px;text-align:left}
+.disclosure summary{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:500;
+  color:var(--ink-2);
+  cursor:pointer;list-style:none;
+  padding:5px 0;
+}
+.disclosure summary::-webkit-details-marker{display:none}
+.disclosure summary::before{
+  content:'';width:5px;height:5px;
+  border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
+  transform:rotate(-45deg);
+  transition:transform .18s var(--ease-io);
+}
+.disclosure[open] summary::before{transform:rotate(45deg)}
+.disclosure summary:hover{color:var(--ink-1)}
+.disclosure pre{
+  margin:6px 0 0;padding:12px 14px;
+  font:12px/18px ui-monospace,SFMono-Regular,Menlo,monospace;
+  white-space:pre-wrap;word-break:break-word;
+  color:var(--ink-2);
+  background:var(--field);
+  border-radius:8px;
 }
 
-h1 {
-    font-size: 32px;
-    font-weight: 500;
-    line-height: 40px;
-    color: var(--text);
-    margin: 16px 0 0 0;
+/* --- metadata: every ID kept, ranked as reference not as headline ------- */
+.meta{
+  display:flex;flex-wrap:wrap;justify-content:center;
+  gap:6px 0;
+  margin-top:30px;
+  font:11px/16px ui-monospace,SFMono-Regular,Menlo,monospace;
+  color:var(--ink-3);
+}
+.meta > *{padding:0 12px}
+.meta > * + *{border-left:1px solid var(--hairline)}
+.meta b{font-weight:500;color:var(--ink-2)}
+/* On a failure the IDs are what support asks for, so lift them — and stack,
+   because the exception ID is long enough to wrap and orphan a divider. */
+.s-failed .meta{flex-direction:column;gap:5px;color:var(--ink-2)}
+.s-failed .meta > *{padding:0}
+.s-failed .meta > * + *{border-left:0}
+.s-failed .meta b{color:var(--ink-1)}
+
+/* The exception ID row carries a copy button, so it lays out as a row rather
+   than a text run. Scoped to its own class: making every .meta child a flex
+   container would put a gap between each label and its value on top of the
+   space already in the markup. */
+.meta__id{
+  display:inline-flex;align-items:center;justify-content:center;gap:2px;
+}
+.copy{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:22px;
+  padding:0;
+  color:var(--ink-3);
+  background:transparent;
+  border:0;border-radius:5px;
+  cursor:pointer;
+  transition:color .15s var(--ease-io);
+}
+.copy:hover{color:var(--ink-1)}
+.copy:focus-visible{
+  outline:0;
+  color:var(--app-primary);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--app-primary) 18%, transparent);
+}
+.copy svg{
+  display:block;width:14px;height:14px;
+  fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.copy .icon-copied,.copy.is-copied .icon-copy{display:none}
+.copy.is-copied .icon-copied{display:block}
+/* Confirmation reads as confirmation only if it looks different from the offer. */
+.copy.is-copied{color:var(--app-primary)}
+
+/* --- footer ------------------------------------------------------------- */
+footer{
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  padding-top:44px;
+}
+footer span{
+  font-size:10px;font-weight:600;line-height:14px;
+  letter-spacing:.10em;text-transform:uppercase;
+  color:var(--ink-4);
+}
+footer svg{display:block;width:72px;height:auto;fill:var(--ink-4)}
+
+/* ============================================================================
+   MOTION — a three-point scale of aliveness.
+
+     .s-working  perpetual        it is still happening
+     .s-action   settles in once  waiting on you
+     .s-rest     runs in REVERSE  it happened, it is over
+     .s-failed   none, ever       a fact, not a process
+
+   Motion is scoped per state rather than applied globally and subtracted,
+   so a state can only move in the way its meaning allows.
+   ========================================================================= */
+@keyframes frame-in{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:scale(1)}}
+@keyframes part-in {from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes dock-in {from{opacity:0;transform:translate(var(--dx),var(--dy))}to{opacity:1;transform:translate(0,0)}}
+@keyframes wire-in {from{stroke-dashoffset:100;opacity:0}40%{opacity:1}to{stroke-dashoffset:0;opacity:1}}
+@keyframes sweep{
+  0%  {transform:translateX(-200px);animation-timing-function:cubic-bezier(.42,0,.36,1)}
+  62% {transform:translateX(520px)}
+  100%{transform:translateX(520px)}
+}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.006)}}
+@keyframes soft-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+
+/* --- the power-down ------------------------------------------------------
+   NOT simply the assembly reversed. Modules drifting back out would leave a
+   "separated" still frame, which reads identically to "about to assemble" —
+   the working state's opening pose. So rest collapses INWARD instead and
+   ends on a different silhouette: one hollow, dashed shell. ------------- */
+@keyframes withdraw{
+  from{transform:translate(0,0);opacity:1}
+  to  {transform:translate(calc(var(--dx) * -.5), calc(var(--dy) * -.5));opacity:0}
+}
+@keyframes unwire{
+  from{stroke-dashoffset:0;opacity:1}
+  to  {stroke-dashoffset:100;opacity:0}
+}
+@keyframes hollow  {from{opacity:1}to{opacity:0}}
+@keyframes solidify{from{opacity:0}to{opacity:1}}
+@keyframes shrink  {from{transform:scale(1)}to{transform:scale(.94)}}
+/* Dim enough to read as inactive, not so dim the shape disappears. */
+@keyframes drain   {from{opacity:1}to{opacity:.8}}
+
+/* --- dormant idle, once the shell has settled --------------------------
+   Dormant, not working. Working motion TRAVELS — the sweep crosses the
+   figure left to right, which implies throughput. These stay in place:
+   a float that returns to where it started, and two slow fades. Periods
+   are deliberately non-harmonic (7s / 5.5s / 3.4s) so nothing locks into
+   a countable rhythm — a rhythm would read as a process. ------------- */
+@keyframes rest-float{0%,100%{transform:translateY(0)}   50%{transform:translateY(-3px)}}
+@keyframes shell-idle{0%,100%{opacity:1}                 50%{opacity:.66}}
+@keyframes bar-idle  {0%,100%{opacity:1}                 50%{opacity:.26}}
+
+.wire{stroke-dasharray:100}
+.frame,.frame-hollow,.breathe{transform-origin:240px 125px}
+.frame-hollow,.dormant{opacity:0}
+
+/* --- WORKING: assembles, then never stops -------------------------------- */
+.s-working .frame  {animation:frame-in .8s var(--ease-out) both}
+.s-working .part   {animation:part-in .55s var(--ease-out) both;
+                    animation-delay:calc(.34s + var(--i) * .09s)}
+.s-working .dock   {animation:dock-in .85s var(--ease-out) both;
+                    animation-delay:calc(.55s + var(--i) * .13s)}
+.s-working .wire   {animation:wire-in .7s var(--ease-out) both;
+                    animation-delay:calc(1.05s + var(--i) * .13s)}
+.s-working .sheen  {animation:sweep 3.6s linear 2.3s infinite both}
+.s-working .breathe{animation:breathe 5.4s var(--ease-io) 2.3s infinite both}
+
+/* --- ACTION: settles in, then holds. The form is the interaction. -------- */
+.s-action .part{animation:part-in .6s var(--ease-out) both;
+                animation-delay:calc(.1s + var(--i) * .09s)}
+
+/* --- AT REST: collapses to a hollow shell, then idles -------------------
+   Modules withdraw inward and vanish, content empties, the solid frame
+   crossfades to a dashed outline. End state shares no silhouette with the
+   working figure. The collapse plays exactly once — a looping collapse
+   would read as an app dying over and over. Afterwards the shell idles:
+   powered but asleep, never progressing. ------------------------------ */
+.s-rest .mark        {animation:drain 1.9s var(--ease-settle) both}
+.s-rest .breathe     {animation:shrink 1.8s var(--ease-settle) both}
+.s-rest .dock        {animation:withdraw 1.5s var(--ease-settle) both;
+                      animation-delay:calc(var(--i) * .07s)}
+.s-rest .wire        {animation:unwire .85s var(--ease-settle) both;
+                      animation-delay:calc(var(--i) * .06s)}
+.s-rest .part        {animation:hollow 1s var(--ease-settle) both;
+                      animation-delay:calc(.25s + var(--i) * .06s)}
+.s-rest .frame       {animation:hollow 1.2s var(--ease-settle) .55s both}
+.s-rest .frame-hollow{animation:solidify 1.2s var(--ease-settle) .55s both}
+.s-rest .dormant     {animation:solidify 1s var(--ease-settle) .8s both}
+/* Idle layer — starts after the collapse has landed, then runs forever. */
+.s-rest .rest-shell  {animation:rest-float 7s   var(--ease-io) 1.8s infinite both}
+.s-rest .shell-idle  {animation:shell-idle 5.5s var(--ease-io) 1.8s infinite both}
+.s-rest .bar-idle    {animation:bar-idle   3.4s var(--ease-io) 2.1s infinite both}
+.s-rest .sheen{display:none}
+
+/* --- FAILED: breaks once, then freezes ----------------------------------
+   Starts intact so the break is legible as an event: the connector snaps,
+   the module is knocked loose, the fault mark lands. Then nothing moves
+   again — no idle, no breathing. Failure is terminal, and this is the one
+   page the user actually has to read, so motion must not compete. ----- */
+.s-failed .sheen{display:none}
+.s-failed .wire{stroke-dashoffset:0}
+.s-failed .mark        {animation:solidify .45s var(--ease-out) both}
+.s-failed .wire-intact {animation:hollow .16s linear .52s both}
+.s-failed .break-parts {animation:solidify .14s linear .58s both}
+.s-failed .fault       {animation:fault-in .45s var(--ease-out) .58s both}
+.s-failed .snap        {animation:snap-off 1.4s var(--ease-out) .5s both}
+
+.break-parts,.fault{opacity:0}
+.fault{transform-origin:372px 180px}
+.snap {transform-origin:408px 179px}
+
+@keyframes fault-in{
+  from{opacity:0;transform:scale(.5)}
+  to  {opacity:1;transform:scale(1)}
+}
+@keyframes snap-off{
+  from{transform:translate(0,0) rotate(0deg)}
+  to  {transform:translate(19px,12px) rotate(5deg)}
 }
 
-h2 {
-    font-size: 24px;
-    font-weight: 500;
-    line-height: 32px;
-    color: var(--text);
-    margin: 32px 0 16px 0;
+/* --- Reduced motion ------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce){
+  .frame,.part,.dock,.wire,.sheen,.breathe,.mark,
+  .rest-shell,.shell-idle,.bar-idle,
+  .wire-intact,.break-parts,.fault,.snap{animation:none!important}
+  .rest-shell{transform:none!important}
+  /* Failed must still arrive at "broken", just without the break playing. */
+  .s-failed .wire-intact{opacity:0!important}
+  .s-failed .break-parts,.s-failed .fault{opacity:1!important;transform:none!important}
+  .s-failed .snap{transform:translate(19px,12px) rotate(5deg)!important}
+  .frame,.part,.dock{transform:none!important;opacity:1!important}
+  .wire{stroke-dashoffset:0!important;opacity:1!important}
+  .sheen{display:none!important}
+  /* Working must not look frozen — frozen is what reads as an error. */
+  .s-working .skeleton{animation:soft-pulse 2.6s var(--ease-io) infinite!important}
+  /* The progress sweep becomes a full-width bar that breathes in place: still
+     unmistakably in progress, with nothing traversing the screen. */
+  .s-working::after{
+    width:100%!important;
+    animation:soft-pulse 2.6s var(--ease-io) infinite!important;
+  }
+  /* Rest must still arrive at the hollow shell, just without the journey. */
+  .s-rest .mark{opacity:.8}
+  .s-rest .dock,.s-rest .part,.s-rest .frame,.s-rest .wire{opacity:0!important}
+  .s-rest .frame-hollow,.s-rest .dormant{opacity:1!important}
 }
 
-b {
-    font-weight: 400;
-    color: var(--text);
-}
-
-a {
-    color: var(--primary);
-    text-underline-offset: 2px;
-}
-
-a:hover {
-    text-decoration: none;
-}
-
-.box {
-    align-items: stretch;
-    border-radius: 8px;
-    background: var(--white);
-    box-shadow: var(--shadow);
-}
-
-.box h2 {
-    margin-top: 0;
-}
-
-.box .link {
-    color: inherit;
-    text-decoration: none;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 20px;
-    padding: 10px 16px;
-    border: 1px solid var(--neutral-150);
-    border-radius: 4px;
-    transition: border-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.box .link:hover,
-.box .link:focus {
-    border-color: var(--neutral-300);
-}
-
-.box .link:not(:last-child) {
-    margin-bottom: 16px;
-}
-
-.collapsible input {
-    display: none;
-}
-
-.collapsible label {
-    color: var(--primary);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    cursor: pointer;
-}
-
-.collapsible label:hover {
-    text-decoration: none;
-}
-
-.collapsible label::after {
-    content: 'More Info';
-    font-size: 14px;
-}
-
-.collapsible:has(input:checked) > label::after {
-    content: 'Less Info';
-    font-size: 14px;
-}
-
-.collapsible pre {
-    max-height: 0;
-    overflow: hidden;
-    background: var(--neutral-150);
-    white-space: pre-line;
-    text-align: left;
-    border-radius: 4px;
-    margin: 0;
-}
-
-.collapsible:has(input:checked) > pre {
-    max-height: 100%;
-    padding: 10px 16px;
-    margin-bottom: 16px;
-}
-
-form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 8px;
-}
-
-form button[type='submit'] {
-    margin-top: 8px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-label {
-    font-size: 14px;
-    line-height: 20px;
-    color: var(--text);
-    text-align: left;
-}
-
-input {
-    display: block;
-    color: var(--text);
-    background: var(--input);
-    border-radius: 4px;
-    padding: 10px 16px;
-    border: 1px solid rgba(255, 255, 255, 0);
-}
-
-input:focus {
-    outline: 0;
-    border: 1px solid var(--primary) !important;
-    box-shadow: 0 0 0 3px rgba(34, 141, 255, 0.25);
-}
-
-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-weight: 600;
-    font-size: 12px;
-    line-height: 20px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 10px 16px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    background: var(--secondary);
-    color: var(--white);
-}
-
-button:is(:hover, :focus):not(:disabled) {
-    background: var(--secondar-hover);
-}
-
-form:has(input:placeholder-shown) button[type='submit'] {
-    opacity: 0.4;
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-.alert {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 12px 16px;
-    margin: 8px 0 16px 0;
-    background: var(--error);
-    border: 1px solid var(--error-bold);
-    border-radius: 4px;
-}
-
-.alert p {
-    font-size: 14px;
-    line-height: 20px;
-}
-
-.alert p:last-child {
-    margin: 0;
+/* --- narrow ------------------------------------------------------------- */
+@media (max-width:480px){
+  body{padding:28px 18px 20px}
+  .mark{margin-bottom:26px}
+  h1{font-size:19px;line-height:27px}
+  .meta{gap:4px 0}
+  .meta > *{padding:0 9px}
+  footer{padding-top:32px}
 }
