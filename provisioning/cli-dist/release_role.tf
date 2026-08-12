@@ -20,6 +20,7 @@ data "aws_iam_policy_document" "cli_dist_release_assume_policy_doc" {
       values = [
         "repo:keboola/keboola-as-code:ref:refs/tags/*",
         "repo:keboola/cli:ref:refs/tags/*",
+        "repo:keboola/cli:environment:release",
       ]
     }
     condition {
