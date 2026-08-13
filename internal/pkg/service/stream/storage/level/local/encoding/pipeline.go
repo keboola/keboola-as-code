@@ -70,6 +70,10 @@ type StatisticsProvider interface {
 	UncompressedSize() datasize.ByteSize
 }
 
+// errPipelineAlreadyClosed is returned by pipeline.Close when it is called more than once,
+// for example concurrently by the owning SlicePipeline and by Manager's shutdown sweep.
+var errPipelineAlreadyClosed = errors.New("encoding pipeline is already closed")
+
 // pipeline implements Pipeline interface, it wraps common logic for all file types.
 // For conversion between record values and bytes, the encoder.Encoder is used.
 type pipeline struct {
@@ -421,7 +425,7 @@ func (p *pipeline) Close(ctx context.Context) error {
 
 	// Close only once
 	if p.isClosed() {
-		return errors.New("encoding pipeline is already closed")
+		return errPipelineAlreadyClosed
 	}
 	close(p.closed)
 
