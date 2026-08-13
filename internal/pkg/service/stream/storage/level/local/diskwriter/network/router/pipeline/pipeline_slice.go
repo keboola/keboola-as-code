@@ -37,9 +37,10 @@ type SlicePipeline struct {
 	cancel context.CancelCauseFunc
 	wg     sync.WaitGroup
 
-	lock     sync.RWMutex
-	closed   bool
-	pipeline encoding.Pipeline
+	lock      sync.RWMutex
+	closed    bool
+	closeDone chan struct{}
+	pipeline  encoding.Pipeline
 }
 
 // SliceData is part of the Slice model that is needed to create a SlicePipeline.
@@ -69,6 +70,7 @@ func NewSlicePipeline(
 		encoding:    encoding,
 		slice:       slice,
 		onClose:     onClose,
+		closeDone:   make(chan struct{}),
 	}
 
 	ctx = ctxattr.ContextWith(ctx, slice.SliceKey.Telemetry()...)
@@ -81,7 +83,8 @@ func NewSlicePipeline(
 		defer p.wg.Done()
 		for {
 			// Try open pipeline
-			if err := p.tryOpen(); err != nil {
+			opened, err := p.tryOpen()
+			if err != nil {
 				// Wait before retry
 				delay := b.NextBackOff()
 				p.logger.Warnf(p.ctx, "%s, waiting %s", err, delay)
@@ -93,8 +96,14 @@ func NewSlicePipeline(
 				}
 			}
 
-			// Pipeline is opened, close goroutine
-			ready.NotifyReady()
+			// tryOpen returns opened=false both when it found the slice pipeline already closed
+			// and when Close raced in while it was opening (see tryOpen's own closed check,
+			// evaluated under the same lock as the pipeline assignment) - only notify readiness
+			// if it actually opened a pipeline, or SinkPipeline.UpdateSlicePipelines could be
+			// unblocked for a slice pipeline that never actually opened.
+			if opened {
+				ready.NotifyReady()
+			}
 			return
 		}
 	}()
@@ -141,15 +150,20 @@ func (p *SlicePipeline) Close(ctx context.Context, cause string) {
 
 	p.lock.Lock()
 	// Close may be called twice: explicitly by SinkPipeline and via the closeFunc callback
-	// the underlying encoding pipeline invokes on its own connection failure.
+	// the underlying encoding pipeline invokes on its own connection failure. The loser waits
+	// on closeDone instead of returning early, so callers that rely on Close blocking until the
+	// pipeline is actually closed (e.g. router.go's closeSyncer.Notify, which gates the storage
+	// coordinator on all slice pipelines being closed) see accurate close-sync semantics.
 	if p.closed {
 		p.lock.Unlock()
+		<-p.closeDone
 		return
 	}
 	p.closed = true
 	pipeline := p.pipeline
 	p.pipeline = nil
 	p.lock.Unlock()
+	defer close(p.closeDone)
 
 	p.logger.Debugf(ctx, "closing slice pipeline: %s", cause)
 
@@ -157,34 +171,40 @@ func (p *SlicePipeline) Close(ctx context.Context, cause string) {
 	p.wg.Wait()
 
 	// Close the underlying encoding pipeline, if it was opened.
+	closed := true
 	if pipeline != nil {
 		closeCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), 5*time.Minute, errors.New("slice pipeline close timeout"))
 		defer cancel()
 		if err := pipeline.Close(closeCtx); err != nil {
 			p.logger.Errorf(closeCtx, "cannot close slice pipeline: %s", err)
-		} else {
-			p.logger.Infof(closeCtx, "closed slice pipeline: %s", cause)
+			closed = false
 		}
+	}
+	if closed {
+		p.logger.Infof(ctx, "closed slice pipeline: %s", cause)
 	}
 
 	// Notify parent SinkPipeline, even if the pipeline never finished opening.
 	p.onClose(ctx, cause)
 }
 
-func (p *SlicePipeline) tryOpen() error {
+// tryOpen attempts to open the underlying encoding pipeline. The returned opened flag is
+// computed under the same lock as the closed check, so it precisely reports whether this call
+// assigned p.pipeline - unlike inferring it from p.ctx.Err() afterwards, which a concurrent
+// Close (cancelling p.ctx before it can even acquire the lock) could race regardless of outcome.
+func (p *SlicePipeline) tryOpen() (opened bool, err error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
 	// Already closed, e.g. by the encoding pipeline's own closeFunc callback, don't open a
 	// pipeline that would just have to be closed again the moment Close's wg.Wait returns.
 	if p.closed {
-		return nil
+		return false, nil
 	}
 
 	ctx := p.ctx
 
 	// Open pipeline
-	var err error
 	p.pipeline, err = p.encoding.OpenPipeline(
 		ctx,
 		p.slice.SliceKey,
@@ -198,11 +218,11 @@ func (p *SlicePipeline) tryOpen() error {
 		nil, // Do not override network output
 	)
 	if err != nil {
-		return errors.PrefixErrorf(err, "cannot open slice pipeline")
+		return false, errors.PrefixErrorf(err, "cannot open slice pipeline")
 	}
 
 	p.logger.Infof(ctx, "opened slice pipeline")
-	return nil
+	return true, nil
 }
 
 func newOpenPipelineBackoff() *backoff.ExponentialBackOff {
