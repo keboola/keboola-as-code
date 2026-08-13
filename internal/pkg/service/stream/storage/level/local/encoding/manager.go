@@ -160,9 +160,10 @@ func (m *Manager) close(ctx context.Context) error {
 	wg := &sync.WaitGroup{}
 	for _, w := range m.Pipelines() {
 		wg.Go(func() {
-			// The pipeline may have already been closed concurrently by its owning
+			// The pipeline may already be closing concurrently, initiated by its owning
 			// SlicePipeline (e.g. a slice rotation racing with this shutdown sweep).
-			// That's an expected outcome, not a failure - the pipeline is closed either way.
+			// pipeline.Close returns this sentinel immediately without waiting for that
+			// in-flight close to finish - it's expected, not a failure, so don't report it.
 			if err := w.Close(ctx); err != nil && !errors.Is(err, errPipelineAlreadyClosed) {
 				errs.Append(err)
 			}
