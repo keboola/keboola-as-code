@@ -202,6 +202,23 @@ func (w *Writer) ProcessCompletedChunks(fn func(chunk *Chunk) error) error {
 	return nil
 }
 
+// Abandon discards all completed, not yet processed chunks and unblocks WaitAllProcessedCh.
+// It is used when the processor (see ProcessCompletedChunks) gives up and will never process
+// them, so a caller waiting for them to be processed (see Flush) isn't left blocked forever.
+func (w *Writer) Abandon() {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	if len(w.completedChunks) == 0 {
+		return
+	}
+
+	w.freeChunks(w.completedChunks...)
+	w.completedChunks = nil
+	close(w.allProcessedNotifier)
+	w.allProcessedNotifier = make(chan struct{})
+}
+
 // freeChunks after it is no longer used.
 func (w *Writer) freeChunks(all ...*Chunk) {
 	for _, v := range all {
