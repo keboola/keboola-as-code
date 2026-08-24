@@ -223,14 +223,11 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 	}
 
 	var e2bAccessToken string
-	var e2bSecretName string
-	if appObj.Spec.Runtime.Backend.Type == BackendTypeE2BSandbox {
-		e2bSecretName = appObj.Status.E2BSandbox.AccessTokenSecretName
-		if e2bSecretName != "" {
-			token, err := w.loadSecretToken(ctx, e2bSecretName)
-			if err == nil {
-				e2bAccessToken = token
-			}
+	e2bSecretName := appObj.e2bAccessTokenSecretName()
+	if e2bSecretName != "" {
+		token, err := w.loadSecretToken(ctx, e2bSecretName)
+		if err == nil {
+			e2bAccessToken = token
 		}
 	}
 

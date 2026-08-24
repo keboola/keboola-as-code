@@ -46,6 +46,11 @@ type appSpec struct {
 	AutoRestartEnabled *bool           `json:"autoRestartEnabled,omitempty"`
 	DevMode            *appDevModeSpec `json:"devMode,omitempty"`
 	Runtime            appRuntime      `json:"runtime"`
+	// ContainerSpec is decoded only to tell whether the field is present — the App
+	// plays the workload role — or absent, which marks the product role. It is a map
+	// rather than one of this struct's value types precisely because the marker is
+	// absence, and a value type cannot tell an absent field from an empty one.
+	ContainerSpec map[string]any `json:"containerSpec,omitempty"`
 }
 
 // appDevModeSpec mirrors the App CRD's spec.devMode block. The proxy only
@@ -62,6 +67,38 @@ type appRuntime struct {
 
 type appBackend struct {
 	Type string `json:"type,omitempty"`
+}
+
+// isProduct reports whether the App plays the product (version-coordinator) role rather
+// than the workload role. It mirrors the operator's App.IsProduct(): a product carries no
+// containerSpec, because the things that run are its member Sandboxes.
+func (o *appObject) isProduct() bool {
+	return o.Spec.ContainerSpec == nil
+}
+
+// e2bAccessTokenSecretName returns the name of the Secret holding the app's E2B traffic
+// access token, or "" when the app needs no such token.
+//
+// The two roles read different fields. On a workload App spec.runtime.backend.type is
+// authoritative, and it also has to be consulted: status.e2bSandbox survives a switch
+// away from the E2B backend — nothing clears it — while the Secret it names is owned by
+// the deleted E2bSandbox and garbage-collected with it.
+//
+// A product App has no backend of its own. The backend belongs to the member Sandbox it
+// routes to, and the operator mirrors that member's status.e2bSandbox here because the
+// proxy routes by the App and does not watch Sandboxes. Its spec.runtime is either absent
+// (sandboxes-service builds a product App without one) or /v1 residue left behind when a
+// /v1 App was adopted into the product role by stripping containerSpec, so in neither
+// case does it describe what serves the app's traffic.
+func (o *appObject) e2bAccessTokenSecretName() string {
+	name := o.Status.E2BSandbox.AccessTokenSecretName
+	if name == "" {
+		return ""
+	}
+	if !o.isProduct() && o.Spec.Runtime.Backend.Type != BackendTypeE2BSandbox {
+		return ""
+	}
+	return name
 }
 
 // AppInfo is the cached state for an app, read from the K8s watcher.

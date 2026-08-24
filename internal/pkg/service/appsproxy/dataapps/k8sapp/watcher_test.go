@@ -327,3 +327,107 @@ func TestStateWatcher_GetState_NonE2BApp_NoToken(t *testing.T) {
 	require.True(t, ok)
 	assert.Empty(t, info.E2BAccessToken)
 }
+
+// newProductAppObject creates a product-role App CRD: no containerSpec (absence is what
+// marks the product role) and status.e2bSandbox.accessTokenSecretName set. backendType is
+// written to spec.runtime.backend.type, or omitted entirely when empty.
+func newProductAppObject(k8sName, appID string, state k8sapp.AppActualState, backendType, secretName string) *unstructured.Unstructured {
+	obj := newAppObject(k8sName, appID, state)
+	if backendType != "" {
+		obj.Object["spec"].(map[string]any)["runtime"] = map[string]any{
+			"backend": map[string]any{"type": backendType},
+		}
+	}
+	obj.Object["status"].(map[string]any)["e2bSandbox"] = map[string]any{
+		"accessTokenSecretName": secretName,
+	}
+	return obj
+}
+
+// newWorkloadAppObject creates a workload-role App CRD: containerSpec present, plus
+// spec.runtime.backend.type and status.e2bSandbox.accessTokenSecretName.
+func newWorkloadAppObject(k8sName, appID string, state k8sapp.AppActualState, backendType, secretName string) *unstructured.Unstructured {
+	obj := newProductAppObject(k8sName, appID, state, backendType, secretName)
+	obj.Object["spec"].(map[string]any)["containerSpec"] = map[string]any{
+		"image": "keboola/data-app:latest",
+	}
+	return obj
+}
+
+// requireTokenLoaded starts a watcher over the given app + secret and returns the
+// AppInfo once the app is cached.
+func stateAfterSync(t *testing.T, appObj *unstructured.Unstructured, appID, secretName, tokenValue string) k8sapp.AppInfo {
+	t.Helper()
+
+	fakeClient := newFakeClient()
+	d := newTestDeps(t)
+
+	secret := newSecretObject(secretName, testNamespace, tokenValue)
+	_, err := fakeClient.Resource(k8sapp.SecretGVR()).Namespace(testNamespace).Create(
+		t.Context(), secret, metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	_, err = fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
+		t.Context(), appObj, metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
+
+	require.Eventually(t, func() bool {
+		_, ok := watcher.GetState(t.Context(), api.AppID(appID))
+		return ok
+	}, 5*time.Second, 50*time.Millisecond)
+
+	info, ok := watcher.GetState(t.Context(), api.AppID(appID))
+	require.True(t, ok)
+	return info
+}
+
+// A product App built by sandboxes-service carries no spec.runtime at all — the backend
+// belongs to the member Sandbox it routes to. The token must still be read, or the app
+// gets a route it cannot authenticate against.
+func TestStateWatcher_GetState_E2BAccessToken_ProductAppWithoutRuntime(t *testing.T) {
+	t.Parallel()
+
+	appObj := newProductAppObject("my-product-app", "app-product", k8sapp.AppActualStateRunning, "", "product-secret")
+	info := stateAfterSync(t, appObj, "app-product", "product-secret", "product-token")
+
+	assert.Equal(t, "product-token", info.E2BAccessToken)
+}
+
+// A /v1 App adopted into the product role keeps the spec.runtime its /v1 flow wrote,
+// which names the backend of a workload that no longer exists. It is residue, not the
+// app's backend, so it must not gate the read.
+func TestStateWatcher_GetState_E2BAccessToken_AdoptedProductAppWithK8sRuntimeResidue(t *testing.T) {
+	t.Parallel()
+
+	appObj := newProductAppObject("my-adopted-app", "app-adopted", k8sapp.AppActualStateRunning, "k8sDeployment", "adopted-secret")
+	info := stateAfterSync(t, appObj, "app-adopted", "adopted-secret", "adopted-token")
+
+	assert.Equal(t, "adopted-token", info.E2BAccessToken)
+}
+
+// A workload App switched away from the E2B backend keeps a stale
+// status.e2bSandbox.accessTokenSecretName — nothing clears it. Its own backend type is
+// authoritative, so the token must NOT be read: the Secret is owned by the deleted
+// E2bSandbox, and sending the header would hand an E2B credential to a k8s Deployment.
+func TestStateWatcher_GetState_E2BAccessToken_NotReadForK8sWorkload(t *testing.T) {
+	t.Parallel()
+
+	appObj := newWorkloadAppObject("my-switched-app", "app-switched", k8sapp.AppActualStateRunning, "k8sDeployment", "stale-secret")
+	info := stateAfterSync(t, appObj, "app-switched", "stale-secret", "stale-token")
+
+	assert.Empty(t, info.E2BAccessToken)
+}
+
+// A workload App on the E2B backend is the pre-existing case and must keep working.
+func TestStateWatcher_GetState_E2BAccessToken_E2BWorkload(t *testing.T) {
+	t.Parallel()
+
+	appObj := newWorkloadAppObject("my-e2b-workload", "app-e2b-workload", k8sapp.AppActualStateRunning, k8sapp.BackendTypeE2BSandbox, "workload-secret")
+	info := stateAfterSync(t, appObj, "app-e2b-workload", "workload-secret", "workload-token")
+
+	assert.Equal(t, "workload-token", info.E2BAccessToken)
+}
