@@ -50,6 +50,13 @@ type appSpec struct {
 	// plays the workload role — or absent, which marks the product role. It is a map
 	// rather than one of this struct's value types precisely because the marker is
 	// absence, and a value type cannot tell an absent field from an empty one.
+	//
+	// A router has no business reading a workload's container spec, and this field is
+	// here under protest: it exists only because status.e2bSandbox cannot be trusted on
+	// its own. The operator never clears it when an App is drained off the E2B backend,
+	// so the status alone cannot say whether the token it names is live. PAT-2059 makes
+	// the status truthful; once it lands this field, isProduct and the role branch in
+	// e2bAccessTokenSecretName all go away, and the read keys on the value alone.
 	ContainerSpec map[string]any `json:"containerSpec,omitempty"`
 }
 
@@ -72,6 +79,8 @@ type appBackend struct {
 // isProduct reports whether the App plays the product (version-coordinator) role rather
 // than the workload role. It mirrors the operator's App.IsProduct(): a product carries no
 // containerSpec, because the things that run are its member Sandboxes.
+//
+// Removed by PAT-2059 — see the note on appSpec.ContainerSpec.
 func (o *appObject) isProduct() bool {
 	return o.Spec.ContainerSpec == nil
 }
@@ -90,6 +99,10 @@ func (o *appObject) isProduct() bool {
 // (sandboxes-service builds a product App without one) or /v1 residue left behind when a
 // /v1 App was adopted into the product role by stripping containerSpec, so in neither
 // case does it describe what serves the app's traffic.
+//
+// The role branch is a workaround for the stale status described on
+// appSpec.ContainerSpec. PAT-2059 removes the need for it, leaving the secret name on its
+// own as the signal.
 func (o *appObject) e2bAccessTokenSecretName() string {
 	name := o.Status.E2BSandbox.AccessTokenSecretName
 	if name == "" {
