@@ -78,7 +78,7 @@ func New() Config {
 		Datadog:         datadog.NewConfig(),
 		Metrics:         prometheus.NewConfig(),
 		Upstream: Upstream{
-			HTTPTimeout: 30 * time.Second,
+			HTTPTimeout: 10 * time.Minute,
 			WsTimeout:   6 * time.Hour,
 		},
 		API: API{
