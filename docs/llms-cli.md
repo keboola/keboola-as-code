@@ -23,7 +23,7 @@ The Keboola CLI is a powerful tool for managing Keboola projects as code. It all
 
 ## Installation
 
-To install the Keboola CLI, follow the instructions in the official documentation: [https://developers.keboola.com/cli/installation/](https://developers.keboola.com/cli/installation/)
+To install the Keboola CLI, follow the instructions in the official documentation: [user-docs/installation.md](user-docs/installation.md)
 
 Installation methods include:
 
@@ -38,7 +38,7 @@ Installation methods include:
     ```bash
     kbc init
     ```
-    Refer to: [https://developers.keboola.com/cli/commands/sync/init/](https://developers.keboola.com/cli/commands/sync/init/)
+    Refer to: [user-docs/commands/sync/init.md](user-docs/commands/sync/init.md)
 
 2.  **API Token:** You will be prompted to enter your Keboola Storage API host and API token.  The API token is essential for authenticating with your Keboola project.  It's recommended to store the API token securely, for example, using environment variables or a secrets management system.
     *   The CLI creates a `.env.local` file to store the API token locally. **Keep this file secret and do not commit it to version control.**
@@ -48,7 +48,7 @@ Installation methods include:
     *   `extractor/`, `transformation/`, `writer/`, `other/`, `app/`, `_shared/`, `variables/`, `schedules/`: Directories within branches representing different component types.
     *   Configuration files (`config.json`), metadata files (`meta.json`), and description files (`description.md`) for each Keboola object (configuration, config row, shared code, etc.).
     *   Transformation code files (e.g., `.sql`, `.py`).
-    Refer to: [https://developers.keboola.com/cli/getting-started/](https://developers.keboola.com/cli/getting-started/) and [https://developers.keboola.com/cli/structure/](https://developers.keboola.com/cli/structure/)
+    Refer to: [user-docs/getting-started.md](user-docs/getting-started.md) and [user-docs/structure.md](user-docs/structure.md)
 ## Core Concepts
 *   **Manifest:** The `.keboola/manifest.json` file is crucial for the CLI's operation. It maintains the mapping between local file paths and remote Keboola object IDs. **Do not modify this file manually unless you understand its structure.**
 *   **Branches:** Keboola projects can have multiple branches for development, testing, and production. The CLI works within a specific branch context.
@@ -65,17 +65,17 @@ The Keboola CLI commands are organized into categories:
 ### 1. `status`
 
 *   `kbc status`: Shows information about the current working directory and the Keboola project it's connected to.
-    [https://developers.keboola.com/cli/commands/status/](https://developers.keboola.com/cli/commands/status/)
+    [user-docs/commands/status.md](user-docs/commands/status.md)
 ### 2. `sync` - Synchronization Commands
 These commands manage the synchronization between the local directory and the remote Keboola project.
 *   `kbc sync init`: Initializes a new project (as described in Getting Started).
-    [https://developers.keboola.com/cli/commands/sync/init/](https://developers.keboola.com/cli/commands/sync/init/)
+    [user-docs/commands/sync/init.md](user-docs/commands/sync/init.md)
 *   `kbc sync pull`: Downloads changes from the Keboola project to the local directory.
-    [https://developers.keboola.com/cli/commands/sync/pull/](https://developers.keboola.com/cli/commands/sync/pull/)
+    [user-docs/commands/sync/pull.md](user-docs/commands/sync/pull.md)
 *   `kbc sync push`: Uploads local changes to the Keboola project.
-    [https://developers.keboola.com/cli/commands/sync/push/](https://developers.keboola.com/cli/commands/sync/push/)
+    [user-docs/commands/sync/push.md](user-docs/commands/sync/push.md)
 *   `kbc sync diff`: Shows the differences between the local directory and the Keboola project.
-    [https://developers.keboola.com/cli/commands/sync/diff/](https://developers.keboola.com/cli/commands/sync/diff/)
+    [user-docs/commands/sync/diff.md](user-docs/commands/sync/diff.md)
 **Typical Workflow:**
 1.  `kbc sync pull` - to get the latest changes from the remote project.
 2.  Make local changes (edit configurations, code, etc.).
@@ -107,20 +107,20 @@ This approach applies similarly to commands that allow you to create config rows
 ### 3. `local` - Local Commands
 These commands operate on the local project directory.
 *   `kbc local create <component-type> <component-id> <config-name>`: Creates a new configuration (or config row).
-    *   `kbc local create config <component-type> <component-id> <config-name>`: Creates a new configuration. [https://developers.keboola.com/cli/commands/local/create/config/](https://developers.keboola.com/cli/commands/local/create/config/)
-    *   `kbc local create row <component-type> <component-id> <config-name> <row-name>`: Creates a new config row. [https://developers.keboola.com/cli/commands/local/create/row/](https://developers.keboola.com/cli/commands/local/create/row/)
+    *   `kbc local create config <component-type> <component-id> <config-name>`: Creates a new configuration. [user-docs/commands/local/create/config.md](user-docs/commands/local/create/config.md)
+    *   `kbc local create row <component-type> <component-id> <config-name> <row-name>`: Creates a new config row. [user-docs/commands/local/create/row.md](user-docs/commands/local/create/row.md)
 *   `kbc local persist`:  Persists changes you have made to local files (for example newly created configurations or rows) by recording them in the project manifest. Typically, "persist" is called under the hood by other "local" commands (like create, fix-paths, etc.). However, if you have manually created or moved files and need the manifest to reflect these new paths, "local persist" ensures that the local directory structure and manifest remain consistent.
     *   Example:
       ```bash
       kbc local persist 
       ```
       // Will update .keboola/manifest.json to reflect any new or moved files.
-*   `kbc local encrypt`: Encrypts values in configuration files locally before pushing them to the project. [https://developers.keboola.com/cli/commands/local/encrypt/](https://developers.keboola.com/cli/commands/local/encrypt/)
+*   `kbc local encrypt`: Encrypts values in configuration files locally before pushing them to the project. [user-docs/commands/local/encrypt.md](user-docs/commands/local/encrypt.md)
 *   `kbc local validate`: Validates the local project directory against Keboola schema and rules.
-    *   `kbc local validate config`: Validates configuration files. [https://developers.keboola.com/cli/commands/local/validate/config/](https://developers.keboola.com/cli/commands/local/validate/config/)
-    *   `kbc local validate row`: Validates config row files. [https://developers.keboola.com/cli/commands/local/validate/row/](https://developers.keboola.com/cli/commands/local/validate/row/)
-    *   `kbc local validate schema`: Validates schemas defined in configuration files. [https://developers.keboola.com/cli/commands/local/validate/schema/](https://developers.keboola.com/cli/commands/local/validate/schema/)
-*   `kbc local fix-paths`:  Automatically fixes paths in the local project to adhere to Keboola's naming conventions. [https://developers.keboola.com/cli/commands/local/fix-paths/](https://developers.keboola.com/cli/commands/local/fix-paths/)
+    *   `kbc local validate config`: Validates configuration files. [user-docs/commands/local/validate/config.md](user-docs/commands/local/validate/config.md)
+    *   `kbc local validate row`: Validates config row files. [user-docs/commands/local/validate/row.md](user-docs/commands/local/validate/row.md)
+    *   `kbc local validate schema`: Validates schemas defined in configuration files. [user-docs/commands/local/validate/schema.md](user-docs/commands/local/validate/schema.md)
+*   `kbc local fix-paths`:  Automatically fixes paths in the local project to adhere to Keboola's naming conventions. [user-docs/commands/local/fix-paths.md](user-docs/commands/local/fix-paths.md)
 *   `kbc local template`: Commands for working with templates locally.
     *   `kbc local template delete <template-instance-id>`: Deletes a template instance.
     *   `kbc local template list`: Lists used templates in the project.
@@ -142,32 +142,32 @@ Below are some simplified examples of non-interactive usage that specify all nee
 
 These commands interact directly with the remote Keboola project.
 
-*   `kbc remote create`: Commands for creating remote Keboola objects. [https://developers.keboola.com/cli/commands/remote/create/](https://developers.keboola.com/cli/commands/remote/create/)
-    *   `kbc remote create branch <branch-name>`: Creates a new branch. [https://developers.keboola.com/cli/commands/remote/create/branch/](https://developers.keboola.com/cli/commands/remote/create/branch/)
+*   `kbc remote create`: Commands for creating remote Keboola objects. [user-docs/commands/remote/create.md](user-docs/commands/remote/create.md)
+    *   `kbc remote create branch <branch-name>`: Creates a new branch. [user-docs/commands/remote/create/branch.md](user-docs/commands/remote/create/branch.md)
     *   `kbc remote create bucket <bucket-name> <stage>`: Creates a new storage bucket. For non-interactive usage, the following parameters are required:
         ```bash
         kbc remote create bucket --stage <in|out> --display-name <bucket-display-name> --name <bucket-name> --description <bucket-description>
         ```
         **Important**: This command must be run from within an initialized Keboola project directory (where `.env.local` exists) to work in non-interactive mode.
-        [https://developers.keboola.com/cli/commands/remote/create/bucket/](https://developers.keboola.com/cli/commands/remote/create/bucket/)
-*   `kbc remote file`: Commands for managing files in Keboola Storage. [https://developers.keboola.com/cli/commands/remote/file/](https://developers.keboola.com/cli/commands/remote/file/)
-    *   `kbc remote file download <file-id> <destination-path>`: Downloads a file from storage. [https://developers.keboola.com/cli/commands/remote/file/download/](https://developers.keboola.com/cli/commands/remote/file/download/)
-    *   `kbc remote file upload <source-path> <destination-bucket> [options]`: Uploads a file to storage. [https://developers.keboola.com/cli/commands/remote/file/upload/](https://developers.keboola.com/cli/commands/remote/file/upload/)
-*   `kbc remote job`: Commands for managing jobs. [https://developers.keboola.com/cli/commands/remote/job/](https://developers.keboola.com/cli/commands/remote/job/)
-    *   `kbc remote job run <component-id> <configuration-id> [flags]`: Runs a job for a specific configuration. [https://developers.keboola.com/cli/commands/remote/job/run/](https://developers.keboola.com/cli/commands/remote/job/run/)
-*   `kbc remote table`: Commands for managing tables in Keboola Storage. [https://developers.keboola.com/cli/commands/remote/table/](https://developers.keboola.com/cli/commands/remote/table/)
-    *   `kbc remote table create <table-name> <bucket-id> [options]`: Creates a new table. [https://developers.keboola.com/cli/commands/remote/table/create/](https://developers.keboola.com/cli/commands/remote/table/create/)
-    *   `kbc remote table upload <source-path> <table-id> [options]`: Uploads data to a table. [https://developers.keboola.com/cli/commands/remote/table/upload/](https://developers.keboola.com/cli/commands/remote/table/upload/)
-    *   `kbc remote table download <table-id> <destination-path> [options]`: Downloads data from a table. [https://developers.keboola.com/cli/commands/remote/table/download/](https://developers.keboola.com/cli/commands/remote/table/download/)
-    *   `kbc remote table preview <table-id> [options]`: Shows a preview of a table. [https://developers.keboola.com/cli/commands/remote/table/preview/](https://developers.keboola.com/cli/commands/remote/table/preview/)
-    *   `kbc remote table detail <table-id>`: Shows details of a table. [https://developers.keboola.com/cli/commands/remote/table/detail/](https://developers.keboola.com/cli/commands/remote/table/detail/)
-    *   `kbc remote table import <source-path> <table-id> [options]`: Imports data to a table. [https://developers.keboola.com/cli/commands/remote/table/import/](https://developers.keboola.com/cli/commands/remote/table/import/)
-    *   `kbc remote table unload <table-id> <destination-path> [options]`: Unloads data from a table to a file. [https://developers.keboola.com/cli/commands/remote/table/unload/](https://developers.keboola.com/cli/commands/remote/table/unload/)
-*   `kbc remote workspace`: Commands for managing workspaces. [https://developers.keboola.com/cli/commands/remote/workspace/](https://developers.keboola.com/cli/commands/remote/workspace/)
-    *   `kbc remote workspace create <type>`: Creates a new workspace. [https://developers.keboola.com/cli/commands/remote/workspace/create/](https://developers.keboola.com/cli/commands/remote/workspace/create/)
-    *   `kbc remote workspace delete <workspace-id>`: Deletes a workspace. [https://developers.keboola.com/cli/commands/remote/workspace/delete/](https://developers.keboola.com/cli/commands/remote/workspace/delete/)
-    *   `kbc remote workspace detail <workspace-id>`: Shows details of a workspace. [https://developers.keboola.com/cli/commands/remote/workspace/detail/](https://developers.keboola.com/cli/commands/remote/workspace/detail/)
-    *   `kbc remote workspace list`: Lists workspaces. [https://developers.keboola.com/cli/commands/remote/workspace/list/](https://developers.keboola.com/cli/commands/remote/workspace/list/)
+        [user-docs/commands/remote/create/bucket.md](user-docs/commands/remote/create/bucket.md)
+*   `kbc remote file`: Commands for managing files in Keboola Storage. [user-docs/commands/remote/file.md](user-docs/commands/remote/file.md)
+    *   `kbc remote file download <file-id> <destination-path>`: Downloads a file from storage. [user-docs/commands/remote/file/download.md](user-docs/commands/remote/file/download.md)
+    *   `kbc remote file upload <source-path> <destination-bucket> [options]`: Uploads a file to storage. [user-docs/commands/remote/file/upload.md](user-docs/commands/remote/file/upload.md)
+*   `kbc remote job`: Commands for managing jobs. [user-docs/commands/remote/job.md](user-docs/commands/remote/job.md)
+    *   `kbc remote job run <component-id> <configuration-id> [flags]`: Runs a job for a specific configuration. [user-docs/commands/remote/job/run.md](user-docs/commands/remote/job/run.md)
+*   `kbc remote table`: Commands for managing tables in Keboola Storage. [user-docs/commands/remote/table.md](user-docs/commands/remote/table.md)
+    *   `kbc remote table create <table-name> <bucket-id> [options]`: Creates a new table. [user-docs/commands/remote/table/create.md](user-docs/commands/remote/table/create.md)
+    *   `kbc remote table upload <source-path> <table-id> [options]`: Uploads data to a table. [user-docs/commands/remote/table/upload.md](user-docs/commands/remote/table/upload.md)
+    *   `kbc remote table download <table-id> <destination-path> [options]`: Downloads data from a table. [user-docs/commands/remote/table/download.md](user-docs/commands/remote/table/download.md)
+    *   `kbc remote table preview <table-id> [options]`: Shows a preview of a table. [user-docs/commands/remote/table/preview.md](user-docs/commands/remote/table/preview.md)
+    *   `kbc remote table detail <table-id>`: Shows details of a table. [user-docs/commands/remote/table/detail.md](user-docs/commands/remote/table/detail.md)
+    *   `kbc remote table import <source-path> <table-id> [options]`: Imports data to a table. [user-docs/commands/remote/table/import.md](user-docs/commands/remote/table/import.md)
+    *   `kbc remote table unload <table-id> <destination-path> [options]`: Unloads data from a table to a file. [user-docs/commands/remote/table/unload.md](user-docs/commands/remote/table/unload.md)
+*   `kbc remote workspace`: Commands for managing workspaces. [user-docs/commands/remote/workspace.md](user-docs/commands/remote/workspace.md)
+    *   `kbc remote workspace create <type>`: Creates a new workspace. [user-docs/commands/remote/workspace/create.md](user-docs/commands/remote/workspace/create.md)
+    *   `kbc remote workspace delete <workspace-id>`: Deletes a workspace. [user-docs/commands/remote/workspace/delete.md](user-docs/commands/remote/workspace/delete.md)
+    *   `kbc remote workspace detail <workspace-id>`: Shows details of a workspace. [user-docs/commands/remote/workspace/detail.md](user-docs/commands/remote/workspace/detail.md)
+    *   `kbc remote workspace list`: Lists workspaces. [user-docs/commands/remote/workspace/list.md](user-docs/commands/remote/workspace/list.md)
 
 ### 5. `template` - Template Commands
 
@@ -184,17 +184,17 @@ These commands are used for managing templates and template repositories.
 
 ### 6. `ci` - CI/CD Commands
 
-*   `kbc ci workflows`: Generates CI workflow files for GitHub Actions to automate project validation, pushing, and pulling. [https://developers.keboola.com/cli/commands/ci/workflows/](https://developers.keboola.com/cli/commands/ci/workflows/)
+*   `kbc ci workflows`: Generates CI workflow files for GitHub Actions to automate project validation, pushing, and pulling. [user-docs/commands/ci/workflows.md](user-docs/commands/ci/workflows.md)
 
 ### 7. `dbt` - DBT Commands
 
 Commands for integrating with DBT (Data Build Tool).
 
-*   `kbc dbt init`: Initializes DBT project files within the Keboola project directory. [https://developers.keboola.com/cli/commands/dbt/init/](https://developers.keboola.com/cli/commands/dbt/init/)
-*   `kbc dbt generate`: Generates DBT-related files. [https://developers.keboola.com/cli/commands/dbt/generate/](https://developers.keboola.com/cli/commands/dbt/generate/)
-    *   `kbc dbt generate profile`: Generates a DBT profile for Keboola. [https://developers.keboola.com/cli/commands/dbt/generate/profile/](https://developers.keboola.com/cli/commands/dbt/generate/profile/)
-    *   `kbc dbt generate sources`: Generates DBT sources from Keboola tables. [https://developers.keboola.com/cli/commands/dbt/generate/sources/](https://developers.keboola.com/cli/commands/dbt/generate/sources/)
-    *   `kbc dbt generate env`: Generates a `.env` file for DBT. [https://developers.keboola.com/cli/commands/dbt/generate/env/](https://developers.keboola.com/cli/commands/dbt/generate/env/)
+*   `kbc dbt init`: Initializes DBT project files within the Keboola project directory. [user-docs/commands/dbt/init.md](user-docs/commands/dbt/init.md)
+*   `kbc dbt generate`: Generates DBT-related files. [user-docs/commands/dbt/generate.md](user-docs/commands/dbt/generate.md)
+    *   `kbc dbt generate profile`: Generates a DBT profile for Keboola. [user-docs/commands/dbt/generate/profile.md](user-docs/commands/dbt/generate/profile.md)
+    *   `kbc dbt generate sources`: Generates DBT sources from Keboola tables. [user-docs/commands/dbt/generate/sources.md](user-docs/commands/dbt/generate/sources.md)
+    *   `kbc dbt generate env`: Generates a `.env` file for DBT. [user-docs/commands/dbt/generate/env.md](user-docs/commands/dbt/generate/env.md)
 
 ## DevOps Use Cases and GitHub Integration
 
@@ -205,7 +205,7 @@ The Keboola CLI is designed to be integrated into DevOps workflows. Key use case
 *   **Environment promotion:**  Manage different Keboola environments (development, staging, production) using branches and CI/CD.
 *   **Disaster recovery:**  Version control and synchronization ensure that project configurations can be easily restored.
 
-Refer to: [https://developers.keboola.com/cli/devops-use-cases/](https://developers.keboola.com/cli/devops-use-cases/) and [https://developers.keboola.com/cli/github-integration/](https://developers.keboola.com/cli/github-integration/)
+Refer to: [user-docs/devops-use-cases.md](user-docs/devops-use-cases.md) and [user-docs/github-integration.md](user-docs/github-integration.md)
 
 ## Templates and Reusability
 
@@ -223,7 +223,7 @@ Keboola Templates allow you to create reusable configurations. The CLI provides 
 *   **Manifest File Integrity:**  Avoid manual modifications of the `.keboola/manifest.json` file unless absolutely necessary and with a thorough understanding of its structure. Incorrect modifications can lead to data loss or synchronization issues.
 *   **Error Handling:** Implement robust error handling when using the CLI. Check command exit codes and parse output for errors.
 *   **Non-interactive Mode:**  For automated tasks, use the CLI in non-interactive mode by providing all necessary parameters as command flags. This is crucial for CI/CD pipelines and scripts.
-*   **Documentation is Key:**  Always refer to the official Keboola CLI documentation ([https://developers.keboola.com/cli/](https://developers.keboola.com/cli/)) for the most up-to-date information on commands, options, and best practices.
+*   **Documentation is Key:**  Always refer to the official Keboola CLI documentation ([user-docs/README.md](user-docs/README.md)) for the most up-to-date information on commands, options, and best practices.
 *   **For inline help and usage details, run:**
     ```bash
     kbc --help  

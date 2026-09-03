@@ -8,7 +8,7 @@
 
 - Provides a representation of [Keboola](https://www.keboola.com/product/overview) project in a local directory and its bidirectional synchronization.
 - Supports direct operations on the remote project.
-- See [user documentation](https://developers.keboola.com/cli/).
+- See **[user documentation](./docs/user-docs/README.md)** — installation, commands and guides.
 - See **[architecture overview](./docs/cli/overview.md)** for more details.
 
 ### Stream Service
