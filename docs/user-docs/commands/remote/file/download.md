@@ -20,6 +20,9 @@ kbc remote file download [id] [flags]
   By default, sliced files are stitched together to form a single file.
   If this flag is set when downloading a sliced file, the resulting file will instead be stored as a directory, and each slice will be stored as a separate file in that directory.
 
+`--without-decompress`
+: Do not decompress the downloaded files or sliced files.
+
 [Global Options](../../../commands.md#global-options)
 
 ### Examples

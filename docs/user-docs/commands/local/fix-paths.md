@@ -12,6 +12,9 @@ It is run automatically after [pull](../sync/pull.md).
 
 ## Options
 
+`--cleanup`
+: Remove conflicting destination paths during rename
+
 `--dry-run`
 : Preview all paths that would be affected
 

@@ -25,7 +25,7 @@ kbc remote [command]
 | [kbc remote table detail](remote/table/detail.md) | Print [table](https://help.keboola.com/storage/tables/) details. |
 | [kbc remote table import](remote/table/import.md) | Import data to a [table](https://help.keboola.com/storage/tables/) from a [file](https://help.keboola.com/storage/files/). |
 | [kbc remote table unload](remote/table/unload.md) | Unload a [table](https://help.keboola.com/storage/tables/) into a [file](https://help.keboola.com/storage/files/). |
-| [kbc remote workspace](remote/create.md) | Manage workspaces in the project. |
+| [kbc remote workspace](remote/workspace.md) | Manage workspaces in the project. |
 | [kbc remote workspace create](remote/workspace/create.md) | Create a workspace in the project. |
 | [kbc remote workspace delete](remote/workspace/delete.md) | Delete a workspace in the project. |
 | [kbc remote workspace detail](remote/workspace/detail.md) | Print workspace details and credentials. |

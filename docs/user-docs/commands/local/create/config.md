@@ -62,4 +62,4 @@ Created new config "main/extractor/keboola.ex-db-mysql/invoices"
 
 - [All Commands](../../../commands.md)
 - [Create Configuration Row](row.md)
-- [Create Branch](https://help.keboola.com/cli/commands/remote/create/brabch/)
+- [Create Branch](../../remote/create/branch.md)

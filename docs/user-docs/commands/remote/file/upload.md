@@ -25,7 +25,7 @@ kbc remote file upload [flags]
 ### Examples
 
 ```
-➜ $ kbc remote file upload --name file1 --data ./name.csv --tags tag1,tag2
+➜ $ kbc remote file upload --file-name file1 --data ./name.csv --file-tags tag1,tag2
 File "file1" uploaded with file id "1234567".
 ```
 

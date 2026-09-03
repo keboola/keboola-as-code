@@ -8,6 +8,7 @@ kbc local persist [flags]
 
 Or shorter:
 ```
+kbc persist [flags]
 kbc pt [flags]
 ```
 

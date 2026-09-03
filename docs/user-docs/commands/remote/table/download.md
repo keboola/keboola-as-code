@@ -55,6 +55,12 @@ kbc remote table download [table] [flags]
 
   Accepts a semicolon-separated list of expressions, each of which specifies a column and a comparison to one or more values, such as `First_Name=Ivan,Pavel;Birth_Date>=1990-01-01`
 
+`--timeout <string>`
+: How long to wait for the unload job to finish (default `2m`)
+
+  Specified as a sequence of decimal numbers with unit suffixes, e.g., `5m10s` or `1.5h`.  
+  Available units are `ms`, `s`, `m`, and `h`.
+
 `--allow-sliced`
 : Allow sliced files to appear sliced locally. (default false)
 

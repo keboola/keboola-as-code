@@ -48,7 +48,7 @@ Created new config row "main/extractor/keboola.ex-db-mysql/invoices/rows/custome
 ```
 
 ```
-➜ kbc create config -n customer -b main -c invoices
+➜ kbc create row -n customer -b main -c invoices
 Created new config row "main/extractor/keboola.ex-db-mysql/invoices/rows/customer"
 ```
 
@@ -56,4 +56,4 @@ Created new config row "main/extractor/keboola.ex-db-mysql/invoices/rows/custome
 
 - [All Commands](../../../commands.md)
 - [Create Configuration](config.md)
-- [Create Branch](https://help.keboola.com/cli/commands/remote/create/brabch/)
+- [Create Branch](../../remote/create/branch.md)
