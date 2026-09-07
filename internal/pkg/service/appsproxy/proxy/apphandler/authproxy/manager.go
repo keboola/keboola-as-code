@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/basicauth"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/oauthproxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
@@ -46,11 +47,15 @@ func (m *Manager) ProviderSelector() *selector.Selector {
 func (m *Manager) NewHandlers(app api.AppConfig, upstream chain.Handler) map[provider.ID]selector.Handler {
 	authHandlers := make(map[provider.ID]selector.Handler, len(app.AuthProviders))
 	for _, auth := range app.AuthProviders {
+		// Record which provider admitted the request, so a session event can
+		// name it. oauth2-proxy does not pass this on, and one app may offer
+		// several providers.
+		providerUpstream := sessions.WithAuthProvider(upstream, auth.ID(), auth.Type())
 		switch p := auth.(type) {
 		case provider.OAuthProvider:
-			authHandlers[auth.ID()] = oauthproxy.NewHandler(m.logger, m.config, m.providerSelector, m.pageWriter, app, p, upstream)
+			authHandlers[auth.ID()] = oauthproxy.NewHandler(m.logger, m.config, m.providerSelector, m.pageWriter, app, p, providerUpstream)
 		case provider.Basic:
-			authHandlers[auth.ID()] = basicauth.NewHandler(m.logger, m.config, m.clock, m.pageWriter, app, p, upstream)
+			authHandlers[auth.ID()] = basicauth.NewHandler(m.logger, m.config, m.clock, m.pageWriter, app, p, providerUpstream)
 		default:
 			panic("unknown auth provider type")
 		}
