@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	kpendpoints "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview/endpoints"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
@@ -36,6 +37,10 @@ type appHandler struct {
 }
 
 type ruleIndex int
+
+// signOutPath is the oauth2-proxy sign-out endpoint, mounted under the proxy
+// prefix configured in oauthproxy.proxyConfig.
+const signOutPath = config.InternalPrefix + "/sign_out"
 
 func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handler, authHandlers map[provider.ID]selector.Handler) (http.Handler, error) {
 	// DevModeChecker is backed by the live K8s state watcher: re-evaluates on every request.
@@ -179,6 +184,11 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 
 	// Route internal URLs if there is at least one auth handler
 	if strings.HasPrefix(req.URL.Path, config.InternalPrefix) && h.allAuthHandlers != nil {
+		// A sign-out ends the session explicitly. Internal paths never reach
+		// the upstream, so this cannot be handled by the sessions middleware.
+		if req.URL.Path == signOutPath {
+			h.manager.sessionsManager.EndRequest(w, req, h.app, sessions.EndReasonSignOut)
+		}
 		return h.allAuthHandlers.ServeHTTPOrError(w, req)
 	}
 

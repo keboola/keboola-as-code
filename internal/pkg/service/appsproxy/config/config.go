@@ -31,8 +31,43 @@ type Config struct {
 	KaiPreview       KaiPreview        `configKey:"kaiPreview" configUsage:"kai-preview iframe-auth configuration."`
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`
+	Sessions         Sessions          `configKey:"sessions" configUsage:"End-user session tracking for data apps."`
 
 	ConnectionServiceAccountTokenPath string `configKey:"connectionServiceAccountTokenPath" configUsage:"Path to the projected Kubernetes ServiceAccount token used to authenticate to the Keboola APIs. Read per request, so a rotated token needs no restart." validate:"required"`
+}
+
+// Sessions configures tracking of end-user sessions in data apps.
+//
+// Events are sent to a Keboola Stream HTTP source, which lands them in a
+// Storage table. Tracking is off unless StreamURL is set, so it can be enabled
+// per stack — Stream is not deployed on every stack that runs the proxy.
+type Sessions struct {
+	// StreamURL is the full Stream HTTP source URL including the secret,
+	// e.g. https://stream-in.<suffix>/stream/<projectId>/<sourceId>/<secret>.
+	// Empty disables session tracking.
+	StreamURL string `configKey:"streamUrl" configUsage:"Full Stream HTTP source URL including the secret. Empty disables session tracking." validate:"omitempty,url" sensitive:"true"`
+	// MaxSessionLength is an absolute cap on one session, measured from the
+	// mint time embedded in its id. It exists so that a browser left open on a
+	// dashboard indefinitely does not report a single session measured in
+	// weeks; past it, the visit continues under a new session id.
+	//
+	// It must exceed the upstream websocket timeout, since a session cookie
+	// issued on a handshake is sized to cover that whole connection.
+	MaxSessionLength time.Duration `configKey:"maxSessionLength" configUsage:"Absolute cap on the length of one session, enforced server side." validate:"required,minDuration=1m"`
+	// HeartbeatInterval throttles heartbeat events per session.
+	HeartbeatInterval time.Duration `configKey:"heartbeatInterval" configUsage:"Minimum interval between heartbeat events of one session." validate:"required,minDuration=10s"`
+	// IdleTimeout is how long a session survives without activity. It sizes the
+	// session cookie deadline on an ordinary request, evicts the proxy's
+	// in-memory state, and is the window downstream uses to close sessions
+	// whose session_end event never arrived.
+	//
+	// A websocket handshake is the exception: that cookie is issued to cover
+	// the connection's whole lifetime, because after the upgrade there is no
+	// response left to carry a Set-Cookie.
+	IdleTimeout time.Duration `configKey:"idleTimeout" configUsage:"Inactivity after which a session is considered ended." validate:"required,minDuration=1m"`
+	QueueSize   int           `configKey:"queueSize" configUsage:"Capacity of the outgoing event queue. Events are dropped when full." validate:"required,min=1"`
+	Workers     int           `configKey:"workers" configUsage:"Number of goroutines sending events to Stream." validate:"required,min=1"`
+	SendTimeout time.Duration `configKey:"sendTimeout" configUsage:"Timeout of a single event request to Stream." validate:"required,minDuration=1s"`
 }
 
 // KaiPreview configures the stateless iframe-auth path for the kai-preview flow.
@@ -91,11 +126,38 @@ func New() Config {
 		KaiPreview: KaiPreview{
 			SessionTTL: 4 * time.Hour,
 		},
+		Sessions: Sessions{
+			MaxSessionLength:  12 * time.Hour,
+			HeartbeatInterval: 5 * time.Minute,
+			IdleTimeout:       30 * time.Minute,
+			QueueSize:         4096,
+			Workers:           4,
+			SendTimeout:       5 * time.Second,
+		},
 		ConnectionServiceAccountTokenPath: management.DefaultServiceAccountTokenPath,
 	}
 }
 
 func (c *Config) Normalize() {
+}
+
+// Validate checks the invariants the session design depends on, which no
+// per-field rule can express.
+func (c *Sessions) Validate() error {
+	errs := errors.NewMultiError()
+	if c.MaxSessionLength <= c.IdleTimeout {
+		errs.Append(errors.Errorf(
+			`sessions.maxSessionLength (%s) must be longer than sessions.idleTimeout (%s), otherwise a session is capped before it can even go idle`,
+			c.MaxSessionLength, c.IdleTimeout,
+		))
+	}
+	if c.HeartbeatInterval >= c.IdleTimeout {
+		errs.Append(errors.Errorf(
+			`sessions.heartbeatInterval (%s) must be shorter than sessions.idleTimeout (%s), otherwise an active session looks idle between heartbeats`,
+			c.HeartbeatInterval, c.IdleTimeout,
+		))
+	}
+	return errs.ErrorOrNil()
 }
 
 func (c *KaiPreview) Normalize() {

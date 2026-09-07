@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/frameworkpoll"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream/wsactivity"
@@ -47,6 +48,7 @@ type Manager struct {
 	configLoader appconfig.Loader
 	notify       *notify.Manager
 	wakeup       *wakeup.Manager
+	sessions     *sessions.Manager
 	stateWatcher *k8sapp.StateWatcher
 	config       config.Config
 }
@@ -70,6 +72,7 @@ type dependencies interface {
 	AppConfigLoader() appconfig.Loader
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
+	SessionsManager() *sessions.Manager
 	AppStateWatcher() *k8sapp.StateWatcher
 	Config() config.Config
 }
@@ -84,6 +87,7 @@ func NewManager(d dependencies) *Manager {
 		configLoader: d.AppConfigLoader(),
 		notify:       d.NotifyManager(),
 		wakeup:       d.WakeupManager(),
+		sessions:     d.SessionsManager(),
 		stateWatcher: d.AppStateWatcher(),
 		config:       d.Config(),
 	}
@@ -170,8 +174,10 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 		return nil
 	}
 
-	// Difference between regular and websocket request
-	if strings.EqualFold(req.Header.Get("Connection"), "upgrade") && req.Header.Get("Upgrade") == "websocket" {
+	// Difference between regular and websocket request.
+	// Shared with the sessions middleware, which sizes the session cookie
+	// deadline to cover a connection routed here.
+	if sessions.IsWebsocketUpgrade(req) {
 		return u.wsHandler.ServeHTTPOrError(rw, req)
 	}
 	return u.handler.ServeHTTPOrError(rw, req)
@@ -332,7 +338,16 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 		// uses context.WithoutCancel, so the in-flight call survives the WS
 		// timeout and any per-request cancellation.
 		reqCtx := res.Request.Context()
-		res.Body = wsactivity.Wrap(rwc, func() { u.notify(reqCtx) })
+		wrapped := wsactivity.Wrap(rwc, func() {
+			u.notify(reqCtx)
+			u.manager.sessions.ActivityWS(reqCtx)
+		})
+		// A websocket close is the most reliable end-of-session signal a
+		// Streamlit app produces: the app does virtually all of its work over
+		// this one connection.
+		res.Body = onClose(wrapped, func() {
+			u.manager.sessions.End(reqCtx, sessions.EndReasonWebsocketClose)
+		})
 		return nil
 	}
 
@@ -373,6 +388,7 @@ func (u *AppUpstream) trace() chain.Middleware {
 						return
 					}
 					u.notify(ctx)
+					u.manager.sessions.Activity(ctx)
 				},
 			})
 
@@ -416,4 +432,22 @@ func (u *AppUpstream) Cancel(err error) {
 	if u.cancelWs != nil {
 		u.cancelWs(err)
 	}
+}
+
+// onCloseConn invokes fn once, after the wrapped connection is closed.
+type onCloseConn struct {
+	io.ReadWriteCloser
+	once sync.Once
+	fn   func()
+}
+
+// onClose wraps rwc so that fn runs when the connection is closed.
+func onClose(rwc io.ReadWriteCloser, fn func()) io.ReadWriteCloser {
+	return &onCloseConn{ReadWriteCloser: rwc, fn: fn}
+}
+
+func (c *onCloseConn) Close() error {
+	err := c.ReadWriteCloser.Close()
+	c.once.Do(c.fn)
+	return err
 }

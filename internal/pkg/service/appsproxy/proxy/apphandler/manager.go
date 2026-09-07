@@ -14,8 +14,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
@@ -36,6 +38,7 @@ type Manager struct {
 	handlers             *syncmap.SyncMap[api.AppID, appHandlerWrapper]
 	clock                clockwork.Clock
 	storageTokenVerifier kaipreview.StorageTokenVerifier
+	sessionsManager      *sessions.Manager
 }
 
 type appHandlerWrapper struct {
@@ -63,6 +66,7 @@ type dependencies interface {
 	UpstreamManager() *upstream.Manager
 	AuthProxyManager() *authproxy.Manager
 	AppConfigLoader() appconfig.Loader
+	SessionsManager() *sessions.Manager
 }
 
 func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
@@ -87,6 +91,7 @@ func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
 		}),
 		clock:                d.Clock(),
 		storageTokenVerifier: verifier,
+		sessionsManager:      d.SessionsManager(),
 	}, nil
 }
 
@@ -126,11 +131,16 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) (http.Handl
 		return m.newErrorHandler(ctx, app, err), nil
 	}
 
+	// Track the end-user session. Sits between authentication and the upstream:
+	// the X-Kbc-User-* headers are already injected at this point, while paths
+	// that require no authentication still get an anonymous session.
+	trackedUpstream := chain.New(appUpstream).Prepend(m.sessionsManager.Middleware(app))
+
 	// Create authentication handlers
-	authHandlers := m.authProxyManager.NewHandlers(app, appUpstream)
+	authHandlers := m.authProxyManager.NewHandlers(app, trackedUpstream)
 
 	// Create root handler for application
-	handler, err := newAppHandler(m, app, appUpstream, authHandlers)
+	handler, err := newAppHandler(m, app, trackedUpstream, authHandlers)
 	if err != nil {
 		err = svcErrors.NewServiceUnavailableError(errors.NewNestedError(
 			errors.Errorf(`application "%s" has invalid configuration`, app.IdAndName()),
