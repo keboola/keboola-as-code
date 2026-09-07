@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/frameworkpoll"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
@@ -143,7 +144,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
 		case !appInfo.AutoRestartEnabled:
 			u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
-		case isFrameworkBackgroundPoll(req.URL.Path):
+		case frameworkpoll.Is(req.URL.Path):
 			// Auto-suspended app + framework background poll (e.g. Streamlit's
 			// /_stcore/health emitted by the frontend on its WS reconnect
 			// cycle while the tab stays open). Triggering a wakeup here would
@@ -364,11 +365,11 @@ func (u *AppUpstream) trace() chain.Middleware {
 
 			// Trace connection events. Background polls emitted by data-app
 			// frontends independent of user interaction (see
-			// isFrameworkBackgroundPoll) are not considered activity and do
+			// frameworkpoll.Is) are not considered activity and do
 			// not bump lastRequestTimestamp.
 			reqCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
 				GotConn: func(connInfo httptrace.GotConnInfo) {
-					if isFrameworkBackgroundPoll(reqPath) {
+					if frameworkpoll.Is(reqPath) {
 						return
 					}
 					u.notify(ctx)
@@ -414,26 +415,5 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 func (u *AppUpstream) Cancel(err error) {
 	if u.cancelWs != nil {
 		u.cancelWs(err)
-	}
-}
-
-// isFrameworkBackgroundPoll reports whether the given URL path is a known
-// data-app frontend background-poll endpoint that fires independently of user
-// interaction.
-//
-// Currently covers Streamlit's /_stcore/health and /_stcore/host-config. These
-// are emitted on every WebSocket (re)connect — including the periodic ~20 min
-// reconnect cycle imposed by an external idle timeout — and would otherwise
-// either bump lastRequestTimestamp on a Running app (defeating auto-suspend)
-// or wake a Suspended one (defeating it again). Apps-proxy treats them as
-// non-activity: notify is skipped on a Running app and the request is rejected
-// with 503 Retry-After on a Suspended one, requiring the user to perform a
-// meaningful action (refresh, click into the UI) to wake the app.
-func isFrameworkBackgroundPoll(path string) bool {
-	switch path {
-	case "/_stcore/health", "/_stcore/host-config":
-		return true
-	default:
-		return false
 	}
 }
