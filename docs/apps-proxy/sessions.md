@@ -130,9 +130,12 @@ customer project that owns the app.
 
 ```bash
 export KEBOOLA_TOKEN=<sapi-token-of-the-internal-project>
-export KEBOOLA_BRANCH_ID=0
 bash scripts/stream-sessions-setup.sh
 ```
+
+`KEBOOLA_BRANCH_ID` defaults to `default`. Stream takes a branch id or that
+literal — unlike the Storage API it rejects `0`, and does so with a misleading
+"Branch id:\"0\" was not found".
 
 The script is idempotent and resumable: state goes to
 `./stream-sessions-state.env` (mode 600 — the ingest URL embeds the write

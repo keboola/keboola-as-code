@@ -19,10 +19,11 @@
 #
 # Usage:
 #   export KEBOOLA_TOKEN=<sapi-token-of-the-internal-project>
-#   export KEBOOLA_BRANCH_ID=0
 #   bash scripts/stream-sessions-setup.sh
 #
 # Optional overrides:
+#   KEBOOLA_BRANCH_ID — branch id, or "default" (the default). Note this is not
+#                       the Storage API convention: Stream rejects "0".
 #   STREAM_API_HOST — defaults to stream.keboola.com
 #   SOURCE_NAME     — defaults to "Data App Sessions"
 #   TABLE_ID        — defaults to in.c-data-apps.sessions
@@ -40,7 +41,10 @@ command -v curl &>/dev/null || {
 }
 
 TOKEN="${KEBOOLA_TOKEN:?Set KEBOOLA_TOKEN}"
-BRANCH_ID="${KEBOOLA_BRANCH_ID:?Set KEBOOLA_BRANCH_ID (0 = default branch)}"
+# Stream takes a numeric branch id or the literal "default". It rejects "0",
+# which is the Storage API's alias for the default branch, with a confusing
+# "Branch id:\"0\" was not found".
+BRANCH_ID="${KEBOOLA_BRANCH_ID:-default}"
 STREAM_API_HOST="${STREAM_API_HOST:-stream.keboola.com}"
 SOURCE_NAME="${SOURCE_NAME:-Data App Sessions}"
 SINK_NAME="${SINK_NAME:-Session Events}"
