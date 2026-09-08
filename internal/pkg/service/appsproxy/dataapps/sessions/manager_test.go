@@ -86,7 +86,7 @@ func serve(t *testing.T, handler chain.Handler, cookie *http.Cookie, headers map
 }
 
 func websocketHeaders() map[string]string {
-	return map[string]string{"Connection": "Upgrade", "Upgrade": "websocket"}
+	return map[string]string{"Connection": "Upgrade", "Upgrade": "websocket", "Sec-Fetch-Mode": "websocket"}
 }
 
 func servePath(t *testing.T, handler chain.Handler, path string, cookie *http.Cookie, headers map[string]string) *http.Response {
@@ -97,6 +97,9 @@ func servePath(t *testing.T, handler chain.Handler, path string, cookie *http.Co
 	if cookie != nil {
 		req.AddCookie(cookie)
 	}
+	// A page load by default: only a navigation may start a session, so a test
+	// that does not care about that distinction has to look like one.
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
 	for name, value := range headers {
 		req.Header.Set(name, value)
 	}
@@ -700,4 +703,82 @@ func TestManager_SlidingExpiration(t *testing.T) {
 		// A session_start here means the session was lost.
 		expectNoEvent(t, events)
 	}
+}
+
+func TestManager_OnlyNavigationStartsSession(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		headers map[string]string
+		starts  bool
+	}{
+		"navigation":            {map[string]string{"Sec-Fetch-Mode": "navigate"}, true},
+		"websocket handshake":   {websocketHeaders(), true},
+		"subresource":           {map[string]string{"Sec-Fetch-Mode": "no-cors"}, false},
+		"same-origin fetch":     {map[string]string{"Sec-Fetch-Mode": "same-origin"}, false},
+		"cors fetch":            {map[string]string{"Sec-Fetch-Mode": "cors"}, false},
+		"legacy browser":        {map[string]string{"Accept": "text/html,application/xhtml+xml"}, true},
+		"client asking for any": {map[string]string{"Accept": "*/*"}, false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			streamURL, events := streamServer(t)
+			m, _ := newManager(t, streamURL)
+
+			handler := chain.New(chain.HandlerFunc(func(http.ResponseWriter, *http.Request) error {
+				return nil
+			})).Prepend(m.Middleware(testApp()))
+
+			// servePath sets Sec-Fetch-Mode: navigate by default; drop it so
+			// each case controls the headers itself.
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://my-app-12345.hub.keboola.local/", nil)
+			require.NoError(t, err)
+			for k, v := range tc.headers {
+				req.Header.Set(k, v)
+			}
+			rec := httptest.NewRecorder()
+			require.NoError(t, handler.ServeHTTPOrError(rec, req))
+
+			resp := rec.Result()
+			if tc.starts {
+				assert.True(t, hasSessionCookie(resp), "should have minted a session")
+				assert.Equal(t, sessions.EventSessionStart, recvEvent(t, events).EventType)
+				return
+			}
+			assert.False(t, hasSessionCookie(resp), "must not mint a session")
+			expectNoEvent(t, events)
+		})
+	}
+}
+
+func TestManager_PageLoadBurstIsOneSession(t *testing.T) {
+	t.Parallel()
+
+	streamURL, events := streamServer(t)
+	m, clk := newManager(t, streamURL)
+
+	// The bug this guards against, observed on canary: a page load fires the
+	// document plus its subresources at once, none of them carrying a cookie
+	// yet, and every one of them minted its own session. One visit was
+	// reported as two, the loser left holding a lone session_start.
+	document := call(t, m, nil, nil, map[string]string{"Sec-Fetch-Mode": "navigate"})
+	cookie := sessionCookie(t, document)
+	start := recvEvent(t, events)
+	require.Equal(t, sessions.EventSessionStart, start.EventType)
+
+	for _, mode := range []string{"no-cors", "cors", "same-origin"} {
+		resp := call(t, m, nil, nil, map[string]string{"Sec-Fetch-Mode": mode})
+		assert.False(t, hasSessionCookie(resp), "%s must not mint a second session", mode)
+	}
+	expectNoEvent(t, events)
+
+	// Once the cookie is in place those same requests join the session and are
+	// counted against it.
+	clk.Advance(config.New().Sessions.HeartbeatInterval + time.Second)
+	call(t, m, func(req *http.Request) { m.Activity(req.Context()) }, cookie,
+		map[string]string{"Sec-Fetch-Mode": "no-cors"})
+	event := recvEvent(t, events)
+	assert.Equal(t, sessions.EventHeartbeat, event.EventType)
+	assert.Equal(t, start.SessionID, event.SessionID)
 }
