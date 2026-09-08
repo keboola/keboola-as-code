@@ -70,6 +70,9 @@ func proxyConfig(
 	v.Session = options.SessionOptions{Type: options.CookieSessionStoreType}
 	v.EmailDomains = []string{"*"}
 	v.InjectRequestHeaders = []options.Header{
+		// Kept: data apps already read these, keboola_streamlit among them.
+		// Session tracking deliberately records only the subject.
+		headerFromClaim("X-Kbc-User-Id", "sub"),
 		headerFromClaim("X-Kbc-User-Name", "name"),
 		headerFromClaim("X-Kbc-User-Email", options.OIDCEmailClaim),
 		headerFromClaim("X-Kbc-User-Roles", options.OIDCGroupsClaim),

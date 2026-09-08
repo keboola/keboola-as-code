@@ -33,10 +33,18 @@ Three event types, one row each:
 | `heartbeat` | Periodically while the session is active (default every 5 min). Carries identity, so a session that starts anonymous and authenticates later still gets its user. |
 | `session_end` | Websocket close, or an explicit `/_proxy/sign_out`. **Best-effort, and a websocket close is not final** — see [§6](#6-known-limitations). |
 
-Identity is the email and name from the `X-Kbc-User-Email` / `X-Kbc-User-Name`
-headers that oauth2-proxy injects. Both are empty for a shared-password app and
-for a path with `authRequired: false`: those sessions carry a session id and
-nothing else.
+Identity is the OIDC **subject claim**, injected as `X-Kbc-User-Id`. It
+identifies a person without naming them and is stable across e-mail and
+display-name changes, which the e-mail is not. No e-mail or display name is
+recorded.
+
+It is empty for a shared-password app, for a path with `authRequired: false`,
+and for **GitHub** — that provider issues no ID token, so oauth2-proxy never
+builds claims from one and there is no subject to take. Those sessions carry a
+session id and nothing else.
+
+The subject is only unique within one issuer, so distinct users must be counted
+over `(auth_provider_id, user_id)`, never `user_id` alone.
 
 A sign-out ends the session **and clears the cookie**, so the next person to use
 that browser starts a session of their own rather than being attributed to the
@@ -67,8 +75,8 @@ SELECT
              THEN end_reason END)                   AS end_reason,
     MAX(app_id)                                     AS app_id,
     MAX(project_id)                                 AS project_id,
-    MAX(NULLIF(user_email, ''))                     AS user_email,
-    MAX(NULLIF(user_name, ''))                      AS user_name,
+    MAX(NULLIF(user_id, ''))                        AS user_id,
+    MAX(NULLIF(auth_provider_id, ''))               AS auth_provider_id,
     MAX(NULLIF(auth_provider_type, ''))             AS auth_provider_type,
     SUM(requests)                                   AS requests,
     SUM(ws_frames)                                  AS ws_frames
@@ -110,7 +118,7 @@ Created by `scripts/stream-sessions-setup.sh`. Default table
 | `session_start` | `sessionStart` | Decoded from `session_id`, identical on every row of a session. |
 | `app_id`, `app_name`, `project_id` | app config | |
 | `auth_provider_id`, `auth_provider_type` | request context | Empty when no auth was required. |
-| `user_email`, `user_name` | `X-Kbc-User-*` | Empty for password / no-auth apps. |
+| `user_id` | `X-Kbc-User-Id` | OIDC subject claim. Empty for password / no-auth apps and for GitHub. Unique only within an issuer — pair it with `auth_provider_id`. |
 | `user_agent` | request | |
 | `requests`, `ws_frames` | proxy counters | Deltas, not totals. |
 | `end_reason` | `endReason` | `ws_close` \| `sign_out`. Only on `session_end`; only `sign_out` is final. |

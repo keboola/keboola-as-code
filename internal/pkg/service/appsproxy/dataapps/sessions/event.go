@@ -20,7 +20,7 @@ const (
 	// Set-Cookie gets one per request.
 	EventSessionStart EventType = "session_start"
 	// EventHeartbeat is emitted periodically while the session is active.
-	// It also carries identity, so a session that starts anonymous and later
+	// It also carries the user id, so a session that starts anonymous and later
 	// authenticates gets its identity through the next heartbeat.
 	EventHeartbeat EventType = "heartbeat"
 	// EventSessionEnd is emitted on a websocket close or an explicit sign-out.
@@ -64,11 +64,17 @@ type Event struct {
 	AuthProviderID   string `json:"authProviderId"`
 	AuthProviderType string `json:"authProviderType"`
 
-	// UserEmail and UserName come from the X-Kbc-User-* headers that
-	// oauth2-proxy injects on an authenticated request. Both are empty for a
-	// shared-password app and for a path that requires no authentication.
-	UserEmail string `json:"userEmail"`
-	UserName  string `json:"userName"`
+	// UserID is the OIDC subject claim, injected as X-Kbc-User-Id on an
+	// authenticated request. It identifies the person without naming them, and
+	// is stable across e-mail and display-name changes.
+	//
+	// Empty for a shared-password app, for a path that requires no
+	// authentication, and for GitHub — which issues no ID token, so it has no
+	// subject claim to give.
+	//
+	// Only unique within one issuer: count distinct users over
+	// (AuthProviderID, UserID), never UserID alone.
+	UserID string `json:"userId"`
 
 	UserAgent string `json:"userAgent"`
 

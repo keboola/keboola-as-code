@@ -200,8 +200,7 @@ func TestManager_SessionStart(t *testing.T) {
 	assert.Equal(t, "789", event.ProjectID)
 	assert.NotEmpty(t, event.SessionID)
 	assert.NotEmpty(t, event.SessionStart)
-	assert.Empty(t, event.UserEmail)
-	assert.Empty(t, event.UserName)
+	assert.Empty(t, event.UserID)
 }
 
 func TestManager_ExistingCookieDoesNotStartNewSession(t *testing.T) {
@@ -249,16 +248,14 @@ func TestManager_Identity(t *testing.T) {
 	m, _ := newManager(t, streamURL)
 
 	headers := map[string]string{
-		"X-Kbc-User-Email": "user@example.com",
-		"X-Kbc-User-Name":  "Some User",
-		"User-Agent":       "test-agent",
+		"X-Kbc-User-Id": "8f14e45f-ceea-467a-9f5a-1c2d3e4f5a6b",
+		"User-Agent":    "test-agent",
 	}
 	call(t, m, nil, nil, headers)
 
 	event := recvEvent(t, events)
 	assert.Equal(t, sessions.EventSessionStart, event.EventType)
-	assert.Equal(t, "user@example.com", event.UserEmail)
-	assert.Equal(t, "Some User", event.UserName)
+	assert.Equal(t, "8f14e45f-ceea-467a-9f5a-1c2d3e4f5a6b", event.UserID)
 	assert.Equal(t, "test-agent", event.UserAgent)
 }
 
@@ -273,19 +270,19 @@ func TestManager_IdentityAppearsLater(t *testing.T) {
 	cookie := sessionCookie(t, first)
 	start := recvEvent(t, events)
 	require.Equal(t, sessions.EventSessionStart, start.EventType)
-	require.Empty(t, start.UserEmail)
+	require.Empty(t, start.UserID)
 
 	// Then the user authenticates. The identity must not wait out the whole
 	// heartbeat interval.
-	call(t, m, nil, cookie, map[string]string{"X-Kbc-User-Email": "user@example.com"})
+	call(t, m, nil, cookie, map[string]string{"X-Kbc-User-Id": "subject-1"})
 
 	event := recvEvent(t, events)
 	assert.Equal(t, sessions.EventHeartbeat, event.EventType)
 	assert.Equal(t, start.SessionID, event.SessionID)
-	assert.Equal(t, "user@example.com", event.UserEmail)
+	assert.Equal(t, "subject-1", event.UserID)
 
 	// Identity is not re-flushed on every following request.
-	call(t, m, nil, cookie, map[string]string{"X-Kbc-User-Email": "user@example.com"})
+	call(t, m, nil, cookie, map[string]string{"X-Kbc-User-Id": "subject-1"})
 	expectNoEvent(t, events)
 }
 
