@@ -208,6 +208,15 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 	// is identical across replicas, and cannot be moved by the client.
 	state, found := readCookie(req, key, now, m.cfg.MaxSessionLength)
 	if !found {
+		// Only a navigation or a websocket handshake may start a session.
+		// A page load fires a burst of requests at once, none of them yet
+		// carrying a cookie, and each one minting its own session would report
+		// a single visit as several — one real session plus orphans holding a
+		// lone session_start, since only the last Set-Cookie survives.
+		if !startsSession(req) {
+			return nil
+		}
+
 		sessionID, err := newSessionID()
 		if err != nil {
 			m.logger.Errorf(ctx, "cannot generate session id: %s", err.Error())
@@ -301,6 +310,31 @@ func (m *Manager) deadline(req *http.Request, state cookieState, now time.Time) 
 		deadline = limit
 	}
 	return deadline
+}
+
+// startsSession reports whether a request without a session cookie may start
+// one. A request that may not still joins a session it already has a cookie
+// for — this only decides who gets to mint one.
+//
+// Subresources and background fetches are excluded: they arrive alongside the
+// document that triggered them, so letting them mint sessions turns one visit
+// into several. It also keeps clients that ignore Set-Cookie entirely — an
+// uptime monitor, a crawler — from reporting a session per request.
+//
+// The websocket handshake is allowed through even though it is not a
+// navigation: it is one request per connection rather than a burst, and a
+// Streamlit tab whose cookie has expired can reconnect without reloading the
+// page, which would otherwise leave that activity untracked.
+func startsSession(req *http.Request) bool {
+	// Sec-Fetch-Mode distinguishes a navigation from a subresource fetch. It is
+	// set by every current browser and cannot be spoofed by page script.
+	if mode := req.Header.Get("Sec-Fetch-Mode"); mode != "" {
+		return strings.EqualFold(mode, "navigate") || strings.EqualFold(mode, "websocket")
+	}
+
+	// Clients that predate Sec-Fetch: asking for HTML is the closest signal
+	// that this is a page load rather than something the page pulled in.
+	return strings.Contains(req.Header.Get("Accept"), "text/html") || IsWebsocketUpgrade(req)
 }
 
 // IsWebsocketUpgrade reports whether the request is a websocket handshake.

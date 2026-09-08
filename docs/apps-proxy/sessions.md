@@ -264,12 +264,15 @@ minted immediately after every login.
   abandoned tab reports a session up to the 12 h cap. This is the same blind
   spot auto-suspend already has — that poll keeps the app running too — so the
   fix, if one is wanted, belongs in `frameworkpoll` and benefits both.
-- **Clients that ignore cookies produce one session per request.** An uptime
-  monitor, a `curl` loop or a crawler hitting an app with
-  `authRequired: false` never sends the cookie back, so every request mints a
-  session and emits a `session_start`. Only the two Streamlit poll paths are
-  excluded. Filter such traffic out (by `user_agent`, or by sessions with a
-  single `session_start` and nothing else) before counting users.
+- **Only a navigation or a websocket handshake starts a session.** A page load
+  fires the document plus its subresources at once, none of them yet carrying a
+  cookie, so letting any request mint one reported a single visit as several —
+  this was observed on canary before the check existed. `Sec-Fetch-Mode`
+  decides; clients that predate it fall back to asking for `text/html`. A
+  subresource still *joins* a session it has a cookie for, and is counted
+  against it. The same check keeps a client that ignores `Set-Cookie` — an
+  uptime monitor, a crawler — from reporting a session per request, though one
+  that sends `Accept: text/html` and drops cookies still would.
 - **Dev-mode previews are tracked too.** A data app opened through the
   kai-preview iframe path in the Connection UI reaches the upstream like any
   other request, so it produces sessions in the same table with no marker to
