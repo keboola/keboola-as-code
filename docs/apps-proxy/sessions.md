@@ -209,10 +209,11 @@ through the proxy at all. If that ever changes, such a response needs the same
 treatment as a websocket handshake — the deadline must cover the connection,
 because nothing else will arrive to refresh it.
 
-`maxSessionLength` is validated to be longer than `idleTimeout`, and
-`heartbeatInterval` shorter than it; the proxy refuses to start otherwise. It
-should also exceed `upstream.wsTimeout` — that is not settable through
-configuration, so the proxy only warns if a code change ever broke it.
+`maxSessionLength` is validated to be longer than both `idleTimeout` and
+`upstream.wsTimeout`, and `heartbeatInterval` shorter than `idleTimeout`; with
+tracking enabled the proxy refuses to start otherwise. A cap below the
+websocket timeout would cut long visits into several sessions and inflate the
+counts.
 
 `SameSite` is `Lax`, not `Strict`, for a related reason: the request landing
 back on the app after an OAuth redirect is a cross-site top-level navigation.

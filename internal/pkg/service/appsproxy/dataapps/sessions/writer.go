@@ -48,10 +48,20 @@ type writerConfig struct {
 }
 
 func newWriter(logger log.Logger, cfg writerConfig) *writer {
+	// A client with no Transport uses http.DefaultTransport, which keeps only
+	// two idle connections per host. With more workers than that, the rest have
+	// to complete a fresh TLS handshake on every send — charged against
+	// sendTimeout, so drops would get more likely exactly when volume is
+	// highest. Clone the default rather than build one from scratch to keep its
+	// proxy support and dial timeouts.
+	transport := http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert
+	transport.MaxIdleConnsPerHost = cfg.workers
+	transport.MaxIdleConns = cfg.workers * 2
+
 	w := &writer{
 		logger: logger,
 		url:    cfg.url,
-		client: &http.Client{Timeout: cfg.sendTimeout},
+		client: &http.Client{Timeout: cfg.sendTimeout, Transport: transport},
 		queue:  make(chan Event, cfg.queueSize),
 		done:   make(chan struct{}),
 	}

@@ -782,3 +782,61 @@ func TestManager_PageLoadBurstIsOneSession(t *testing.T) {
 	assert.Equal(t, sessions.EventHeartbeat, event.EventType)
 	assert.Equal(t, start.SessionID, event.SessionID)
 }
+
+func TestManager_SignOutIsRecordedOnAReplicaThatNeverSawTheSession(t *testing.T) {
+	t.Parallel()
+
+	streamURL, events := streamServer(t)
+
+	// Two managers over one stream stand in for the two proxy replicas: they
+	// derive the same cookie signing key but keep separate in-memory state.
+	minting, _ := newManager(t, streamURL)
+	signingOut, _ := newManager(t, streamURL)
+
+	first := call(t, minting, nil, nil, nil)
+	cookie := sessionCookie(t, first)
+	start := recvEvent(t, events)
+	require.Equal(t, sessions.EventSessionStart, start.EventType)
+
+	// The sign-out lands on the other replica, which has no cached entry for
+	// this session. It still has to be recorded: a sign-out is the one final
+	// end signal, and losing it would leave the session to expire through the
+	// idle window instead.
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://my-app-12345.hub.keboola.local/_proxy/sign_out", nil)
+	require.NoError(t, err)
+	req.AddCookie(cookie)
+	rec := httptest.NewRecorder()
+	signingOut.EndRequest(rec, req, testApp(), sessions.EndReasonSignOut)
+
+	event := recvEvent(t, events)
+	assert.Equal(t, sessions.EventSessionEnd, event.EventType)
+	assert.Equal(t, start.SessionID, event.SessionID)
+	assert.Equal(t, string(sessions.EndReasonSignOut), event.EndReason)
+	assert.Zero(t, event.Requests, "a replica with no cached state has no deltas to report")
+
+	// And the cookie is gone, which is what keeps a repeated sign-out quiet.
+	cleared := sessionCookie(t, rec.Result())
+	assert.Empty(t, cleared.Value)
+}
+
+func TestManager_SessionStartIsIdenticalOnEveryRow(t *testing.T) {
+	t.Parallel()
+
+	streamURL, events := streamServer(t)
+	m, clk := newManager(t, streamURL)
+
+	first := call(t, m, nil, nil, nil)
+	cookie := sessionCookie(t, first)
+	start := recvEvent(t, events)
+	require.Equal(t, sessions.EventSessionStart, start.EventType)
+
+	clk.Advance(config.New().Sessions.HeartbeatInterval + time.Second)
+	call(t, m, func(req *http.Request) { m.Activity(req.Context()) }, cookie, nil)
+	heartbeat := recvEvent(t, events)
+	require.Equal(t, sessions.EventHeartbeat, heartbeat.EventType)
+
+	// The schema promises sessionStart is the same on every row of a session —
+	// the first row used to carry the clock's reading while later rows carried
+	// the millisecond-truncated value decoded from the id.
+	assert.Equal(t, start.SessionStart, heartbeat.SessionStart)
+}

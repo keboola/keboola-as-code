@@ -100,16 +100,6 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 		m.writer.close(ctx)
 	})
 
-	// The websocket timeout is not settable through configuration, so this can
-	// only be tripped by a code change — but if it ever is, long connections
-	// would be cut short by the cap instead of being covered by it.
-	if minimum := m.wsTimeout + websocketGrace; m.cfg.MaxSessionLength < minimum {
-		logger.Warnf(ctx,
-			"sessions.maxSessionLength (%s) is shorter than the websocket timeout plus grace (%s), long-lived connections will be split across sessions",
-			m.cfg.MaxSessionLength, minimum,
-		)
-	}
-
 	logger.Info(ctx, "session tracking is enabled")
 	return m
 }
@@ -222,7 +212,16 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 			m.logger.Errorf(ctx, "cannot generate session id: %s", err.Error())
 			return nil
 		}
-		state = cookieState{sessionID: sessionID, startedAt: now}
+
+		// Decode the start back out of the id we just minted rather than using
+		// now: every later request derives it that way, and the UUIDv7
+		// timestamp is millisecond-truncated, so taking now here would write a
+		// different sessionStart on the first row than on all the others.
+		startedAt, err := sessionStartFromID(sessionID)
+		if err != nil {
+			startedAt = now
+		}
+		state = cookieState{sessionID: sessionID, startedAt: startedAt}
 	}
 
 	// Push the deadline out while the visitor is active. The cookie is written
@@ -261,16 +260,29 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 		// session_start whenever a session moved between replicas. A missing
 		// cookie, by contrast, means the id was generated a moment ago and no
 		// replica can have seen it.
-		m.emit(ctx, s, item, EventSessionStart, "", now)
+		item.lock.Lock()
+		event := m.buildEvent(s, item, EventSessionStart, "", now)
+		item.lock.Unlock()
+		m.writer.enqueue(ctx, event)
 	case s.userEmail != "" || s.userName != "":
 		// A session can start on a public path and authenticate later. Flush a
 		// heartbeat as soon as identity appears instead of waiting out the
 		// heartbeat interval.
+		//
+		// The test and the set have to happen in one critical section:
+		// buildEvent is what marks the identity as sent, so releasing the lock
+		// in between lets two requests arriving together after a login both
+		// decide to flush.
 		item.lock.Lock()
-		pending := !item.identitySent
+		var identityEvent *Event
+		if !item.identitySent {
+			event := m.buildEvent(s, item, EventHeartbeat, "", now)
+			identityEvent = &event
+		}
 		item.lock.Unlock()
-		if pending {
-			m.emit(ctx, s, item, EventHeartbeat, "", now)
+
+		if identityEvent != nil {
+			m.writer.enqueue(ctx, *identityEvent)
 		}
 	}
 
@@ -402,29 +414,28 @@ func (m *Manager) End(ctx context.Context, reason EndReason) {
 		return
 	}
 
-	// No entry means the session was already ended (or never seen on this
-	// replica): nothing to report, and this makes a repeated End a no-op.
+	// No entry means the websocket was already accounted for, or was never
+	// seen on this replica: nothing to report, and this makes a repeated End a
+	// no-op.
 	item, found := m.store.take(s.ID)
 	if !found {
 		return
 	}
 
+	m.emitEnd(ctx, s, item, reason)
+}
+
+// emitEnd writes the end event. Detached from the request context, because End
+// runs while the connection is being torn down and that context is already
+// cancelled.
+func (m *Manager) emitEnd(ctx context.Context, s *Session, item *entry, reason EndReason) {
 	now := m.clock.Now()
 
 	item.lock.Lock()
 	event := m.buildEvent(s, item, EventSessionEnd, reason, now)
 	item.lock.Unlock()
 
-	// Detached from the request context: End is called while the connection is
-	// being torn down, so the context is already cancelled.
 	m.writer.enqueue(context.WithoutCancel(ctx), event)
-}
-
-func (m *Manager) emit(ctx context.Context, s *Session, item *entry, typ EventType, reason EndReason, now time.Time) {
-	item.lock.Lock()
-	event := m.buildEvent(s, item, typ, reason, now)
-	item.lock.Unlock()
-	m.writer.enqueue(ctx, event)
 }
 
 // buildEvent drains the pending deltas and arms the next heartbeat.
@@ -511,5 +522,16 @@ func (m *Manager) EndRequest(rw http.ResponseWriter, req *http.Request, app api.
 		userAgent: req.Header.Get("User-Agent"),
 	}
 
-	m.End(contextWith(ctx, s), reason)
+	// Emit even when this replica holds no cached state for the session. The
+	// proxy runs several replicas with no session affinity, so a sign-out often
+	// lands on one that never saw this session — and unlike a websocket close,
+	// a sign-out is the one final signal, so losing it would leave the session
+	// to expire through the idle window instead. Repeating it is not a concern:
+	// the cookie was just cleared, so a second sign-out carries none.
+	item, found := m.store.take(s.ID)
+	if !found {
+		item = &entry{}
+	}
+
+	m.emitEnd(ctx, s, item, reason)
 }

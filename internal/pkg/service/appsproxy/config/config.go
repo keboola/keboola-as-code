@@ -141,6 +141,27 @@ func New() Config {
 func (c *Config) Normalize() {
 }
 
+// Validate checks invariants that span more than one config struct, which the
+// per-struct Validate methods cannot see.
+func (c *Config) Validate() error {
+	errs := errors.NewMultiError()
+
+	// A session cookie issued on a websocket handshake is sized to cover that
+	// whole connection, so a cap below the connection's own timeout would cut
+	// long visits into several sessions and inflate the counts. Only
+	// maxSessionLength is operator-settable here — upstream carries
+	// configKey:"-", so wsTimeout can only move in code — but that is the side
+	// that gets set by mistake.
+	if c.Sessions.StreamURL != "" && c.Sessions.MaxSessionLength <= c.Upstream.WsTimeout {
+		errs.Append(errors.Errorf(
+			`sessions.maxSessionLength (%s) must be longer than the upstream websocket timeout (%s), otherwise a long-lived connection outlives the session it belongs to`,
+			c.Sessions.MaxSessionLength, c.Upstream.WsTimeout,
+		))
+	}
+
+	return errs.ErrorOrNil()
+}
+
 // Validate checks the invariants the session design depends on, which no
 // per-field rule can express.
 func (c *Sessions) Validate() error {

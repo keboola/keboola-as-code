@@ -135,7 +135,7 @@ func TestSessionsConfig_Envs(t *testing.T) {
 
 	envs := env.Empty()
 	envs.Set("APPS_PROXY_SESSIONS_STREAM_URL", "https://stream-in.keboola.local/stream/123/sessions/secret")
-	envs.Set("APPS_PROXY_SESSIONS_MAX_SESSION_LENGTH", "6h")
+	envs.Set("APPS_PROXY_SESSIONS_MAX_SESSION_LENGTH", "8h")
 	envs.Set("APPS_PROXY_SESSIONS_HEARTBEAT_INTERVAL", "1m")
 	envs.Set("APPS_PROXY_SESSIONS_IDLE_TIMEOUT", "15m")
 	envs.Set("APPS_PROXY_SESSIONS_QUEUE_SIZE", "128")
@@ -148,6 +148,7 @@ func TestSessionsConfig_Envs(t *testing.T) {
 	}, &cfg))
 
 	assert.Equal(t, "https://stream-in.keboola.local/stream/123/sessions/secret", cfg.Sessions.StreamURL)
+	assert.Equal(t, 8*time.Hour, cfg.Sessions.MaxSessionLength)
 	assert.Equal(t, time.Minute, cfg.Sessions.HeartbeatInterval)
 	assert.Equal(t, 15*time.Minute, cfg.Sessions.IdleTimeout)
 	assert.Equal(t, 128, cfg.Sessions.QueueSize)
@@ -241,4 +242,24 @@ func TestSessionsConfig_RejectsMalformedStreamURL(t *testing.T) {
 	cfg = validConfig(t)
 	cfg.Sessions.StreamURL = "https://stream-in.keboola.local/stream/123/sessions/secret"
 	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
+}
+
+func TestConfig_ValidateWebsocketFitsInSession(t *testing.T) {
+	t.Parallel()
+
+	// A cross-struct invariant: it cannot live in Sessions.Validate, which
+	// cannot see Upstream. This also proves Config.Validate is reached at all —
+	// an unreached hook would enforce nothing.
+	cfg := validConfig(t)
+	cfg.Sessions.StreamURL = "https://stream-in.keboola.local/stream/123/sessions/secret"
+	cfg.Sessions.MaxSessionLength = time.Hour
+
+	err := configmap.ValidateAndNormalize(&cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "must be longer than the upstream websocket timeout")
+
+	// The check is scoped to stacks that actually enable tracking.
+	cfg = validConfig(t)
+	cfg.Sessions.MaxSessionLength = time.Hour
+	assert.NoError(t, configmap.ValidateAndNormalize(&cfg))
 }
