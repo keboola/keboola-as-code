@@ -303,7 +303,10 @@ fi
 
 header "4. Send a test event"
 
-test_event=$(jq -nc --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{
+# Fixed fractional precision, matching what the proxy emits. The column is text
+# in Storage, so a row with a different precision would not order correctly
+# against the real ones.
+test_event=$(jq -nc --arg now "$(date -u +%Y-%m-%dT%H:%M:%S.000000Z)" '{
   eventId: "00000000-0000-7000-8000-000000000000",
   eventType: "session_start",
   eventTime: $now,
