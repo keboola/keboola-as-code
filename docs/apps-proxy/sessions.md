@@ -273,6 +273,21 @@ minted immediately after every login.
   against it. The same check keeps a client that ignores `Set-Cookie` — an
   uptime monitor, a crawler — from reporting a session per request, though one
   that sends `Accept: text/html` and drops cookies still would.
+- **A websocket handshake can still open a duplicate session.** The handshake is
+  deliberately allowed to mint one, so that a tab whose cookie has expired keeps
+  being tracked when Streamlit reconnects without reloading the page. The cost
+  is that a cookieless handshake arriving alongside a page load — a reconnect
+  landing at the same moment as a fresh visit — produces a second session for
+  the same person. Verified against canary: a handshake with no cookie does
+  return a `Set-Cookie`, and it does so even for a handshake the app then
+  rejects.
+
+  This is a deliberate trade-off, not an oversight: the alternative loses the
+  activity of anyone still working in a tab that has been idle past
+  `idleTimeout`. Sessions counted from this table are therefore an upper bound.
+  Where an exact count matters, drop sessions whose only event is a
+  `session_start` — a duplicate never gets a second event, because the browser
+  keeps just one cookie and every later request carries it.
 - **Dev-mode previews are tracked too.** A data app opened through the
   kai-preview iframe path in the Connection UI reaches the upstream like any
   other request, so it produces sessions in the same table with no marker to
