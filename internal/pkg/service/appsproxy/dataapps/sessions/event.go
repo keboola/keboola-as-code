@@ -64,17 +64,21 @@ type Event struct {
 	AuthProviderID   string `json:"authProviderId"`
 	AuthProviderType string `json:"authProviderType"`
 
-	// UserID is the OIDC subject claim, injected as X-Kbc-User-Id on an
-	// authenticated request. It identifies the person without naming them, and
-	// is stable across e-mail and display-name changes.
+	// ProviderUserID is how the authentication provider names the person: the
+	// OIDC subject claim, or the account login for GitHub, which issues no ID
+	// token and so has no subject claim to give. Either way it identifies the
+	// person without naming them — neither is an e-mail address.
 	//
-	// Empty for a shared-password app, for a path that requires no
-	// authentication, and for GitHub — which issues no ID token, so it has no
-	// subject claim to give.
+	// A subject claim is stable for the life of the account. A GitHub login is
+	// not: it can be changed, and a released one can be taken over by another
+	// account.
 	//
-	// Only unique within one issuer: count distinct users over
-	// (AuthProviderID, UserID), never UserID alone.
-	UserID string `json:"userId"`
+	// Empty for a shared-password app and for a path that requires no
+	// authentication.
+	//
+	// Only unique within one provider: count distinct users over
+	// (AuthProviderID, ProviderUserID), never ProviderUserID alone.
+	ProviderUserID string `json:"providerUserId"`
 
 	UserAgent string `json:"userAgent"`
 

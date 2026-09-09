@@ -33,18 +33,22 @@ Three event types, one row each:
 | `heartbeat` | Periodically while the session is active (default every 5 min). Carries identity, so a session that starts anonymous and authenticates later still gets its user. |
 | `session_end` | Websocket close, or an explicit `/_proxy/sign_out`. **Best-effort, and a websocket close is not final** — see [§6](#6-known-limitations). |
 
-Identity is the OIDC **subject claim**, injected as `X-Kbc-User-Id`. It
-identifies a person without naming them and is stable across e-mail and
-display-name changes, which the e-mail is not. No e-mail or display name is
-recorded.
+Identity is **how the provider names the user**, injected as `X-Kbc-User-Id`:
+the OIDC **subject claim** for every provider that issues an ID token, and the
+**account login** for GitHub, which issues none. Neither is an e-mail address —
+no e-mail and no display name is recorded.
 
-It is empty for a shared-password app, for a path with `authRequired: false`,
-and for **GitHub** — that provider issues no ID token, so oauth2-proxy never
-builds claims from one and there is no subject to take. Those sessions carry a
-session id and nothing else.
+The two differ in how long they hold. A subject claim is stable for the life of
+the account, across e-mail and display-name changes. A GitHub login is not: the
+owner can change it, and a released login can be taken over by a different
+account. Treat a GitHub user id as correct at the time it was recorded, not as a
+permanent key.
 
-The subject is only unique within one issuer, so distinct users must be counted
-over `(auth_provider_id, user_id)`, never `user_id` alone.
+It is empty for a shared-password app and for a path with `authRequired: false`.
+Those sessions carry a session id and nothing else.
+
+The value is only unique within one provider, so distinct users must be counted
+over `(auth_provider_id, provider_user_id)`, never `provider_user_id` alone.
 
 A sign-out ends the session **and clears the cookie**, so the next person to use
 that browser starts a session of their own rather than being attributed to the
@@ -75,7 +79,7 @@ SELECT
              THEN end_reason END)                   AS end_reason,
     MAX(app_id)                                     AS app_id,
     MAX(project_id)                                 AS project_id,
-    MAX(NULLIF(user_id, ''))                        AS user_id,
+    MAX(NULLIF(provider_user_id, ''))               AS provider_user_id,
     MAX(NULLIF(auth_provider_id, ''))               AS auth_provider_id,
     MAX(NULLIF(auth_provider_type, ''))             AS auth_provider_type,
     SUM(requests)                                   AS requests,
@@ -118,7 +122,7 @@ Created by `scripts/stream-sessions-setup.sh`. Default table
 | `session_start` | `sessionStart` | Decoded from `session_id`, identical on every row of a session. |
 | `app_id`, `app_name`, `project_id` | app config | |
 | `auth_provider_id`, `auth_provider_type` | request context | Empty when no auth was required. |
-| `user_id` | `X-Kbc-User-Id` | OIDC subject claim. Empty for password / no-auth apps and for GitHub. Unique only within an issuer — pair it with `auth_provider_id`. |
+| `provider_user_id` | `X-Kbc-User-Id` | OIDC subject claim, or the account login for GitHub, which issues no ID token. Never an e-mail. Empty for password / no-auth apps. Unique only within one provider — pair it with `auth_provider_id`. |
 | `user_agent` | request | |
 | `requests`, `ws_frames` | proxy counters | Deltas, not totals. |
 | `end_reason` | `endReason` | `ws_close` \| `sign_out`. Only on `session_end`; only `sign_out` is final. |

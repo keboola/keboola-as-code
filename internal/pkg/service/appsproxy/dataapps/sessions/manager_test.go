@@ -200,7 +200,7 @@ func TestManager_SessionStart(t *testing.T) {
 	assert.Equal(t, "789", event.ProjectID)
 	assert.NotEmpty(t, event.SessionID)
 	assert.NotEmpty(t, event.SessionStart)
-	assert.Empty(t, event.UserID)
+	assert.Empty(t, event.ProviderUserID)
 }
 
 func TestManager_ExistingCookieDoesNotStartNewSession(t *testing.T) {
@@ -255,7 +255,7 @@ func TestManager_Identity(t *testing.T) {
 
 	event := recvEvent(t, events)
 	assert.Equal(t, sessions.EventSessionStart, event.EventType)
-	assert.Equal(t, "8f14e45f-ceea-467a-9f5a-1c2d3e4f5a6b", event.UserID)
+	assert.Equal(t, "8f14e45f-ceea-467a-9f5a-1c2d3e4f5a6b", event.ProviderUserID)
 	assert.Equal(t, "test-agent", event.UserAgent)
 }
 
@@ -270,7 +270,7 @@ func TestManager_IdentityAppearsLater(t *testing.T) {
 	cookie := sessionCookie(t, first)
 	start := recvEvent(t, events)
 	require.Equal(t, sessions.EventSessionStart, start.EventType)
-	require.Empty(t, start.UserID)
+	require.Empty(t, start.ProviderUserID)
 
 	// Then the user authenticates. The identity must not wait out the whole
 	// heartbeat interval.
@@ -279,7 +279,7 @@ func TestManager_IdentityAppearsLater(t *testing.T) {
 	event := recvEvent(t, events)
 	assert.Equal(t, sessions.EventHeartbeat, event.EventType)
 	assert.Equal(t, start.SessionID, event.SessionID)
-	assert.Equal(t, "subject-1", event.UserID)
+	assert.Equal(t, "subject-1", event.ProviderUserID)
 
 	// Identity is not re-flushed on every following request.
 	call(t, m, nil, cookie, map[string]string{"X-Kbc-User-Id": "subject-1"})

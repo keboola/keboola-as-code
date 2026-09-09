@@ -114,7 +114,7 @@ type Session struct {
 	projectID        string
 	authProviderID   string
 	authProviderType string
-	userID           string
+	providerUserID   string
 	userAgent        string
 }
 
@@ -244,7 +244,7 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 		projectID:        app.ProjectID,
 		authProviderID:   providerID,
 		authProviderType: providerType,
-		userID:           req.Header.Get("X-Kbc-User-Id"),
+		providerUserID:   req.Header.Get("X-Kbc-User-Id"),
 		userAgent:        req.Header.Get("User-Agent"),
 	}
 
@@ -262,7 +262,7 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 		event := m.buildEvent(s, item, EventSessionStart, "", now)
 		item.lock.Unlock()
 		m.writer.enqueue(ctx, event)
-	case s.userID != "":
+	case s.providerUserID != "":
 		// A session can start on a public path and authenticate later. Flush a
 		// heartbeat as soon as identity appears instead of waiting out the
 		// heartbeat interval.
@@ -450,7 +450,7 @@ func (m *Manager) buildEvent(s *Session, item *entry, typ EventType, reason EndR
 		ProjectID:        s.projectID,
 		AuthProviderID:   s.authProviderID,
 		AuthProviderType: s.authProviderType,
-		UserID:           s.userID,
+		ProviderUserID:   s.providerUserID,
 		UserAgent:        s.userAgent,
 		Requests:         item.requests,
 		WSFrames:         item.wsFrames,
@@ -460,7 +460,7 @@ func (m *Manager) buildEvent(s *Session, item *entry, typ EventType, reason EndR
 	item.requests = 0
 	item.wsFrames = 0
 	item.nextHeartbeatAfter = now.Add(m.cfg.HeartbeatInterval)
-	if s.userID != "" {
+	if s.providerUserID != "" {
 		item.identitySent = true
 	}
 
