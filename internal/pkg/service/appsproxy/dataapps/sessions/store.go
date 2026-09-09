@@ -16,7 +16,12 @@ import (
 //   - heartbeat deltas of one session may arrive from two replicas,
 //   - session_end may never arrive at all.
 type entry struct {
-	lock               sync.Mutex
+	lock sync.Mutex
+	// session is the last request's view of this session. An entry needs it to
+	// be drainable on its own: a flush that is not driven by a request — at
+	// shutdown, or from the sweeper — has no request context to take identity
+	// from, and an event cannot be built without one.
+	session            *Session
 	lastSeen           time.Time
 	nextHeartbeatAfter time.Time
 	requests           int
@@ -83,6 +88,20 @@ func (s *store) take(sessionID string) (*entry, bool) {
 	}
 	delete(s.items, sessionID)
 	return item, true
+}
+
+// drainAll empties the store and returns everything it held, so a shutdown can
+// report what each session accumulated since its last heartbeat.
+func (s *store) drainAll() []*entry {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	items := make([]*entry, 0, len(s.items))
+	for id, item := range s.items {
+		items = append(items, item)
+		delete(s.items, id)
+	}
+	return items
 }
 
 // evictBefore drops entries not seen since the given time and returns how many

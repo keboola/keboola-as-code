@@ -20,6 +20,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const eventTimeout = 5 * time.Second
@@ -50,6 +52,14 @@ func streamServer(t *testing.T) (string, <-chan sessions.Event) {
 
 func newManager(t *testing.T, streamURL string) (*sessions.Manager, *clockwork.FakeClock) {
 	t.Helper()
+	m, clk, _ := newManagerWithProcess(t, streamURL)
+	return m, clk
+}
+
+// newManagerWithProcess also hands back the process, so a test can trigger the
+// graceful shutdown the manager hooks into.
+func newManagerWithProcess(t *testing.T, streamURL string) (*sessions.Manager, *clockwork.FakeClock, *servicectx.Process) {
+	t.Helper()
 
 	// The fake clock starts at the real current time: session start is decoded
 	// from a UUIDv7 minted off the wall clock, so the two must agree.
@@ -62,7 +72,7 @@ func newManager(t *testing.T, streamURL string) (*sessions.Manager, *clockwork.F
 	cfg.API.PublicURL = publicURL
 
 	d, _ := dependencies.NewMockedServiceScope(t, t.Context(), cfg, commonDeps.WithClock(clk))
-	return d.SessionsManager(), clk
+	return d.SessionsManager(), clk, d.Process()
 }
 
 // call runs one request through the sessions middleware. inner runs with the
@@ -836,4 +846,62 @@ func TestManager_SessionStartIsIdenticalOnEveryRow(t *testing.T) {
 	// the first row used to carry the clock's reading while later rows carried
 	// the millisecond-truncated value decoded from the id.
 	assert.Equal(t, start.SessionStart, heartbeat.SessionStart)
+}
+
+func TestManager_ShutdownFlushesPendingActivity(t *testing.T) {
+	t.Parallel()
+
+	streamURL, events := streamServer(t)
+	m, clk, proc := newManagerWithProcess(t, streamURL)
+
+	first := call(t, m, nil, nil, nil)
+	cookie := sessionCookie(t, first)
+	start := recvEvent(t, events)
+	require.Equal(t, sessions.EventSessionStart, start.EventType)
+
+	// Frames inside the current heartbeat window are counted, not sent.
+	call(t, m, func(req *http.Request) {
+		m.ActivityWS(req.Context())
+		m.ActivityWS(req.Context())
+	}, cookie, nil)
+	expectNoEvent(t, events)
+
+	// Without a flush on shutdown every deploy would discard this, up to one
+	// heartbeat interval of activity for every live session.
+	lastActivity := clk.Now().UTC()
+	clk.Advance(4 * time.Minute)
+	proc.Shutdown(t.Context(), errors.New("bye bye"))
+	proc.WaitForShutdown()
+
+	event := recvEvent(t, events)
+	assert.Equal(t, start.SessionID, event.SessionID)
+	assert.Equal(t, 2, event.WSFrames)
+
+	// A heartbeat, not an end: a restart does not end the visit — the cookie
+	// survives it and the browser reconnects — so ending here would split one
+	// visit into as many sessions as there are deploys.
+	assert.Equal(t, sessions.EventHeartbeat, event.EventType)
+	assert.Empty(t, event.EndReason)
+
+	// Dated at the last activity, not at the shutdown. Stamping it now would
+	// stretch every open session by however long the process stayed up.
+	stamped, err := time.Parse("2006-01-02T15:04:05.000000Z", event.EventTime)
+	require.NoError(t, err)
+	assert.WithinDuration(t, lastActivity, stamped, time.Second)
+}
+
+func TestManager_ShutdownWithNothingPendingIsSilent(t *testing.T) {
+	t.Parallel()
+
+	streamURL, events := streamServer(t)
+	m, _, proc := newManagerWithProcess(t, streamURL)
+
+	call(t, m, nil, nil, nil)
+	require.Equal(t, sessions.EventSessionStart, recvEvent(t, events).EventType)
+
+	// The session_start already drained the counters, so there is nothing left
+	// to report and the flush must not emit an empty row per live session.
+	proc.Shutdown(t.Context(), errors.New("bye bye"))
+	proc.WaitForShutdown()
+	expectNoEvent(t, events)
 }

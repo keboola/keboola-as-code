@@ -96,6 +96,11 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 	}()
 
 	d.Process().OnShutdown(func(ctx context.Context) {
+		// Callbacks run LIFO and the HTTP server registers later, so its
+		// requests are already drained by the time this runs. Flush first:
+		// writer.close only drains the queue, and what every live session
+		// counted since its last heartbeat was never queued.
+		m.flushAll(ctx)
 		m.logger.Info(ctx, "waiting for pending session events")
 		m.writer.close(ctx)
 	})
@@ -249,6 +254,13 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 	}
 
 	item, _ := m.store.getOrInit(sessionID, now)
+
+	// Refresh the snapshot on every request, not just the first: a session can
+	// start anonymous and authenticate later, and a flush with no request
+	// behind it can only report what the entry knows.
+	item.lock.Lock()
+	item.session = s
+	item.lock.Unlock()
 
 	switch {
 	case !found:
@@ -450,6 +462,42 @@ func (m *Manager) emitEnd(ctx context.Context, s *Session, item *entry, reason E
 	item.lock.Unlock()
 
 	m.writer.enqueue(context.WithoutCancel(ctx), event)
+}
+
+// flushAll reports what every live session accumulated since its last
+// heartbeat and empties the store. Called on shutdown, so a deploy does not
+// discard up to one heartbeat interval of activity per session.
+//
+// It deliberately does not end anything. A restart is not the end of a visit:
+// the cookie survives it and the browser reconnects, so emitting session_end
+// here would split one visit into as many sessions as there are deploys.
+func (m *Manager) flushAll(ctx context.Context) {
+	flushed := 0
+	for _, item := range m.store.drainAll() {
+		if event, ok := m.drain(item); ok {
+			m.writer.enqueue(ctx, event)
+			flushed++
+		}
+	}
+	if flushed > 0 {
+		m.logger.Infof(ctx, "flushed pending activity of %d session(s)", flushed)
+	}
+}
+
+// drain turns an entry's pending deltas into a heartbeat, reporting whether
+// there was anything to report.
+//
+// The event is stamped at lastSeen, not at the current time: that is when the
+// activity happened, and dating it at shutdown would stretch every open
+// session by up to one heartbeat interval.
+func (m *Manager) drain(item *entry) (Event, bool) {
+	item.lock.Lock()
+	defer item.lock.Unlock()
+
+	if item.session == nil || (item.requests == 0 && item.wsFrames == 0) {
+		return Event{}, false
+	}
+	return m.buildEvent(item.session, item, EventHeartbeat, "", item.lastSeen), true
 }
 
 // buildEvent drains the pending deltas and arms the next heartbeat.
