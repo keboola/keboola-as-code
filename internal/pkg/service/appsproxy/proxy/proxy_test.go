@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"html"
 	"io"
@@ -70,6 +71,57 @@ func TestAppProxyRouter(t *testing.T) {
 	t.Parallel()
 
 	testCases := []testCase{
+		{
+			// A product-role App carries no spec.runtime — the backend belongs to the member
+			// Sandbox it routes to, and the operator mirrors that member's
+			// status.e2bSandbox onto the App the proxy routes by. The token has to reach
+			// the upstream as a header, or E2B rejects the traffic.
+			name: "e2b-access-token-header-product-app",
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				secret := &unstructured.Unstructured{
+					Object: map[string]any{
+						"apiVersion": "v1",
+						"kind":       "Secret",
+						"metadata": map[string]any{
+							"name":      "e2b-access-token",
+							"namespace": "keboola",
+						},
+						"data": map[string]any{
+							"token": base64.StdEncoding.EncodeToString([]byte("e2b-token-value")),
+						},
+					},
+				}
+				_, err := fakeClient.Resource(k8sapp.SecretGVR()).Namespace("keboola").Create(
+					t.Context(), secret, metav1.CreateOptions{},
+				)
+				require.NoError(t, err)
+
+				patch := []byte(`{"status":{"e2bSandbox":{"accessTokenSecretName":"e2b-access-token"}}}`)
+				_, err = fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+					t.Context(), "app-123", k8stypes.MergePatchType, patch, metav1.PatchOptions{},
+				)
+				require.NoError(t, err)
+
+				require.Eventually(t, func() bool {
+					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
+					return ok && info.E2BAccessToken == "e2b-token-value"
+				}, 5*time.Second, 50*time.Millisecond)
+			},
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				require.Len(t, *appServer.Requests, 1)
+				appRequest := (*appServer.Requests)[0]
+				assert.Equal(t, "e2b-token-value", appRequest.Header.Get("e2b-traffic-access-token"))
+			},
+			expectedNotifications: map[string]int{
+				"123": 1,
+			},
+		},
 		{
 			name: "health-check",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {

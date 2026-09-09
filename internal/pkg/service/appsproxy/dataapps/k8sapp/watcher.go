@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"net/url"
 	"sync"
+	"time"
 
+	"github.com/jonboulle/clockwork"
 	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -33,6 +35,31 @@ type entry struct {
 	upstreamTarget     *url.URL // pre-parsed; nil when appsProxy.upstreamUrl absent/invalid
 	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
 	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
+	// tokenRetryAfter is the earliest time the lazy load may be attempted again, and
+	// tokenRetryDelay the interval that produced it. Both are zero while no attempt has
+	// failed, and are cleared again once one succeeds.
+	tokenRetryAfter time.Time
+	tokenRetryDelay time.Duration
+}
+
+// Bounds on the lazy token load after a failure. The load exists because the Secret may
+// not have existed yet when the App CRD event was processed, so giving up permanently is
+// wrong — the delay is capped rather than allowed to grow without limit, which keeps the
+// app converging within tokenRetryMaxDelay of the Secret appearing.
+const (
+	tokenRetryInitialDelay = 1 * time.Second
+	tokenRetryMaxDelay     = 32 * time.Second
+)
+
+// nextTokenRetryDelay doubles the delay up to the cap.
+func nextTokenRetryDelay(current time.Duration) time.Duration {
+	if current <= 0 {
+		return tokenRetryInitialDelay
+	}
+	if next := current * 2; next < tokenRetryMaxDelay {
+		return next
+	}
+	return tokenRetryMaxDelay
 }
 
 // StateWatcher watches App CRDs in Kubernetes and provides a local cache of app states.
@@ -41,6 +68,7 @@ type StateWatcher struct {
 	namespace      string
 	logger         log.Logger
 	hasSynced      cache.InformerSynced
+	clock          clockwork.Clock
 	apps           sync.Map           // AppID → entry
 	tokenLoadGroup singleflight.Group // coalesces concurrent lazy-load K8s API calls per secret
 }
@@ -48,6 +76,7 @@ type StateWatcher struct {
 type dependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
+	Clock() clockwork.Clock
 }
 
 // NewDynamicClient creates a Kubernetes dynamic client from kubeconfig path or in-cluster config.
@@ -95,6 +124,7 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 		namespace: namespace,
 		logger:    d.Logger().WithComponent("k8sapp.watcher"),
 		hasSynced: informer.HasSynced,
+		clock:     d.Clock(),
 	}
 
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -130,16 +160,33 @@ func (w *StateWatcher) GetState(ctx context.Context, appID api.AppID) (AppInfo, 
 
 	// Lazy-load E2B token: the Secret may not have existed when the App CRD event was processed.
 	// a singleflight coalesces concurrent requests for the same secret into a single K8s API call.
-	if e.e2bAccessToken == "" && e.e2bSecretName != "" {
+	//
+	// This runs on the request path, so a failed load must not be retried per request. The
+	// singleflight only collapses calls that overlap in time, and sequential requests do not,
+	// so without the retry gate below an entry naming an unloadable Secret costs one K8s API
+	// GET and one WARN on every request for as long as the App exists.
+	if e.e2bAccessToken == "" && e.e2bSecretName != "" && !w.clock.Now().Before(e.tokenRetryAfter) {
 		fetchCtx := context.WithoutCancel(ctx)
 		token, err, _ := w.tokenLoadGroup.Do(e.e2bSecretName, func() (any, error) {
 			return w.loadSecretToken(fetchCtx, e.e2bSecretName)
 		})
-		if err != nil {
-			w.logger.Warnf(ctx, "App %s: failed to lazy-load E2B access token from secret %q: %s", appID, e.e2bSecretName, err)
-		} else if t, ok := token.(string); t != "" && ok {
+
+		t, _ := token.(string)
+		switch {
+		case err != nil || t == "":
+			e.tokenRetryDelay = nextTokenRetryDelay(e.tokenRetryDelay)
+			e.tokenRetryAfter = w.clock.Now().Add(e.tokenRetryDelay)
+			// Compare-and-swap rather than Store: handleUpsert may have replaced the entry
+			// while the load was in flight, and writing back this copy would discard it.
+			w.apps.CompareAndSwap(appID, v, e)
+			if err != nil {
+				w.logger.Warnf(ctx, "App %s: failed to lazy-load E2B access token from secret %q, next attempt in %s: %s", appID, e.e2bSecretName, e.tokenRetryDelay, err)
+			}
+		default:
 			e.e2bAccessToken = t
-			w.apps.Store(appID, e)
+			e.tokenRetryAfter = time.Time{}
+			e.tokenRetryDelay = 0
+			w.apps.CompareAndSwap(appID, v, e)
 			w.logger.Infof(ctx, "App %s: lazy-loaded E2B access token from secret %q", appID, e.e2bSecretName)
 		}
 	}
@@ -222,15 +269,19 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 		}
 	}
 
+	// A failure here seeds the same retry gate GetState uses, so the eager load and the
+	// lazy one share one budget instead of the lazy path starting over on every event.
 	var e2bAccessToken string
-	var e2bSecretName string
-	if appObj.Spec.Runtime.Backend.Type == BackendTypeE2BSandbox {
-		e2bSecretName = appObj.Status.E2BSandbox.AccessTokenSecretName
-		if e2bSecretName != "" {
-			token, err := w.loadSecretToken(ctx, e2bSecretName)
-			if err == nil {
-				e2bAccessToken = token
-			}
+	var tokenRetryAfter time.Time
+	var tokenRetryDelay time.Duration
+	e2bSecretName := appObj.e2bAccessTokenSecretName()
+	if e2bSecretName != "" {
+		token, err := w.loadSecretToken(ctx, e2bSecretName)
+		if err == nil {
+			e2bAccessToken = token
+		} else {
+			tokenRetryDelay = nextTokenRetryDelay(0)
+			tokenRetryAfter = w.clock.Now().Add(tokenRetryDelay)
 		}
 	}
 
@@ -243,6 +294,8 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 		upstreamTarget:     upstreamTarget,
 		e2bAccessToken:     e2bAccessToken,
 		e2bSecretName:      e2bSecretName,
+		tokenRetryAfter:    tokenRetryAfter,
+		tokenRetryDelay:    tokenRetryDelay,
 	})
 	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v devMode=%v upstreamTarget=%v", k8sName, appID, appObj.Status.CurrentState, autoRestartEnabled, devMode, upstreamTarget != nil)
 }
