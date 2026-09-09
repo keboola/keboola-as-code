@@ -179,8 +179,9 @@ curl -X DELETE -H "X-StorageApi-Token: $KEBOOLA_TOKEN" \
 curl -X DELETE -H "X-StorageApi-Token: $KEBOOLA_TOKEN" \
   "$STORAGE_API/v2/storage/tables/in.c-data-apps.sessions"
 
-# 3. Clear SINK_ID from the state file and re-run.
-sed -i'' 's/^SINK_ID=.*/SINK_ID=""/' ./stream-sessions-state.env
+# 3. Clear SINK_ID from the state file and re-run. (In-place sed is not
+#    portable between GNU and BSD, and this runs on both.)
+perl -pi -e 's/^SINK_ID=.*/SINK_ID=""/' ./stream-sessions-state.env
 bash scripts/stream-sessions-setup.sh
 ```
 
