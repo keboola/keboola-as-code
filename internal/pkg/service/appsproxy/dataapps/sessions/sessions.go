@@ -73,6 +73,17 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 		return m
 	}
 
+	// Without a salt the per-app key is SHA256 of the prefix and the app id,
+	// both of which anyone can compute, so any session cookie could be forged.
+	// Config validation marks cookieSecretSalt required and so should never let
+	// this through — but tracking silently accepting a forgeable key is worse
+	// than tracking being off, so this is the one place that says no.
+	if m.salt == "" {
+		m.enabled = false
+		logger.Error(ctx, "session tracking is disabled, cookie secret salt is empty")
+		return m
+	}
+
 	m.writer = newWriter(logger, newMetrics(d.Telemetry().Meter(), m.store.len), writerConfig{
 		url:         cfg.Sessions.StreamURL,
 		queueSize:   cfg.Sessions.QueueSize,
