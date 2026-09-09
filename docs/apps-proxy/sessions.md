@@ -35,8 +35,10 @@ Three event types, one row each:
 
 Identity is **how the provider names the user**, injected as `X-Kbc-User-Id`:
 the OIDC **subject claim** for every provider that issues an ID token, and the
-**account login** for GitHub, which issues none. Neither is an e-mail address —
-no e-mail and no display name is recorded.
+**account login** for GitHub, which issues none. Neither is taken from the
+e-mail claim, and no display name is recorded. An OIDC issuer is free to use
+the e-mail address as its subject, so the value can still look like one — that
+is the issuer's choice, not something this asks for.
 
 The two differ in how long they hold. A subject claim is stable for the life of
 the account, across e-mail and display-name changes. A GitHub login is not: the
@@ -122,7 +124,7 @@ Created by `scripts/stream-sessions-setup.sh`. Default table
 | `session_start` | `sessionStart` | Decoded from `session_id`, identical on every row of a session. |
 | `app_id`, `app_name`, `project_id` | app config | |
 | `auth_provider_id`, `auth_provider_type` | request context | Empty when no auth was required. |
-| `provider_user_id` | `X-Kbc-User-Id` | OIDC subject claim, or the account login for GitHub, which issues no ID token. Never an e-mail. Empty for password / no-auth apps. Unique only within one provider — pair it with `auth_provider_id`. |
+| `provider_user_id` | `X-Kbc-User-Id` | OIDC subject claim, or the account login for GitHub, which issues no ID token. Never taken from the e-mail claim. Empty for password / no-auth apps. Unique only within one provider — pair it with `auth_provider_id`. |
 | `user_agent` | request | |
 | `requests`, `ws_frames` | proxy counters | Deltas, not totals. |
 | `end_reason` | `endReason` | `ws_close` \| `sign_out`. Only on `session_end`; only `sign_out` is final. |
@@ -155,7 +157,40 @@ secret) after each step, and re-running it picks up where it stopped. It ends by
 sending one test event with `app_id = setup-script`; filter that out when
 querying. `CLEANUP=true` deletes the source again.
 
-### 5.2 Configure apps-proxy
+### 5.2 Changing the event format later
+
+The sink's column mapping is what turns an event into a row: each column names
+a JSON path in the event. Change a field name in `Event` and the mapping stops
+matching — and nothing fails. Stream simply finds no value at the old path and
+writes the column's `defaultValue`, so the column fills with empty strings and
+no error appears in the proxy, in Stream, or in Storage.
+
+The script refuses to run against a sink whose mapping no longer matches and
+prints which column drifted. Updating the mapping alone is not enough either:
+the Storage table still has the old columns. To migrate a stack:
+
+```bash
+# 1. Delete the sink (async — poll the returned task).
+curl -X DELETE -H "X-StorageApi-Token: $KEBOOLA_TOKEN" \
+  "$STREAM_API/v1/branches/default/sources/data-app-sessions/sinks/session-events"
+
+# 2. Delete the Storage table. Its rows go with it, so export them first if
+#    the history matters.
+curl -X DELETE -H "X-StorageApi-Token: $KEBOOLA_TOKEN" \
+  "$STORAGE_API/v2/storage/tables/in.c-data-apps.sessions"
+
+# 3. Clear SINK_ID from the state file and re-run.
+sed -i'' 's/^SINK_ID=.*/SINK_ID=""/' ./stream-sessions-state.env
+bash scripts/stream-sessions-setup.sh
+```
+
+Keep `SOURCE_ID` — deleting the source would issue a new ingest URL and every
+stack's `APPS_PROXY_SESSIONS_STREAM_URL` would have to be rotated with it.
+
+Deploy the proxy that emits the new field **after** the sink is recreated. In
+between, the new columns stay empty; the other way round, the old ones do.
+
+### 5.3 Configure apps-proxy
 
 | Config key | Env | Default |
 |---|---|---|
@@ -175,7 +210,7 @@ without Stream stay unaffected — as of this writing apps-proxy runs on 20 stac
 and Stream on 12, so eight stacks (all the single-tenant customer clouds,
 `cloud-keboola-cs` among them) cannot run this yet.
 
-### 5.3 Cookie lifetime
+### 5.4 Cookie lifetime
 
 The cookie carries a **deadline that the proxy signs alongside the session id**,
 and that deadline moves with the visitor's activity. `Max-Age` is derived from

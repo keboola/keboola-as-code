@@ -102,6 +102,37 @@ poll_task() {
   done
 }
 
+# check_mapping <sink-json>
+#
+# A sink provisioned by an earlier version of this script can carry a column
+# mapping that no longer matches the event the proxy emits. Nothing fails when
+# that happens: Stream finds no value at the old path and writes the column's
+# defaultValue instead, so the column fills with empty strings indefinitely and
+# no error is reported anywhere. The mismatch has to be caught here.
+#
+# Updating the mapping alone would not be enough — the Storage table still has
+# the old columns — so this refuses to continue rather than half-migrating.
+check_mapping() {
+  local sink_json="$1" actual expected
+  actual=$(jq -Sc '[.table.mapping.columns[] | {name, path}]' <<< "${sink_json}")
+  expected=$(jq -Sc '[.[] | {name, path}]' <<< "${COLUMNS}")
+  [[ "${actual}" == "${expected}" ]] && return 0
+
+  warn "Sink ${SINK_ID} has a stale column mapping — it predates the current event format."
+  # Only the differing positions: the full column list is unreadable.
+  jq -rn --argjson a "${actual}" --argjson e "${expected}" '
+    [range(0; ([($a | length), ($e | length)] | max))]
+    | map({i: ., want: ($e[.] // null), got: ($a[.] // null)})
+    | map(select(.want != .got))[]
+    | "      column \(.i): want \(.want | tojson), got \(.got | tojson)"
+  ' >&2
+  fail "Refusing to continue: Stream would silently write empty values into the changed columns.
+      To migrate: delete the sink and the Storage table, remove SINK_ID from
+      ${STATE_FILE}, then re-run this script. Keeping SOURCE_ID keeps the ingest
+      URL valid, so the apps-proxy config needs no change.
+      See docs/apps-proxy/sessions.md."
+}
+
 save_state() {
   # Restrictive perms — INGEST_URL embeds the write secret, and the default
   # umask on a shared machine may otherwise leave it world-readable.
@@ -262,6 +293,9 @@ COLUMNS=$(jq -nc '[
 ]')
 
 if [[ -n "${SINK_ID}" ]]; then
+  api_get "/branches/${BRANCH_ID}/sources/${SOURCE_ID}/sinks/${SINK_ID}"
+  [[ "${API_CODE}" -lt 400 ]] || fail "Fetch sink ${SINK_ID} failed HTTP ${API_CODE}"
+  check_mapping "${API_BODY}"
   ok "Already exists: ${SINK_ID} — skipping"
 else
   body=$(jq -nc \
@@ -285,6 +319,7 @@ else
     if [[ "${existing_table}" != "${TABLE_ID}" ]]; then
       fail "Sink '${SINK_NAME}' (${SINK_ID}) targets table '${existing_table}', expected '${TABLE_ID}'. Refusing to reuse."
     fi
+    check_mapping "${matched}"
     ok "Reusing sink: ${SINK_ID}"
   elif [[ "${API_CODE}" -ge 400 ]]; then
     fail "Create sink failed HTTP ${API_CODE}"
