@@ -71,8 +71,8 @@ func proxyConfig(
 	v.EmailDomains = []string{"*"}
 	v.InjectRequestHeaders = []options.Header{
 		// Kept: data apps already read these, keboola_streamlit among them.
-		// Session tracking deliberately records only the subject.
-		headerFromClaim("X-Kbc-User-Id", "sub"),
+		// Session tracking deliberately records only the user id.
+		headerFromClaim("X-Kbc-User-Id", userIDClaim(oAuthProvider.Type())),
 		headerFromClaim("X-Kbc-User-Name", "name"),
 		headerFromClaim("X-Kbc-User-Email", options.OIDCEmailClaim),
 		headerFromClaim("X-Kbc-User-Roles", options.OIDCGroupsClaim),
@@ -103,6 +103,19 @@ func generateCookieSecret(cfg config.Config, app api.AppConfig, providerID provi
 
 	// Result must be 32 chars, 2 hex chars for each byte
 	return fmt.Sprintf("%x", bs[:16]), nil
+}
+
+// userIDClaim is the claim that identifies the user for a provider.
+//
+// GitHub issues no ID token, so it has no subject claim to give. Its account
+// login is the closest equivalent: scoped to the provider, and not an e-mail
+// address. Unlike a subject it is not permanent — a login can be changed, and
+// a released one can be taken over by another account.
+func userIDClaim(providerType provider.Type) string {
+	if providerType == provider.TypeGitHub {
+		return "user"
+	}
+	return "sub"
 }
 
 func headerFromClaim(header, claim string) options.Header {
