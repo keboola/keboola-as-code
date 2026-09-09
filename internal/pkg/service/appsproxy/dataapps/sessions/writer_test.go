@@ -13,11 +13,18 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
+
+// testMetrics wires the real instruments to a no-op meter, so the writer's
+// metric calls are exercised rather than skipped past a nil check.
+func testMetrics() *metrics {
+	return newMetrics(telemetry.NewNop().Meter(), func() int { return 0 })
+}
 
 func testWriter(t *testing.T, url string, queueSize, workers int) *writer {
 	t.Helper()
-	return newWriter(log.NewNopLogger(), writerConfig{
+	return newWriter(log.NewNopLogger(), testMetrics(), writerConfig{
 		url:         url,
 		queueSize:   queueSize,
 		workers:     workers,
@@ -104,7 +111,7 @@ func TestWriter_DoesNotLogTheStreamSecret(t *testing.T) {
 	const secret = "THIS-IS-THE-WRITE-SECRET"
 
 	logger := log.NewDebugLogger()
-	w := newWriter(logger, writerConfig{
+	w := newWriter(logger, testMetrics(), writerConfig{
 		// Unroutable, so the send fails and the failure gets logged.
 		url:         "http://127.0.0.1:1/stream/123/sessions/" + secret,
 		queueSize:   4,
@@ -133,7 +140,7 @@ func TestWriter_DoesNotLogTheStreamSecretOnMalformedURL(t *testing.T) {
 	logger := log.NewDebugLogger()
 	// A control character makes http.NewRequest fail, which also yields a
 	// *url.Error carrying the raw URL.
-	w := newWriter(logger, writerConfig{
+	w := newWriter(logger, testMetrics(), writerConfig{
 		url:         "http://127.0.0.1:1/stream/\x7f/" + secret,
 		queueSize:   4,
 		workers:     1,
@@ -145,4 +152,63 @@ func TestWriter_DoesNotLogTheStreamSecretOnMalformedURL(t *testing.T) {
 
 	require.Positive(t, w.failed.Load())
 	assert.NotContains(t, logger.AllMessages(), secret)
+}
+
+func TestWriter_MetricsRecordBothOutcomes(t *testing.T) {
+	t.Parallel()
+
+	// The point of these metrics is that dropping and failing are otherwise
+	// invisible: no retries, and only the first and every thousandth event
+	// reaches a log. So assert they are actually recorded, not just declared.
+	tel := telemetry.NewForTest(t)
+
+	var status int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(status)
+	}))
+	t.Cleanup(server.Close)
+
+	w := newWriter(log.NewNopLogger(), newMetrics(tel.Meter(), func() int { return 7 }), writerConfig{
+		url:         server.URL,
+		queueSize:   1,
+		workers:     1,
+		sendTimeout: 2 * time.Second,
+	})
+
+	status = http.StatusOK
+	w.enqueue(t.Context(), Event{EventType: EventSessionStart, SessionID: "ok"})
+	w.close(t.Context())
+
+	names := map[string]bool{}
+	for _, m := range tel.Metrics(t) {
+		names[m.Name] = true
+	}
+	assert.True(t, names["keboola.go.appsproxy.sessions.events.sent"], "a send must be counted")
+	assert.True(t, names["keboola.go.appsproxy.sessions.tracked"], "the store size must be observable")
+}
+
+func TestWriter_MetricsCountADrop(t *testing.T) {
+	t.Parallel()
+
+	tel := telemetry.NewForTest(t)
+
+	// No workers, so nothing ever leaves the queue and the second event has
+	// nowhere to go.
+	w := &writer{
+		logger:  log.NewNopLogger(),
+		metrics: newMetrics(tel.Meter(), func() int { return 0 }),
+		queue:   make(chan Event, 1),
+		done:    make(chan struct{}),
+	}
+
+	w.enqueue(t.Context(), Event{SessionID: "a"})
+	w.enqueue(t.Context(), Event{SessionID: "b"})
+
+	assert.Equal(t, uint64(1), w.dropped.Load())
+
+	names := map[string]bool{}
+	for _, m := range tel.Metrics(t) {
+		names[m.Name] = true
+	}
+	assert.True(t, names["keboola.go.appsproxy.sessions.events.dropped"], "a drop must be counted")
 }

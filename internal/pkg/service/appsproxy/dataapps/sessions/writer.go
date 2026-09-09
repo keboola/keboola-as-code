@@ -30,6 +30,7 @@ const drainTimeout = 10 * time.Second
 // which retries.
 type writer struct {
 	logger    log.Logger
+	metrics   *metrics
 	url       string
 	client    *http.Client
 	queue     chan Event
@@ -47,7 +48,7 @@ type writerConfig struct {
 	sendTimeout time.Duration
 }
 
-func newWriter(logger log.Logger, cfg writerConfig) *writer {
+func newWriter(logger log.Logger, m *metrics, cfg writerConfig) *writer {
 	// A client with no Transport uses http.DefaultTransport, which keeps only
 	// two idle connections per host. With more workers than that, the rest have
 	// to complete a fresh TLS handshake on every send — charged against
@@ -59,11 +60,12 @@ func newWriter(logger log.Logger, cfg writerConfig) *writer {
 	transport.MaxIdleConns = cfg.workers * 2
 
 	w := &writer{
-		logger: logger,
-		url:    cfg.url,
-		client: &http.Client{Timeout: cfg.sendTimeout, Transport: transport},
-		queue:  make(chan Event, cfg.queueSize),
-		done:   make(chan struct{}),
+		logger:  logger,
+		metrics: m,
+		url:     cfg.url,
+		client:  &http.Client{Timeout: cfg.sendTimeout, Transport: transport},
+		queue:   make(chan Event, cfg.queueSize),
+		done:    make(chan struct{}),
 	}
 
 	for range cfg.workers {
@@ -85,6 +87,7 @@ func (w *writer) enqueue(ctx context.Context, event Event) {
 	select {
 	case w.queue <- event:
 	default:
+		w.metrics.dropped.Add(ctx, 1)
 		if n := w.dropped.Add(1); n == 1 || n%1000 == 0 {
 			w.logger.Warnf(ctx, "session event queue is full, dropped %d events so far", n)
 		}
@@ -149,12 +152,16 @@ func (w *writer) send(event Event) {
 
 	if resp.StatusCode >= http.StatusBadRequest {
 		w.recordFailure(ctx, errors.Errorf("unexpected status %s", resp.Status))
+		return
 	}
+
+	w.metrics.sent.Add(ctx, 1, sentAttrs(nil))
 }
 
 // recordFailure logs sparsely on purpose: when Stream is down every event
 // fails, and logging each one would bury everything else.
 func (w *writer) recordFailure(ctx context.Context, err error) {
+	w.metrics.sent.Add(ctx, 1, sentAttrs(err))
 	if n := w.failed.Add(1); n == 1 || n%1000 == 0 {
 		w.logger.Warnf(ctx, "cannot send session event (%d failed so far): %s", n, sanitize(err))
 	}

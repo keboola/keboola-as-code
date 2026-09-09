@@ -279,7 +279,7 @@ minted immediately after every login.
 
 - **Delivery is at-most-once.** Events are queued and sent fire-and-forget with
   no retries: a retried heartbeat would land as a second row carrying the same
-  delta and inflate the counts. A full queue drops events (logged, counted).
+  delta and inflate the counts. A full queue drops events.
   Losing a heartbeat is invisible; losing a `session_end` is covered by the idle
   window.
 - **`session_end` is best-effort.** A proxy restart between the sign-out and the
@@ -365,7 +365,26 @@ minted immediately after every login.
 
 ---
 
-## 7. Code Map
+## 7. What to Watch
+
+Both ways this can go wrong are silent from the outside: a full queue drops
+events and a failed send is not retried, so neither shows up in a data app or in
+a user's request. Three metrics make them visible.
+
+| Metric | Meaning |
+|---|---|
+| `keboola.go.appsproxy.sessions.events.sent` | Events handed to Stream, split by `is_success` and, on failure, `error_type`. A rising failure rate is Stream or the ingest URL, never the app. |
+| `keboola.go.appsproxy.sessions.events.dropped` | Events thrown away because the queue was full. Anything above zero means the send path cannot keep up, and sessions are being undercounted. |
+| `keboola.go.appsproxy.sessions.tracked` | Sessions held in memory on that replica. Bounded by eviction, so a line that only ever climbs points at a leak. |
+
+The matching log lines — `cannot send session event` and `session event queue is
+full` — carry the reason but are rate-limited to the first occurrence and every
+thousandth, so they are for diagnosis after a metric has already said something
+is wrong.
+
+---
+
+## 8. Code Map
 
 | What | Where |
 |---|---|
@@ -379,4 +398,5 @@ minted immediately after every login.
 | HTTP + websocket activity, websocket close | `proxy/apphandler/upstream/upstream.go` |
 | Background-poll definition (shared with auto-suspend) | `dataapps/frameworkpoll/frameworkpoll.go` |
 | Sign-out end | `proxy/apphandler/apphandler.go` |
+| Metrics | `dataapps/sessions/metrics.go` |
 | Source and sink provisioning | `scripts/stream-sessions-setup.sh` |

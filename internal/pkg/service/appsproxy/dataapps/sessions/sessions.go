@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/frameworkpoll"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 const (
@@ -49,6 +50,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Config() config.Config
 	Process() *servicectx.Process
+	Telemetry() telemetry.Telemetry
 }
 
 func NewManager(ctx context.Context, d dependencies) *Manager {
@@ -71,7 +73,7 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 		return m
 	}
 
-	m.writer = newWriter(logger, writerConfig{
+	m.writer = newWriter(logger, newMetrics(d.Telemetry().Meter(), m.store.len), writerConfig{
 		url:         cfg.Sessions.StreamURL,
 		queueSize:   cfg.Sessions.QueueSize,
 		workers:     cfg.Sessions.Workers,
