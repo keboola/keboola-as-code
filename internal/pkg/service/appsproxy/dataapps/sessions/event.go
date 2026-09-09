@@ -66,8 +66,10 @@ type Event struct {
 
 	// ProviderUserID is how the authentication provider names the person: the
 	// OIDC subject claim, or the account login for GitHub, which issues no ID
-	// token and so has no subject claim to give. Either way it identifies the
-	// person without naming them — neither is an e-mail address.
+	// token and so has no subject claim to give. Neither is taken from the
+	// e-mail claim — though an OIDC issuer is free to use the e-mail address as
+	// its subject, so the value can still look like one. That is the issuer's
+	// choice; nothing here asks for an address.
 	//
 	// A subject claim is stable for the life of the account. A GitHub login is
 	// not: it can be changed, and a released one can be taken over by another

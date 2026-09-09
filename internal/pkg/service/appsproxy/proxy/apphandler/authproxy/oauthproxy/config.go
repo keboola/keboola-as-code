@@ -71,8 +71,8 @@ func proxyConfig(
 	v.EmailDomains = []string{"*"}
 	v.InjectRequestHeaders = []options.Header{
 		// Kept: data apps already read these, keboola_streamlit among them.
-		// Session tracking deliberately records only the user id.
-		headerFromClaim("X-Kbc-User-Id", userIDClaim(oAuthProvider.Type())),
+		// Session tracking records the user id and none of the rest.
+		headerFromClaim("X-Kbc-User-Id", userIDClaim(proxyProvider.Type)),
 		headerFromClaim("X-Kbc-User-Name", "name"),
 		headerFromClaim("X-Kbc-User-Email", options.OIDCEmailClaim),
 		headerFromClaim("X-Kbc-User-Roles", options.OIDCGroupsClaim),
@@ -107,12 +107,25 @@ func generateCookieSecret(cfg config.Config, app api.AppConfig, providerID provi
 
 // userIDClaim is the claim that identifies the user for a provider.
 //
-// GitHub issues no ID token, so it has no subject claim to give. Its account
-// login is the closest equivalent: scoped to the provider, and not an e-mail
-// address. Unlike a subject it is not permanent — a login can be changed, and
-// a released one can be taken over by another account.
-func userIDClaim(providerType provider.Type) string {
-	if providerType == provider.TypeGitHub {
+// The type comes from the provider options actually handed to oauth2-proxy,
+// because that is what decides which provider implementation runs and so what
+// the claim resolves to.
+//
+// GitHub issues no ID token, so nothing populates a subject claim for it and
+// "sub" resolves to nothing at all. Its account login is the closest
+// equivalent — the fork's GitHub provider puts it in the session user field.
+//
+// Asking for "user" is safe: the fork fills that field from
+// ProviderData.UserClaim, which defaults to "sub" and is never set from our
+// config, and the GitLab provider overwrites it with the account nickname. No
+// provider puts an e-mail address there. This has nothing to do with the
+// OIDCConfig.UserIDClaim option, whose only remaining effect is a back-compat
+// override of the e-mail claim.
+//
+// A login is weaker than a subject: its owner can change it, and a released
+// login can be taken over by another account.
+func userIDClaim(providerType options.ProviderType) string {
+	if providerType == options.GitHubProvider {
 		return "user"
 	}
 	return "sub"
