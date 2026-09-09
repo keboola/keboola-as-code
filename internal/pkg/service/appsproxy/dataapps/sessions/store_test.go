@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 )
 
 func TestStore_GetOrInit(t *testing.T) {
@@ -67,4 +69,28 @@ func TestStore_Take(t *testing.T) {
 	// websocket reconnect is not silently dropped.
 	_, created := s.getOrInit("a", now)
 	assert.True(t, created)
+}
+
+func TestManager_RetentionCoversTheLongestCookie(t *testing.T) {
+	t.Parallel()
+
+	// An entry has to outlive the longest deadline a cookie can be granted, not
+	// just the idle window. A websocket handshake buys wsTimeout +
+	// websocketGrace, and lastSeen moves only on a data frame — ping and pong
+	// are control frames and deliberately do not count. Retaining for the idle
+	// window alone would drop the entry of a live but quiet connection, and the
+	// close that follows would find nothing: no event, counters gone.
+	m := &Manager{
+		cfg:       config.Sessions{IdleTimeout: 30 * time.Minute},
+		wsTimeout: 6 * time.Hour,
+	}
+	assert.Equal(t, 6*time.Hour+websocketGrace, m.retention())
+
+	// A stack that gives websockets a shorter life than the idle window still
+	// keeps entries for the whole idle window.
+	m = &Manager{
+		cfg:       config.Sessions{IdleTimeout: 12 * time.Hour},
+		wsTimeout: time.Minute,
+	}
+	assert.Equal(t, 12*time.Hour, m.retention())
 }

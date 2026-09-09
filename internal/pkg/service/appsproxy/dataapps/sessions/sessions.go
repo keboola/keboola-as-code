@@ -88,7 +88,7 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 			case <-ctx.Done():
 				return
 			case <-ticker.Chan():
-				if n := m.store.evictBefore(m.clock.Now().Add(-m.cfg.IdleTimeout)); n > 0 {
+				if n := m.store.evictBefore(m.clock.Now().Add(-m.retention())); n > 0 {
 					m.logger.Debugf(ctx, "evicted %d idle sessions, %d remaining", n, m.store.len())
 				}
 			}
@@ -300,6 +300,22 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 //
 // Both are capped at MaxSessionLength from the session's start, so a browser
 // left open on a dashboard forever does not report a session measured in weeks.
+// retention is how long an entry is kept after its last activity.
+//
+// It has to cover the longest deadline any cookie can be given, not just the
+// idle window: a websocket handshake buys wsTimeout + websocketGrace, and
+// lastSeen only moves on a data frame — ping and pong are control frames and
+// are deliberately not activity. Evicting on the idle window alone would drop
+// the entry of a tab whose user stepped away for lunch while the connection is
+// still live, and the close that follows would then find nothing to flush: no
+// event, and the pending counters gone.
+func (m *Manager) retention() time.Duration {
+	if ws := m.wsTimeout + websocketGrace; ws > m.cfg.IdleTimeout {
+		return ws
+	}
+	return m.cfg.IdleTimeout
+}
+
 func (m *Manager) deadline(req *http.Request, state cookieState, now time.Time) time.Time {
 	window := m.cfg.IdleTimeout
 	if IsWebsocketUpgrade(req) {

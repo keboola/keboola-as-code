@@ -280,8 +280,11 @@ minted immediately after every login.
 - **`session_end` is best-effort.** A proxy restart or a hard client
   disconnection loses it. Always apply the idle-window fallback.
 - **Counters can undercount.** Deltas accumulated since the last heartbeat are
-  lost when the entry is evicted or the process restarts. Session start and end
-  times are unaffected.
+  lost when the process restarts. Eviction does not lose them: an entry is kept
+  for as long as the longest deadline a cookie could have been granted — the
+  websocket window, not the idle one — because `lastSeen` moves only on a data
+  frame, so a live connection whose user stepped away would otherwise lose its
+  entry while still open. Session start and end times are unaffected.
 - **A session can be seen by more than one replica.** apps-proxy runs 2 replicas
   on production stacks with no session affinity, so consecutive requests of one
   session land on either of them. Everything a session needs is in the signed
