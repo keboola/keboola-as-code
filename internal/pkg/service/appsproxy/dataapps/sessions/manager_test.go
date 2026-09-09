@@ -179,7 +179,7 @@ func TestManager_Disabled(t *testing.T) {
 	resp := call(t, m, func(req *http.Request) {
 		_, sessionFound = sessions.FromContext(req.Context())
 		m.Activity(req.Context())
-		m.End(req.Context(), sessions.EndReasonSignOut)
+		m.WebsocketClosed(req.Context())
 	}, nil, nil)
 
 	assert.False(t, hasSessionCookie(resp), "no cookie must be set when tracking is disabled")
@@ -355,7 +355,7 @@ func TestManager_ActivityWS(t *testing.T) {
 	assert.Equal(t, 4, event.WSFrames)
 }
 
-func TestManager_End(t *testing.T) {
+func TestManager_WebsocketCloseIsAFlushNotAnEnd(t *testing.T) {
 	t.Parallel()
 
 	streamURL, events := streamServer(t)
@@ -367,19 +367,21 @@ func TestManager_End(t *testing.T) {
 	require.Equal(t, sessions.EventSessionStart, start.EventType)
 
 	call(t, m, func(req *http.Request) {
-		m.End(req.Context(), sessions.EndReasonWebsocketClose)
-		// A second end of the same session must not produce a second row.
-		m.End(req.Context(), sessions.EndReasonWebsocketClose)
+		m.WebsocketClosed(req.Context())
+		// A second close of the same connection must not produce a second row.
+		m.WebsocketClosed(req.Context())
 	}, cookie, nil)
 
+	// A heartbeat, not an end. Streamlit closes and reopens its websocket as a
+	// matter of course, and the same cookie carries the session on, so calling
+	// this an end would over-count sessions and under-report their length.
 	event := recvEvent(t, events)
-	assert.Equal(t, sessions.EventSessionEnd, event.EventType)
+	assert.Equal(t, sessions.EventHeartbeat, event.EventType)
 	assert.Equal(t, start.SessionID, event.SessionID)
-	assert.Equal(t, string(sessions.EndReasonWebsocketClose), event.EndReason)
 	expectNoEvent(t, events)
 }
 
-func TestManager_EndRequest(t *testing.T) {
+func TestManager_SignOut(t *testing.T) {
 	t.Parallel()
 
 	streamURL, events := streamServer(t)
@@ -395,15 +397,14 @@ func TestManager_EndRequest(t *testing.T) {
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://my-app-12345.hub.keboola.local/_proxy/sign_out", nil)
 	require.NoError(t, err)
 	req.AddCookie(cookie)
-	m.EndRequest(httptest.NewRecorder(), req, testApp(), sessions.EndReasonSignOut)
+	m.SignOut(httptest.NewRecorder(), req, testApp())
 
 	event := recvEvent(t, events)
 	assert.Equal(t, sessions.EventSessionEnd, event.EventType)
 	assert.Equal(t, start.SessionID, event.SessionID)
-	assert.Equal(t, string(sessions.EndReasonSignOut), event.EndReason)
 }
 
-func TestManager_EndRequest_NoCookie(t *testing.T) {
+func TestManager_SignOut_NoCookie(t *testing.T) {
 	t.Parallel()
 
 	streamURL, events := streamServer(t)
@@ -411,7 +412,7 @@ func TestManager_EndRequest_NoCookie(t *testing.T) {
 
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://my-app-12345.hub.keboola.local/_proxy/sign_out", nil)
 	require.NoError(t, err)
-	m.EndRequest(httptest.NewRecorder(), req, testApp(), sessions.EndReasonSignOut)
+	m.SignOut(httptest.NewRecorder(), req, testApp())
 
 	expectNoEvent(t, events)
 }
@@ -614,11 +615,11 @@ func TestManager_ActivityAfterWebsocketCloseContinuesSession(t *testing.T) {
 
 	// A Streamlit websocket closes and reconnects routinely — on its ~20 min
 	// reconnect cycle, on a network blip, at the 6 h upstream timeout — while
-	// the user keeps working. Ending the session must not silence it.
+	// the user keeps working. The close flushes, and the session carries on.
 	call(t, m, func(req *http.Request) {
-		m.End(req.Context(), sessions.EndReasonWebsocketClose)
+		m.WebsocketClosed(req.Context())
 	}, cookie, nil)
-	require.Equal(t, sessions.EventSessionEnd, recvEvent(t, events).EventType)
+	require.Equal(t, sessions.EventHeartbeat, recvEvent(t, events).EventType)
 
 	clk.Advance(config.New().Sessions.HeartbeatInterval + time.Second)
 	call(t, m, func(req *http.Request) { m.Activity(req.Context()) }, cookie, nil)
@@ -643,7 +644,7 @@ func TestManager_SignOutClearsCookie(t *testing.T) {
 	require.NoError(t, err)
 	req.AddCookie(cookie)
 	rec := httptest.NewRecorder()
-	m.EndRequest(rec, req, testApp(), sessions.EndReasonSignOut)
+	m.SignOut(rec, req, testApp())
 
 	require.Equal(t, sessions.EventSessionEnd, recvEvent(t, events).EventType)
 
@@ -813,12 +814,11 @@ func TestManager_SignOutIsRecordedOnAReplicaThatNeverSawTheSession(t *testing.T)
 	require.NoError(t, err)
 	req.AddCookie(cookie)
 	rec := httptest.NewRecorder()
-	signingOut.EndRequest(rec, req, testApp(), sessions.EndReasonSignOut)
+	signingOut.SignOut(rec, req, testApp())
 
 	event := recvEvent(t, events)
 	assert.Equal(t, sessions.EventSessionEnd, event.EventType)
 	assert.Equal(t, start.SessionID, event.SessionID)
-	assert.Equal(t, string(sessions.EndReasonSignOut), event.EndReason)
 	assert.Zero(t, event.Requests, "a replica with no cached state has no deltas to report")
 
 	// And the cookie is gone, which is what keeps a repeated sign-out quiet.
@@ -881,7 +881,6 @@ func TestManager_ShutdownFlushesPendingActivity(t *testing.T) {
 	// survives it and the browser reconnects — so ending here would split one
 	// visit into as many sessions as there are deploys.
 	assert.Equal(t, sessions.EventHeartbeat, event.EventType)
-	assert.Empty(t, event.EndReason)
 
 	// Dated at the last activity, not at the shutdown. Stamping it now would
 	// stretch every open session by however long the process stayed up.
@@ -903,5 +902,73 @@ func TestManager_ShutdownWithNothingPendingIsSilent(t *testing.T) {
 	// to report and the flush must not emit an empty row per live session.
 	proc.Shutdown(t.Context(), errors.New("bye bye"))
 	proc.WaitForShutdown()
+	expectNoEvent(t, events)
+}
+
+func TestManager_IdleTimeoutIsOnEveryRow(t *testing.T) {
+	t.Parallel()
+
+	streamURL, events := streamServer(t)
+	m, clk := newManager(t, streamURL)
+
+	// A session that never signs out has no end event, so its end has to be
+	// computed as the last row plus this window. Recording it per row is what
+	// keeps that query self-contained: the setting is per stack, so a report
+	// spanning stacks — or spanning a change to it — cannot assume one value.
+	want := int(config.New().Sessions.IdleTimeout.Seconds())
+
+	first := call(t, m, nil, nil, nil)
+	cookie := sessionCookie(t, first)
+	start := recvEvent(t, events)
+	require.Equal(t, sessions.EventSessionStart, start.EventType)
+	assert.Equal(t, want, start.IdleTimeoutSeconds)
+
+	clk.Advance(config.New().Sessions.HeartbeatInterval + time.Second)
+	call(t, m, func(req *http.Request) { m.Activity(req.Context()) }, cookie, nil)
+	beat := recvEvent(t, events)
+	require.Equal(t, sessions.EventHeartbeat, beat.EventType)
+	assert.Equal(t, want, beat.IdleTimeoutSeconds)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://my-app-12345.hub.keboola.local/_proxy/sign_out", nil)
+	require.NoError(t, err)
+	req.AddCookie(cookie)
+	m.SignOut(httptest.NewRecorder(), req, testApp())
+	end := recvEvent(t, events)
+	require.Equal(t, sessions.EventSessionEnd, end.EventType)
+	assert.Equal(t, want, end.IdleTimeoutSeconds)
+}
+
+func TestManager_AtMostOneSessionEndPerSession(t *testing.T) {
+	t.Parallel()
+
+	streamURL, events := streamServer(t)
+	m, _ := newManager(t, streamURL)
+
+	first := call(t, m, nil, nil, nil)
+	cookie := sessionCookie(t, first)
+	require.Equal(t, sessions.EventSessionStart, recvEvent(t, events).EventType)
+
+	signOut := func(sent *http.Cookie) *http.Response {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://my-app-12345.hub.keboola.local/_proxy/sign_out", nil)
+		require.NoError(t, err)
+		if sent != nil {
+			req.AddCookie(sent)
+		}
+		rec := httptest.NewRecorder()
+		m.SignOut(rec, req, testApp())
+		return rec.Result()
+	}
+
+	resp := signOut(cookie)
+	require.Equal(t, sessions.EventSessionEnd, recvEvent(t, events).EventType)
+
+	// The sign-out clears the cookie, so the browser cannot present it again.
+	// That is what makes "at most one session_end per session id" an invariant
+	// a report can rely on, rather than a coincidence.
+	cleared := sessionCookie(t, resp)
+	assert.Empty(t, cleared.Value)
+	assert.Negative(t, cleared.MaxAge)
+
+	signOut(nil)
 	expectNoEvent(t, events)
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	kpendpoints "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview/endpoints"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
@@ -183,7 +182,7 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		// A sign-out ends the session explicitly. Internal paths never reach
 		// the upstream, so this cannot be handled by the sessions middleware.
 		if req.URL.Path == selector.SignOutPath {
-			h.manager.sessionsManager.EndRequest(w, req, h.app, sessions.EndReasonSignOut)
+			h.manager.sessionsManager.SignOut(w, req, h.app)
 		}
 		return h.allAuthHandlers.ServeHTTPOrError(w, req)
 	}

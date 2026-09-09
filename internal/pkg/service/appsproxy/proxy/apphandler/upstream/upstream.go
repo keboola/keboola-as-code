@@ -346,7 +346,7 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 		// Streamlit app produces: the app does virtually all of its work over
 		// this one connection.
 		res.Body = onClose(wrapped, func() {
-			u.manager.sessions.End(reqCtx, sessions.EndReasonWebsocketClose)
+			u.manager.sessions.WebsocketClosed(reqCtx)
 		})
 		return nil
 	}

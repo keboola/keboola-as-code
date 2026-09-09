@@ -19,26 +19,25 @@ const (
 	// Once per session for a browser that keeps cookies; a client that ignores
 	// Set-Cookie gets one per request.
 	EventSessionStart EventType = "session_start"
-	// EventHeartbeat is emitted periodically while the session is active.
-	// It also carries the user id, so a session that starts anonymous and later
-	// authenticates gets its identity through the next heartbeat.
-	EventHeartbeat EventType = "heartbeat"
-	// EventSessionEnd is emitted on a websocket close or an explicit sign-out.
-	// It is best-effort: a proxy restart drops it, so downstream must fall back
-	// to an idle window over MAX(event_time).
+	// EventHeartbeat reports activity and drains the counters. Emitted on a
+	// throttle interval while the session is active, and additionally whenever
+	// something forces a flush: a websocket closing, or the proxy shutting
+	// down gracefully. It also carries the user id, so a session that starts
+	// anonymous and authenticates later gets its identity through the next one.
 	//
-	// A ws_close end is not final — Streamlit reconnects routinely and the same
-	// session continues — so one session id can carry several of these. Only a
-	// sign-out is final, and it also clears the cookie.
+	// None of those mean the visit is over. A websocket close is routine —
+	// Streamlit reconnects and the same cookie continues the session — and a
+	// restart is invisible to the browser.
+	EventHeartbeat EventType = "heartbeat"
+	// EventSessionEnd means the user signed out. Terminal, and at most one per
+	// session id: signing out clears the cookie, so a second sign-out carries
+	// none and emits nothing.
+	//
+	// It is the only end there is. Every other way a visit stops — closing the
+	// tab, losing the network, walking away — produces no event at all, so
+	// reporting has to treat a session with no end as having stopped
+	// idleTimeoutSeconds after its last event.
 	EventSessionEnd EventType = "session_end"
-)
-
-// EndReason explains why the session ended. Only set on EventSessionEnd.
-type EndReason string
-
-const (
-	EndReasonWebsocketClose EndReason = "ws_close"
-	EndReasonSignOut        EndReason = "sign_out"
 )
 
 // Event is one row in the target Storage table. Field names must stay in sync
@@ -89,5 +88,11 @@ type Event struct {
 	Requests int `json:"requests"`
 	WSFrames int `json:"wsFrames"`
 
-	EndReason string `json:"endReason"`
+	// IdleTimeoutSeconds is the idle window in force when this event was
+	// emitted. A session that did not sign out has no end event, so its end has
+	// to be computed as the last event plus this — which makes it part of the
+	// data rather than something a query has to know. It is settable per stack,
+	// so a query spanning stacks, or one spanning a change to the setting,
+	// cannot assume a single value.
+	IdleTimeoutSeconds int `json:"idleTimeoutSeconds"`
 }

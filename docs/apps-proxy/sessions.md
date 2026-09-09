@@ -30,8 +30,8 @@ Three event types, one row each:
 | Event | When |
 |---|---|
 | `session_start` | The proxy minted a new cookie — the actual start of a visit. One per session for a browser that keeps cookies (see [§6](#6-known-limitations) for clients that do not). |
-| `heartbeat` | Periodically while the session is active (default every 5 min). Carries identity, so a session that starts anonymous and authenticates later still gets its user. |
-| `session_end` | Websocket close, or an explicit `/_proxy/sign_out`. **Best-effort, and a websocket close is not final** — see [§6](#6-known-limitations). |
+| `heartbeat` | A flush: on the throttle interval while the session is active (default 5 min), and additionally when a websocket closes or the proxy shuts down gracefully. Carries identity, so a session that starts anonymous and authenticates later still gets its user. |
+| `session_end` | The user signed out (`/_proxy/sign_out`). **The only end there is, and terminal** — at most one per session id, because signing out clears the cookie. |
 
 Identity is **how the provider names the user**, injected as `X-Kbc-User-Id`:
 the OIDC **subject claim** for every provider that issues an ID token, and the
@@ -76,9 +76,8 @@ SELECT
     MIN(session_start)                              AS started_at,
     MAX(event_time)                                 AS last_activity_at,
     MAX(CASE WHEN event_type = 'session_end'
-             THEN event_time END)                   AS ended_at,
-    MAX(CASE WHEN event_type = 'session_end'
-             THEN end_reason END)                   AS end_reason,
+             THEN event_time END)                   AS signed_out_at,
+    MAX(SAFE_CAST(idle_timeout_seconds AS INT64))   AS idle_timeout_seconds,
     MAX(app_id)                                     AS app_id,
     MAX(project_id)                                 AS project_id,
     MAX(NULLIF(provider_user_id, ''))               AS provider_user_id,
@@ -91,18 +90,24 @@ WHERE app_id <> 'setup-script'
 GROUP BY session_id
 ```
 
-Note `MAX(event_time)` rather than the first `session_end`: a websocket close
-emits `session_end` but does **not** end the visit, because Streamlit reconnects
-routinely (its ~20 min reconnect cycle, a network blip, the 6 h upstream
-timeout) and the user keeps working on the same session id. So one session can
-carry several `session_end` rows, and activity can follow one of them. Only
-`end_reason = 'sign_out'` is final.
+`session_end` means one thing only: the user signed out. It is terminal and
+there is at most one per session id, because signing out clears the cookie.
 
-A session whose `ended_at` is null ended without any `session_end` row. Either
-way, close it with the same idle window the proxy uses
-(`sessions.idleTimeout`, default 30 min): treat it as ended at
-`last_activity_at` when that is more than 30 minutes old, and as still open
-otherwise.
+**Every other way a visit stops produces no event at all** — closing the tab,
+losing the network, walking away. A websocket closing is not one of them either:
+Streamlit reconnects routinely (its ~20 min cycle, a network blip, the 6 h
+upstream timeout) and the same cookie carries the session on, so that close is a
+`heartbeat`. So `signed_out_at` is null for almost every session, and the end
+has to be computed:
+
+```
+ended_at = COALESCE(signed_out_at, last_activity_at + idle_timeout_seconds)
+```
+
+and a session is still open when `last_activity_at + idle_timeout_seconds` is in
+the future. `idle_timeout_seconds` is on every row rather than assumed, because
+it is settable per stack: a query spanning stacks, or one spanning a change to
+the setting, cannot use a single number.
 
 `requests` and `ws_frames` are **deltas** since the previous event of the same
 session, which is why they are summed rather than taken with `MAX`.
@@ -118,7 +123,7 @@ Created by `scripts/stream-sessions-setup.sh`. Default table
 |---|---|---|
 | `received_at` | Stream | Arrival time. Kept next to `event_time` so queueing delay is visible. |
 | `event_id` | `eventId` | Row identifier (UUIDv7). |
-| `event_type` | `eventType` | `session_start` \| `heartbeat` \| `session_end` |
+| `event_type` | `eventType` | `session_start` \| `heartbeat` \| `session_end`. Only a sign-out ends a session; see [§3](#3-why-an-event-model). |
 | `event_time` | `eventTime` | Stamped by the proxy. Fixed-precision UTC (`2006-01-02T15:04:05.000000Z`), so that `MIN`/`MAX` order correctly even though the column is text. |
 | `session_id` | `sessionId` | UUIDv7. Its timestamp prefix *is* the session start. |
 | `session_start` | `sessionStart` | Decoded from `session_id`, identical on every row of a session. |
@@ -127,7 +132,7 @@ Created by `scripts/stream-sessions-setup.sh`. Default table
 | `provider_user_id` | `X-Kbc-User-Id` | OIDC subject claim, or the account login for GitHub, which issues no ID token. Never taken from the e-mail claim. Empty for password / no-auth apps. Unique only within one provider — pair it with `auth_provider_id`. |
 | `user_agent` | request | |
 | `requests`, `ws_frames` | proxy counters | Deltas, not totals. |
-| `end_reason` | `endReason` | `ws_close` \| `sign_out`. Only on `session_end`; only `sign_out` is final. |
+| `idle_timeout_seconds` | `idleTimeoutSeconds` | The idle window in force when the row was written. Needed to close a session that never signed out, and recorded per row because the setting is per stack. |
 
 The Stream `ip` and `headers` column types are deliberately **not** used: they
 describe the request Stream received, which comes from apps-proxy, not from the
@@ -277,8 +282,9 @@ minted immediately after every login.
   delta and inflate the counts. A full queue drops events (logged, counted).
   Losing a heartbeat is invisible; losing a `session_end` is covered by the idle
   window.
-- **`session_end` is best-effort.** A proxy restart or a hard client
-  disconnection loses it. Always apply the idle-window fallback.
+- **`session_end` is best-effort.** A proxy restart between the sign-out and the
+  send loses it, and the session then closes through the idle window like any
+  other. Always apply the fallback rather than relying on the row being there.
 - **Counters can undercount, but only on a hard exit.** A graceful shutdown
   flushes every live session's pending deltas as a heartbeat before the queue
   drains, so an ordinary deploy keeps them; a SIGKILL or a crash does not.
@@ -304,13 +310,15 @@ minted immediately after every login.
     - A websocket is pinned to the replica that accepted it, while HTTP
       requests of the same session may go to the other one. Both track the
       same session id independently.
-    - A restart or rollout drops the cache: pending deltas are lost, and the
-      session continues on the next request with no spurious `session_start`.
-- **A websocket close does not end the visit.** It emits `session_end` and drops
-  the proxy's cached state, but later activity on the same cookie continues the
-  same session id — which is correct for Streamlit, whose connection closes and
-  reopens routinely. Consequence for queries: take `MAX(event_time)`, not the
-  first `session_end`.
+    - A restart or rollout drops the cache. A graceful one flushes the pending
+      deltas first; either way the session continues on the next request with
+      no spurious `session_start`.
+- **A websocket close does not end the visit.** It flushes what the connection
+  counted as a `heartbeat` and drops the proxy's cached state, but later
+  activity on the same cookie continues the same session id — which is correct
+  for Streamlit, whose connection closes and reopens routinely. This is why the
+  close is not an end event: calling it one would over-count sessions and
+  under-report their length for anyone querying the table directly.
 - **A visit longer than `maxSessionLength` is reported as several sessions.**
   A browser left open on a dashboard indefinitely rolls onto a new session id
   every 12 h, which is deliberate: the alternative is a single session measured

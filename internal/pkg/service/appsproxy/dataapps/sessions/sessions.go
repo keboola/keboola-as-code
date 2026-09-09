@@ -271,7 +271,7 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 		// cookie, by contrast, means the id was generated a moment ago and no
 		// replica can have seen it.
 		item.lock.Lock()
-		event := m.buildEvent(s, item, EventSessionStart, "", now)
+		event := m.buildEvent(s, item, EventSessionStart, now)
 		item.lock.Unlock()
 		m.writer.enqueue(ctx, event)
 	case s.providerUserID != "":
@@ -286,7 +286,7 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 		item.lock.Lock()
 		var identityEvent *Event
 		if !item.identitySent {
-			event := m.buildEvent(s, item, EventHeartbeat, "", now)
+			event := m.buildEvent(s, item, EventHeartbeat, now)
 			identityEvent = &event
 		}
 		item.lock.Unlock()
@@ -417,21 +417,22 @@ func (m *Manager) activity(ctx context.Context, requests, wsFrames int) {
 		item.lock.Unlock()
 		return
 	}
-	event := m.buildEvent(s, item, EventHeartbeat, "", now)
+	event := m.buildEvent(s, item, EventHeartbeat, now)
 	item.lock.Unlock()
 
 	m.writer.enqueue(ctx, event)
 }
 
-// End records the end of a session. Best-effort by design: a proxy restart
-// loses it, so downstream must also apply an idle window.
+// WebsocketClosed flushes what a connection accumulated, as a heartbeat.
 //
-// A ws_close end is not necessarily the end of the visit — Streamlit reconnects
-// routinely — so the entry is removed rather than flagged, and later activity
-// on the same cookie simply continues the session. One session id can therefore
-// carry several session_end rows; downstream takes the last event, not the
-// first end. Only a sign-out is final, and that also clears the cookie.
-func (m *Manager) End(ctx context.Context, reason EndReason) {
+// It does not end the session, because a closed websocket is not the end of a
+// visit: Streamlit reconnects routinely and the same cookie carries on. The
+// entry is removed rather than flagged, so later activity simply starts a fresh
+// one under the same session id.
+//
+// The context is detached before sending: this runs while the connection is
+// being torn down, so the request context is already cancelled.
+func (m *Manager) WebsocketClosed(ctx context.Context) {
 	if !m.enabled {
 		return
 	}
@@ -440,25 +441,16 @@ func (m *Manager) End(ctx context.Context, reason EndReason) {
 		return
 	}
 
-	// No entry means the websocket was already accounted for, or was never
-	// seen on this replica: nothing to report, and this makes a repeated End a
-	// no-op.
+	// No entry means this connection was already accounted for, or was never
+	// seen on this replica. Either way there is nothing to flush, which also
+	// makes a repeated call a no-op.
 	item, found := m.store.take(s.ID)
 	if !found {
 		return
 	}
 
-	m.emitEnd(ctx, s, item, reason)
-}
-
-// emitEnd writes the end event. Detached from the request context, because End
-// runs while the connection is being torn down and that context is already
-// cancelled.
-func (m *Manager) emitEnd(ctx context.Context, s *Session, item *entry, reason EndReason) {
-	now := m.clock.Now()
-
 	item.lock.Lock()
-	event := m.buildEvent(s, item, EventSessionEnd, reason, now)
+	event := m.buildEvent(s, item, EventHeartbeat, m.clock.Now())
 	item.lock.Unlock()
 
 	m.writer.enqueue(context.WithoutCancel(ctx), event)
@@ -497,12 +489,12 @@ func (m *Manager) drain(item *entry) (Event, bool) {
 	if item.session == nil || (item.requests == 0 && item.wsFrames == 0) {
 		return Event{}, false
 	}
-	return m.buildEvent(item.session, item, EventHeartbeat, "", item.lastSeen), true
+	return m.buildEvent(item.session, item, EventHeartbeat, item.lastSeen), true
 }
 
 // buildEvent drains the pending deltas and arms the next heartbeat.
 // Must be called with item.lock held.
-func (m *Manager) buildEvent(s *Session, item *entry, typ EventType, reason EndReason, now time.Time) Event {
+func (m *Manager) buildEvent(s *Session, item *entry, typ EventType, now time.Time) Event {
 	event := Event{
 		EventID:          eventID(s.ID, now),
 		EventType:        typ,
@@ -518,7 +510,8 @@ func (m *Manager) buildEvent(s *Session, item *entry, typ EventType, reason EndR
 		UserAgent:        s.userAgent,
 		Requests:         item.requests,
 		WSFrames:         item.wsFrames,
-		EndReason:        string(reason),
+
+		IdleTimeoutSeconds: int(m.cfg.IdleTimeout.Seconds()),
 	}
 
 	item.requests = 0
@@ -552,15 +545,20 @@ func eventID(sessionID string, at time.Time) string {
 	return id.String()
 }
 
-// EndRequest ends the session carried by the request cookie and clears that
+// SignOut ends the session carried by the request cookie and clears that
 // cookie, so the next person to use this browser starts a session of their own
 // instead of continuing — and being attributed to — this one.
+//
+// This is the only thing that emits session_end, and it is terminal: the cookie
+// is gone afterwards, so a second sign-out carries none and emits nothing. That
+// gives the table an invariant worth relying on — at most one session_end per
+// session id.
 //
 // The sign-out path is served by the auth handlers and never reaches the
 // upstream, so there is no session in its context and the cookie has to be read
 // directly. Identity is omitted: it is already on the start and heartbeat rows
 // of the same session.
-func (m *Manager) EndRequest(rw http.ResponseWriter, req *http.Request, app api.AppConfig, reason EndReason) {
+func (m *Manager) SignOut(rw http.ResponseWriter, req *http.Request, app api.AppConfig) {
 	if !m.enabled {
 		return
 	}
@@ -585,14 +583,18 @@ func (m *Manager) EndRequest(rw http.ResponseWriter, req *http.Request, app api.
 
 	// Emit even when this replica holds no cached state for the session. The
 	// proxy runs several replicas with no session affinity, so a sign-out often
-	// lands on one that never saw this session — and unlike a websocket close,
-	// a sign-out is the one final signal, so losing it would leave the session
-	// to expire through the idle window instead. Repeating it is not a concern:
-	// the cookie was just cleared, so a second sign-out carries none.
+	// lands on one that never saw this session — and it is the only end signal
+	// there is, so losing it would leave the session to expire through the idle
+	// window instead. Repeating it is not a concern: the cookie was just
+	// cleared, so a second sign-out carries none.
 	item, found := m.store.take(s.ID)
 	if !found {
 		item = &entry{}
 	}
 
-	m.emitEnd(ctx, s, item, reason)
+	item.lock.Lock()
+	event := m.buildEvent(s, item, EventSessionEnd, m.clock.Now())
+	item.lock.Unlock()
+
+	m.writer.enqueue(context.WithoutCancel(ctx), event)
 }

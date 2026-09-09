@@ -275,21 +275,21 @@ header "3. Create table sink → ${TABLE_ID}"
 # the end user. Anything about the user is sent explicitly in the body.
 COLUMNS=$(jq -nc '[
   {type: "datetime", name: "received_at"},
-  {type: "path", name: "event_id",           path: "eventId",          rawString: true, defaultValue: ""},
-  {type: "path", name: "event_type",         path: "eventType",        rawString: true, defaultValue: ""},
-  {type: "path", name: "event_time",         path: "eventTime",        rawString: true, defaultValue: ""},
-  {type: "path", name: "session_id",         path: "sessionId",        rawString: true, defaultValue: ""},
-  {type: "path", name: "session_start",      path: "sessionStart",     rawString: true, defaultValue: ""},
-  {type: "path", name: "app_id",             path: "appId",            rawString: true, defaultValue: ""},
-  {type: "path", name: "app_name",           path: "appName",          rawString: true, defaultValue: ""},
-  {type: "path", name: "project_id",         path: "projectId",        rawString: true, defaultValue: ""},
-  {type: "path", name: "auth_provider_id",   path: "authProviderId",   rawString: true, defaultValue: ""},
-  {type: "path", name: "auth_provider_type", path: "authProviderType", rawString: true, defaultValue: ""},
-  {type: "path", name: "provider_user_id",   path: "providerUserId",   rawString: true, defaultValue: ""},
-  {type: "path", name: "user_agent",         path: "userAgent",        rawString: true, defaultValue: ""},
-  {type: "path", name: "requests",           path: "requests",         rawString: true, defaultValue: "0"},
-  {type: "path", name: "ws_frames",          path: "wsFrames",         rawString: true, defaultValue: "0"},
-  {type: "path", name: "end_reason",         path: "endReason",        rawString: true, defaultValue: ""}
+  {type: "path", name: "event_id",             path: "eventId",            rawString: true, defaultValue: ""},
+  {type: "path", name: "event_type",           path: "eventType",          rawString: true, defaultValue: ""},
+  {type: "path", name: "event_time",           path: "eventTime",          rawString: true, defaultValue: ""},
+  {type: "path", name: "session_id",           path: "sessionId",          rawString: true, defaultValue: ""},
+  {type: "path", name: "session_start",        path: "sessionStart",       rawString: true, defaultValue: ""},
+  {type: "path", name: "app_id",               path: "appId",              rawString: true, defaultValue: ""},
+  {type: "path", name: "app_name",             path: "appName",            rawString: true, defaultValue: ""},
+  {type: "path", name: "project_id",           path: "projectId",          rawString: true, defaultValue: ""},
+  {type: "path", name: "auth_provider_id",     path: "authProviderId",     rawString: true, defaultValue: ""},
+  {type: "path", name: "auth_provider_type",   path: "authProviderType",   rawString: true, defaultValue: ""},
+  {type: "path", name: "provider_user_id",     path: "providerUserId",     rawString: true, defaultValue: ""},
+  {type: "path", name: "user_agent",           path: "userAgent",          rawString: true, defaultValue: ""},
+  {type: "path", name: "requests",             path: "requests",           rawString: true, defaultValue: "0"},
+  {type: "path", name: "ws_frames",            path: "wsFrames",           rawString: true, defaultValue: "0"},
+  {type: "path", name: "idle_timeout_seconds", path: "idleTimeoutSeconds", rawString: true, defaultValue: "0"}
 ]')
 
 if [[ -n "${SINK_ID}" ]]; then
@@ -355,7 +355,7 @@ test_event=$(jq -nc --arg now "$(date -u +%Y-%m-%dT%H:%M:%S.000000Z)" '{
   userAgent: "stream-sessions-setup.sh",
   requests: 0,
   wsFrames: 0,
-  endReason: ""
+  idleTimeoutSeconds: 0
 }')
 
 raw=$(curl -s --max-time 30 -w "\n%{http_code}" -X POST "${INGEST_URL}" \
