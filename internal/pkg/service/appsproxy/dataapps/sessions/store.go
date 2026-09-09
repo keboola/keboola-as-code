@@ -5,16 +5,9 @@ import (
 	"time"
 )
 
-// entry is the in-memory state of one session on one proxy replica.
-//
-// It is a cache, never a source of truth. The proxy runs several replicas and
-// restarts on deploy, so the same session can be tracked by more than one
-// entry over its lifetime, or by none. Everything that must survive lives in
-// the cookie (session id, and the start time encoded in it) or in the emitted
-// events. Consequences that downstream queries must tolerate:
-//
-//   - heartbeat deltas of one session may arrive from two replicas,
-//   - session_end may never arrive at all.
+// entry is the in-memory state of one session on one replica. A cache, never a
+// source of truth: everything that must survive is in the cookie or in the
+// emitted events. See docs/apps-proxy/sessions.md §6.
 type entry struct {
 	lock sync.Mutex
 	// session is the last request's view of this session. An entry needs it to

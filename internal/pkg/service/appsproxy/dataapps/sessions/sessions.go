@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofrs/uuid/v5"
 	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -73,11 +72,9 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 		return m
 	}
 
-	// Without a salt the per-app key is SHA256 of the prefix and the app id,
-	// both of which anyone can compute, so any session cookie could be forged.
-	// Config validation marks cookieSecretSalt required and so should never let
-	// this through — but tracking silently accepting a forgeable key is worse
-	// than tracking being off, so this is the one place that says no.
+	// Without a salt the key is derivable from the app id alone, so every
+	// cookie would be forgeable. Config validation should never let this
+	// through, but tracking off beats tracking that cannot verify.
 	if m.salt == "" {
 		m.enabled = false
 		logger.Error(ctx, "session tracking is disabled, cookie secret salt is empty")
@@ -155,13 +152,9 @@ type authProviderInfo struct {
 	typ string
 }
 
-// WithAuthProvider records which provider admitted the request.
-//
-// It has to be a separate wrapper because oauth2-proxy does not tell the
-// upstream which provider authenticated, and one app can offer several. Each
-// per-provider auth handler wraps the shared upstream with this, so the value
-// is exact — including for a shared-password app, which never reaches
-// oauth2-proxy at all.
+// WithAuthProvider records which provider admitted the request. A separate
+// wrapper because oauth2-proxy does not pass that on and one app can offer
+// several providers.
 func WithAuthProvider(next chain.Handler, id provider.ID, typ provider.Type) chain.Handler {
 	info := &authProviderInfo{id: id.String(), typ: string(typ)}
 	return chain.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) error {
@@ -178,11 +171,8 @@ func authProviderFromContext(ctx context.Context) (string, string) {
 }
 
 // Middleware ensures every request carries a session cookie and puts the
-// session into the request context.
-//
-// It is placed between authentication and the upstream so the X-Kbc-User-*
-// headers injected by oauth2-proxy are already present, while paths that need
-// no authentication still get an anonymous session.
+// session into the request context. It sits between authentication and the
+// upstream, so the X-Kbc-User-* headers are already present.
 func (m *Manager) Middleware(app api.AppConfig) chain.Middleware {
 	if !m.enabled {
 		return func(next chain.Handler) chain.Handler { return next }
@@ -215,11 +205,9 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 	// is identical across replicas, and cannot be moved by the client.
 	state, found := readCookie(req, key, now, m.cfg.MaxSessionLength)
 	if !found {
-		// Only a navigation or a websocket handshake may start a session.
-		// A page load fires a burst of requests at once, none of them yet
-		// carrying a cookie, and each one minting its own session would report
-		// a single visit as several — one real session plus orphans holding a
-		// lone session_start, since only the last Set-Cookie survives.
+		// A page load fires a burst of cookieless requests at once; only the
+		// last Set-Cookie survives, so letting each mint a session would
+		// report one visit as several.
 		if !startsSession(req) {
 			return nil
 		}
@@ -241,11 +229,9 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 		state = cookieState{sessionID: sessionID, startedAt: startedAt}
 	}
 
-	// Push the deadline out while the visitor is active. The cookie is written
-	// whenever the deadline actually moves, which for an ordinary request means
-	// every time: each request has to buy a full idle window, so that a visitor
-	// returning inside that window never loses the session no matter how the
-	// requests are spaced.
+	// Written whenever the deadline actually moves, so a visitor returning
+	// inside the idle window never loses the session however the requests are
+	// spaced.
 	if deadline := m.deadline(req, state, now); deadline.After(state.deadline) {
 		state.deadline = deadline
 		setCookie(rw, app, m.publicURL, state.sessionID, deadline, now, key)
@@ -312,28 +298,10 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 	return s
 }
 
-// deadline returns when the session should stop being accepted if nothing more
-// is heard from it.
-//
-// An ordinary request buys IdleTimeout. A websocket handshake buys the whole
-// lifetime of that connection instead, because it is the one case where the
-// proxy knows the visitor may legitimately be active for hours without sending
-// another HTTP request — after the upgrade there is no response left to carry a
-// Set-Cookie. This is the same signal that keeps the app from being
-// auto-suspended: while frames flow the app stays up, and now the cookie stays
-// valid alongside it.
-//
-// Both are capped at MaxSessionLength from the session's start, so a browser
-// left open on a dashboard forever does not report a session measured in weeks.
-// retention is how long an entry is kept after its last activity.
-//
-// It has to cover the longest deadline any cookie can be given, not just the
-// idle window: a websocket handshake buys wsTimeout + websocketGrace, and
-// lastSeen only moves on a data frame — ping and pong are control frames and
-// are deliberately not activity. Evicting on the idle window alone would drop
-// the entry of a tab whose user stepped away for lunch while the connection is
-// still live, and the close that follows would then find nothing to flush: no
-// event, and the pending counters gone.
+// retention is how long an entry is kept after its last activity. It must cover
+// the longest deadline a cookie can be given, not just the idle window: lastSeen
+// moves only on a data frame, so a live but quiet websocket would otherwise lose
+// its entry and its close would flush nothing.
 func (m *Manager) retention() time.Duration {
 	if ws := m.wsTimeout + websocketGrace; ws > m.cfg.IdleTimeout {
 		return ws
@@ -341,6 +309,10 @@ func (m *Manager) retention() time.Duration {
 	return m.cfg.IdleTimeout
 }
 
+// deadline returns when the session stops being accepted if nothing more is
+// heard from it: IdleTimeout for an ordinary request, the whole connection for
+// a websocket handshake, capped at MaxSessionLength from the session's start.
+// See docs/apps-proxy/sessions.md for why the handshake is special.
 func (m *Manager) deadline(req *http.Request, state cookieState, now time.Time) time.Time {
 	window := m.cfg.IdleTimeout
 	if IsWebsocketUpgrade(req) {
@@ -363,19 +335,10 @@ func (m *Manager) deadline(req *http.Request, state cookieState, now time.Time) 
 	return deadline
 }
 
-// startsSession reports whether a request without a session cookie may start
-// one. A request that may not still joins a session it already has a cookie
-// for — this only decides who gets to mint one.
-//
-// Subresources and background fetches are excluded: they arrive alongside the
-// document that triggered them, so letting them mint sessions turns one visit
-// into several. It also keeps clients that ignore Set-Cookie entirely — an
-// uptime monitor, a crawler — from reporting a session per request.
-//
-// The websocket handshake is allowed through even though it is not a
-// navigation: it is one request per connection rather than a burst, and a
-// Streamlit tab whose cookie has expired can reconnect without reloading the
-// page, which would otherwise leave that activity untracked.
+// startsSession reports whether a request without a cookie may mint one. Only
+// navigations and websocket handshakes may: a subresource arrives alongside the
+// document that triggered it, so letting it mint would turn one visit into
+// several.
 func startsSession(req *http.Request) bool {
 	// Sec-Fetch-Mode distinguishes a navigation from a subresource fetch. It is
 	// set by every current browser and cannot be spoofed by page script.
@@ -389,225 +352,9 @@ func startsSession(req *http.Request) bool {
 }
 
 // IsWebsocketUpgrade reports whether the request is a websocket handshake.
-//
-// It is exported and used by the upstream handler as well, so that the session
-// cookie deadline is derived from the very same test that decides whether a
-// request is routed onto the long-lived websocket path. If the two definitions
-// ever diverged, a connection would outlive the cookie that identifies it.
+// Exported so the upstream routes on the same test the cookie deadline is
+// derived from: two definitions would let a connection outlive its cookie.
 func IsWebsocketUpgrade(req *http.Request) bool {
 	return strings.EqualFold(req.Header.Get("Connection"), "upgrade") &&
 		strings.EqualFold(req.Header.Get("Upgrade"), "websocket")
-}
-
-// Activity records that the user made a request to the app.
-func (m *Manager) Activity(ctx context.Context) {
-	m.activity(ctx, 1, 0)
-}
-
-// ActivityWS records one websocket data frame. Streamlit does nearly all of
-// its work over a single long-lived websocket, so for those apps this — not
-// Activity — is what keeps a session alive.
-func (m *Manager) ActivityWS(ctx context.Context) {
-	m.activity(ctx, 0, 1)
-}
-
-func (m *Manager) activity(ctx context.Context, requests, wsFrames int) {
-	if !m.enabled {
-		return
-	}
-	s, ok := FromContext(ctx)
-	if !ok {
-		return
-	}
-
-	now := m.clock.Now()
-	item, _ := m.store.getOrInit(s.ID, now)
-
-	item.lock.Lock()
-	item.requests += requests
-	item.wsFrames += wsFrames
-	if now.Before(item.nextHeartbeatAfter) {
-		item.lock.Unlock()
-		return
-	}
-	event := m.buildEvent(s, item, EventHeartbeat, now)
-	item.lock.Unlock()
-
-	m.writer.enqueue(ctx, event)
-}
-
-// WebsocketClosed flushes what a connection accumulated, as a heartbeat.
-//
-// It does not end the session, because a closed websocket is not the end of a
-// visit: Streamlit reconnects routinely and the same cookie carries on. The
-// entry is removed rather than flagged, so later activity simply starts a fresh
-// one under the same session id.
-//
-// The context is detached before sending: this runs while the connection is
-// being torn down, so the request context is already cancelled.
-func (m *Manager) WebsocketClosed(ctx context.Context) {
-	if !m.enabled {
-		return
-	}
-	s, ok := FromContext(ctx)
-	if !ok {
-		return
-	}
-
-	// No entry means this connection was already accounted for, or was never
-	// seen on this replica. Either way there is nothing to flush, which also
-	// makes a repeated call a no-op.
-	item, found := m.store.take(s.ID)
-	if !found {
-		return
-	}
-
-	item.lock.Lock()
-	event := m.buildEvent(s, item, EventHeartbeat, m.clock.Now())
-	item.lock.Unlock()
-
-	m.writer.enqueue(context.WithoutCancel(ctx), event)
-}
-
-// flushAll reports what every live session accumulated since its last
-// heartbeat and empties the store. Called on shutdown, so a deploy does not
-// discard up to one heartbeat interval of activity per session.
-//
-// It deliberately does not end anything. A restart is not the end of a visit:
-// the cookie survives it and the browser reconnects, so emitting session_end
-// here would split one visit into as many sessions as there are deploys.
-func (m *Manager) flushAll(ctx context.Context) {
-	flushed := 0
-	for _, item := range m.store.drainAll() {
-		if event, ok := m.drain(item); ok {
-			m.writer.enqueue(ctx, event)
-			flushed++
-		}
-	}
-	if flushed > 0 {
-		m.logger.Infof(ctx, "flushed pending activity of %d session(s)", flushed)
-	}
-}
-
-// drain turns an entry's pending deltas into a heartbeat, reporting whether
-// there was anything to report.
-//
-// The event is stamped at lastSeen, not at the current time: that is when the
-// activity happened, and dating it at shutdown would stretch every open
-// session by up to one heartbeat interval.
-func (m *Manager) drain(item *entry) (Event, bool) {
-	item.lock.Lock()
-	defer item.lock.Unlock()
-
-	if item.session == nil || (item.requests == 0 && item.wsFrames == 0) {
-		return Event{}, false
-	}
-	return m.buildEvent(item.session, item, EventHeartbeat, item.lastSeen), true
-}
-
-// buildEvent drains the pending deltas and arms the next heartbeat.
-// Must be called with item.lock held.
-func (m *Manager) buildEvent(s *Session, item *entry, typ EventType, now time.Time) Event {
-	event := Event{
-		EventID:          eventID(s.ID, now),
-		EventType:        typ,
-		EventTime:        formatTime(now),
-		SessionID:        s.ID,
-		SessionStart:     formatTime(s.StartedAt),
-		AppID:            s.appID,
-		AppName:          s.appName,
-		ProjectID:        s.projectID,
-		AuthProviderID:   s.authProviderID,
-		AuthProviderType: s.authProviderType,
-		ProviderUserID:   s.providerUserID,
-		UserAgent:        s.userAgent,
-		Requests:         item.requests,
-		WSFrames:         item.wsFrames,
-
-		IdleTimeoutSeconds: int(m.cfg.IdleTimeout.Seconds()),
-	}
-
-	item.requests = 0
-	item.wsFrames = 0
-	item.nextHeartbeatAfter = now.Add(m.cfg.HeartbeatInterval)
-	if s.providerUserID != "" {
-		item.identitySent = true
-	}
-
-	return event
-}
-
-// timeFormat has a fixed number of fractional digits, unlike time.RFC3339Nano
-// which trims trailing zeros. Without it "…:00Z" and "…:00.5Z" do not order
-// correctly as strings, and MIN/MAX over the column in Storage — where these
-// are text, not timestamps — would pick the wrong row.
-const timeFormat = "2006-01-02T15:04:05.000000Z"
-
-func formatTime(t time.Time) string {
-	return t.UTC().Format(timeFormat)
-}
-
-// eventID identifies the row. Generation reads crypto/rand and realistically
-// cannot fail; if it ever did, fall back to a value derived from the session so
-// the column is never empty.
-func eventID(sessionID string, at time.Time) string {
-	id, err := uuid.NewV7()
-	if err != nil {
-		return sessionID + "-" + formatTime(at)
-	}
-	return id.String()
-}
-
-// SignOut ends the session carried by the request cookie and clears that
-// cookie, so the next person to use this browser starts a session of their own
-// instead of continuing — and being attributed to — this one.
-//
-// This is the only thing that emits session_end, and it is terminal: the cookie
-// is gone afterwards, so a second sign-out carries none and emits nothing. That
-// gives the table an invariant worth relying on — at most one session_end per
-// session id.
-//
-// The sign-out path is served by the auth handlers and never reaches the
-// upstream, so there is no session in its context and the cookie has to be read
-// directly. Identity is omitted: it is already on the start and heartbeat rows
-// of the same session.
-func (m *Manager) SignOut(rw http.ResponseWriter, req *http.Request, app api.AppConfig) {
-	if !m.enabled {
-		return
-	}
-
-	ctx := req.Context()
-
-	state, found := readCookie(req, signingKey(app.ID, m.salt), m.clock.Now(), m.cfg.MaxSessionLength)
-	if !found {
-		return
-	}
-
-	clearCookie(rw, app, m.publicURL)
-
-	s := &Session{
-		ID:        state.sessionID,
-		StartedAt: state.startedAt,
-		appID:     app.ID.String(),
-		appName:   app.Name,
-		projectID: app.ProjectID,
-		userAgent: req.Header.Get("User-Agent"),
-	}
-
-	// Emit even when this replica holds no cached state for the session. The
-	// proxy runs several replicas with no session affinity, so a sign-out often
-	// lands on one that never saw this session — and it is the only end signal
-	// there is, so losing it would leave the session to expire through the idle
-	// window instead. Repeating it is not a concern: the cookie was just
-	// cleared, so a second sign-out carries none.
-	item, found := m.store.take(s.ID)
-	if !found {
-		item = &entry{}
-	}
-
-	item.lock.Lock()
-	event := m.buildEvent(s, item, EventSessionEnd, m.clock.Now())
-	item.lock.Unlock()
-
-	m.writer.enqueue(context.WithoutCancel(ctx), event)
 }

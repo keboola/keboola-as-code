@@ -19,15 +19,11 @@ import (
 // context carries no deadline of its own.
 const drainTimeout = 10 * time.Second
 
-// The Stream HTTP source maps exactly one POST to one record, so events cannot
-// be coalesced into a single request. They are instead queued and sent by a
-// small pool of workers.
+// One POST per record, so events are queued and sent by a worker pool.
 //
-// Retries are deliberately absent. A retried heartbeat would land as a second
-// row carrying the same delta, inflating request counts. Losing an event is
-// cheaper than double-counting one, and heartbeats repeat anyway. This is also
-// why the plain http.Client is used rather than the repo's instrumented client,
-// which retries.
+// Retries are deliberately absent: a retried heartbeat would land as a second
+// row carrying the same delta. That is also why this uses a plain http.Client
+// rather than the repo's instrumented one, which retries.
 type writer struct {
 	logger    log.Logger
 	metrics   *metrics
@@ -49,12 +45,9 @@ type writerConfig struct {
 }
 
 func newWriter(logger log.Logger, m *metrics, cfg writerConfig) *writer {
-	// A client with no Transport uses http.DefaultTransport, which keeps only
-	// two idle connections per host. With more workers than that, the rest have
-	// to complete a fresh TLS handshake on every send — charged against
-	// sendTimeout, so drops would get more likely exactly when volume is
-	// highest. Clone the default rather than build one from scratch to keep its
-	// proxy support and dial timeouts.
+	// http.DefaultTransport keeps two idle connections per host, so with more
+	// workers the rest would pay a TLS handshake per send, charged against
+	// sendTimeout. Cloned rather than built, to keep its proxy and dial setup.
 	transport := http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert
 	transport.MaxIdleConnsPerHost = cfg.workers
 	transport.MaxIdleConns = cfg.workers * 2
