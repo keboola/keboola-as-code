@@ -17,7 +17,12 @@ import (
 
 // drainTimeout bounds how long close waits for queued events when the shutdown
 // context carries no deadline of its own.
-const drainTimeout = 10 * time.Second
+//
+// Sized against the pod's total grace period, not on its own: shutdown
+// callbacks run sequentially, the HTTP server drains first for up to
+// gracefulShutdownTimeout, and the pod is SIGKILLed 30 s after SIGTERM. 20 s
+// there plus 5 s here leaves headroom; raising either means checking the sum.
+const drainTimeout = 5 * time.Second
 
 // One POST per record, so events are queued and sent by a worker pool.
 //
