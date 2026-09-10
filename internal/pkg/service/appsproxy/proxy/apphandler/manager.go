@@ -35,7 +35,7 @@ type Manager struct {
 	upstreamManager      *upstream.Manager
 	authProxyManager     *authproxy.Manager
 	pageWriter           *pagewriter.Writer
-	handlers             *syncmap.SyncMap[api.AppID, appHandlerWrapper]
+	handlers             *syncmap.SyncMap[k8sapp.WorkloadRef, appHandlerWrapper]
 	clock                clockwork.Clock
 	storageTokenVerifier kaipreview.StorageTokenVerifier
 	sessionsManager      *sessions.Manager
@@ -86,7 +86,7 @@ func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
 		upstreamManager:  d.UpstreamManager(),
 		authProxyManager: d.AuthProxyManager(),
 		pageWriter:       d.PageWriter(),
-		handlers: syncmap.New[api.AppID, appHandlerWrapper](func(api.AppID) *appHandlerWrapper {
+		handlers: syncmap.New[k8sapp.WorkloadRef, appHandlerWrapper](func(k8sapp.WorkloadRef) *appHandlerWrapper {
 			return &appHandlerWrapper{lock: &sync.Mutex{}}
 		}),
 		clock:                d.Clock(),
@@ -96,7 +96,7 @@ func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
 }
 
 func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {
-	wrapper := m.handlers.GetOrInit(result.AppID)
+	wrapper := m.handlers.GetOrInit(result.Workload)
 
 	// Only one newHandler method runs in parallel per app.
 	// If there is an in-flight update, we are waiting for its results.
@@ -110,13 +110,13 @@ func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResu
 
 	// Create a new handler when the config changed (ETag), upstream URL changed, or E2B token changed.
 	// Only a hash is stored so raw secrets don't linger in the wrapper.
-	currentHash := handlerHash(m.upstreamManager.AppInfo(ctx, result.AppID))
+	currentHash := handlerHash(m.upstreamManager.AppInfo(ctx, result.Workload))
 	configETag := result.AppConfig.ETag()
 	if wrapper.needsRebuild(configETag, currentHash) {
 		if wrapper.cancel != nil {
 			wrapper.cancel(errors.New("configuration changed"))
 		}
-		wrapper.handler, wrapper.cancel = m.newHandler(ctx, result.AppConfig)
+		wrapper.handler, wrapper.cancel = m.newHandler(ctx, result.AppConfig, result.Workload)
 		wrapper.handlerHash = currentHash
 		wrapper.configETag = configETag
 	}
@@ -124,9 +124,9 @@ func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResu
 	return wrapper.handler
 }
 
-func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) (http.Handler, context.CancelCauseFunc) {
+func (m *Manager) newHandler(ctx context.Context, app api.AppConfig, workload k8sapp.WorkloadRef) (http.Handler, context.CancelCauseFunc) {
 	// Create upstream reverse proxy without authentication
-	appUpstream, err := m.upstreamManager.NewUpstream(ctx, app)
+	appUpstream, err := m.upstreamManager.NewUpstream(ctx, app, workload)
 	if err != nil {
 		return m.newErrorHandler(ctx, app, err), nil
 	}
@@ -140,7 +140,7 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig) (http.Handl
 	authHandlers := m.authProxyManager.NewHandlers(app, trackedUpstream)
 
 	// Create root handler for application
-	handler, err := newAppHandler(m, app, trackedUpstream, authHandlers)
+	handler, err := newAppHandler(m, app, workload, trackedUpstream, authHandlers)
 	if err != nil {
 		err = svcErrors.NewServiceUnavailableError(errors.NewNestedError(
 			errors.Errorf(`application "%s" has invalid configuration`, app.IdAndName()),
