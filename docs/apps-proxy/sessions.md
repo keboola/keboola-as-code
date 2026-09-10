@@ -311,6 +311,13 @@ minted immediately after every login.
 - **A deploy does not end a session.** The shutdown flush emits a heartbeat, not
   an end: the cookie survives the restart and the browser reconnects, so ending
   there would split one visit into as many sessions as there are deploys.
+- **The sweep is O(n) under an exclusive lock.** `evictBefore` walks every
+  entry holding the store's write lock, so it stalls all in-flight requests for
+  its duration — roughly 0.5 ms at 10 000 tracked sessions and 8.6 ms at
+  100 000, once every `sweepInterval` (5 min). Far from mattering at today's
+  volumes, but worth knowing before reaching for the obvious tuning knob:
+  shortening the interval makes it worse, not better. If it ever does matter,
+  snapshot the keys under a read lock and delete in batches, or shard the map.
 - **A session can be seen by more than one replica.** apps-proxy runs 2 replicas
   on production stacks with no session affinity, so consecutive requests of one
   session land on either of them. Everything a session needs is in the signed
