@@ -42,6 +42,7 @@ type Manager struct {
 	salt      string
 	store     *store
 	writer    *writer
+	metrics   *metrics
 }
 
 type dependencies interface {
@@ -81,7 +82,8 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 		return m
 	}
 
-	m.writer = newWriter(logger, newMetrics(d.Telemetry().Meter(), m.store.len), writerConfig{
+	m.metrics = newMetrics(d.Telemetry().Meter(), m.store.len)
+	m.writer = newWriter(logger, m.metrics, writerConfig{
 		url:         cfg.Sessions.StreamURL,
 		queueSize:   cfg.Sessions.QueueSize,
 		workers:     cfg.Sessions.Workers,

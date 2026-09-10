@@ -18,8 +18,9 @@ import (
 // which leaves no way to notice events being lost, or the in-memory store
 // growing without bound.
 type metrics struct {
-	sent    metric.Int64Counter
-	dropped metric.Int64Counter
+	sent         metric.Int64Counter
+	dropped      metric.Int64Counter
+	unattributed metric.Int64Counter
 }
 
 func newMetrics(meter telemetry.Meter, tracked func() int) *metrics {
@@ -44,6 +45,11 @@ func newMetrics(meter telemetry.Meter, tracked func() int) *metrics {
 		dropped: meter.IntCounter(
 			"keboola.go.appsproxy.sessions.events.dropped",
 			"Data app session events dropped without being sent, because the queue was full.",
+			"",
+		),
+		unattributed: meter.IntCounter(
+			"keboola.go.appsproxy.sessions.entries.unattributed",
+			"Session entries that held activity but no session to attribute it to, so it was lost.",
 			"",
 		),
 	}

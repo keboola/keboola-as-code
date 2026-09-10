@@ -38,6 +38,10 @@ func (m *Manager) activity(ctx context.Context, requests, wsFrames int) {
 	item, _ := m.store.getOrInit(s.ID, now)
 
 	item.lock.Lock()
+	// Set here too, not only in begin: an entry removed by a websocket close
+	// can be recreated by this path alone — two overlapping sockets on one
+	// session id — and an entry with no snapshot cannot be drained at all.
+	item.session = s
 	item.requests += requests
 	item.wsFrames += wsFrames
 	if now.Before(item.nextHeartbeatAfter) {
@@ -85,7 +89,7 @@ func (m *Manager) WebsocketClosed(ctx context.Context) {
 func (m *Manager) flushAll(ctx context.Context) {
 	flushed := 0
 	for _, item := range m.store.drainAll() {
-		if event, ok := m.drain(item); ok {
+		if event, ok := m.drain(ctx, item); ok {
 			m.writer.enqueue(ctx, event)
 			flushed++
 		}
@@ -98,13 +102,22 @@ func (m *Manager) flushAll(ctx context.Context) {
 // drain turns an entry's pending deltas into a heartbeat. Stamped at lastSeen,
 // not now: dating it at shutdown would stretch every open session by however
 // long the process stayed up.
-func (m *Manager) drain(item *entry) (Event, bool) {
+func (m *Manager) drain(ctx context.Context, item *entry) (Event, bool) {
 	item.lock.Lock()
 	defer item.lock.Unlock()
 
-	if item.session == nil || (item.requests == 0 && item.wsFrames == 0) {
+	if item.requests == 0 && item.wsFrames == 0 {
 		return Event{}, false
 	}
+
+	// Nothing to attribute the deltas to. Normal for an empty entry, a bug for
+	// one with activity on it, which is why it is counted rather than folded
+	// into the case above — this hid a lost-frames bug once already.
+	if item.session == nil {
+		m.metrics.unattributed.Add(ctx, 1)
+		return Event{}, false
+	}
+
 	return m.buildEvent(item.session, item, EventHeartbeat, item.lastSeen), true
 }
 
