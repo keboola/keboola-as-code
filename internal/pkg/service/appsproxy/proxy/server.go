@@ -199,7 +199,7 @@ func NewHandler(ctx context.Context, d dependencies.ServiceScope) http.Handler {
 		// Mandatory middleware when used in combination with newTracerProviderWrapper
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
-		appconfig.Middleware(d.AppConfigLoader(), d.Config().API.PublicURL.Host),
+		appconfig.Middleware(d.AppConfigLoader(), d.AppStateWatcher(), d.Config().API.PublicURL.Host),
 		middleware.Logger(d.Logger()),
 		middleware.OpenTelemetry(
 			newTracerProviderWrapper(d.Telemetry().TracerProvider()),
