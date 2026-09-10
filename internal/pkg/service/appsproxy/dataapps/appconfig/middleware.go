@@ -26,6 +26,11 @@ type AppConfigResult struct {
 	Err       error
 }
 
+// WorkloadResolver reports the workload that owns an exact hostname, if any.
+type WorkloadResolver interface {
+	ResolveHost(ctx context.Context, host string) (k8sapp.WorkloadRef, bool)
+}
+
 func AppConfigFromContext(ctx context.Context) AppConfigResult {
 	if appConfig, ok := ctx.Value(appConfigCtxKey).(AppConfigResult); ok {
 		return appConfig
@@ -33,10 +38,10 @@ func AppConfigFromContext(ctx context.Context) AppConfigResult {
 	return AppConfigResult{}
 }
 
-func Middleware(configLoader Loader, host string) middleware.Middleware {
+func Middleware(configLoader Loader, resolver WorkloadResolver, host string) middleware.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			workload, ok := resolveWorkload(req, host)
+			workload, ok := resolveWorkload(req, resolver, host)
 			if ok {
 				ctx := req.Context()
 				appID := workload.AppID
@@ -83,7 +88,21 @@ func Middleware(configLoader Loader, host string) middleware.Middleware {
 }
 
 // resolveWorkload picks the workload for the request hostname.
-func resolveWorkload(req *http.Request, host string) (k8sapp.WorkloadRef, bool) {
+//
+// A Sandbox that owns the exact hostname is authoritative and supplies the
+// appId from its own spec, so such a hostname does not have to contain one.
+// Everything else falls through to the unchanged App normalisation.
+func resolveWorkload(req *http.Request, resolver WorkloadResolver, host string) (k8sapp.WorkloadRef, bool) {
+	// parseAppID enforces this for the App path. The exact-hostname path needs
+	// it too, or a hostname indexed outside the proxy's own domain would route.
+	if !strings.HasSuffix(k8sapp.NormalizeHost(req.Host), "."+k8sapp.NormalizeHost(host)) {
+		return k8sapp.WorkloadRef{}, false
+	}
+
+	if ref, ok := resolver.ResolveHost(req.Context(), req.Host); ok {
+		return ref, true
+	}
+
 	appID, ok := parseAppID(req, host)
 	if !ok {
 		return k8sapp.WorkloadRef{}, false

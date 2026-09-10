@@ -2806,6 +2806,84 @@ func TestAppProxyRouter(t *testing.T) {
 		}
 	}
 
+	testCases = append(testCases, testCase{
+		// A draft Sandbox owns its own hostname under the same appId as its App:
+		// draft-abc-123.hub.keboola.local normalises to app "123", so the app
+		// config is loaded from the App while the route resolves to the Sandbox.
+		//
+		// The request is then redirected to the App's canonical host, because the
+		// canonical host and the auth cookie domain are both derived from the app
+		// config, not from the resolved workload. Whether a draft gets its own
+		// canonical host and session is an open design decision, so this pins the
+		// current behaviour rather than the intended one.
+		name: "draft-sandbox-hostname-redirects-to-app-host",
+		setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+			t.Helper()
+
+			// The App publishes its own public hostname, as the operator does when
+			// apps-proxy ingress is enabled.
+			appPatch := []byte(`{"spec":{"features":{"appsProxyIngress":{"targetPort":8888}}},"status":{"appsProxy":{"publicUrl":"https://public-123.hub.keboola.local"}}}`)
+			app, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+				t.Context(), "app-123", k8stypes.MergePatchType, appPatch, metav1.PatchOptions{},
+			)
+			require.NoError(t, err)
+
+			upstreamURL, found, err := unstructured.NestedString(app.Object, "status", "appsProxy", "upstreamUrl")
+			require.NoError(t, err)
+			require.True(t, found)
+
+			sandbox := &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": k8sapp.Group + "/" + k8sapp.SandboxVersion,
+					"kind":       "Sandbox",
+					"metadata": map[string]any{
+						"name":      "draft-abc",
+						"namespace": "keboola",
+					},
+					"spec": map[string]any{
+						"appId": "123",
+					},
+					"status": map[string]any{
+						"currentState": string(k8sapp.AppActualStateRunning),
+						"appsProxy": map[string]any{
+							"publicUrl":   "https://draft-abc-123.hub.keboola.local",
+							"upstreamUrl": upstreamURL,
+						},
+					},
+				},
+			}
+			_, err = fakeClient.Resource(k8sapp.SandboxGVR()).Namespace("keboola").Create(
+				t.Context(), sandbox, metav1.CreateOptions{},
+			)
+			require.NoError(t, err)
+
+			require.Eventually(t, func() bool {
+				ref, ok := watcher.ResolveHost(t.Context(), "draft-abc-123.hub.keboola.local")
+				return ok && ref.SandboxName == "draft-abc"
+			}, 5*time.Second, 50*time.Millisecond)
+		},
+		run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+			t.Helper()
+
+			ref, ok := watcher.ResolveHost(t.Context(), "draft-abc-123.hub.keboola.local")
+			require.True(t, ok)
+			assert.Equal(t, k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"}, ref)
+
+			noRedirectClient := *client
+			noRedirectClient.CheckRedirect = func(*http.Request, []*http.Request) error {
+				return http.ErrUseLastResponse
+			}
+
+			request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-abc-123.hub.keboola.local/", nil)
+			require.NoError(t, err)
+			response, err := noRedirectClient.Do(request)
+			require.NoError(t, err)
+			require.Equal(t, http.StatusPermanentRedirect, response.StatusCode)
+			assert.Equal(t, "https://public-123.hub.keboola.local/", response.Header.Get("Location"))
+		},
+		expectedNotifications: map[string]int{},
+	})
+
 	testCases = append(
 		testCases,
 		privateAppTestCaseFactory(http.MethodGet),
