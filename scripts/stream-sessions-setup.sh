@@ -51,6 +51,25 @@ SINK_NAME="${SINK_NAME:-Session Events}"
 TABLE_ID="${TABLE_ID:-in.c-data-apps.sessions}"
 STATE_FILE="${STATE_FILE:-./stream-sessions-state.env}"
 
+# The state file holds the ingest URL, and that URL carries the write secret for
+# the target project. Landing it in a git working tree that does not ignore it
+# is how it gets committed — which has happened, with a production secret. Refuse
+# instead of warning: by the time anyone reads a warning it is already staged.
+guard_state_file() {
+  local dir
+  dir=$(dirname -- "${STATE_FILE}")
+  git -C "${dir}" rev-parse --is-inside-work-tree &>/dev/null || return 0
+  git -C "${dir}" check-ignore -q -- "${STATE_FILE}" && return 0
+
+  echo "  ✗ ${STATE_FILE} would be written into a git repository that does not ignore it." >&2
+  echo "      Its ingest URL contains the write secret for the target project." >&2
+  echo "      Either add the file to .gitignore, or point it somewhere else:" >&2
+  echo "        STATE_FILE=~/stream-sessions-state.env bash scripts/stream-sessions-setup.sh" >&2
+  echo "      Set ALLOW_STATE_IN_REPO=true to override." >&2
+  exit 1
+}
+[[ "${ALLOW_STATE_IN_REPO:-}" == "true" ]] || guard_state_file
+
 STREAM_API="https://${STREAM_API_HOST}/v1"
 
 pretty() { jq . 2>/dev/null || cat; }

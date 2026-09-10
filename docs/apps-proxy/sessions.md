@@ -157,8 +157,23 @@ literal — unlike the Storage API it rejects `0`, and does so with a misleading
 "Branch id:\"0\" was not found".
 
 The script is idempotent and resumable: state goes to
-`./stream-sessions-state.env` (mode 600 — the ingest URL embeds the write
-secret) after each step, and re-running it picks up where it stopped. It ends by
+`./stream-sessions-state.env` after each step, and re-running it picks up where
+it stopped.
+
+**That file is a secret.** The ingest URL in it carries the write secret for the
+target project — anyone holding the URL can append rows to the table. It is
+written mode 600, it is in `.gitignore`, and the script refuses to run if it
+would land in a git working tree that does not ignore it (`ALLOW_STATE_IN_REPO=true`
+overrides). Keep it out of tickets, chats and PR descriptions too; if it does
+get out, rotate rather than delete:
+
+```bash
+curl -X POST -H "X-StorageApi-Token: $KEBOOLA_TOKEN" \
+  "$STREAM_API/v1/branches/default/sources/data-app-sessions/rotate-secret"
+```
+
+Rotating issues a new URL, so every stack using the old one needs its
+`sessions.streamUrl` updated with it. It ends by
 sending one test event with `app_id = setup-script`; filter that out when
 querying. `CLEANUP=true` deletes the source again.
 
