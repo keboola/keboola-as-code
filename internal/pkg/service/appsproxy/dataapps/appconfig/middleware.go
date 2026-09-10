@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 )
@@ -20,6 +21,7 @@ const (
 
 type AppConfigResult struct {
 	AppID     api.AppID
+	Workload  k8sapp.WorkloadRef
 	AppConfig api.AppConfig
 	Err       error
 }
@@ -34,13 +36,15 @@ func AppConfigFromContext(ctx context.Context) AppConfigResult {
 func Middleware(configLoader Loader, host string) middleware.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			appID, ok := parseAppID(req, host)
+			workload, ok := resolveWorkload(req, host)
 			if ok {
 				ctx := req.Context()
+				appID := workload.AppID
 
 				appConfig, err := configLoader.GetConfig(ctx, appID)
 				result := AppConfigResult{
 					AppID:     appID,
+					Workload:  workload,
 					AppConfig: appConfig,
 					Err:       err,
 				}
@@ -76,6 +80,15 @@ func Middleware(configLoader Loader, host string) middleware.Middleware {
 			next.ServeHTTP(w, req)
 		})
 	}
+}
+
+// resolveWorkload picks the workload for the request hostname.
+func resolveWorkload(req *http.Request, host string) (k8sapp.WorkloadRef, bool) {
+	appID, ok := parseAppID(req, host)
+	if !ok {
+		return k8sapp.WorkloadRef{}, false
+	}
+	return k8sapp.WorkloadRef{AppID: appID}, true
 }
 
 func parseAppID(req *http.Request, host string) (api.AppID, bool) {
