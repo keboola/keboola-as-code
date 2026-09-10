@@ -179,6 +179,11 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 
 	// Route internal URLs if there is at least one auth handler
 	if strings.HasPrefix(req.URL.Path, config.InternalPrefix) && h.allAuthHandlers != nil {
+		// A sign-out ends the session explicitly. Internal paths never reach
+		// the upstream, so this cannot be handled by the sessions middleware.
+		if req.URL.Path == selector.SignOutPath {
+			h.manager.sessionsManager.SignOut(w, req, h.app)
+		}
 		return h.allAuthHandlers.ServeHTTPOrError(w, req)
 	}
 

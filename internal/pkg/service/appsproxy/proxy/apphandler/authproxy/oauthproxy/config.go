@@ -70,6 +70,9 @@ func proxyConfig(
 	v.Session = options.SessionOptions{Type: options.CookieSessionStoreType}
 	v.EmailDomains = []string{"*"}
 	v.InjectRequestHeaders = []options.Header{
+		// New, and the only one session tracking records.
+		headerFromClaim("X-Kbc-User-Id", userIDClaim(proxyProvider.Type)),
+		// Kept: data apps already read these, keboola_streamlit among them.
 		headerFromClaim("X-Kbc-User-Name", "name"),
 		headerFromClaim("X-Kbc-User-Email", options.OIDCEmailClaim),
 		headerFromClaim("X-Kbc-User-Roles", options.OIDCGroupsClaim),
@@ -100,6 +103,32 @@ func generateCookieSecret(cfg config.Config, app api.AppConfig, providerID provi
 
 	// Result must be 32 chars, 2 hex chars for each byte
 	return fmt.Sprintf("%x", bs[:16]), nil
+}
+
+// userIDClaim is the claim that identifies the user for a provider.
+//
+// The type comes from the provider options actually handed to oauth2-proxy,
+// because that is what decides which provider implementation runs and so what
+// the claim resolves to.
+//
+// GitHub issues no ID token, so nothing populates a subject claim for it and
+// "sub" resolves to nothing at all. Its account login is the closest
+// equivalent — the fork's GitHub provider puts it in the session user field.
+//
+// Asking for "user" is safe: the fork fills that field from
+// ProviderData.UserClaim, which defaults to "sub" and is never set from our
+// config, and the GitLab provider overwrites it with the account nickname. No
+// provider puts an e-mail address there. This has nothing to do with the
+// OIDCConfig.UserIDClaim option, whose only remaining effect is a back-compat
+// override of the e-mail claim.
+//
+// A login is weaker than a subject: its owner can change it, and a released
+// login can be taken over by another account.
+func userIDClaim(providerType options.ProviderType) string {
+	if providerType == options.GitHubProvider {
+		return "user"
+	}
+	return "sub"
 }
 
 func headerFromClaim(header, claim string) options.Header {

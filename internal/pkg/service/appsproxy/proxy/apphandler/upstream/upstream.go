@@ -20,6 +20,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/streamlit"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream/wsactivity"
@@ -46,6 +48,7 @@ type Manager struct {
 	configLoader appconfig.Loader
 	notify       *notify.Manager
 	wakeup       *wakeup.Manager
+	sessions     *sessions.Manager
 	stateWatcher *k8sapp.StateWatcher
 	config       config.Config
 }
@@ -69,6 +72,7 @@ type dependencies interface {
 	AppConfigLoader() appconfig.Loader
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
+	SessionsManager() *sessions.Manager
 	AppStateWatcher() *k8sapp.StateWatcher
 	Config() config.Config
 }
@@ -83,6 +87,7 @@ func NewManager(d dependencies) *Manager {
 		configLoader: d.AppConfigLoader(),
 		notify:       d.NotifyManager(),
 		wakeup:       d.WakeupManager(),
+		sessions:     d.SessionsManager(),
 		stateWatcher: d.AppStateWatcher(),
 		config:       d.Config(),
 	}
@@ -143,7 +148,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
 		case !appInfo.AutoRestartEnabled:
 			u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
-		case isFrameworkBackgroundPoll(req.URL.Path):
+		case streamlit.IsBackgroundPoll(req.URL.Path):
 			// Auto-suspended app + framework background poll (e.g. Streamlit's
 			// /_stcore/health emitted by the frontend on its WS reconnect
 			// cycle while the tab stays open). Triggering a wakeup here would
@@ -169,8 +174,10 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 		return nil
 	}
 
-	// Difference between regular and websocket request
-	if strings.EqualFold(req.Header.Get("Connection"), "upgrade") && req.Header.Get("Upgrade") == "websocket" {
+	// Difference between regular and websocket request.
+	// Shared with the sessions middleware, which sizes the session cookie
+	// deadline to cover a connection routed here.
+	if sessions.IsWebsocketUpgrade(req) {
 		return u.wsHandler.ServeHTTPOrError(rw, req)
 	}
 	return u.handler.ServeHTTPOrError(rw, req)
@@ -331,7 +338,16 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 		// uses context.WithoutCancel, so the in-flight call survives the WS
 		// timeout and any per-request cancellation.
 		reqCtx := res.Request.Context()
-		res.Body = wsactivity.Wrap(rwc, func() { u.notify(reqCtx) })
+		wrapped := wsactivity.Wrap(rwc, func() {
+			u.notify(reqCtx)
+			u.manager.sessions.ActivityWS(reqCtx)
+		})
+		// A websocket close is the most reliable end-of-session signal a
+		// Streamlit app produces: the app does virtually all of its work over
+		// this one connection.
+		res.Body = onClose(wrapped, func() {
+			u.manager.sessions.WebsocketClosed(reqCtx)
+		})
 		return nil
 	}
 
@@ -364,14 +380,15 @@ func (u *AppUpstream) trace() chain.Middleware {
 
 			// Trace connection events. Background polls emitted by data-app
 			// frontends independent of user interaction (see
-			// isFrameworkBackgroundPoll) are not considered activity and do
+			// streamlit.IsBackgroundPoll) are not considered activity and do
 			// not bump lastRequestTimestamp.
 			reqCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
 				GotConn: func(connInfo httptrace.GotConnInfo) {
-					if isFrameworkBackgroundPoll(reqPath) {
+					if streamlit.IsBackgroundPoll(reqPath) {
 						return
 					}
 					u.notify(ctx)
+					u.manager.sessions.Activity(ctx)
 				},
 			})
 
@@ -417,23 +434,20 @@ func (u *AppUpstream) Cancel(err error) {
 	}
 }
 
-// isFrameworkBackgroundPoll reports whether the given URL path is a known
-// data-app frontend background-poll endpoint that fires independently of user
-// interaction.
-//
-// Currently covers Streamlit's /_stcore/health and /_stcore/host-config. These
-// are emitted on every WebSocket (re)connect — including the periodic ~20 min
-// reconnect cycle imposed by an external idle timeout — and would otherwise
-// either bump lastRequestTimestamp on a Running app (defeating auto-suspend)
-// or wake a Suspended one (defeating it again). Apps-proxy treats them as
-// non-activity: notify is skipped on a Running app and the request is rejected
-// with 503 Retry-After on a Suspended one, requiring the user to perform a
-// meaningful action (refresh, click into the UI) to wake the app.
-func isFrameworkBackgroundPoll(path string) bool {
-	switch path {
-	case "/_stcore/health", "/_stcore/host-config":
-		return true
-	default:
-		return false
-	}
+// onCloseConn invokes fn once, after the wrapped connection is closed.
+type onCloseConn struct {
+	io.ReadWriteCloser
+	once sync.Once
+	fn   func()
+}
+
+// onClose wraps rwc so that fn runs when the connection is closed.
+func onClose(rwc io.ReadWriteCloser, fn func()) io.ReadWriteCloser {
+	return &onCloseConn{ReadWriteCloser: rwc, fn: fn}
+}
+
+func (c *onCloseConn) Close() error {
+	err := c.ReadWriteCloser.Close()
+	c.once.Do(c.fn)
+	return err
 }

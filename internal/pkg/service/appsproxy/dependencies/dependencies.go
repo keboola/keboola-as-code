@@ -30,6 +30,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
@@ -83,6 +84,7 @@ type ServiceScope interface {
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
 	AppStateWatcher() *k8sapp.StateWatcher
+	SessionsManager() *sessions.Manager
 }
 
 type Mocked interface {
@@ -105,6 +107,7 @@ type serviceScope struct {
 	notifyManager     *notify.Manager
 	wakeupManager     *wakeup.Manager
 	appStateWatcher   *k8sapp.StateWatcher
+	sessionsManager   *sessions.Manager
 }
 
 type parentScopes interface {
@@ -215,6 +218,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.appStateWatcher = k8sapp.NewStateWatcher(d, k8sClient, cfg.K8s.AppsNamespace)
 
 	d.wakeupManager = wakeup.NewManager(d)
+	d.sessionsManager = sessions.NewManager(ctx, d)
 	d.authProxyManager = authproxy.NewManager(d)
 	d.upstreamManager = upstream.NewManager(d)
 	d.appHandlers, err = apphandler.NewManager(ctx, d)
@@ -267,4 +271,8 @@ func (v *serviceScope) WakeupManager() *wakeup.Manager {
 
 func (v *serviceScope) AppStateWatcher() *k8sapp.StateWatcher {
 	return v.appStateWatcher
+}
+
+func (v *serviceScope) SessionsManager() *sessions.Manager {
+	return v.sessionsManager
 }

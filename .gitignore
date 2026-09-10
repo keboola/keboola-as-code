@@ -56,3 +56,9 @@ vendor/*
 # Certificates
 /ca
 /certs
+
+# Stream session-tracking state (scripts/stream-sessions-setup.sh).
+# The ingest URL it holds carries the write secret for the target project, so
+# this must never be committed. Matched at any depth, since the script writes
+# it into whatever directory it runs from.
+stream-sessions-state.env

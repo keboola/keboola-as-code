@@ -33,6 +33,11 @@ func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 				Default: []string{"select_account"},
 			},
 		},
+		// The subject claim identifies the user without naming them. It is
+		// stable across e-mail and display-name changes, which the email claim
+		// used as the user id is not. Only reachable when the provider issues
+		// an ID token, so GitHub — which does not — yields nothing.
+		AdditionalClaims: []string{"sub"},
 		OIDCConfig: proxyOptions.OIDCOptions{
 			IssuerURL:      v.IssuerURL,
 			EmailClaim:     proxyOptions.OIDCEmailClaim,
