@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/frameworkpoll"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/streamlit"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -192,7 +192,7 @@ func (m *Manager) Middleware(app api.AppConfig) chain.Middleware {
 			// A frontend background poll is not user activity, so it must not
 			// start or extend a session either — otherwise a forgotten browser
 			// tab would keep producing sessions for an app nobody is watching.
-			if m.enabled && !frameworkpoll.Is(req.URL.Path) {
+			if m.enabled && !streamlit.IsBackgroundPoll(req.URL.Path) {
 				if s := m.begin(rw, req, app, key); s != nil {
 					req = req.WithContext(contextWith(req.Context(), s))
 				}

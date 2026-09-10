@@ -1,4 +1,4 @@
-package frameworkpoll
+package streamlit
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIs(t *testing.T) {
+func TestIsBackgroundPoll(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		path string
@@ -35,7 +35,7 @@ func TestIs(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.want, Is(tc.path))
+			assert.Equal(t, tc.want, IsBackgroundPoll(tc.path))
 		})
 	}
 }

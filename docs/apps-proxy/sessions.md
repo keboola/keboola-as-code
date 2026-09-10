@@ -343,7 +343,7 @@ minted immediately after every login.
   `/api/status` every few seconds looks exactly like a working user, so an
   abandoned tab reports a session up to the 12 h cap. This is the same blind
   spot auto-suspend already has — that poll keeps the app running too — so the
-  fix, if one is wanted, belongs in `frameworkpoll` and benefits both.
+  fix, if one is wanted, belongs in `dataapps/streamlit` and benefits both.
 - **Only a navigation or a websocket handshake starts a session.** A page load
   fires the document plus its subresources at once, none of them yet carrying a
   cookie, so letting any request mint one reported a single visit as several —
@@ -375,7 +375,7 @@ minted immediately after every login.
 - **Activity excludes framework background polls.** `/_stcore/health` and
   `/_stcore/host-config` fire on every Streamlit websocket reconnect
   independently of the user, and are already excluded from the auto-suspend
-  notification. Session activity reuses that same rule (`frameworkpoll.Is`) so
+  notification. Session activity reuses that same rule (`streamlit.IsBackgroundPoll`) so
   there is exactly one definition of "the user did something".
 
 ---
@@ -411,7 +411,7 @@ is wrong.
 | Middleware wired between auth and upstream | `proxy/apphandler/manager.go` |
 | Auth provider stamp | `proxy/apphandler/authproxy/manager.go` |
 | HTTP + websocket activity, websocket close | `proxy/apphandler/upstream/upstream.go` |
-| Background-poll definition (shared with auto-suspend) | `dataapps/frameworkpoll/frameworkpoll.go` |
+| Background-poll definition (shared with auto-suspend) | `dataapps/streamlit/streamlit.go` |
 | Sign-out end | `proxy/apphandler/apphandler.go` |
 | Metrics | `dataapps/sessions/metrics.go` |
 | Source and sink provisioning | `scripts/stream-sessions-setup.sh` |

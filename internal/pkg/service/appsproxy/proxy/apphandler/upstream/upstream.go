@@ -18,10 +18,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/frameworkpoll"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/streamlit"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream/wsactivity"
@@ -148,7 +148,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
 		case !appInfo.AutoRestartEnabled:
 			u.manager.pageWriter.WriteRestartDisabledPage(rw, req, u.app)
-		case frameworkpoll.Is(req.URL.Path):
+		case streamlit.IsBackgroundPoll(req.URL.Path):
 			// Auto-suspended app + framework background poll (e.g. Streamlit's
 			// /_stcore/health emitted by the frontend on its WS reconnect
 			// cycle while the tab stays open). Triggering a wakeup here would
@@ -380,11 +380,11 @@ func (u *AppUpstream) trace() chain.Middleware {
 
 			// Trace connection events. Background polls emitted by data-app
 			// frontends independent of user interaction (see
-			// frameworkpoll.Is) are not considered activity and do
+			// streamlit.IsBackgroundPoll) are not considered activity and do
 			// not bump lastRequestTimestamp.
 			reqCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
 				GotConn: func(connInfo httptrace.GotConnInfo) {
-					if frameworkpoll.Is(reqPath) {
+					if streamlit.IsBackgroundPoll(reqPath) {
 						return
 					}
 					u.notify(ctx)
