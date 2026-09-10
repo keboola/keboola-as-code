@@ -23,6 +23,12 @@ const (
 	// sweepInterval is how often stale session entries are evicted from memory.
 	sweepInterval = 5 * time.Minute
 
+	// userIDHeader carries the provider's user id from oauth2-proxy to this
+	// package. It is injected for that purpose and removed again before the
+	// request reaches the app, so it is an internal channel rather than part of
+	// what a data app sees.
+	userIDHeader = "X-Kbc-User-Id"
+
 	// websocketGrace is added to the upstream websocket timeout when a session
 	// cookie is issued on a handshake, covering the reconnect that follows the
 	// connection being dropped, plus any clock skew.
@@ -176,23 +182,31 @@ func authProviderFromContext(ctx context.Context) (string, string) {
 // session into the request context. It sits between authentication and the
 // upstream, so the X-Kbc-User-* headers are already present.
 func (m *Manager) Middleware(app api.AppConfig) chain.Middleware {
-	if !m.enabled {
-		return func(next chain.Handler) chain.Handler { return next }
+	var key []byte
+	if m.enabled {
+		key = signingKey(app.ID, m.salt)
 	}
-
-	key := signingKey(app.ID, m.salt)
 
 	return func(next chain.Handler) chain.Handler {
 		return chain.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) error {
 			// A frontend background poll is not user activity, so it must not
 			// start or extend a session either — otherwise a forgotten browser
 			// tab would keep producing sessions for an app nobody is watching.
-			if frameworkpoll.Is(req.URL.Path) {
-				return next.ServeHTTPOrError(rw, req)
+			if m.enabled && !frameworkpoll.Is(req.URL.Path) {
+				if s := m.begin(rw, req, app, key); s != nil {
+					req = req.WithContext(contextWith(req.Context(), s))
+				}
 			}
-			if s := m.begin(rw, req, app, key); s != nil {
-				req = req.WithContext(contextWith(req.Context(), s))
-			}
+
+			// Strip it here, having read it above. The header exists to carry
+			// the claim from oauth2-proxy to this package, and the app has no
+			// business seeing a header appear because a stack turned tracking
+			// on. The other X-Kbc-User-* headers stay: apps already read them.
+			//
+			// Unconditional, including when tracking is disabled, so what an
+			// app sees does not depend on a per-stack setting.
+			req.Header.Del(userIDHeader)
+
 			return next.ServeHTTPOrError(rw, req)
 		})
 	}
@@ -250,7 +264,7 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 		projectID:        app.ProjectID,
 		authProviderID:   providerID,
 		authProviderType: providerType,
-		providerUserID:   req.Header.Get("X-Kbc-User-Id"),
+		providerUserID:   req.Header.Get(userIDHeader),
 		userAgent:        req.Header.Get("User-Agent"),
 	}
 

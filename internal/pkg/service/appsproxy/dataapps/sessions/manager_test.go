@@ -972,3 +972,64 @@ func TestManager_AtMostOneSessionEndPerSession(t *testing.T) {
 	signOut(nil)
 	expectNoEvent(t, events)
 }
+
+func TestManager_UserIDHeaderNeverReachesTheApp(t *testing.T) {
+	t.Parallel()
+
+	// oauth2-proxy injects X-Kbc-User-Id so the claim can reach this package.
+	// The app must not see it: a new header appearing on every authenticated
+	// request because a stack switched tracking on is a contract change, and
+	// for GitHub it would carry an account login rather than a subject claim.
+	//
+	// The other X-Kbc-User-* headers stay — apps already read them,
+	// keboola_streamlit among them.
+	headers := map[string]string{
+		"X-Kbc-User-Id":    "subject-1",
+		"X-Kbc-User-Email": "someone@example.com",
+		"X-Kbc-User-Name":  "Someone",
+		"X-Kbc-User-Roles": "admin",
+	}
+
+	// Same behaviour with tracking off, so what the app sees does not depend on
+	// whether a stack configured a Stream URL.
+	for _, tc := range []struct {
+		name    string
+		enabled bool
+	}{
+		{"tracking on", true},
+		{"tracking off", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			streamURL := ""
+			if tc.enabled {
+				streamURL, _ = streamServer(t)
+			}
+			m, _ := newManager(t, streamURL)
+
+			var seen http.Header
+			call(t, m, func(req *http.Request) { seen = req.Header.Clone() }, nil, headers)
+
+			assert.Empty(t, seen.Get("X-Kbc-User-Id"), "the app must not see the user id header")
+			assert.Equal(t, "someone@example.com", seen.Get("X-Kbc-User-Email"))
+			assert.Equal(t, "Someone", seen.Get("X-Kbc-User-Name"))
+			assert.Equal(t, "admin", seen.Get("X-Kbc-User-Roles"))
+		})
+	}
+}
+
+func TestManager_IdentityIsStillRecordedAfterStripping(t *testing.T) {
+	t.Parallel()
+
+	// Stripping happens after begin has read it, so the event still carries
+	// the identity — that is the whole point of the ordering.
+	streamURL, events := streamServer(t)
+	m, _ := newManager(t, streamURL)
+
+	call(t, m, nil, nil, map[string]string{"X-Kbc-User-Id": "subject-1"})
+
+	event := recvEvent(t, events)
+	assert.Equal(t, sessions.EventSessionStart, event.EventType)
+	assert.Equal(t, "subject-1", event.ProviderUserID)
+}
