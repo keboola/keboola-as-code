@@ -10,7 +10,6 @@ import (
 	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 )
@@ -23,7 +22,7 @@ type Manager struct {
 	clock    clockwork.Clock
 	logger   log.Logger
 	watcher  *k8sapp.StateWatcher
-	stateMap *syncmap.SyncMap[api.AppID, state]
+	stateMap *syncmap.SyncMap[k8sapp.WorkloadRef, state]
 }
 
 type state struct {
@@ -42,16 +41,16 @@ func NewManager(d dependencies) *Manager {
 		clock:   d.Clock(),
 		logger:  d.Logger(),
 		watcher: d.AppStateWatcher(),
-		stateMap: syncmap.New[api.AppID, state](func(api.AppID) *state {
+		stateMap: syncmap.New[k8sapp.WorkloadRef, state](func(k8sapp.WorkloadRef) *state {
 			return &state{}
 		}),
 	}
 }
 
-func (l *Manager) Wakeup(ctx context.Context, appID api.AppID) error {
-	item := l.stateMap.GetOrInit(appID)
+func (l *Manager) Wakeup(ctx context.Context, ref k8sapp.WorkloadRef) error {
+	item := l.stateMap.GetOrInit(ref)
 
-	// Serialize per-app wakeups to make the rate-limit check atomic.
+	// Serialize per-workload wakeups to make the rate-limit check atomic.
 	item.lock.Lock()
 	defer item.lock.Unlock()
 
@@ -62,8 +61,8 @@ func (l *Manager) Wakeup(ctx context.Context, appID api.AppID) error {
 
 	item.nextRequestAfter = now.Add(Interval)
 
-	if err := l.watcher.WakeupApp(ctx, appID); err != nil {
-		l.logger.Errorf(ctx, `wakeup failed for app "%s": %s`, appID, err)
+	if err := l.watcher.Wakeup(ctx, ref); err != nil {
+		l.logger.Errorf(ctx, `wakeup failed for workload "%s": %s`, ref, err)
 		return err
 	}
 	return nil

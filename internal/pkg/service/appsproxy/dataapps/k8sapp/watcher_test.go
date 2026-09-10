@@ -17,7 +17,6 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 )
@@ -32,7 +31,11 @@ type watcherDeps struct {
 
 func newTestDeps(t *testing.T) *watcherDeps {
 	t.Helper()
-	logger := log.NewNopLogger()
+	return newTestDepsWithLogger(t, log.NewNopLogger())
+}
+
+func newTestDepsWithLogger(t *testing.T, logger log.Logger) *watcherDeps {
+	t.Helper()
 	proc := servicectx.New(servicectx.WithLogger(logger), servicectx.WithoutSignals())
 	t.Cleanup(func() {
 		proc.Shutdown(context.Background(), nil)
@@ -44,12 +47,13 @@ func newTestDeps(t *testing.T) *watcherDeps {
 func (d *watcherDeps) Logger() log.Logger           { return d.logger }
 func (d *watcherDeps) Process() *servicectx.Process { return d.proc }
 
-// newFakeClient creates a fake dynamic client with the App and Secret list kinds registered.
+// newFakeClient creates a fake dynamic client with the App, Sandbox and Secret list kinds registered.
 func newFakeClient() *k8sfake.FakeDynamicClient {
 	scheme := runtime.NewScheme()
 	return k8sfake.NewSimpleDynamicClientWithCustomListKinds(scheme, map[schema.GroupVersionResource]string{
-		k8sapp.AppGVR():    "AppList",
-		k8sapp.SecretGVR(): "SecretList",
+		k8sapp.AppGVR():     "AppList",
+		k8sapp.SandboxGVR(): "SandboxList",
+		k8sapp.SecretGVR():  "SecretList",
 	})
 }
 
@@ -86,7 +90,7 @@ func TestStateWatcher_GetState_UnknownWhenEmpty(t *testing.T) {
 	fakeClient := newFakeClient()
 	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
 
-	info, ok := watcher.GetState(t.Context(), api.AppID("app-123"))
+	info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
 	assert.False(t, ok)
 	assert.Empty(t, info.ActualState)
 }
@@ -107,12 +111,12 @@ func TestStateWatcher_GetState_AfterCacheSync(t *testing.T) {
 	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
 
 	assert.Eventually(t, func() bool {
-		info, ok := watcher.GetState(t.Context(), api.AppID("app-123"))
+		info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
 		return ok && info.ActualState == k8sapp.AppActualStateStopped
 	}, 5*time.Second, 50*time.Millisecond)
 }
 
-func TestStateWatcher_WakeupApp(t *testing.T) {
+func TestStateWatcher_Wakeup(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -128,14 +132,14 @@ func TestStateWatcher_WakeupApp(t *testing.T) {
 
 	// Wait for the informer to cache the object.
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), api.AppID("app-123"))
+		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
 	// Clear prior actions (list/watch from informer startup).
 	fakeClient.ClearActions()
 
-	err = watcher.WakeupApp(t.Context(), api.AppID("app-123"))
+	err = watcher.Wakeup(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
 	require.NoError(t, err)
 
 	// Verify that a merge-patch action targeting App CRDs was recorded.
@@ -148,14 +152,14 @@ func TestStateWatcher_WakeupApp(t *testing.T) {
 	assert.Contains(t, string(pa.GetPatch()), `"state":"Running"`)
 }
 
-func TestStateWatcher_WakeupApp_NoOpWhenUnknown(t *testing.T) {
+func TestStateWatcher_Wakeup_NoOpWhenUnknown(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
 	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
 
-	// App not in K8s cache — WakeupApp should be a no-op.
-	err := watcher.WakeupApp(t.Context(), api.AppID("app-unknown"))
+	// App not in K8s cache — Wakeup should be a no-op.
+	err := watcher.Wakeup(t.Context(), k8sapp.WorkloadRef{AppID: "app-unknown"})
 	require.NoError(t, err)
 
 	for _, a := range fakeClient.Actions() {
@@ -180,7 +184,7 @@ func TestStateWatcher_GetState_UpstreamTarget(t *testing.T) {
 	var info k8sapp.AppInfo
 	assert.Eventually(t, func() bool {
 		var ok bool
-		info, ok = watcher.GetState(t.Context(), api.AppID("app-123"))
+		info, ok = watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
 		return ok && info.UpstreamTarget != nil
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -205,11 +209,11 @@ func TestStateWatcher_GetState_UpstreamTarget_AbsentWhenMissing(t *testing.T) {
 	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
 
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), api.AppID("app-123"))
+		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
-	info, ok := watcher.GetState(t.Context(), api.AppID("app-123"))
+	info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
 	require.True(t, ok)
 	assert.Nil(t, info.UpstreamTarget)
 }
@@ -271,7 +275,7 @@ func TestStateWatcher_GetState_E2BAccessToken(t *testing.T) {
 	var info k8sapp.AppInfo
 	assert.Eventually(t, func() bool {
 		var ok bool
-		info, ok = watcher.GetState(t.Context(), api.AppID("app-e2b"))
+		info, ok = watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-e2b"})
 		return ok && info.E2BAccessToken != ""
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -294,11 +298,11 @@ func TestStateWatcher_GetState_E2BAccessToken_MissingSecret(t *testing.T) {
 	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
 
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), api.AppID("app-e2b"))
+		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-e2b"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
-	info, ok := watcher.GetState(t.Context(), api.AppID("app-e2b"))
+	info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-e2b"})
 	require.True(t, ok)
 	assert.Empty(t, info.E2BAccessToken)
 }
@@ -319,11 +323,11 @@ func TestStateWatcher_GetState_NonE2BApp_NoToken(t *testing.T) {
 	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
 
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), api.AppID("app-regular"))
+		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-regular"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
-	info, ok := watcher.GetState(t.Context(), api.AppID("app-regular"))
+	info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-regular"})
 	require.True(t, ok)
 	assert.Empty(t, info.E2BAccessToken)
 }
