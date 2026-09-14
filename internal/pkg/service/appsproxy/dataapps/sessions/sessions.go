@@ -75,12 +75,22 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 		store:     newStore(),
 	}
 
-	// Registered before any of the checks below can turn tracking off, and
-	// read through m rather than captured as a fixed value, so a stack that
-	// goes dark because a required secret is missing shows up as this gauge
-	// reading 0 rather than the rest of *metrics simply not existing — which
-	// on a dashboard looks identical to an ordinary quiet period.
-	registerEnabledGauge(d.Telemetry().Meter(), func() bool { return m.enabled })
+	// Registered on every return path below, including the ones that turn
+	// tracking off, so a stack going dark because a required secret is
+	// missing shows up as this gauge reading 0 rather than the rest of
+	// *metrics simply not existing — which on a dashboard looks identical to
+	// an ordinary quiet period.
+	//
+	// Deferred rather than called here directly: m.enabled is still being
+	// written below (the salt and hash-key guards can flip it to false), and
+	// the meter invokes this callback from the metric reader's own goroutine,
+	// with nothing else synchronizing the two — an unsynchronized read/write
+	// pair across goroutines is a data race regardless of how narrow the
+	// window is. A defer runs after whichever return path's writes to
+	// m.enabled are done, and registering the instrument itself synchronizes
+	// with the SDK, so the collector goroutine can only ever observe the
+	// field's final value.
+	defer func() { registerEnabledGauge(d.Telemetry().Meter(), func() bool { return m.enabled }) }()
 
 	if !m.enabled {
 		logger.Info(ctx, "session tracking is disabled, no stream url configured")
