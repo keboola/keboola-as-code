@@ -10,7 +10,7 @@ triggers the deployment in [keboola/kbc-stacks](https://github.com/keboola/kbc-s
 
 | Tag | Image built & pushed | Deployment triggered |
 |---|---|---|
-| `production-apps-proxy-v<X.Y.Z>` | yes | yes — all stacks, dev and prod |
+| `production-apps-proxy-v<X.Y.Z>` | yes | yes — two waves, see [Waved Rollout](#waved-rollout) |
 | `canary-<name>-apps-proxy-v<...>` | yes | yes — canary stacks only |
 | `dev-apps-proxy-v<...>` | yes | **no** — image is pushed, nothing is deployed |
 
@@ -34,8 +34,29 @@ Version numbers follow SemVer against the previous `production-apps-proxy-v*` ta
    and pushes it to AWS ECR, Azure ACR and GCP GAR via the
    [push-image-aws-azure-gcp](../../.github/actions/push-image-aws-azure-gcp) action.
 4. **Trigger image tag update** — skipped for `dev-*` tags. Otherwise it dispatches
-   `update-image-tag.yaml` in `kbc-stacks` with `helm-chart: apps-proxy`, which opens and
-   auto-merges a PR updating `tag.yaml`. ArgoCD picks the change up within 2–3 minutes.
+   `update-image-tag.yaml` in `kbc-stacks` with `helm-chart: apps-proxy`, which opens the
+   `tag.yaml` update PRs. ArgoCD picks up each merged PR within 2–3 minutes.
+
+## Waved Rollout
+
+A `production-*` tag does **not** deploy everywhere at once. `update-image-tag.yaml` applies
+the `standard` two-wave dev→prod strategy, which since ST-4131 is the universal default for
+every app — you do not opt in, and the legacy `automerge` / `multi-stage` inputs are ignored.
+
+| Wave | Stacks | Merged by |
+|---|---|---|
+| `release:wave:0` | dev + testing (`dev-keboola-aws-eu-west-1`, `dev-keboola-gcp-us-central1`, `kbc-testing-azure-east-us-2`) | automatically |
+| `release:wave:1` | all production stacks (`kbc-eu-central-1`, `kbc-us-east-1`, `com-keboola-*`, `cloud-keboola-*`) | **the promoter or a human** |
+
+Wave 0 merges on its own and deploys to dev. Wave 1 is opened pre-approved but is never
+auto-merged — a production release is not finished until somebody merges the wave 1 PR.
+Verify on the dev stacks first, then merge it.
+
+Find both PRs with the "All wave PRs of this release" link in the PR body, or:
+
+```shell
+gh search prs --repo keboola/kbc-stacks "apps-proxy@production-apps-proxy-v<X.Y.Z>"
+```
 
 ## Releasing
 
@@ -84,6 +105,8 @@ Then check that the deployment landed:
 
 - the [update-image-tag](https://github.com/keboola/kbc-stacks/actions/workflows/update-image-tag.yaml)
   run in `kbc-stacks` (find it by the `apps-proxy` chart name),
+- **the wave 1 PR** — it will not merge itself, see [Waved Rollout](#waved-rollout),
+- `<stackId>/apps-proxy/tag.yaml` actually contains the new tag,
 - ArgoCD at https://argo.keboola.tech — filter by `app=apps-proxy` under `Labels`,
   use `Refresh apps` to speed up the sync.
 
@@ -105,13 +128,13 @@ canary stack, then push the `production-*` tag from the same commit.
 
 See [Canary Stacks Handbook](https://keboola.atlassian.net/wiki/spaces/ENGG/pages/3932585992).
 
-## Stack-by-Stack Rollout
+## Finer-Grained Rollout
 
-A `production-*` tag deploys everywhere at once. For a controlled rollout, run
-[update-image-tag](https://github.com/keboola/kbc-stacks/actions/workflows/update-image-tag.yaml)
-manually per stack with **Automatically merge PR** unchecked, then merge the per-stack PRs
-in the order you want. Do not merge unrelated PRs in `kbc-stacks` while doing this — they
-would deploy the same image everywhere.
+The two waves are already a dev→prod gate. If a change needs more care than that — one
+production stack at a time — use the `promoter-manual-per-stack` label, which opens a PR per
+stack with a human merging every one. `promoter-critical` and `promoter-gradual` sit between
+that and `standard`; the label on the PR that builds the image is the sole arbiter, so it has
+to be set before the image is built.
 
 ## Rollback
 
