@@ -41,10 +41,13 @@ the e-mail address as its subject, so the value can still look like one — that
 is the issuer's choice, not something this asks for.
 
 That raw value never leaves the process. Before it is stored on the session or
-sent anywhere, the proxy pseudonymizes it: `HMAC-SHA256(sessions.userIdHashKey,
-auth_provider_id + ":" + sub)`, hex-encoded, with `userIdHashKey` a secret
-configured per stack. `provider_user_id` is this hash — Stream and Storage
-never see the actual subject claim or GitHub login.
+sent anywhere, the proxy pseudonymizes it with HMAC-SHA256, hex-encoded, keyed
+with `sessions.userIdHashKey`, a secret configured per stack. `auth_provider_id`
+and `sub` are combined length-prefixed rather than joined with a plain
+separator — neither is guaranteed free of one, and a plain `auth_provider_id +
+":" + sub` would let, say, `("a", "b:c")` and `("a:b", "c")` hash identically.
+`provider_user_id` is this hash — Stream and Storage never see the actual
+subject claim or GitHub login.
 
 The two differ in how long they hold. A subject claim is stable for the life of
 the account, across e-mail and display-name changes. A GitHub login is not: the
@@ -136,7 +139,7 @@ Created by `scripts/stream-sessions-setup.sh`. Default table
 | `app_id`, `project_id` | app config | |
 | `app_name` | app config | Always empty — the proxy never sends the app's display name. Kept as a column, rather than dropped, so the sink mapping needs no change if it is ever populated again. |
 | `auth_provider_id`, `auth_provider_type` | request context | Empty when no auth was required. |
-| `provider_user_id` | `X-Kbc-User-Id` (hashed) | `HMAC-SHA256(sessions.userIdHashKey, auth_provider_id + ":" + sub)`, hex-encoded — never the raw subject claim or GitHub login. Empty for password / no-auth apps. Unique only within one provider — pair it with `auth_provider_id`. |
+| `provider_user_id` | `X-Kbc-User-Id` (hashed) | HMAC-SHA256 keyed with `sessions.userIdHashKey`, hex-encoded, of `auth_provider_id` and `sub` combined length-prefixed (not a plain `":"` join — see [§2](#2-what-gets-recorded)) — never the raw subject claim or GitHub login. Empty for password / no-auth apps. Unique only within one provider — pair it with `auth_provider_id`. |
 | `user_agent` | request | |
 | `requests`, `ws_frames` | proxy counters | Deltas, not totals. |
 | `idle_timeout_seconds` | `idleTimeoutSeconds` | The idle window in force when the row was written. Needed to close a session that never signed out, and recorded per row because the setting is per stack. |

@@ -81,6 +81,20 @@ func TestNewManager_EmptyUserIDHashKeyDisablesTracking(t *testing.T) {
 	logger.AssertJSONMessages(t, `{"level":"error","message":"session tracking is disabled, user id hash key is empty"}`)
 }
 
+func TestHashProviderUserID_NoBoundaryCollision(t *testing.T) {
+	t.Parallel()
+
+	// Neither input is guaranteed free of ':' — authProviderID is a
+	// config-time provider.ID, sub an OIDC-issuer-controlled subject claim —
+	// so a plain authProviderID + ":" + sub join would let these two distinct
+	// (provider, subject) pairs hash identically. Length-prefixing the first
+	// field must keep them apart.
+	key := []byte("key")
+	a := hashProviderUserID(key, "a", "b:c")
+	b := hashProviderUserID(key, "a:b", "c")
+	assert.NotEqual(t, a, b, "distinct (authProviderID, sub) pairs must not collide at the ':' boundary")
+}
+
 func TestManager_ActivityAttributesARecreatedEntry(t *testing.T) {
 	t.Parallel()
 

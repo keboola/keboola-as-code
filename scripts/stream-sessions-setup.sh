@@ -6,6 +6,10 @@
 # is written to the state file (mode 600) rather than to stdout; put it into the
 # apps-proxy config as APPS_PROXY_SESSIONS_STREAM_URL.
 #
+# Tracking also needs APPS_PROXY_SESSIONS_USER_ID_HASH_KEY set (this script
+# does not generate it — see the final "Done" output), or apps-proxy leaves
+# tracking switched off rather than send the end user id unhashed.
+#
 # One source per stack, in a Keboola-internal project on that stack — not in
 # the customer project that owns the app. The project id is therefore fixed
 # per stack and the URL is a static piece of configuration.
@@ -395,6 +399,16 @@ cat <<EOF
 
     APPS_PROXY_SESSIONS_STREAM_URL=<see ${STATE_FILE}>
 
-  Leaving it unset keeps session tracking switched off, which is how stacks
-  without Stream stay unaffected.
+  Tracking additionally needs a hash key apps-proxy uses to pseudonymize the
+  end user id before it is sent to Stream — this script does not generate one
+  (re-running this script must not silently rotate an already-deployed key).
+  Generate it once and add it alongside the URL above, in the same encrypted
+  secrets:
+
+    APPS_PROXY_SESSIONS_USER_ID_HASH_KEY=\$(openssl rand -hex 32)
+
+  Leaving STREAM_URL unset keeps session tracking switched off, which is how
+  stacks without Stream stay unaffected. Setting STREAM_URL but leaving
+  USER_ID_HASH_KEY unset does the same, rather than send the end user id
+  unhashed — so both are required together, not just the URL.
 EOF

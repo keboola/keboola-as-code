@@ -3,6 +3,7 @@ package sessions
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"net/http"
 	"net/url"
@@ -79,18 +80,28 @@ func sign(payload string, key []byte) string {
 }
 
 // hashProviderUserID pseudonymizes the provider's user id before it is ever
-// stored on a Session or sent anywhere: HMAC-SHA256(key, authProviderID + ":"
-// + sub), hex-encoded, with the full digest kept (unlike sign, this is not a
-// tamper check, so truncating it would only weaken it). Keyed per stack, so
-// Stream and the Storage table never see the actual subject claim or GitHub
-// login, and the hash cannot be reversed or correlated across stacks.
+// stored on a Session or sent anywhere: HMAC-SHA256 of authProviderID and sub,
+// hex-encoded, with the full digest kept (unlike sign, this is not a tamper
+// check, so truncating it would only weaken it). Keyed per stack, so Stream
+// and the Storage table never see the actual subject claim or GitHub login,
+// and the hash cannot be reversed or correlated across stacks.
+//
+// authProviderID is length-prefixed rather than joined with a plain
+// separator: neither it (a config-time provider.ID) nor sub (an
+// OIDC-issuer-controlled subject claim) is guaranteed free of the separator
+// byte, and a plain "authProviderID + \":\" + sub" would let
+// (id="a", sub="b:c") and (id="a:b", sub="c") hash identically — silently
+// breaking the guarantee that the same subject under a different provider
+// never collides.
 func hashProviderUserID(key []byte, authProviderID, sub string) string {
 	if sub == "" {
 		return ""
 	}
 	mac := hmac.New(sha256.New, key)
+	var idLen [8]byte
+	binary.BigEndian.PutUint64(idLen[:], uint64(len(authProviderID)))
+	mac.Write(idLen[:])
 	mac.Write([]byte(authProviderID))
-	mac.Write([]byte(":"))
 	mac.Write([]byte(sub))
 	return hex.EncodeToString(mac.Sum(nil))
 }

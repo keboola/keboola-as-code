@@ -54,9 +54,11 @@ type Event struct {
 
 	// ProviderUserID pseudonymizes how the provider names the person: the OIDC
 	// subject claim, or the account login for GitHub (which issues no ID
-	// token), run through HMAC-SHA256(sessions.userIdHashKey, AuthProviderID +
-	// ":" + sub) and hex-encoded — never the raw claim or login. Empty for a
-	// shared password or no authentication.
+	// token), run through HMAC-SHA256 keyed with sessions.userIdHashKey and
+	// hex-encoded — never the raw claim or login. AuthProviderID and sub are
+	// combined unambiguously (length-prefixed, not just joined with ":"), so
+	// two different providers cannot be made to collide on the same hash.
+	// Empty for a shared password or no authentication.
 	//
 	// Only unique within one provider: count distinct users over
 	// (AuthProviderID, ProviderUserID), never ProviderUserID alone.

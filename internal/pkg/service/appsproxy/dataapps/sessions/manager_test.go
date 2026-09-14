@@ -3,6 +3,7 @@ package sessions_test
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
@@ -34,14 +35,16 @@ const eventTimeout = 5 * time.Second
 // ProviderUserID is expected to carry.
 const testUserIDHashKey = "test-user-id-hash-key"
 
-// hashUserID mirrors the package's own hashProviderUserID: HMAC-SHA256(key,
-// authProviderID + ":" + sub), hex-encoded. Kept independent of the
-// implementation (rather than exported for tests) so the test still catches a
-// change to the algorithm, not just a refactor of it.
+// hashUserID mirrors the package's own hashProviderUserID: HMAC-SHA256 of a
+// length-prefixed authProviderID followed by sub, hex-encoded. Kept
+// independent of the implementation (rather than exported for tests) so the
+// test still catches a change to the algorithm, not just a refactor of it.
 func hashUserID(authProviderID, sub string) string {
 	mac := hmac.New(sha256.New, []byte(testUserIDHashKey))
+	var idLen [8]byte
+	binary.BigEndian.PutUint64(idLen[:], uint64(len(authProviderID)))
+	mac.Write(idLen[:])
 	mac.Write([]byte(authProviderID))
-	mac.Write([]byte(":"))
 	mac.Write([]byte(sub))
 	return hex.EncodeToString(mac.Sum(nil))
 }
