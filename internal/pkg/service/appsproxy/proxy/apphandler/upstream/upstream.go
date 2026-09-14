@@ -117,8 +117,18 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig, workload k
 
 	// Resolve target URL at creation time; immutable after this point.
 	var target *url.URL
+	var publicHost string
 	if info, ok := m.stateWatcher.GetState(ctx, workload); ok {
 		target = info.UpstreamTarget // pre-parsed by watcher on CRD event; may be nil
+		publicHost = info.PublicHost
+	}
+
+	// A Sandbox is reached only at the hostname it published, so that is the
+	// address its upstream's redirects must be rewritten to. The app config
+	// yields the App's hostname, which would bounce the user out of the Sandbox.
+	baseURL := app.BaseURL(m.config.API.PublicURL)
+	if workload.SandboxName != "" && publicHost != "" {
+		baseURL = &url.URL{Scheme: baseURL.Scheme, Host: publicHost, Path: "/"}
 	}
 
 	// Create reverse proxy
@@ -127,7 +137,7 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig, workload k
 		app:      app,
 		workload: workload,
 		target:   target,
-		baseURL:  app.BaseURL(m.config.API.PublicURL),
+		baseURL:  baseURL,
 	}
 	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
 	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)

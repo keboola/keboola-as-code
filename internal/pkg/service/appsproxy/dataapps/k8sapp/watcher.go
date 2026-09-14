@@ -176,6 +176,7 @@ func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, 
 
 	return AppInfo{
 		ActualState:        e.state,
+		PublicHost:         e.host,
 		AutoRestartEnabled: e.autoRestartEnabled,
 		DevMode:            e.devMode,
 		UpstreamTarget:     e.upstreamTarget,
