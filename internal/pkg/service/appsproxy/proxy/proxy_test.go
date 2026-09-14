@@ -2830,6 +2830,28 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "Hello, client", string(body))
 				require.Len(t, *appServer.Requests, 1)
 			},
+			// notify bumps lastRequestTimestamp on the App, which is not this
+			// workload. Draft traffic must not hold the App awake. Paired with
+			// the case below, which shares this fixture and asserts the App's
+			// own hostname still notifies — the notify throttle is keyed per
+			// app id, so only two separate cases can show both halves.
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
+			// The other half of the case above: on the same fixture, a request
+			// to the App's own hostname still notifies.
+			name:     "draft-sandbox-fixture-app-host-still-notifies",
+			setupK8s: setupDraftSandbox("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local"),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				_ = response.Body.Close()
+			},
 			expectedNotifications: map[string]int{"123": 1},
 		},
 		testCase{
@@ -2848,7 +2870,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusMovedPermanently, response.StatusCode)
 				assert.Equal(t, "https://draft-abc.hub.keboola.local/redirect/", response.Header.Get("Location"))
 			},
-			expectedNotifications: map[string]int{"123": 1},
+			expectedNotifications: map[string]int{},
 		},
 		testCase{
 			// A password-protected app's draft prompts for its own password:
@@ -2896,7 +2918,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, "Hello, client", string(body))
 			},
-			expectedNotifications: map[string]int{"auth": 1},
+			expectedNotifications: map[string]int{},
 		},
 		testCase{
 			// An OIDC-protected app's draft cannot complete a login yet, since

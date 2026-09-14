@@ -63,6 +63,11 @@ type WorkloadRef struct {
 	SandboxName string
 }
 
+// IsSandbox reports whether a Sandbox CR, rather than the App CR, owns the route.
+func (r WorkloadRef) IsSandbox() bool {
+	return r.SandboxName != ""
+}
+
 func (r WorkloadRef) String() string {
 	if r.SandboxName == "" {
 		return r.AppID.String()
