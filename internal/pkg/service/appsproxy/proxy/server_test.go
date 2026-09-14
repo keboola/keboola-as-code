@@ -128,7 +128,11 @@ func TestAppProxyHandler(t *testing.T) {
 {"level":"info","message":"req 200 https://public-123.hub.keboola.local/path","http.request_id":"%s","component":"http"}
 `)
 
-	// HTTP server metrics are disabled via noop MeterProvider (they duplicate Datadog APM functionality)
+	// HTTP server metrics are disabled via noop MeterProvider (they duplicate Datadog APM functionality).
+	// The one metric left is the sessions "enabled" gauge, always registered regardless of whether
+	// tracking is configured, precisely so a stack going dark is visible as this reading 0 rather
+	// than as an absence of metrics indistinguishable from an ordinary quiet period; this test's
+	// config sets no sessions.streamUrl, so it reads 0 here.
 	actualMetricsJSON := mocked.TestTelemetry().MetricsJSONString(
 		t,
 		telemetry.WithMetricFilter(func(metric metricdata.Metrics) bool {
@@ -140,5 +144,12 @@ func TestAppProxyHandler(t *testing.T) {
 			return fmt.Sprintf("%d:%s", status.AsInt64(), host.AsString())
 		}),
 	)
-	assert.JSONEq(t, "null", strings.TrimSpace(actualMetricsJSON))
+	assert.JSONEq(t, `[
+		{
+			"Name": "keboola.go.appsproxy.sessions.enabled",
+			"Description": "1 if data app session tracking is active on this replica, 0 otherwise (e.g. a required secret is missing).",
+			"Unit": "",
+			"Data": {"DataPoints": [{"Attributes": [], "Value": 0}]}
+		}
+	]`, strings.TrimSpace(actualMetricsJSON))
 }

@@ -83,16 +83,23 @@ func sign(payload string, key []byte) string {
 // stored on a Session or sent anywhere: HMAC-SHA256 of authProviderID and sub,
 // hex-encoded, with the full digest kept (unlike sign, this is not a tamper
 // check, so truncating it would only weaken it). Keyed per stack, so Stream
-// and the Storage table never see the actual subject claim or GitHub login,
-// and the hash cannot be reversed or correlated across stacks.
+// and the Storage table never see the actual subject claim or GitHub login
+// directly.
+//
+// This is pseudonymization, not anonymization: the input space (GitHub
+// logins, corporate e-mail-shaped subject claims) is small enough to recover
+// by dictionary for anyone holding userIdHashKey — which lives in the same
+// encrypted secrets bundle as the Stream URL, reachable by much the same
+// people who can read the table. Treat the column accordingly, not as safe to
+// export or retain indefinitely on its own.
 //
 // authProviderID is length-prefixed rather than joined with a plain
 // separator: neither it (a config-time provider.ID) nor sub (an
-// OIDC-issuer-controlled subject claim) is guaranteed free of the separator
-// byte, and a plain "authProviderID + \":\" + sub" would let
-// (id="a", sub="b:c") and (id="a:b", sub="c") hash identically — silently
-// breaking the guarantee that the same subject under a different provider
-// never collides.
+// OIDC-issuer-controlled subject claim) is guaranteed free of any fixed
+// separator byte, and joining them with one would let two different
+// (authProviderID, sub) pairs collide on the same message whenever the
+// separator can appear inside either field — silently breaking the guarantee
+// that the same subject under a different provider never collides.
 func hashProviderUserID(key []byte, authProviderID, sub string) string {
 	if sub == "" {
 		return ""

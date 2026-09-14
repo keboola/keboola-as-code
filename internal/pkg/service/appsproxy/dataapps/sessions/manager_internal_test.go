@@ -84,15 +84,16 @@ func TestNewManager_EmptyUserIDHashKeyDisablesTracking(t *testing.T) {
 func TestHashProviderUserID_NoBoundaryCollision(t *testing.T) {
 	t.Parallel()
 
-	// Neither input is guaranteed free of ':' — authProviderID is a
-	// config-time provider.ID, sub an OIDC-issuer-controlled subject claim —
-	// so a plain authProviderID + ":" + sub join would let these two distinct
-	// (provider, subject) pairs hash identically. Length-prefixing the first
-	// field must keep them apart.
+	// The pair that actually needs the length prefix: with no separator at
+	// all, ("ab", "c") and ("a", "bc") concatenate to the same bytes, "abc".
+	// (A pair like ("a", "b:c") vs ("a:b", "c") — differing only around a
+	// literal ':' — would stay distinct even under plain concatenation with no
+	// prefix at all, "ab:c" vs "a:bc", so it would not catch a regression that
+	// dropped the length prefix.)
 	key := []byte("key")
-	a := hashProviderUserID(key, "a", "b:c")
-	b := hashProviderUserID(key, "a:b", "c")
-	assert.NotEqual(t, a, b, "distinct (authProviderID, sub) pairs must not collide at the ':' boundary")
+	a := hashProviderUserID(key, "ab", "c")
+	b := hashProviderUserID(key, "a", "bc")
+	assert.NotEqual(t, a, b, "distinct (authProviderID, sub) pairs concatenating to the same bytes must not collide")
 }
 
 func TestManager_ActivityAttributesARecreatedEntry(t *testing.T) {

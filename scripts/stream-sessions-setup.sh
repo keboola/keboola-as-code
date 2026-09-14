@@ -400,12 +400,17 @@ cat <<EOF
     APPS_PROXY_SESSIONS_STREAM_URL=<see ${STATE_FILE}>
 
   Tracking additionally needs a hash key apps-proxy uses to pseudonymize the
-  end user id before it is sent to Stream — this script does not generate one
-  (re-running this script must not silently rotate an already-deployed key).
-  Generate it once and add it alongside the URL above, in the same encrypted
-  secrets:
+  end user id before it is sent to Stream (at least 32 characters, or apps-proxy
+  refuses to start) — this script does not generate one (re-running this
+  script must not silently rotate an already-deployed key). Run this yourself:
 
-    APPS_PROXY_SESSIONS_USER_ID_HASH_KEY=\$(openssl rand -hex 32)
+    openssl rand -hex 32
+
+  Then add its OUTPUT — not the command above — as the value of
+  APPS_PROXY_SESSIONS_USER_ID_HASH_KEY, alongside the ingest URL in the same
+  encrypted secrets. Pasting the command itself in place of a value would set
+  the same public, unrotatable, effectively empty key on every stack it is
+  done on.
 
   Leaving STREAM_URL unset keeps session tracking switched off, which is how
   stacks without Stream stay unaffected. Setting STREAM_URL but leaving

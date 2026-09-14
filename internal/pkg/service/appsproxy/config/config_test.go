@@ -135,7 +135,7 @@ func TestSessionsConfig_Envs(t *testing.T) {
 
 	envs := env.Empty()
 	envs.Set("APPS_PROXY_SESSIONS_STREAM_URL", "https://stream-in.keboola.local/stream/123/sessions/secret")
-	envs.Set("APPS_PROXY_SESSIONS_USER_ID_HASH_KEY", "test-hash-key")
+	envs.Set("APPS_PROXY_SESSIONS_USER_ID_HASH_KEY", "test-hash-key-at-least-32-characters-long")
 	envs.Set("APPS_PROXY_SESSIONS_MAX_SESSION_LENGTH", "8h")
 	envs.Set("APPS_PROXY_SESSIONS_HEARTBEAT_INTERVAL", "1m")
 	envs.Set("APPS_PROXY_SESSIONS_IDLE_TIMEOUT", "15m")
@@ -149,7 +149,7 @@ func TestSessionsConfig_Envs(t *testing.T) {
 	}, &cfg))
 
 	assert.Equal(t, "https://stream-in.keboola.local/stream/123/sessions/secret", cfg.Sessions.StreamURL)
-	assert.Equal(t, "test-hash-key", cfg.Sessions.UserIDHashKey)
+	assert.Equal(t, "test-hash-key-at-least-32-characters-long", cfg.Sessions.UserIDHashKey)
 	assert.Equal(t, 8*time.Hour, cfg.Sessions.MaxSessionLength)
 	assert.Equal(t, time.Minute, cfg.Sessions.HeartbeatInterval)
 	assert.Equal(t, 15*time.Minute, cfg.Sessions.IdleTimeout)
@@ -243,6 +243,23 @@ func TestSessionsConfig_RejectsMalformedStreamURL(t *testing.T) {
 
 	cfg = validConfig(t)
 	cfg.Sessions.StreamURL = "https://stream-in.keboola.local/stream/123/sessions/secret"
+	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
+}
+
+func TestSessionsConfig_RejectsShortUserIDHashKey(t *testing.T) {
+	t.Parallel()
+
+	// A too-short value passes silently otherwise: any non-empty string
+	// satisfies "omitempty", including a typo or a placeholder someone forgot
+	// to replace, and the whole privacy guarantee of the hash rests on this
+	// being unpredictable.
+	cfg := validConfig(t)
+	cfg.Sessions.UserIDHashKey = "too-short"
+	require.Error(t, configmap.ValidateAndNormalize(&cfg))
+
+	cfg = validConfig(t)
+	cfg.Sessions.UserIDHashKey = "exactly-32-characters-long-abcde"
+	require.Len(t, cfg.Sessions.UserIDHashKey, 32)
 	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
 }
 

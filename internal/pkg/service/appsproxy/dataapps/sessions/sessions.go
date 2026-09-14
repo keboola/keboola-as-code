@@ -75,6 +75,13 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 		store:     newStore(),
 	}
 
+	// Registered before any of the checks below can turn tracking off, and
+	// read through m rather than captured as a fixed value, so a stack that
+	// goes dark because a required secret is missing shows up as this gauge
+	// reading 0 rather than the rest of *metrics simply not existing — which
+	// on a dashboard looks identical to an ordinary quiet period.
+	registerEnabledGauge(d.Telemetry().Meter(), func() bool { return m.enabled })
+
 	if !m.enabled {
 		logger.Info(ctx, "session tracking is disabled, no stream url configured")
 		return m

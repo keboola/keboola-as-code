@@ -236,8 +236,13 @@ between, the new columns stay empty; the other way round, the old ones do.
 
 `streamUrl` contains the write secret and `userIdHashKey` is a secret in its own
 right, so both belong in the encrypted kbc-stacks secrets, not in `values.yaml`.
-Generate `userIdHashKey` with something like `openssl rand -hex 32` — its only
-requirement is being unpredictable and unique per stack.
+Generate `userIdHashKey` with something like `openssl rand -hex 32`, then paste
+its *output* — apps-proxy rejects anything under 32 characters, but that only
+catches a typo or an unfilled placeholder, not the far more dangerous mistake
+of pasting the command itself into the secrets file: it would set the literal
+string `$(openssl rand -hex 32)` as the key, identical and public on every
+stack that does it — the destination is an encrypted **YAML** file, not a
+shell, so nothing there expands it.
 
 **Leaving `streamUrl` unset disables the whole feature**; leaving it set with
 `userIdHashKey` unset disables it too, rather than sending the end user id
@@ -399,6 +404,17 @@ minted immediately after every login.
   independently of the user, and are already excluded from the auto-suspend
   notification. Session activity reuses that same rule (`streamlit.IsBackgroundPoll`) so
   there is exactly one definition of "the user did something".
+- **Rows written before `provider_user_id` was hashed still hold the raw
+  claim.** That column used to carry the OIDC subject claim or GitHub login
+  verbatim; existing rows in `in.c-data-apps.sessions` are not rewritten by the
+  change, and this repo neither purges nor backfills them automatically.
+  `COUNT(DISTINCT provider_user_id)` over a window spanning the cut-over
+  double-counts a returning user — once under the raw value, once under the
+  hash. Record the deploy timestamp per stack so analysts can split on it, and
+  decide separately, with the data's owner, whether the pre-cut-over rows
+  should be purged. The same applies to `app_name`, which stopped being
+  populated at the same time, though an empty value there causes no
+  double-counting.
 
 ---
 

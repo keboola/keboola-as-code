@@ -50,7 +50,11 @@ type Sessions struct {
 	// end user id (auth_provider_id and the provider's subject claim/login)
 	// before it is sent to Stream. Tracking is disabled if StreamURL is set but
 	// this is empty, so the raw id is never sent unkeyed.
-	UserIDHashKey string `configKey:"userIdHashKey" configUsage:"Per-stack HMAC-SHA256 key used to pseudonymize the end user id before it is sent to Stream." validate:"omitempty" sensitive:"true"`
+	//
+	// The min length only rejects an obviously-too-short value (a typo, a
+	// placeholder); it cannot enforce actual randomness, so a weak but
+	// long-enough string still passes.
+	UserIDHashKey string `configKey:"userIdHashKey" configUsage:"Per-stack HMAC-SHA256 key used to pseudonymize the end user id before it is sent to Stream. Must be at least 32 characters if set; generate with e.g. 'openssl rand -hex 32'." validate:"omitempty,min=32" sensitive:"true"`
 	// MaxSessionLength is an absolute cap on one session, measured from the
 	// mint time embedded in its id. It exists so that a browser left open on a
 	// dashboard indefinitely does not report a single session measured in

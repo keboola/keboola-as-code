@@ -33,7 +33,7 @@ const eventTimeout = 5 * time.Second
 // testUserIDHashKey is the sessions.userIdHashKey used by every manager built
 // through newManagerWithProcess, so tests can compute the hash an event's
 // ProviderUserID is expected to carry.
-const testUserIDHashKey = "test-user-id-hash-key"
+const testUserIDHashKey = "test-user-id-hash-key-32-chars-min"
 
 // hashUserID mirrors the package's own hashProviderUserID: HMAC-SHA256 of a
 // length-prefixed authProviderID followed by sub, hex-encoded. Kept
