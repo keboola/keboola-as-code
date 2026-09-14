@@ -128,6 +128,9 @@ type AppInfo struct {
 	// UpstreamTarget is the pre-parsed URL from .status.appsProxy.upstreamUrl.
 	// Nil when the field is absent or unparseable.
 	UpstreamTarget *url.URL
+	// PublicHost is the exact hostname the workload published at
+	// .status.appsProxy.publicUrl. Empty when it published none.
+	PublicHost string
 	// E2BAccessToken is the access token loaded from the K8s Secret
 	// referenced by .status.e2bSandbox.accessTokenSecretName.
 	// Empty when the app is not an E2B sandbox or the secret is unavailable.
