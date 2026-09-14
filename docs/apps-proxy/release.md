@@ -46,11 +46,15 @@ every app — you do not opt in, and the legacy `automerge` / `multi-stage` inpu
 | Wave | Stacks | Merged by |
 |---|---|---|
 | `release:wave:0` | dev + testing (`dev-keboola-aws-eu-west-1`, `dev-keboola-gcp-us-central1`, `kbc-testing-azure-east-us-2`) | automatically |
-| `release:wave:1` | all production stacks (`kbc-eu-central-1`, `kbc-us-east-1`, `com-keboola-*`, `cloud-keboola-*`) | **the promoter or a human** |
+| `release:wave:1` | all production stacks (`kbc-eu-central-1`, `kbc-us-east-1`, `com-keboola-*`, `cloud-keboola-*`) | the promoter |
 
-Wave 0 merges on its own and deploys to dev. Wave 1 is opened pre-approved but is never
-auto-merged — a production release is not finished until somebody merges the wave 1 PR.
-Verify on the dev stacks first, then merge it.
+Both waves are opened pre-approved and merge without you. Wave 0 goes to dev immediately;
+HIU never merges a production target itself, so wave 1 is merged by the promoter shortly
+afterwards (about a minute in practice). Merge it by hand only if the promoter does not.
+
+The practical consequence is that the dev→prod gap is small — treat it as a safety net, not
+as time to verify. If a change genuinely needs a soak on dev, use `promoter-gradual` or
+`promoter-manual-per-stack` instead of relying on the wave delay.
 
 Find both PRs with the "All wave PRs of this release" link in the PR body, or:
 
