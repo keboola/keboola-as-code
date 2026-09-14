@@ -85,6 +85,9 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	if cfg.CsrfTokenSalt == "" {
 		cfg.CsrfTokenSalt = "bar"
 	}
+	if cfg.Sessions.UserIDHashKey == "" {
+		cfg.Sessions.UserIDHashKey = "baz"
+	}
 	if cfg.SandboxesAPI.URL == "" {
 		cfg.SandboxesAPI.URL = "http://sandboxes-service-api.default.svc.cluster.local"
 	}

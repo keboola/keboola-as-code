@@ -39,17 +39,24 @@ type Event struct {
 	SessionStart string `json:"sessionStart"`
 
 	AppID     string `json:"appId"`
-	AppName   string `json:"appName"`
 	ProjectID string `json:"projectId"`
+
+	// AppName is intentionally never populated (always empty), so the app's
+	// display name is not sent to Stream. Kept as a field, rather than removed,
+	// so the sink mapping in scripts/stream-sessions-setup.sh and the
+	// app_name column stay unchanged.
+	AppName string `json:"appName"`
 
 	// AuthProviderID and AuthProviderType identify which configured provider
 	// admitted the request. Empty for paths that require no authentication.
 	AuthProviderID   string `json:"authProviderId"`
 	AuthProviderType string `json:"authProviderType"`
 
-	// ProviderUserID is how the provider names the person: the OIDC subject
-	// claim, or the account login for GitHub, which issues no ID token. Empty
-	// for a shared password or no authentication.
+	// ProviderUserID pseudonymizes how the provider names the person: the OIDC
+	// subject claim, or the account login for GitHub (which issues no ID
+	// token), run through HMAC-SHA256(sessions.userIdHashKey, AuthProviderID +
+	// ":" + sub) and hex-encoded — never the raw claim or login. Empty for a
+	// shared password or no authentication.
 	//
 	// Only unique within one provider: count distinct users over
 	// (AuthProviderID, ProviderUserID), never ProviderUserID alone.

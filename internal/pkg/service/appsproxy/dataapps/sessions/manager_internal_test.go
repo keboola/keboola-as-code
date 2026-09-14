@@ -16,8 +16,9 @@ import (
 )
 
 // stubDeps is the smallest thing satisfying the package's dependencies
-// interface. The mocked service scope substitutes a cookie secret salt when one
-// is missing, so it cannot be used to test what happens without it.
+// interface. The mocked service scope substitutes a cookie secret salt and a
+// user id hash key when either is missing, so it cannot be used to test what
+// happens without them.
 type stubDeps struct {
 	logger log.DebugLogger
 	cfg    config.Config
@@ -54,6 +55,30 @@ func TestNewManager_EmptySaltDisablesTracking(t *testing.T) {
 	require.False(t, m.enabled, "tracking must not run with a forgeable key")
 	require.Nil(t, m.writer, "no writer, so nothing can be sent either")
 	logger.AssertJSONMessages(t, `{"level":"error","message":"session tracking is disabled, cookie secret salt is empty"}`)
+}
+
+func TestNewManager_EmptyUserIDHashKeyDisablesTracking(t *testing.T) {
+	t.Parallel()
+
+	// With no hash key, the end user id could only be sent raw or not at all.
+	// Tracking off beats tracking that leaks it.
+	logger := log.NewDebugLogger()
+	cfg := config.New()
+	cfg.Sessions.StreamURL = "https://stream.example.invalid/stream/1/s/secret"
+	cfg.CookieSecretSalt = "salt"
+	cfg.Sessions.UserIDHashKey = ""
+	publicURL, err := url.Parse("https://hub.keboola.local")
+	require.NoError(t, err)
+	cfg.API.PublicURL = publicURL
+
+	proc := servicectx.New(servicectx.WithoutSignals())
+	t.Cleanup(func() { proc.Shutdown(t.Context(), nil); proc.WaitForShutdown() })
+
+	m := NewManager(t.Context(), stubDeps{logger: logger, cfg: cfg, proc: proc})
+
+	require.False(t, m.enabled, "tracking must not run without a way to hash the end user id")
+	require.Nil(t, m.writer, "no writer, so nothing can be sent either")
+	logger.AssertJSONMessages(t, `{"level":"error","message":"session tracking is disabled, user id hash key is empty"}`)
 }
 
 func TestManager_ActivityAttributesARecreatedEntry(t *testing.T) {

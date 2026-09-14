@@ -78,6 +78,23 @@ func sign(payload string, key []byte) string {
 	return hex.EncodeToString(mac.Sum(nil)[:signatureLen])
 }
 
+// hashProviderUserID pseudonymizes the provider's user id before it is ever
+// stored on a Session or sent anywhere: HMAC-SHA256(key, authProviderID + ":"
+// + sub), hex-encoded, with the full digest kept (unlike sign, this is not a
+// tamper check, so truncating it would only weaken it). Keyed per stack, so
+// Stream and the Storage table never see the actual subject claim or GitHub
+// login, and the hash cannot be reversed or correlated across stacks.
+func hashProviderUserID(key []byte, authProviderID, sub string) string {
+	if sub == "" {
+		return ""
+	}
+	mac := hmac.New(sha256.New, key)
+	mac.Write([]byte(authProviderID))
+	mac.Write([]byte(":"))
+	mac.Write([]byte(sub))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
 // encodeCookieValue returns "<sessionID>.<deadlineUnix>.<signature>".
 //
 // The deadline is inside the signed payload, not just in the cookie's Max-Age.

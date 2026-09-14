@@ -46,6 +46,11 @@ type Sessions struct {
 	// e.g. https://stream-in.<suffix>/stream/<projectId>/<sourceId>/<secret>.
 	// Empty disables session tracking.
 	StreamURL string `configKey:"streamUrl" configUsage:"Full Stream HTTP source URL including the secret. Empty disables session tracking." validate:"omitempty,url" sensitive:"true"`
+	// UserIDHashKey is the per-stack HMAC-SHA256 key used to pseudonymize the
+	// end user id (auth_provider_id + ":" + the provider's subject claim/login)
+	// before it is sent to Stream. Tracking is disabled if StreamURL is set but
+	// this is empty, so the raw id is never sent unkeyed.
+	UserIDHashKey string `configKey:"userIdHashKey" configUsage:"Per-stack HMAC-SHA256 key used to pseudonymize the end user id before it is sent to Stream." validate:"omitempty" sensitive:"true"`
 	// MaxSessionLength is an absolute cap on one session, measured from the
 	// mint time embedded in its id. It exists so that a browser left open on a
 	// dashboard indefinitely does not report a single session measured in
