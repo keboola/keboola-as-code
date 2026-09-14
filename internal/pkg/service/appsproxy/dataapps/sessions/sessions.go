@@ -39,16 +39,17 @@ const (
 // When no Stream URL is configured the manager is disabled and every method
 // is a no-op, so the feature can be switched off per stack.
 type Manager struct {
-	enabled   bool
-	clock     clockwork.Clock
-	logger    log.Logger
-	cfg       config.Sessions
-	wsTimeout time.Duration
-	publicURL *url.URL
-	salt      string
-	store     *store
-	writer    *writer
-	metrics   *metrics
+	enabled       bool
+	clock         clockwork.Clock
+	logger        log.Logger
+	cfg           config.Sessions
+	wsTimeout     time.Duration
+	publicURL     *url.URL
+	salt          string
+	userIDHashKey []byte
+	store         *store
+	writer        *writer
+	metrics       *metrics
 }
 
 type dependencies interface {
@@ -74,6 +75,23 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 		store:     newStore(),
 	}
 
+	// Registered on every return path below, including the ones that turn
+	// tracking off, so a stack going dark because a required secret is
+	// missing shows up as this gauge reading 0 rather than the rest of
+	// *metrics simply not existing — which on a dashboard looks identical to
+	// an ordinary quiet period.
+	//
+	// Deferred rather than called here directly: m.enabled is still being
+	// written below (the salt and hash-key guards can flip it to false), and
+	// the meter invokes this callback from the metric reader's own goroutine,
+	// with nothing else synchronizing the two — an unsynchronized read/write
+	// pair across goroutines is a data race regardless of how narrow the
+	// window is. A defer runs after whichever return path's writes to
+	// m.enabled are done, and registering the instrument itself synchronizes
+	// with the SDK, so the collector goroutine can only ever observe the
+	// field's final value.
+	defer func() { registerEnabledGauge(d.Telemetry().Meter(), func() bool { return m.enabled }) }()
+
 	if !m.enabled {
 		logger.Info(ctx, "session tracking is disabled, no stream url configured")
 		return m
@@ -87,6 +105,15 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 		logger.Error(ctx, "session tracking is disabled, cookie secret salt is empty")
 		return m
 	}
+
+	// Without this key the end user id could only be sent raw or not at all.
+	// Tracking off beats tracking that leaks it.
+	if cfg.Sessions.UserIDHashKey == "" {
+		m.enabled = false
+		logger.Error(ctx, "session tracking is disabled, user id hash key is empty")
+		return m
+	}
+	m.userIDHashKey = []byte(cfg.Sessions.UserIDHashKey)
 
 	m.metrics = newMetrics(d.Telemetry().Meter(), m.store.len)
 	m.writer = newWriter(logger, m.metrics, writerConfig{
@@ -133,7 +160,6 @@ type Session struct {
 	ID               string
 	StartedAt        time.Time
 	appID            string
-	appName          string
 	projectID        string
 	authProviderID   string
 	authProviderType string
@@ -260,11 +286,10 @@ func (m *Manager) begin(rw http.ResponseWriter, req *http.Request, app api.AppCo
 		ID:               sessionID,
 		StartedAt:        startedAt,
 		appID:            app.ID.String(),
-		appName:          app.Name,
 		projectID:        app.ProjectID,
 		authProviderID:   providerID,
 		authProviderType: providerType,
-		providerUserID:   req.Header.Get(userIDHeader),
+		providerUserID:   hashProviderUserID(m.userIDHashKey, providerID, req.Header.Get(userIDHeader)),
 		userAgent:        req.Header.Get("User-Agent"),
 	}
 

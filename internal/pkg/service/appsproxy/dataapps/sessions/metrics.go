@@ -23,6 +23,27 @@ type metrics struct {
 	unattributed metric.Int64Counter
 }
 
+// registerEnabledGauge exposes whether tracking is active on this replica,
+// independent of the rest of *metrics: that struct is never built at all when
+// tracking is off, so without a separate signal a stack going dark because a
+// required secret is missing looks identical, on every existing counter, to
+// nobody having visited a data app.
+func registerEnabledGauge(meter telemetry.Meter, enabled func() bool) {
+	meter.IntObservableGauge(
+		"keboola.go.appsproxy.sessions.enabled",
+		"1 if data app session tracking is active on this replica, 0 otherwise (e.g. a required secret is missing).",
+		"",
+		func(_ context.Context, o metric.Int64Observer) error {
+			if enabled() {
+				o.Observe(1)
+			} else {
+				o.Observe(0)
+			}
+			return nil
+		},
+	)
+}
+
 func newMetrics(meter telemetry.Meter, tracked func() int) *metrics {
 	// Observed on collection rather than counted on every change: the store is
 	// a gauge by nature, and reading its length is cheap.

@@ -3,6 +3,7 @@ package sessions
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"net/http"
 	"net/url"
@@ -76,6 +77,40 @@ func sign(payload string, key []byte) string {
 	mac := hmac.New(sha256.New, key)
 	mac.Write([]byte(payload))
 	return hex.EncodeToString(mac.Sum(nil)[:signatureLen])
+}
+
+// hashProviderUserID pseudonymizes the provider's user id before it is ever
+// stored on a Session or sent anywhere: HMAC-SHA256 of authProviderID and sub,
+// hex-encoded, with the full digest kept (unlike sign, this is not a tamper
+// check, so truncating it would only weaken it). Keyed per stack, so Stream
+// and the Storage table never see the actual subject claim or GitHub login
+// directly.
+//
+// This is pseudonymization, not anonymization: the input space (GitHub
+// logins, corporate e-mail-shaped subject claims) is small enough to recover
+// by dictionary for anyone holding userIdHashKey — which lives in the same
+// encrypted secrets bundle as the Stream URL, reachable by much the same
+// people who can read the table. Treat the column accordingly, not as safe to
+// export or retain indefinitely on its own.
+//
+// authProviderID is length-prefixed rather than joined with a plain
+// separator: neither it (a config-time provider.ID) nor sub (an
+// OIDC-issuer-controlled subject claim) is guaranteed free of any fixed
+// separator byte, and joining them with one would let two different
+// (authProviderID, sub) pairs collide on the same message whenever the
+// separator can appear inside either field — silently breaking the guarantee
+// that the same subject under a different provider never collides.
+func hashProviderUserID(key []byte, authProviderID, sub string) string {
+	if sub == "" {
+		return ""
+	}
+	mac := hmac.New(sha256.New, key)
+	var idLen [8]byte
+	binary.BigEndian.PutUint64(idLen[:], uint64(len(authProviderID)))
+	mac.Write(idLen[:])
+	mac.Write([]byte(authProviderID))
+	mac.Write([]byte(sub))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 // encodeCookieValue returns "<sessionID>.<deadlineUnix>.<signature>".

@@ -40,6 +40,15 @@ e-mail claim, and no display name is recorded. An OIDC issuer is free to use
 the e-mail address as its subject, so the value can still look like one — that
 is the issuer's choice, not something this asks for.
 
+That raw value never leaves the process. Before it is stored on the session or
+sent anywhere, the proxy pseudonymizes it with HMAC-SHA256, hex-encoded, keyed
+with `sessions.userIdHashKey`, a secret configured per stack. `auth_provider_id`
+and `sub` are combined length-prefixed rather than joined with a plain
+separator — neither is guaranteed free of one, and a plain `auth_provider_id +
+":" + sub` would let, say, `("a", "b:c")` and `("a:b", "c")` hash identically.
+`provider_user_id` is this hash — Stream and Storage never see the actual
+subject claim or GitHub login.
+
 The two differ in how long they hold. A subject claim is stable for the life of
 the account, across e-mail and display-name changes. A GitHub login is not: the
 owner can change it, and a released login can be taken over by a different
@@ -127,9 +136,10 @@ Created by `scripts/stream-sessions-setup.sh`. Default table
 | `event_time` | `eventTime` | Stamped by the proxy. Fixed-precision UTC (`2006-01-02T15:04:05.000000Z`), so that `MIN`/`MAX` order correctly even though the column is text. |
 | `session_id` | `sessionId` | UUIDv7. Its timestamp prefix *is* the session start. |
 | `session_start` | `sessionStart` | Decoded from `session_id`, identical on every row of a session. |
-| `app_id`, `app_name`, `project_id` | app config | |
+| `app_id`, `project_id` | app config | |
+| `app_name` | app config | Always empty — the proxy never sends the app's display name. Kept as a column, rather than dropped, so the sink mapping needs no change if it is ever populated again. |
 | `auth_provider_id`, `auth_provider_type` | request context | Empty when no auth was required. |
-| `provider_user_id` | `X-Kbc-User-Id` | OIDC subject claim, or the account login for GitHub, which issues no ID token. Never taken from the e-mail claim. Empty for password / no-auth apps. Unique only within one provider — pair it with `auth_provider_id`. |
+| `provider_user_id` | `X-Kbc-User-Id` (hashed) | HMAC-SHA256 keyed with `sessions.userIdHashKey`, hex-encoded, of `auth_provider_id` and `sub` combined length-prefixed (not a plain `":"` join — see [§2](#2-what-gets-recorded)) — never the raw subject claim or GitHub login. Empty for password / no-auth apps. Unique only within one provider — pair it with `auth_provider_id`. |
 | `user_agent` | request | |
 | `requests`, `ws_frames` | proxy counters | Deltas, not totals. |
 | `idle_timeout_seconds` | `idleTimeoutSeconds` | The idle window in force when the row was written. Needed to close a session that never signed out, and recorded per row because the setting is per stack. |
@@ -216,6 +226,7 @@ between, the new columns stay empty; the other way round, the old ones do.
 | Config key | Env | Default |
 |---|---|---|
 | `sessions.streamUrl` | `APPS_PROXY_SESSIONS_STREAM_URL` | *(empty — tracking off)* |
+| `sessions.userIdHashKey` | `APPS_PROXY_SESSIONS_USER_ID_HASH_KEY` | *(empty — tracking off)* |
 | `sessions.maxSessionLength` | `APPS_PROXY_SESSIONS_MAX_SESSION_LENGTH` | `12h` |
 | `sessions.heartbeatInterval` | `APPS_PROXY_SESSIONS_HEARTBEAT_INTERVAL` | `5m` |
 | `sessions.idleTimeout` | `APPS_PROXY_SESSIONS_IDLE_TIMEOUT` | `30m` |
@@ -223,13 +234,22 @@ between, the new columns stay empty; the other way round, the old ones do.
 | `sessions.workers` | `APPS_PROXY_SESSIONS_WORKERS` | `4` |
 | `sessions.sendTimeout` | `APPS_PROXY_SESSIONS_SEND_TIMEOUT` | `5s` |
 
-`streamUrl` contains the write secret, so it belongs in the encrypted kbc-stacks
-secrets, not in `values.yaml`.
+`streamUrl` contains the write secret and `userIdHashKey` is a secret in its own
+right, so both belong in the encrypted kbc-stacks secrets, not in `values.yaml`.
+Generate `userIdHashKey` with something like `openssl rand -hex 32`, then paste
+its *output* — apps-proxy rejects anything under 32 characters, but that only
+catches a typo or an unfilled placeholder, not the far more dangerous mistake
+of pasting the command itself into the secrets file: it would set the literal
+string `$(openssl rand -hex 32)` as the key, identical and public on every
+stack that does it — the destination is an encrypted **YAML** file, not a
+shell, so nothing there expands it.
 
-**Leaving `streamUrl` unset disables the whole feature.** That is how stacks
-without Stream stay unaffected — as of this writing apps-proxy runs on 20 stacks
-and Stream on 12, so eight stacks (all the single-tenant customer clouds,
-`cloud-keboola-cs` among them) cannot run this yet.
+**Leaving `streamUrl` unset disables the whole feature**; leaving it set with
+`userIdHashKey` unset disables it too, rather than sending the end user id
+unhashed. That is how stacks without Stream stay unaffected — as of this
+writing apps-proxy runs on 20 stacks and Stream on 12, so eight stacks (all the
+single-tenant customer clouds, `cloud-keboola-cs` among them) cannot run this
+yet.
 
 ### 5.4 Cookie lifetime
 
@@ -384,6 +404,17 @@ minted immediately after every login.
   independently of the user, and are already excluded from the auto-suspend
   notification. Session activity reuses that same rule (`streamlit.IsBackgroundPoll`) so
   there is exactly one definition of "the user did something".
+- **Rows written before `provider_user_id` was hashed still hold the raw
+  claim.** That column used to carry the OIDC subject claim or GitHub login
+  verbatim; existing rows in `in.c-data-apps.sessions` are not rewritten by the
+  change, and this repo neither purges nor backfills them automatically.
+  `COUNT(DISTINCT provider_user_id)` over a window spanning the cut-over
+  double-counts a returning user — once under the raw value, once under the
+  hash. Record the deploy timestamp per stack so analysts can split on it, and
+  decide separately, with the data's owner, whether the pre-cut-over rows
+  should be purged. The same applies to `app_name`, which stopped being
+  populated at the same time, though an empty value there causes no
+  double-counting.
 
 ---
 

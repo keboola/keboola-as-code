@@ -1,6 +1,10 @@
 package sessions_test
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -25,6 +29,25 @@ import (
 )
 
 const eventTimeout = 5 * time.Second
+
+// testUserIDHashKey is the sessions.userIdHashKey used by every manager built
+// through newManagerWithProcess, so tests can compute the hash an event's
+// ProviderUserID is expected to carry.
+const testUserIDHashKey = "test-user-id-hash-key-32-chars-min"
+
+// hashUserID mirrors the package's own hashProviderUserID: HMAC-SHA256 of a
+// length-prefixed authProviderID followed by sub, hex-encoded. Kept
+// independent of the implementation (rather than exported for tests) so the
+// test still catches a change to the algorithm, not just a refactor of it.
+func hashUserID(authProviderID, sub string) string {
+	mac := hmac.New(sha256.New, []byte(testUserIDHashKey))
+	var idLen [8]byte
+	binary.BigEndian.PutUint64(idLen[:], uint64(len(authProviderID)))
+	mac.Write(idLen[:])
+	mac.Write([]byte(authProviderID))
+	mac.Write([]byte(sub))
+	return hex.EncodeToString(mac.Sum(nil))
+}
 
 func testApp() api.AppConfig {
 	return api.AppConfig{ID: "12345", Name: "my-app", ProjectID: "789"}
@@ -67,6 +90,7 @@ func newManagerWithProcess(t *testing.T, streamURL string) (*sessions.Manager, *
 
 	cfg := config.New()
 	cfg.Sessions.StreamURL = streamURL
+	cfg.Sessions.UserIDHashKey = testUserIDHashKey
 	publicURL, err := url.Parse("https://hub.keboola.local")
 	require.NoError(t, err)
 	cfg.API.PublicURL = publicURL
@@ -206,7 +230,7 @@ func TestManager_SessionStart(t *testing.T) {
 	event := recvEvent(t, events)
 	assert.Equal(t, sessions.EventSessionStart, event.EventType)
 	assert.Equal(t, "12345", event.AppID)
-	assert.Equal(t, "my-app", event.AppName)
+	assert.Empty(t, event.AppName, "app name must never be sent to Stream")
 	assert.Equal(t, "789", event.ProjectID)
 	assert.NotEmpty(t, event.SessionID)
 	assert.NotEmpty(t, event.SessionStart)
@@ -265,7 +289,7 @@ func TestManager_Identity(t *testing.T) {
 
 	event := recvEvent(t, events)
 	assert.Equal(t, sessions.EventSessionStart, event.EventType)
-	assert.Equal(t, "8f14e45f-ceea-467a-9f5a-1c2d3e4f5a6b", event.ProviderUserID)
+	assert.Equal(t, hashUserID("", "8f14e45f-ceea-467a-9f5a-1c2d3e4f5a6b"), event.ProviderUserID)
 	assert.Equal(t, "test-agent", event.UserAgent)
 }
 
@@ -289,7 +313,7 @@ func TestManager_IdentityAppearsLater(t *testing.T) {
 	event := recvEvent(t, events)
 	assert.Equal(t, sessions.EventHeartbeat, event.EventType)
 	assert.Equal(t, start.SessionID, event.SessionID)
-	assert.Equal(t, "subject-1", event.ProviderUserID)
+	assert.Equal(t, hashUserID("", "subject-1"), event.ProviderUserID)
 
 	// Identity is not re-flushed on every following request.
 	call(t, m, nil, cookie, map[string]string{"X-Kbc-User-Id": "subject-1"})
@@ -436,6 +460,28 @@ func TestManager_AuthProvider(t *testing.T) {
 	event := recvEvent(t, events)
 	assert.Equal(t, "company-sso", event.AuthProviderID)
 	assert.Equal(t, string(provider.TypeOIDC), event.AuthProviderType)
+}
+
+func TestManager_ProviderUserIDHashIncludesAuthProvider(t *testing.T) {
+	t.Parallel()
+
+	// The same subject claim under two different providers must not collide:
+	// auth_provider_id is part of the HMAC message, not just a separate column.
+	streamURL, events := streamServer(t)
+	m, _ := newManager(t, streamURL)
+
+	tracked := chain.New(chain.HandlerFunc(func(http.ResponseWriter, *http.Request) error {
+		return nil
+	})).Prepend(m.Middleware(testApp()))
+	stamped := sessions.WithAuthProvider(tracked, provider.ID("company-sso"), provider.TypeOIDC)
+
+	serve(t, stamped, nil, map[string]string{"X-Kbc-User-Id": "subject-1"})
+
+	event := recvEvent(t, events)
+	assert.Equal(t, "company-sso", event.AuthProviderID)
+	assert.Equal(t, hashUserID("company-sso", "subject-1"), event.ProviderUserID)
+	assert.NotEqual(t, hashUserID("", "subject-1"), event.ProviderUserID,
+		"the same subject under a different (here: empty) provider id must hash differently")
 }
 
 func TestManager_CookieDeadlineFollowsActivity(t *testing.T) {
@@ -1031,5 +1077,5 @@ func TestManager_IdentityIsStillRecordedAfterStripping(t *testing.T) {
 
 	event := recvEvent(t, events)
 	assert.Equal(t, sessions.EventSessionStart, event.EventType)
-	assert.Equal(t, "subject-1", event.ProviderUserID)
+	assert.Equal(t, hashUserID("", "subject-1"), event.ProviderUserID)
 }

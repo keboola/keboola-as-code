@@ -131,7 +131,6 @@ func (m *Manager) buildEvent(s *Session, item *entry, typ EventType, now time.Ti
 		SessionID:        s.ID,
 		SessionStart:     formatTime(s.StartedAt),
 		AppID:            s.appID,
-		AppName:          s.appName,
 		ProjectID:        s.projectID,
 		AuthProviderID:   s.authProviderID,
 		AuthProviderType: s.authProviderType,
@@ -199,7 +198,6 @@ func (m *Manager) SignOut(rw http.ResponseWriter, req *http.Request, app api.App
 		ID:        state.sessionID,
 		StartedAt: state.startedAt,
 		appID:     app.ID.String(),
-		appName:   app.Name,
 		projectID: app.ProjectID,
 		userAgent: req.Header.Get("User-Agent"),
 	}
