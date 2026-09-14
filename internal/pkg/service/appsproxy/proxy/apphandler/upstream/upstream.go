@@ -399,7 +399,12 @@ func (u *AppUpstream) trace() chain.Middleware {
 					if streamlit.IsBackgroundPoll(reqPath) {
 						return
 					}
-					u.notify(ctx)
+					// notify bumps lastRequestTimestamp on the App, which is not
+					// this workload. Until a Sandbox has an idle timer of its
+					// own, draft traffic must not hold the App awake.
+					if !u.workload.IsSandbox() {
+						u.notify(ctx)
+					}
 					u.manager.sessions.Activity(ctx)
 				},
 			})
