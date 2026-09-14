@@ -167,8 +167,14 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		req.Header.Set(config.RequestIDHeader, id)
 	}
 
-	// Redirect request to canonical host to match cookies domain
-	if strings.ToLower(req.Host) != h.baseURL.Host {
+	// Redirect request to canonical host to match cookies domain.
+	//
+	// Only the App needs this. parseAppID strips the subdomain to the last dash,
+	// so an App answers on many hostnames and a cookie set on one would not be
+	// sent to another. A Sandbox owns exactly one hostname and is reached only by
+	// matching it exactly, before parseAppID is consulted, so it has nothing to
+	// canonicalise and needs no canonical host of its own.
+	if h.workload.SandboxName == "" && strings.ToLower(req.Host) != h.baseURL.Host {
 		w.Header().Set("Location", h.baseURL.ResolveReference(&url.URL{Path: req.URL.Path, RawQuery: req.URL.RawQuery}).String())
 		w.WriteHeader(http.StatusPermanentRedirect)
 		return nil
