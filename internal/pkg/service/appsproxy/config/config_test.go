@@ -135,6 +135,7 @@ func TestSessionsConfig_Envs(t *testing.T) {
 
 	envs := env.Empty()
 	envs.Set("APPS_PROXY_SESSIONS_STREAM_URL", "https://stream-in.keboola.local/stream/123/sessions/secret")
+	envs.Set("APPS_PROXY_SESSIONS_USER_ID_HASH_KEY", "test-hash-key")
 	envs.Set("APPS_PROXY_SESSIONS_MAX_SESSION_LENGTH", "8h")
 	envs.Set("APPS_PROXY_SESSIONS_HEARTBEAT_INTERVAL", "1m")
 	envs.Set("APPS_PROXY_SESSIONS_IDLE_TIMEOUT", "15m")
@@ -148,6 +149,7 @@ func TestSessionsConfig_Envs(t *testing.T) {
 	}, &cfg))
 
 	assert.Equal(t, "https://stream-in.keboola.local/stream/123/sessions/secret", cfg.Sessions.StreamURL)
+	assert.Equal(t, "test-hash-key", cfg.Sessions.UserIDHashKey)
 	assert.Equal(t, 8*time.Hour, cfg.Sessions.MaxSessionLength)
 	assert.Equal(t, time.Minute, cfg.Sessions.HeartbeatInterval)
 	assert.Equal(t, 15*time.Minute, cfg.Sessions.IdleTimeout)
