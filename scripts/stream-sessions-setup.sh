@@ -29,7 +29,8 @@
 #   KEBOOLA_BRANCH_ID — branch id, or "default" (the default). Note this is not
 #                       the Storage API convention: Stream rejects "0".
 #   STREAM_API_HOST — defaults to stream.keboola.com
-#   SOURCE_NAME     — defaults to "Data App Sessions"
+#   SOURCE_NAME     — defaults to "Data App Sessions". Max 40 characters.
+#   SINK_NAME       — defaults to "Session Events". Max 40 characters.
 #   TABLE_ID        — defaults to in.c-data-apps.sessions
 #   CLEANUP         — set to "true" to delete the source instead
 
@@ -82,6 +83,25 @@ ok()     { echo "  ✓ $*"; }
 info()   { echo "  → $*"; }
 warn()   { echo "  ! $*"; }
 fail()   { echo "  ✗ $*" >&2; exit 1; }
+
+# Stream caps a source and a sink name at 40 characters each. Both are checked
+# here rather than left to the API, because the two are validated at different
+# points: the source name in step 1, the sink name only in step 3. A sink name
+# one character too long would therefore fail *after* the source exists and the
+# state file already holds its ingest URL, leaving an orphan source behind and a
+# resume that skips straight back to the same error.
+#
+# Refusing rather than truncating is deliberate: two stacks whose names differ
+# only past the limit would silently collapse onto one source, and the second
+# run would reuse the first one's — quietly sending two stacks into one table.
+NAME_MAX_LENGTH=40
+check_name() {
+  local var="$1" value="$2"
+  [[ "${#value}" -le "${NAME_MAX_LENGTH}" ]] || fail \
+    "${var} is ${#value} characters, Stream allows at most ${NAME_MAX_LENGTH}: \"${value}\""
+}
+check_name SOURCE_NAME "${SOURCE_NAME}"
+check_name SINK_NAME "${SINK_NAME}"
 
 # api_post <path> <body> → prints response body; sets API_CODE and API_BODY
 api_post() {
