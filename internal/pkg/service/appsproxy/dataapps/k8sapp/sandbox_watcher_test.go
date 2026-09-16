@@ -288,36 +288,35 @@ func TestStateWatcher_ResolveHost_DraftAndAppCoexist(t *testing.T) {
 	assert.Equal(t, "http://prod.keboola.svc.cluster.local:8888", appInfo.UpstreamTarget.String())
 }
 
-// An ingress-enabled App whose status has no publicUrl yet is treated as owning
-// the hostname, so a Sandbox cannot take the route during a status backfill.
-func TestStateWatcher_ResolveHost_AppWithoutPublicURLKeepsRoute(t *testing.T) {
+// A member that inherited the App's slug claims exactly the hostname the App is
+// about to publish. While the App's status has not caught up, the App still
+// wins that hostname, or the member takes production traffic.
+func TestStateWatcher_ResolveHost_AppWithoutPublicURLKeepsItsOwnHostname(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
 
-	appObj := withProxyIngress(newAppObjectWithUpstreamURL("prod-app", "123", k8sapp.AppActualStateRunning, "http://prod.keboola.svc.cluster.local:8888"))
+	// spec.features.appsProxyIngress set with the slug, status.appsProxy not yet written.
+	appObj := withProxyIngressSlug(newAppObject("prod-app", "123", k8sapp.AppActualStateRunning), "prod")
 	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(t.Context(), appObj, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	createSandbox(t, fakeClient, newSandboxObject(
-		"draft-abc", "123", k8sapp.AppActualStateRunning,
-		"https://draft-abc-123.hub.example.com", "http://draft-abc.keboola.svc.cluster.local:8888",
+		"member-2", "123", k8sapp.AppActualStateRunning,
+		"https://prod-123.hub.example.com", "http://member-2.keboola.svc.cluster.local:8888",
 	))
 
 	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 
-	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"})
-		if !ok {
-			return false
-		}
-		_, ok = watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
-		return ok
+	require.Eventually(t, func() bool {
+		_, sandboxCached := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123", SandboxName: "member-2"})
+		_, appCached := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+		return sandboxCached && appCached
 	}, 5*time.Second, 50*time.Millisecond)
 
-	ref := resolveHost(watcher, t.Context(), "draft-abc-123.hub.example.com")
-	assert.Empty(t, ref.SandboxName)
+	_, claimed := watcher.ResolveHost(t.Context(), "prod-123.hub.example.com")
+	assert.False(t, claimed, "the App is about to publish this hostname and must keep it")
 }
 
 // The hostname tie is hit on every production request while every deployment
@@ -440,4 +439,45 @@ func TestStateWatcher_ResolveHost_AppHostReleasedOnDelete(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return sandboxNameFor(watcher, t.Context(), "myslug-42.hub.example.com") == "member-2"
 	}, 5*time.Second, 50*time.Millisecond)
+}
+
+// withProxyIngressSlug marks apps-proxy ingress enabled and sets the slug the
+// operator builds the workload's own hostname from.
+func withProxyIngressSlug(obj *unstructured.Unstructured, slug string) *unstructured.Unstructured {
+	obj.Object["spec"].(map[string]any)["features"] = map[string]any{
+		"appsProxyIngress": map[string]any{"targetPort": int64(8888), "slug": slug},
+	}
+	return obj
+}
+
+// An App that has never been promoted keeps spec.features.appsProxyIngress set
+// while status.appsProxy stays null forever, so "no published hostname" is not
+// a startup window there. It must not defend a hostname it would never publish.
+func TestStateWatcher_ResolveHost_NeverPublishedAppDoesNotBlockUnrelatedDraft(t *testing.T) {
+	t.Parallel()
+
+	fakeClient := newFakeClient()
+
+	// spec.features.appsProxyIngress set, status.appsProxy absent.
+	appObj := withProxyIngressSlug(newAppObject("app-7327412", "7327412", k8sapp.AppActualStateRunning), "myapp")
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(t.Context(), appObj, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	createSandbox(t, fakeClient, newSandboxObject(
+		"app-7327412-dft-01a0aa03", "7327412", k8sapp.AppActualStateRunning,
+		"https://draft-01a0aa03-4886-74b4-87c2-8518d0ebf7f1.hub.example.com",
+		"http://app-sb-app-7327412-dft-01a0aa03.sandbox.svc.cluster.local:8888",
+	))
+
+	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
+	require.True(t, watcher.WaitForCacheSync(t.Context()))
+
+	require.Eventually(t, func() bool {
+		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "7327412"})
+		return ok
+	}, 5*time.Second, 50*time.Millisecond)
+
+	ref, claimed := watcher.ResolveHost(t.Context(), "draft-01a0aa03-4886-74b4-87c2-8518d0ebf7f1.hub.example.com")
+	assert.True(t, claimed, "the draft owns this hostname; the App publishes none and would never publish this one")
+	assert.Equal(t, k8sapp.WorkloadRef{AppID: "7327412", SandboxName: "app-7327412-dft-01a0aa03"}, ref)
 }
