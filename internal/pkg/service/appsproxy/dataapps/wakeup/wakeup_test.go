@@ -149,3 +149,31 @@ func TestManager_Wakeup_Race(t *testing.T) {
 	// Only one K8s PATCH is sent due to rate-limiting.
 	assert.Equal(t, 1, patchCount(fakeClient.Actions()))
 }
+
+// A successful wake must leave a trace. Without one, "the wake ran and worked"
+// and "the wake never ran" look identical in the logs, and telling them apart
+// needs a live CR sample.
+func TestManager_Wakeup_LogsTheWake(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New())
+
+	appID := api.AppID("app")
+	fakeClient := mock.TestFakeK8sClient()
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
+		ctx, newTestApp(string(appID)), metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	watcher := d.AppStateWatcher()
+	require.Eventually(t, func() bool {
+		_, ok := watcher.GetState(ctx, k8sapp.WorkloadRef{AppID: appID})
+		return ok
+	}, 10*time.Second, 50*time.Millisecond)
+
+	mock.DebugLogger().Truncate()
+	require.NoError(t, d.WakeupManager().Wakeup(ctx, k8sapp.WorkloadRef{AppID: appID}))
+
+	assert.Contains(t, mock.DebugLogger().AllMessagesTxt(), `woken workload "app"`)
+}

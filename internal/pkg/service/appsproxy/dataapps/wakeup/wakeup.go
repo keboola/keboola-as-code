@@ -65,5 +65,7 @@ func (l *Manager) Wakeup(ctx context.Context, ref k8sapp.WorkloadRef) error {
 		l.logger.Errorf(ctx, `wakeup failed for workload "%s": %s`, ref, err)
 		return err
 	}
+
+	l.logger.Infof(ctx, `woken workload "%s"`, ref)
 	return nil
 }
