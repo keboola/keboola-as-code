@@ -152,15 +152,17 @@ func TestStateWatcher_Wakeup(t *testing.T) {
 	assert.Contains(t, string(pa.GetPatch()), `"state":"Running"`)
 }
 
-func TestStateWatcher_Wakeup_NoOpWhenUnknown(t *testing.T) {
+func TestStateWatcher_Wakeup_ReportsUnknownApp(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
 	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
 
-	// App not in K8s cache — Wakeup should be a no-op.
+	// App not in the cache: nothing can be patched, and that must be reported
+	// rather than returned as a successful wake.
 	err := watcher.Wakeup(t.Context(), k8sapp.WorkloadRef{AppID: "app-unknown"})
-	require.NoError(t, err)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "app-unknown")
 
 	for _, a := range fakeClient.Actions() {
 		assert.NotEqual(t, "patch", a.GetVerb(), "unexpected PATCH for unknown app")

@@ -2855,6 +2855,41 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{"123": 1},
 		},
 		testCase{
+			// A Stopped draft must be woken: the proxy patches the Sandbox CR's
+			// spec.state, not the App's. A wake that is dropped leaves the draft
+			// showing the spinner forever.
+			name:     "draft-sandbox-stopped-is-woken",
+			setupK8s: setupDraftSandboxInState("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local", k8sapp.AppActualStateStopped),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-abc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "<title>Starting</title>")
+
+				require.Eventually(t, func() bool {
+					obj, err := fakeClient.Resource(k8sapp.SandboxGVR()).Namespace("keboola").Get(t.Context(), "draft-abc", metav1.GetOptions{})
+					if err != nil {
+						return false
+					}
+					state, found, err := unstructured.NestedString(obj.Object, "spec", "state")
+					return err == nil && found && state == string(k8sapp.AppActualStateRunning)
+				}, 5*time.Second, 50*time.Millisecond, "expected the wake to patch the Sandbox CR spec.state=Running")
+
+				appObj, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Get(t.Context(), "app-123", metav1.GetOptions{})
+				require.NoError(t, err)
+				appState, _, err := unstructured.NestedString(appObj.Object, "spec", "state")
+				require.NoError(t, err)
+				assert.NotEqual(t, string(k8sapp.AppActualStateRunning), appState, "the App must not be woken in place of the draft")
+			},
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
 			// An upstream redirect must land back on the draft's own hostname.
 			// Rewriting to the app config's host would bounce the user out of
 			// the draft and into production.
@@ -3744,6 +3779,10 @@ func TestWebsocketActivityTracking(t *testing.T) {
 // Sandbox. The Sandbox reuses the App's upstream, so the same test app server
 // answers for both.
 func setupDraftSandbox(appID, appPublicURL, draftName, draftPublicURL string) func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+	return setupDraftSandboxInState(appID, appPublicURL, draftName, draftPublicURL, k8sapp.AppActualStateRunning)
+}
+
+func setupDraftSandboxInState(appID, appPublicURL, draftName, draftPublicURL string, state k8sapp.AppActualState) func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 	return func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 		t.Helper()
 
@@ -3764,7 +3803,7 @@ func setupDraftSandbox(appID, appPublicURL, draftName, draftPublicURL string) fu
 				"metadata":   map[string]any{"name": draftName, "namespace": "keboola"},
 				"spec":       map[string]any{"appId": appID},
 				"status": map[string]any{
-					"currentState": string(k8sapp.AppActualStateRunning),
+					"currentState": string(state),
 					"appsProxy": map[string]any{
 						"publicUrl":   draftPublicURL,
 						"upstreamUrl": upstreamURL,
