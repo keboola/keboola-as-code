@@ -115,6 +115,13 @@ type appsProxyIngress struct {
 	Slug string `json:"slug,omitempty"`
 }
 
+func (s appSpec) ProxyIngressSlug() string {
+	if s.Features == nil || s.Features.AppsProxyIngress == nil {
+		return ""
+	}
+	return s.Features.AppsProxyIngress.Slug
+}
+
 type appRuntime struct {
 	Backend appBackend `json:"backend"`
 }

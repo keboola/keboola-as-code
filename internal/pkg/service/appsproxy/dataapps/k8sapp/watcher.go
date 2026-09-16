@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/url"
+	"strings"
 	"sync"
 
 	"golang.org/x/sync/singleflight"
@@ -32,6 +33,7 @@ type entry struct {
 	appID              api.AppID
 	host               string // exact hostname from appsProxy.publicUrl; empty when none is published
 	proxyIngress       bool   // spec.features.appsProxyIngress is set, so a hostname will be published
+	proxyIngressSlug   string // spec.features.appsProxyIngress.slug, the first part of the hostname the operator builds
 	state              AppActualState
 	autoRestartEnabled bool
 	devMode            bool
@@ -261,19 +263,36 @@ func (w *StateWatcher) ResolveHost(_ context.Context, host string) (WorkloadRef,
 // appOwnsHost reports whether an App keeps the route for this hostname.
 // The caller must hold routeLock.
 //
-// The second clause is the backfill guard: an App whose hostname has not
-// reached its status yet is treated as owning the one its own Sandbox claims,
-// because during that window its hostname is unknown and today every
-// deployment member publishes production's own hostname. It is gated on
-// appsProxyIngress being set — without it the App publishes no hostname ever,
-// so an ungated clause would be a permanent block rather than a startup one.
+// The second clause covers an App that will publish this hostname but has not
+// yet: its status is unknown during that window, and a deployment member that
+// inherited its slug claims exactly the hostname it is about to take. The
+// window never closes for an App that is never promoted, so the clause is
+// limited to the one hostname the App itself would publish — anything else it
+// has no claim to defend.
 func (w *StateWatcher) appOwnsHost(sandboxAppID api.AppID, host string) bool {
 	if _, published := w.appHosts[host]; published {
 		return true
 	}
 
 	appEntry, ok := w.appEntry(sandboxAppID)
-	return ok && appEntry.proxyIngress && appEntry.host == ""
+	if !ok || !appEntry.proxyIngress || appEntry.host != "" {
+		return false
+	}
+
+	subdomain, _, _ := strings.Cut(host, ".")
+	return subdomain == appSubdomain(appEntry.proxyIngressSlug, sandboxAppID)
+}
+
+// appSubdomain returns the subdomain the operator builds a workload's public
+// hostname from: the slug and the app id joined, or the app id alone.
+func appSubdomain(slug string, appID api.AppID) string {
+	var b strings.Builder
+	if slug != "" {
+		b.WriteString(slug)
+		b.WriteByte('-')
+	}
+	b.WriteString(appID.String())
+	return strings.ToLower(b.String())
 }
 
 func (w *StateWatcher) appEntry(appID api.AppID) (entry, bool) {
@@ -415,6 +434,7 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 			appID:              api.AppID(appObj.Spec.AppID),
 			host:               host,
 			proxyIngress:       appObj.Spec.Features != nil && appObj.Spec.Features.AppsProxyIngress != nil,
+			proxyIngressSlug:   appObj.Spec.ProxyIngressSlug(),
 			state:              appObj.Status.CurrentState,
 			autoRestartEnabled: autoRestartEnabled,
 			devMode:            devMode,
