@@ -481,3 +481,17 @@ func TestStateWatcher_ResolveHost_NeverPublishedAppDoesNotBlockUnrelatedDraft(t 
 	assert.True(t, claimed, "the draft owns this hostname; the App publishes none and would never publish this one")
 	assert.Equal(t, k8sapp.WorkloadRef{AppID: "7327412", SandboxName: "app-7327412-dft-01a0aa03"}, ref)
 }
+
+// A wake for a workload that is not in the cache patches nothing. Returning nil
+// there is indistinguishable from a successful wake, so a draft that can never
+// start produces no signal anywhere.
+func TestStateWatcher_Wakeup_ErrorsWhenWorkloadUnknown(t *testing.T) {
+	t.Parallel()
+
+	watcher := k8sapp.NewStateWatcher(newTestDeps(t), newFakeClient(), testNamespace)
+	require.True(t, watcher.WaitForCacheSync(t.Context()))
+
+	err := watcher.Wakeup(t.Context(), k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-gone"})
+	require.Error(t, err, "a wake that patches nothing must not look like a successful wake")
+	assert.Contains(t, err.Error(), "draft-gone")
+}

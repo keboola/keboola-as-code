@@ -195,11 +195,12 @@ func (w *StateWatcher) WaitForCacheSync(ctx context.Context) bool {
 
 // Wakeup patches spec.state = "Running" on the CRD of the workload that owns
 // the route: the Sandbox CR when the route belongs to one, the App CR otherwise.
-// If the workload is not in the cache, no patch is sent.
+// A workload missing from the cache is an error: patching nothing must not be
+// reported as a successful wake.
 func (w *StateWatcher) Wakeup(ctx context.Context, ref WorkloadRef) error {
 	e, ok := w.entryFor(ref)
 	if !ok {
-		return nil
+		return errors.Errorf("workload %q is not in the cache, nothing was woken", ref)
 	}
 
 	gvr := AppGVR()
