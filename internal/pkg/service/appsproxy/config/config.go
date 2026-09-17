@@ -122,7 +122,9 @@ func New() Config {
 		Datadog:         datadog.NewConfig(),
 		Metrics:         prometheus.NewConfig(),
 		Upstream: Upstream{
-			HTTPTimeout: 30 * time.Second,
+			//  must always be less than the timeout configured on the LB
+			// https://github.com/keboola/kbc-stacks/blob/28786129217c532d90f3a14d321e2b3de982ce04/apps/apps-proxy/templates/ingress.yaml#L11
+			HTTPTimeout: 4*time.Minute + 30*time.Second,
 			WsTimeout:   6 * time.Hour,
 		},
 		API: API{
