@@ -10,12 +10,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
@@ -657,6 +659,60 @@ foo3
 `)
 }
 
+func TestEncodingPipeline_ChunkRetryGivesUpAndCloses(t *testing.T) {
+	t.Parallel()
+
+	tc := newEncodingTestCase(t)
+	tc.Slice.Encoding.Sync.Mode = writesync.ModeDisk
+	tc.Slice.Encoding.Sync.Wait = false
+	tc.Slice.Encoding.MaxChunkSize = 64 * datasize.KB // minimum allowed, keeps the test payload small
+	// Max allowed check interval, so advancing the clock by minutes below doesn't replay hundreds
+	// of thousands of periodic-sync ticks (each real-time-scheduled) through the fake clock.
+	tc.Slice.Encoding.Sync.CheckInterval = duration.From(30 * time.Second)
+
+	closed := make(chan string, 1)
+	tc.CloseFunc = func(ctx context.Context, cause string) {
+		closed <- cause
+	}
+
+	w, err := tc.OpenPipeline()
+	require.NoError(t, err)
+
+	// All writes fail permanently, e.g. the volume is unreachable.
+	tc.Output.WriteError = errors.New("some error")
+
+	// A record that exactly fills one chunk completes it immediately via the size-based split in
+	// chunk.Writer.Write, without needing an explicit Flush/Sync trigger (which has its own,
+	// real-time-based 30s timeout, unrelated to what this test is verifying).
+	body := strings.Repeat("x", 64*1024-1)
+	_, err = w.WriteRecord(tc.TestRecord(body))
+	require.NoError(t, err)
+	tc.ExpectWritesCount(t, 1)
+
+	// Wait for the first failed attempt, it starts the retry-duration clock.
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		tc.Logger.AssertJSONMessages(c, `{"level":"warn","message":"chunks write failed: some error, waiting %s, chunks count = 1"}`)
+	}, 5*time.Second, 100*time.Millisecond)
+
+	// Move well past the retry bound, the currently pending backoff wait fires,
+	// the next attempt fails again and the pipeline should give up instead of retrying forever.
+	tc.Clock.Advance(10 * time.Minute)
+
+	select {
+	case cause := <-closed:
+		assert.NotEmpty(t, cause)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for closeFunc to be called after exhausting chunk retries")
+	}
+
+	// Deliberately not calling w.Close() here: the abandoned chunk is never drained by anyone
+	// once processChunks has given up on it, so Close (via the syncer's Stop -> forced sync)
+	// would block for up to its own real-time (non-fake-clock) 30s Flush timeout - twice, once
+	// for the pending auto-triggered sync woken by the Clock.Advance above, once for Stop's own
+	// forced one. That's an existing, pre-existing latency (Syncer.Stop ignores the caller's ctx
+	// for the underlying sync goroutine), not something this test needs to exercise.
+}
+
 // encodingTestCase is a helper to open encoding pipeline in tests.
 type encodingTestCase struct {
 	*writerSyncHelper
@@ -670,6 +726,7 @@ type encodingTestCase struct {
 	Events            *events.Events[encoding.Pipeline]
 	Manager           *encoding.Manager
 	Slice             *model.Slice
+	CloseFunc         func(ctx context.Context, cause string)
 }
 
 type writerSyncHelper struct {
@@ -707,6 +764,7 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 		Events:            events.New[encoding.Pipeline](),
 		Manager:           d.EncodingManager(),
 		Slice:             slice,
+		CloseFunc:         func(ctx context.Context, cause string) {},
 	}
 	return tc
 }
@@ -725,7 +783,7 @@ func (tc *encodingTestCase) OpenPipeline() (encoding.Pipeline, error) {
 		tc.Slice.Encoding,
 		tc.Slice.LocalStorage,
 		tc.Slice.Encoding.Compression.Type != compression.TypeNone,
-		func(ctx context.Context, cause string) {},
+		tc.CloseFunc,
 		tc.Output,
 	)
 	if err != nil {

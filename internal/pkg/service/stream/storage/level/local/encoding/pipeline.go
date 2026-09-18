@@ -466,6 +466,7 @@ func (p *pipeline) Close(ctx context.Context) error {
 
 func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encodingCfg encoding.Config) {
 	b := newChunkBackoff()
+	var failingSince time.Time
 	for {
 		// The channel is unblocked if there is an unprocessed chunk,
 		// or all chunks have been processed and the writer is closed.
@@ -520,12 +521,28 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 				p.readyLock.Unlock()
 			}
 
+			// Give up after writes have been failing continuously for too long, instead of
+			// retrying forever - a permanently unreachable volume would otherwise leave this
+			// goroutine, and the pipeline it belongs to, running until the process restarts.
+			if failingSince.IsZero() {
+				failingSince = clk.Now()
+			} else if clk.Since(failingSince) > maxChunkRetryDuration {
+				p.logger.Errorf(ctx, "chunks write failed for over %s, giving up: %s", maxChunkRetryDuration, err)
+				// Nobody else will ever process these chunks, don't leave a future Flush call
+				// (e.g. from the syncer, during Close) waiting forever for them.
+				p.chunks.Abandon()
+				go p.closeFunc(ctx, "chunk write retries exhausted")
+				return
+			}
+
 			// Wait before retry
 			delay := b.NextBackOff()
 			p.logger.Warnf(ctx, "chunks write failed: %s, waiting %s, chunks count = %d", err, delay, cnt)
 			<-clk.After(delay)
 			continue
 		}
+
+		failingSince = time.Time{}
 
 		// All chunks have been written, mark the pipeline ready
 		p.readyLock.Lock()
