@@ -109,6 +109,12 @@ func requestTelemetryAttrs(workload k8sapp.WorkloadRef, appConfig api.AppConfig)
 // A Sandbox that owns the exact hostname is authoritative and supplies the
 // appId from its own spec, so such a hostname does not have to contain one.
 // Everything else falls through to the unchanged App normalisation.
+//
+// The order is a priority, not a tie-break: a Sandbox match is taken without
+// asking whether an App also answers on that hostname. The platform allocates
+// every published hostname and will not issue one to a Sandbox that an App
+// answers on, so the two cannot overlap. See StateWatcher.ResolveHost for what
+// has to be revisited if a workload with a free-form hostname is ever added.
 func resolveWorkload(req *http.Request, resolver WorkloadResolver, host string) (k8sapp.WorkloadRef, bool) {
 	// parseAppID enforces this for the App path. The exact-hostname path needs
 	// it too, or a hostname indexed outside the proxy's own domain would route.

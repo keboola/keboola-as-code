@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/url"
-	"strings"
 	"sync"
 
 	"golang.org/x/sync/singleflight"
@@ -32,15 +31,12 @@ type entry struct {
 	k8sName            string
 	appID              api.AppID
 	host               string // exact hostname from appsProxy.publicUrl; empty when none is published
-	proxyIngress       bool   // spec.features.appsProxyIngress is set, so a hostname will be published
-	proxyIngressSlug   string // spec.features.appsProxyIngress.slug, the first part of the hostname the operator builds
 	state              AppActualState
 	autoRestartEnabled bool
 	devMode            bool
 	upstreamTarget     *url.URL // pre-parsed; nil when appsProxy.upstreamUrl absent/invalid
 	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
 	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
-	tieReported        bool     // this Sandbox's claim on host was already reported as lost to the App
 }
 
 // StateWatcher watches App and Sandbox CRDs in Kubernetes and provides a local
@@ -54,12 +50,11 @@ type StateWatcher struct {
 	apps                sync.Map           // api.AppID → entry
 	tokenLoadGroup      singleflight.Group // coalesces concurrent lazy-load K8s API calls per secret
 
-	// routeLock guards both hostname indexes and every publish of an App entry,
-	// because a resolve decides from the App entry and both indexes together.
+	// routeLock guards the Sandbox cache and serialises writes to the App cache,
+	// which are read-modify-write on the lazy E2B token path.
 	routeLock    sync.RWMutex
-	sandboxes    map[string]entry     // Sandbox K8s object name → entry
-	sandboxHosts map[string]string    // exact hostname → Sandbox K8s object name
-	appHosts     map[string]api.AppID // exact hostname → App that published it
+	sandboxes    map[string]entry  // Sandbox K8s object name → entry
+	sandboxHosts map[string]string // exact hostname → Sandbox K8s object name
 
 	removedLock sync.RWMutex
 	removed     []func(WorkloadRef)
@@ -105,7 +100,6 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 		sandboxesHaveSynced: sandboxInformer.HasSynced,
 		sandboxes:           make(map[string]entry),
 		sandboxHosts:        make(map[string]string),
-		appHosts:            make(map[string]api.AppID),
 	}
 
 	w.addEventHandler(ctx, appInformer, "App", w.handleUpsert, w.handleDelete)
@@ -248,20 +242,19 @@ func (w *StateWatcher) notifyRemoved(ref WorkloadRef) {
 	}
 }
 
-// ResolveHost maps a request hostname, and the appID already normalised out
-// of it, to the workload that serves the route.
+// ResolveHost maps a request hostname to the workload that owns it, and reports
+// whether one does.
 //
 // A Sandbox that publishes status.appsProxy.publicUrl owns that exact hostname,
-// so the exact-hostname index is consulted first. On any tie the App wins: it
-// owns the whole normalised hostname namespace and production traffic must never
-// be diverted to a Sandbox.
+// and its own spec.appId names the app config, so such a hostname need not
+// contain an app id. The match is authoritative: a caller falls back to app-id
+// normalisation only when no Sandbox claims the hostname.
+//
+// Nothing arbitrates between a Sandbox and an App here. The platform allocates
+// every published hostname and does not issue one to a Sandbox that an App
+// already answers on. A workload kind with a free-form hostname would break that
+// assumption, and this decision has to be revisited before one exists.
 func (w *StateWatcher) ResolveHost(_ context.Context, host string) (WorkloadRef, bool) {
-	// Absence from an unsynced App cache proves nothing, and letting a Sandbox
-	// win that race would divert production traffic during startup.
-	if !w.hasSynced() {
-		return WorkloadRef{}, false
-	}
-
 	host = NormalizeHost(host)
 
 	w.routeLock.RLock()
@@ -275,52 +268,8 @@ func (w *StateWatcher) ResolveHost(_ context.Context, host string) (WorkloadRef,
 	if !found {
 		return WorkloadRef{}, false
 	}
-	if w.appOwnsHost(e.appID, host) {
-		return WorkloadRef{}, false
-	}
 
 	return WorkloadRef{AppID: e.appID, SandboxName: k8sName}, true
-}
-
-// appOwnsHost reports whether an App keeps the route for this hostname.
-// The caller must hold routeLock.
-//
-// The second clause covers an App that will publish this hostname but has not
-// yet: its status is unknown during that window, and a deployment member that
-// inherited its slug claims exactly the hostname it is about to take. The
-// window never closes for an App that is never promoted, so the clause is
-// limited to the one hostname the App itself would publish — anything else it
-// has no claim to defend.
-func (w *StateWatcher) appOwnsHost(sandboxAppID api.AppID, host string) bool {
-	if _, published := w.appHosts[host]; published {
-		return true
-	}
-
-	appEntry, ok := w.appEntry(sandboxAppID)
-	if !ok || !appEntry.proxyIngress {
-		return false
-	}
-	if appEntry.host == host {
-		return true
-	}
-	if appEntry.host != "" {
-		return false
-	}
-
-	subdomain, _, _ := strings.Cut(host, ".")
-	return subdomain == appSubdomain(appEntry.proxyIngressSlug, sandboxAppID)
-}
-
-// appSubdomain returns the subdomain the operator builds a workload's public
-// hostname from: the slug and the app id joined, or the app id alone.
-func appSubdomain(slug string, appID api.AppID) string {
-	var b strings.Builder
-	if slug != "" {
-		b.WriteString(slug)
-		b.WriteByte('-')
-	}
-	b.WriteString(appID.String())
-	return strings.ToLower(b.String())
 }
 
 func (w *StateWatcher) appEntry(appID api.AppID) (entry, bool) {
@@ -372,23 +321,10 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 
 	appID := api.AppID(parsed.appID)
 
-	// The entry and the hostname index are published together: appOwnsHost
-	// decides from both, so an entry visible without its hostname indexed makes
-	// a Sandbox win the App's own hostname.
 	w.routeLock.Lock()
-	prev, existed := w.appEntry(appID)
 	w.apps.Store(appID, parsed.entry)
-	if existed && prev.host != parsed.entry.host {
-		w.releaseAppHost(prev.host, appID)
-	}
-	if parsed.entry.host != "" {
-		w.appHosts[parsed.entry.host] = appID
-	}
 	w.routeLock.Unlock()
 
-	if !existed || prev.host != parsed.entry.host {
-		w.warnIfClaimedBySandbox(ctx, appID, parsed.entry.host)
-	}
 	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v devMode=%v upstreamTarget=%v", parsed.entry.k8sName, appID, parsed.entry.state, parsed.entry.autoRestartEnabled, parsed.entry.devMode, parsed.entry.upstreamTarget != nil)
 }
 
@@ -472,8 +408,6 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 			k8sName:            k8sName,
 			appID:              api.AppID(appObj.Spec.AppID),
 			host:               host,
-			proxyIngress:       appObj.Spec.Features != nil && appObj.Spec.Features.AppsProxyIngress != nil,
-			proxyIngressSlug:   appObj.Spec.ProxyIngressSlug(),
 			state:              appObj.Status.CurrentState,
 			autoRestartEnabled: autoRestartEnabled,
 			devMode:            devMode,
@@ -491,7 +425,6 @@ func (w *StateWatcher) storeSandbox(ctx context.Context, appID api.AppID, e entr
 
 	w.routeLock.Lock()
 	prev, existed := w.sandboxes[e.k8sName]
-	e.tieReported = existed && prev.host == e.host && prev.tieReported
 	if existed && prev.host != e.host {
 		w.releaseHost(prev.host, e.k8sName)
 	}
@@ -501,53 +434,12 @@ func (w *StateWatcher) storeSandbox(ctx context.Context, appID api.AppID, e entr
 		}
 		w.sandboxHosts[e.host] = e.k8sName
 	}
-	reportTie := e.host != "" && !e.tieReported && w.appOwnsHost(appID, e.host)
-	if reportTie {
-		e.tieReported = true
-	}
 	w.sandboxes[e.k8sName] = e
 	w.routeLock.Unlock()
 
 	if claimedFrom != "" {
 		w.logger.Warnf(ctx, "Sandbox CRD %q (appID=%s) claims hostname %q already claimed by Sandbox %q; the newest claim wins", e.k8sName, appID, e.host, claimedFrom)
 	}
-	if reportTie {
-		w.reportTie(ctx, e.k8sName, e.host, appID)
-	}
-}
-
-// warnIfClaimedBySandbox reports an App hostname that a Sandbox already claims,
-// covering the case where the Sandbox was indexed before the App was known.
-//
-// The tie is reported when a claim is registered, not per request: today every
-// deployment member publishes production's own hostname, so the tie is hit on
-// every single production request. The tieReported flag is set under
-// routeLock by both this path and storeSandbox, so concurrent App and Sandbox
-// events report the same claim exactly once.
-func (w *StateWatcher) warnIfClaimedBySandbox(ctx context.Context, appID api.AppID, host string) {
-	if host == "" {
-		return
-	}
-
-	w.routeLock.Lock()
-	k8sName, claimed := w.sandboxHosts[host]
-	report := false
-	if claimed {
-		if e, found := w.sandboxes[k8sName]; found && !e.tieReported {
-			e.tieReported = true
-			w.sandboxes[k8sName] = e
-			report = true
-		}
-	}
-	w.routeLock.Unlock()
-
-	if report {
-		w.reportTie(ctx, k8sName, host, appID)
-	}
-}
-
-func (w *StateWatcher) reportTie(ctx context.Context, k8sName, host string, appID api.AppID) {
-	w.logger.Warnf(ctx, "Sandbox CRD %q claims hostname %q owned by App %s; the App keeps the route", k8sName, host, appID)
 }
 
 // releaseHost removes the hostname from the index. The caller must hold routeLock.
@@ -557,16 +449,6 @@ func (w *StateWatcher) releaseHost(host, k8sName string) {
 	}
 	if owner, ok := w.sandboxHosts[host]; ok && owner == k8sName {
 		delete(w.sandboxHosts, host)
-	}
-}
-
-// releaseAppHost removes the App hostname from the index. The caller must hold routeLock.
-func (w *StateWatcher) releaseAppHost(host string, appID api.AppID) {
-	if host == "" {
-		return
-	}
-	if owner, ok := w.appHosts[host]; ok && owner == appID {
-		delete(w.appHosts, host)
 	}
 }
 
@@ -616,12 +498,8 @@ func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
 		if !ok || e.k8sName != k8sName {
 			return true
 		}
-		// The App's hostname must be released with it, or a deleted App keeps
-		// winning the tie and its Sandboxes stay unroutable forever, and both
-		// must leave together for the same reason they are published together.
 		w.routeLock.Lock()
 		w.apps.Delete(key)
-		w.releaseAppHost(e.host, e.appID)
 		w.routeLock.Unlock()
 		w.logger.Debugf(ctx, "App CRD %q (appID=%s) removed from cache", k8sName, key)
 		w.notifyRemoved(WorkloadRef{AppID: e.appID})
