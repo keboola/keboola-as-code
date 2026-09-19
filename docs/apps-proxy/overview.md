@@ -14,3 +14,5 @@
 ## Operations
 
 **Note**: Apps Proxy deployment provisioning has been migrated to GitOps (PAT-868). The legacy deployment scripts and Kubernetes manifests have been removed from `provisioning/apps-proxy/`. Local development directories (`provisioning/apps-proxy/dev` and `provisioning/apps-proxy/docker`) are retained for local testing. For production deployment instructions, please refer to the platform GitOps repository.
+
+See [release.md](release.md) for the Apps Proxy release process.
