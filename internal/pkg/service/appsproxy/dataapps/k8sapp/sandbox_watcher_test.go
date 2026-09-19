@@ -2,7 +2,6 @@ package k8sapp_test
 
 import (
 	"context"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -13,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 )
 
@@ -107,9 +105,10 @@ func TestStateWatcher_ResolveHost_SandboxWithoutPublicURLIsNotRouted(t *testing.
 	assert.Empty(t, ref.SandboxName)
 }
 
-// The App owns the whole normalised hostname namespace. A member Sandbox that
-// publishes production's own hostname must not divert production traffic.
-func TestStateWatcher_ResolveHost_AppWinsHostnameTie(t *testing.T) {
+// A Sandbox is reached only by an exact match on the hostname it published, and
+// that match is authoritative. Draft hostnames are allocated by the platform, so
+// one cannot collide with a hostname an App answers on.
+func TestStateWatcher_ResolveHost_ExactMatchWinsOverTheApp(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -119,30 +118,17 @@ func TestStateWatcher_ResolveHost_AppWinsHostnameTie(t *testing.T) {
 	require.NoError(t, err)
 
 	createSandbox(t, fakeClient, newSandboxObject(
-		"member-2", "42", k8sapp.AppActualStateStopped,
+		"member-2", "42", k8sapp.AppActualStateRunning,
 		"https://myslug-42.hub.example.com", "http://member-2.keboola.svc.cluster.local:8888",
 	))
 
 	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 
-	// Wait until both objects are in the cache, so the tie is actually reachable.
-	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "42"})
-		if !ok {
-			return false
-		}
-		_, ok = watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "42", SandboxName: "member-2"})
-		return ok
+	require.Eventually(t, func() bool {
+		ref, ok := watcher.ResolveHost(t.Context(), "myslug-42.hub.example.com")
+		return ok && ref.SandboxName == "member-2"
 	}, 5*time.Second, 50*time.Millisecond)
-
-	_, claimed := watcher.ResolveHost(t.Context(), "myslug-42.hub.example.com")
-	assert.False(t, claimed)
-
-	info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "42"})
-	require.True(t, ok)
-	require.NotNil(t, info.UpstreamTarget)
-	assert.Equal(t, "http://prod.keboola.svc.cluster.local:8888", info.UpstreamTarget.String())
 }
 
 func TestStateWatcher_ResolveHost_HostnameReleasedOnPublicURLChange(t *testing.T) {
@@ -289,73 +275,6 @@ func TestStateWatcher_ResolveHost_DraftAndAppCoexist(t *testing.T) {
 	assert.Equal(t, "http://prod.keboola.svc.cluster.local:8888", appInfo.UpstreamTarget.String())
 }
 
-// A member that inherited the App's slug claims exactly the hostname the App is
-// about to publish. While the App's status has not caught up, the App still
-// wins that hostname, or the member takes production traffic.
-func TestStateWatcher_ResolveHost_AppWithoutPublicURLKeepsItsOwnHostname(t *testing.T) {
-	t.Parallel()
-
-	fakeClient := newFakeClient()
-
-	// spec.features.appsProxyIngress set with the slug, status.appsProxy not yet written.
-	appObj := withProxyIngressSlug(newAppObject("prod-app", "123", k8sapp.AppActualStateRunning), "prod")
-	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(t.Context(), appObj, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	createSandbox(t, fakeClient, newSandboxObject(
-		"member-2", "123", k8sapp.AppActualStateRunning,
-		"https://prod-123.hub.example.com", "http://member-2.keboola.svc.cluster.local:8888",
-	))
-
-	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
-	require.True(t, watcher.WaitForCacheSync(t.Context()))
-
-	require.Eventually(t, func() bool {
-		_, sandboxCached := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123", SandboxName: "member-2"})
-		_, appCached := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
-		return sandboxCached && appCached
-	}, 5*time.Second, 50*time.Millisecond)
-
-	_, claimed := watcher.ResolveHost(t.Context(), "prod-123.hub.example.com")
-	assert.False(t, claimed, "the App is about to publish this hostname and must keep it")
-}
-
-// The hostname tie is hit on every production request while every deployment
-// member publishes production's own hostname, so it must be logged when the
-// claim is registered, not per request.
-func TestStateWatcher_ResolveHost_TieWarnsOncePerClaim(t *testing.T) {
-	t.Parallel()
-
-	fakeClient := newFakeClient()
-	logger := log.NewDebugLogger()
-
-	appObj := newAppObjectWithPublicURL("42", "https://myslug-42.hub.example.com")
-	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(t.Context(), appObj, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	createSandbox(t, fakeClient, newSandboxObject(
-		"member-2", "42", k8sapp.AppActualStateStopped,
-		"https://myslug-42.hub.example.com", "http://member-2.keboola.svc.cluster.local:8888",
-	))
-
-	watcher := k8sapp.NewStateWatcher(newTestDepsWithLogger(t, logger), fakeClient, testNamespace)
-	require.True(t, watcher.WaitForCacheSync(t.Context()))
-
-	// The tie is reported once, while the CRD event is processed.
-	require.Eventually(t, func() bool {
-		return strings.Contains(logger.WarnMessages(), "the App keeps the route")
-	}, 5*time.Second, 50*time.Millisecond)
-	assert.Equal(t, 1, strings.Count(logger.WarnMessages(), "the App keeps the route"))
-
-	// Requests must not add to that: today every deployment member publishes
-	// production's own hostname, so the tie is hit on every production request.
-	logger.Truncate()
-	for range 3 {
-		assert.Empty(t, sandboxNameFor(watcher, t.Context(), "myslug-42.hub.example.com"))
-	}
-	assert.NotContains(t, logger.WarnMessages(), "the App keeps the route")
-}
-
 // The hostname the operator will publish for a draft carries no appId at all.
 // The appId comes from the Sandbox's own spec.
 func TestStateWatcher_ResolveHost_AppIDComesFromSandboxSpec(t *testing.T) {
@@ -408,37 +327,6 @@ func TestStateWatcher_ResolveHost_IngressDisabledAppDoesNotBlockDraft(t *testing
 
 	require.Eventually(t, func() bool {
 		return sandboxNameFor(watcher, t.Context(), "draft-9f3c.hub.example.com") == "draft-9f3c"
-	}, 5*time.Second, 50*time.Millisecond)
-}
-
-// A deleted App must release its hostname, or its Sandboxes stay unroutable.
-func TestStateWatcher_ResolveHost_AppHostReleasedOnDelete(t *testing.T) {
-	t.Parallel()
-
-	fakeClient := newFakeClient()
-
-	appObj := newAppObjectWithPublicURL("42", "https://myslug-42.hub.example.com")
-	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(t.Context(), appObj, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	createSandbox(t, fakeClient, newSandboxObject(
-		"member-2", "42", k8sapp.AppActualStateRunning,
-		"https://myslug-42.hub.example.com", "http://member-2.keboola.svc.cluster.local:8888",
-	))
-
-	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
-	require.True(t, watcher.WaitForCacheSync(t.Context()))
-
-	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "42"})
-		return ok
-	}, 5*time.Second, 50*time.Millisecond)
-	assert.Empty(t, sandboxNameFor(watcher, t.Context(), "myslug-42.hub.example.com"))
-
-	require.NoError(t, fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Delete(t.Context(), "prod-app", metav1.DeleteOptions{}))
-
-	assert.Eventually(t, func() bool {
-		return sandboxNameFor(watcher, t.Context(), "myslug-42.hub.example.com") == "member-2"
 	}, 5*time.Second, 50*time.Millisecond)
 }
 

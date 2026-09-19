@@ -90,7 +90,6 @@ type appObject struct {
 
 type appSpec struct {
 	AppID              string          `json:"appId"`
-	Features           *appFeatures    `json:"features,omitempty"`
 	AutoRestartEnabled *bool           `json:"autoRestartEnabled,omitempty"`
 	DevMode            *appDevModeSpec `json:"devMode,omitempty"`
 	Runtime            appRuntime      `json:"runtime"`
@@ -102,24 +101,6 @@ type appSpec struct {
 // runtime, not by apps-proxy.
 type appDevModeSpec struct {
 	Enabled bool `json:"enabled"`
-}
-
-// appFeatures carries only appsProxyIngress, and only its presence is read:
-// the operator publishes status.appsProxy.publicUrl exactly when this block is
-// set, so its absence means the workload will never own a hostname.
-type appFeatures struct {
-	AppsProxyIngress *appsProxyIngress `json:"appsProxyIngress,omitempty"`
-}
-
-type appsProxyIngress struct {
-	Slug string `json:"slug,omitempty"`
-}
-
-func (s appSpec) ProxyIngressSlug() string {
-	if s.Features == nil || s.Features.AppsProxyIngress == nil {
-		return ""
-	}
-	return s.Features.AppsProxyIngress.Slug
 }
 
 type appRuntime struct {
