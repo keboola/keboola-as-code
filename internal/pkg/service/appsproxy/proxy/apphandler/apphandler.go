@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	kpendpoints "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview/endpoints"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
@@ -27,6 +28,7 @@ import (
 type appHandler struct {
 	manager            *Manager
 	app                api.AppConfig
+	workload           k8sapp.WorkloadRef
 	baseURL            *url.URL
 	attrs              []attribute.KeyValue
 	upstream           chain.Handler
@@ -37,16 +39,19 @@ type appHandler struct {
 
 type ruleIndex int
 
-func newAppHandler(manager *Manager, app api.AppConfig, appUpstream chain.Handler, authHandlers map[provider.ID]selector.Handler) (http.Handler, error) {
+func newAppHandler(manager *Manager, app api.AppConfig, workload k8sapp.WorkloadRef, appUpstream chain.Handler, authHandlers map[provider.ID]selector.Handler) (http.Handler, error) {
 	// DevModeChecker is backed by the live K8s state watcher: re-evaluates on every request.
-	devModeChecker := kpendpoints.DevModeCheckerFunc(func(ctx context.Context, appID string) bool {
-		info, ok := manager.upstreamManager.AppInfo(ctx, api.AppID(appID))
+	// The appID argument is ignored: this handler serves exactly one workload, and the
+	// kai-preview endpoints only ever pass their own app id.
+	devModeChecker := kpendpoints.DevModeCheckerFunc(func(ctx context.Context, _ string) bool {
+		info, ok := manager.upstreamManager.AppInfo(ctx, workload)
 		return ok && info.DevMode
 	})
 
 	handler := &appHandler{
 		manager:            manager,
 		app:                app,
+		workload:           workload,
 		baseURL:            app.BaseURL(manager.config.API.PublicURL),
 		attrs:              app.Telemetry(),
 		upstream:           appUpstream,
@@ -162,8 +167,14 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		req.Header.Set(config.RequestIDHeader, id)
 	}
 
-	// Redirect request to canonical host to match cookies domain
-	if strings.ToLower(req.Host) != h.baseURL.Host {
+	// Redirect request to canonical host to match cookies domain.
+	//
+	// Only the App needs this. parseAppID strips the subdomain to the last dash,
+	// so an App answers on many hostnames and a cookie set on one would not be
+	// sent to another. A Sandbox owns exactly one hostname and is reached only by
+	// matching it exactly, before parseAppID is consulted, so it has nothing to
+	// canonicalise and needs no canonical host of its own.
+	if !h.workload.IsSandbox() && strings.ToLower(req.Host) != h.baseURL.Host {
 		w.Header().Set("Location", h.baseURL.ResolveReference(&url.URL{Path: req.URL.Path, RawQuery: req.URL.RawQuery}).String())
 		w.WriteHeader(http.StatusPermanentRedirect)
 		return nil
@@ -263,6 +274,6 @@ func (h *appHandler) maybeRefreshSessionCookie(w http.ResponseWriter, req *http.
 // It reads from the live K8s state cache so toggling DevMode on the App CRD takes
 // effect on the next request without requiring handler recreation.
 func (h *appHandler) isDevMode(ctx context.Context) bool {
-	info, ok := h.manager.upstreamManager.AppInfo(ctx, h.app.ID)
+	info, ok := h.manager.upstreamManager.AppInfo(ctx, h.workload)
 	return ok && info.DevMode
 }

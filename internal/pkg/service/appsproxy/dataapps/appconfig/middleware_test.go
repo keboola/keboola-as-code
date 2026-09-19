@@ -8,13 +8,30 @@ import (
 
 	"github.com/dimfeld/httptreemux/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
+
+// testResolver claims one hostname for a Sandbox, as the watcher does, and
+// supplies the appId from that Sandbox's own spec.
+type testResolver struct {
+	sandboxHost  string
+	sandboxName  string
+	sandboxAppID api.AppID
+}
+
+func (r *testResolver) ResolveHost(_ context.Context, host string) (k8sapp.WorkloadRef, bool) {
+	if r.sandboxHost != "" && host == r.sandboxHost {
+		return k8sapp.WorkloadRef{AppID: r.sandboxAppID, SandboxName: r.sandboxName}, true
+	}
+	return k8sapp.WorkloadRef{}, false
+}
 
 type testLoader struct{}
 
@@ -59,6 +76,45 @@ func TestAppConfigMiddleware(t *testing.T) {
 	logger.AssertJSONMessages(t, expected)
 }
 
+// The resolved workload must reach the handler through AppConfigResult, or a
+// draft request silently routes to the App's upstream.
+func TestMiddleware_ResolvedWorkloadInContext(t *testing.T) {
+	t.Parallel()
+
+	// The hostname carries no appId at all — the Sandbox's own spec supplies it.
+	resolver := &testResolver{sandboxHost: "draft-9f3c.example.com", sandboxName: "draft-9f3c", sandboxAppID: "1"}
+
+	var got appconfig.AppConfigResult
+	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		got = appconfig.AppConfigFromContext(req.Context())
+		w.WriteHeader(http.StatusOK)
+	})
+	handler = middleware.Wrap(
+		handler,
+		middleware.RequestInfo(),
+		appconfig.Middleware(&testLoader{}, resolver, "example.com"),
+	)
+
+	get := func(url string) {
+		t.Helper()
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, url, nil))
+		require.Equal(t, http.StatusOK, rec.Code)
+	}
+
+	// The exact-hostname match runs first and its appId loads the app config.
+	get("https://draft-9f3c.example.com/")
+	assert.Equal(t, k8sapp.WorkloadRef{AppID: "1", SandboxName: "draft-9f3c"}, got.Workload)
+	assert.Equal(t, api.AppID("1"), got.AppID)
+	require.NoError(t, got.Err)
+	assert.Equal(t, api.AppID("1"), got.AppConfig.ID)
+
+	// Everything else falls through to the unchanged App normalisation.
+	get("https://app-1.example.com/")
+	assert.Equal(t, k8sapp.WorkloadRef{AppID: "1"}, got.Workload)
+	assert.Equal(t, api.AppID("1"), got.AppID)
+}
+
 func testSetup(t *testing.T) (http.Handler, log.DebugLogger) {
 	t.Helper()
 
@@ -82,8 +138,45 @@ func testSetup(t *testing.T) (http.Handler, log.DebugLogger) {
 	handler = middleware.Wrap(
 		handler,
 		middleware.RequestInfo(),
-		appconfig.Middleware(&testLoader{}, "example.com"),
+		appconfig.Middleware(&testLoader{}, &testResolver{}, "example.com"),
 		middleware.Logger(logger),
 	)
 	return handler, logger
+}
+
+// A draft's traffic is attributed to its owning App, which is correct, but
+// without the Sandbox alongside it a draft cannot be told apart from
+// production in logs, traces or metrics.
+func TestMiddleware_SandboxRouteCarriesTheSandboxAttribute(t *testing.T) {
+	t.Parallel()
+
+	resolver := &testResolver{sandboxHost: "draft-9f3c.example.com", sandboxName: "draft-9f3c", sandboxAppID: "1"}
+
+	logger := log.NewDebugLogger()
+	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		logger.Info(req.Context(), "served")
+		w.WriteHeader(http.StatusOK)
+	})
+	handler = middleware.Wrap(
+		handler,
+		middleware.RequestInfo(),
+		appconfig.Middleware(&testLoader{}, resolver, "example.com"),
+	)
+
+	get := func(url string) string {
+		t.Helper()
+		logger.Truncate()
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, url, nil))
+		require.Equal(t, http.StatusOK, rec.Code)
+		return logger.AllMessages()
+	}
+
+	// The Sandbox is named alongside the app id, which stays correct.
+	draft := get("https://draft-9f3c.example.com/")
+	assert.Contains(t, draft, `"proxy.sandbox.name":"draft-9f3c"`)
+	assert.Contains(t, draft, `"proxy.app.id":"1"`)
+
+	// An App route carries no Sandbox attribute at all.
+	assert.NotContains(t, get("https://app-1.example.com/"), "proxy.sandbox.name")
 }

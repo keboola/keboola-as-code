@@ -63,7 +63,7 @@ func TestManager_Wakeup(t *testing.T) {
 	appID := api.AppID("app")
 	fakeClient := mock.TestFakeK8sClient()
 
-	// Register app in fake K8s so WakeupApp has a target.
+	// Register app in fake K8s so Wakeup has a target.
 	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
 		ctx, newTestApp(string(appID)), metav1.CreateOptions{},
 	)
@@ -74,7 +74,7 @@ func TestManager_Wakeup(t *testing.T) {
 
 	// Wait for watcher cache to sync.
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(ctx, appID)
+		_, ok := watcher.GetState(ctx, k8sapp.WorkloadRef{AppID: appID})
 		return ok
 	}, 10*time.Second, 50*time.Millisecond)
 
@@ -82,21 +82,21 @@ func TestManager_Wakeup(t *testing.T) {
 	fakeClient.ClearActions()
 
 	// The first wakeup sends a K8s PATCH.
-	err = manager.Wakeup(ctx, appID)
+	err = manager.Wakeup(ctx, k8sapp.WorkloadRef{AppID: appID})
 	require.NoError(t, err)
 	assert.Equal(t, 1, patchCount(fakeClient.Actions()))
 
 	// Second call is skipped because the Interval was not exceeded.
 	fakeClient.ClearActions()
 	clk.Advance(time.Millisecond)
-	err = manager.Wakeup(ctx, appID)
+	err = manager.Wakeup(ctx, k8sapp.WorkloadRef{AppID: appID})
 	require.NoError(t, err)
 	assert.Equal(t, 0, patchCount(fakeClient.Actions()))
 
 	// After exceeding the Interval, a new PATCH is sent.
 	fakeClient.ClearActions()
 	clk.Advance(wakeup.Interval)
-	err = manager.Wakeup(ctx, appID)
+	err = manager.Wakeup(ctx, k8sapp.WorkloadRef{AppID: appID})
 	require.NoError(t, err)
 	assert.Equal(t, 1, patchCount(fakeClient.Actions()))
 }
@@ -122,7 +122,7 @@ func TestManager_Wakeup_Race(t *testing.T) {
 
 	// Wait for watcher cache to sync.
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(ctx, appID)
+		_, ok := watcher.GetState(ctx, k8sapp.WorkloadRef{AppID: appID})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -137,7 +137,7 @@ func TestManager_Wakeup_Race(t *testing.T) {
 	// Call Wakeup 10x in parallel.
 	for range 10 {
 		wg.Go(func() {
-			require.NoError(t, manager.Wakeup(raceCtx, appID))
+			require.NoError(t, manager.Wakeup(raceCtx, k8sapp.WorkloadRef{AppID: appID}))
 			counter.Add(1)
 		})
 	}
@@ -148,4 +148,75 @@ func TestManager_Wakeup_Race(t *testing.T) {
 	assert.Equal(t, int64(10), counter.Load())
 	// Only one K8s PATCH is sent due to rate-limiting.
 	assert.Equal(t, 1, patchCount(fakeClient.Actions()))
+}
+
+// A successful wake must leave a trace. Without one, "the wake ran and worked"
+// and "the wake never ran" look identical in the logs, and telling them apart
+// needs a live CR sample.
+func TestManager_Wakeup_LogsTheWake(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New())
+
+	appID := api.AppID("app")
+	fakeClient := mock.TestFakeK8sClient()
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
+		ctx, newTestApp(string(appID)), metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	watcher := d.AppStateWatcher()
+	require.Eventually(t, func() bool {
+		_, ok := watcher.GetState(ctx, k8sapp.WorkloadRef{AppID: appID})
+		return ok
+	}, 10*time.Second, 50*time.Millisecond)
+
+	mock.DebugLogger().Truncate()
+	require.NoError(t, d.WakeupManager().Wakeup(ctx, k8sapp.WorkloadRef{AppID: appID}))
+
+	assert.Contains(t, mock.DebugLogger().AllMessagesTxt(), `woken workload "app"`)
+}
+
+// The rate-limiter map is keyed by workload too, so it needs the same eviction
+// as the handler cache.
+func TestManager_EvictWorkload(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	clk := clockwork.NewFakeClock()
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
+
+	appID := api.AppID("app")
+	fakeClient := mock.TestFakeK8sClient()
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
+		ctx, newTestApp(string(appID)), metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	watcher := d.AppStateWatcher()
+	require.Eventually(t, func() bool {
+		_, ok := watcher.GetState(ctx, k8sapp.WorkloadRef{AppID: appID})
+		return ok
+	}, 10*time.Second, 50*time.Millisecond)
+
+	manager := d.WakeupManager()
+	ref := k8sapp.WorkloadRef{AppID: appID}
+
+	// First wake patches and arms the throttle.
+	fakeClient.ClearActions()
+	require.NoError(t, manager.Wakeup(ctx, ref))
+	require.Equal(t, 1, patchCount(fakeClient.Actions()))
+
+	// Throttled while the interval has not elapsed.
+	fakeClient.ClearActions()
+	require.NoError(t, manager.Wakeup(ctx, ref))
+	require.Equal(t, 0, patchCount(fakeClient.Actions()))
+
+	// Evicting the workload drops its throttle state with it.
+	manager.EvictWorkload(ref)
+
+	fakeClient.ClearActions()
+	require.NoError(t, manager.Wakeup(ctx, ref))
+	assert.Equal(t, 1, patchCount(fakeClient.Actions()), "a re-created workload must not inherit the old throttle")
 }

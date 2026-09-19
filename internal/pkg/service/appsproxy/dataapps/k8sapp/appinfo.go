@@ -2,9 +2,13 @@
 package k8sapp
 
 import (
+	"net"
 	"net/url"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 )
 
 const (
@@ -12,12 +16,29 @@ const (
 	Version  = "v2"
 	Resource = "apps"
 
+	SandboxVersion  = "v1"
+	SandboxResource = "sandboxes"
+
 	BackendTypeE2BSandbox = "e2bSandbox"
 )
 
 // AppGVR returns the GroupVersionResource for the App CRD.
 func AppGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: Group, Version: Version, Resource: Resource}
+}
+
+// SandboxGVR returns the GroupVersionResource for the Sandbox CRD.
+func SandboxGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{Group: Group, Version: SandboxVersion, Resource: SandboxResource}
+}
+
+// NormalizeHost strips any port and lowercases the hostname, so index keys and
+// request hostnames are compared the same way.
+func NormalizeHost(host string) string {
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	return strings.ToLower(host)
 }
 
 // SecretGVR returns the GroupVersionResource for core/v1 Secrets.
@@ -35,7 +56,33 @@ const (
 	AppActualStateStopping AppActualState = "Stopping"
 )
 
-// appObject is a minimal struct for unmarshalling App CRD objects — only the fields we need.
+// WorkloadRef identifies the workload that serves a route.
+// An empty SandboxName means the App CR itself owns the route.
+type WorkloadRef struct {
+	AppID       api.AppID
+	SandboxName string
+}
+
+// IsSandbox reports whether a Sandbox CR, rather than the App CR, owns the route.
+func (r WorkloadRef) IsSandbox() bool {
+	return r.SandboxName != ""
+}
+
+func (r WorkloadRef) String() string {
+	if r.SandboxName == "" {
+		return r.AppID.String()
+	}
+	var b strings.Builder
+	b.WriteString(r.AppID.String())
+	b.WriteString("/sandbox/")
+	b.WriteString(r.SandboxName)
+	return b.String()
+}
+
+// appObject is a minimal struct for unmarshalling App and Sandbox CRD objects.
+// Both kinds are read through this one struct: every field the proxy needs has
+// the same JSON name and meaning on both, because the Sandbox CRD reuses the
+// App's RuntimeSpec/DevModeSpec and inlines the same WorkloadStatus.
 type appObject struct {
 	Spec   appSpec   `json:"spec"`
 	Status appStatus `json:"status"`
@@ -74,6 +121,9 @@ type AppInfo struct {
 	// UpstreamTarget is the pre-parsed URL from .status.appsProxy.upstreamUrl.
 	// Nil when the field is absent or unparseable.
 	UpstreamTarget *url.URL
+	// PublicHost is the exact hostname the workload published at
+	// .status.appsProxy.publicUrl. Empty when it published none.
+	PublicHost string
 	// E2BAccessToken is the access token loaded from the K8s Secret
 	// referenced by .status.e2bSandbox.accessTokenSecretName.
 	// Empty when the app is not an E2B sandbox or the secret is unavailable.
@@ -92,4 +142,5 @@ type e2bSandbox struct {
 
 type appsProxy struct {
 	UpstreamURL string `json:"upstreamUrl,omitempty"`
+	PublicURL   string `json:"publicUrl,omitempty"`
 }

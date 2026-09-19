@@ -56,6 +56,7 @@ type Manager struct {
 type AppUpstream struct {
 	manager   *Manager
 	app       api.AppConfig
+	workload  k8sapp.WorkloadRef
 	target    *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
 	baseURL   *url.URL // public URL of the app, resolved at creation; see rewriteRedirectLocation
 	handler   *chain.Chain
@@ -104,28 +105,39 @@ func (m *Manager) Shutdown(ctx context.Context) {
 	m.wg.Wait()
 }
 
-// AppInfo returns the cached AppInfo for appID from the K8s cache in a single call.
-// Returns (AppInfo{}, false) when the app is not cached.
-func (m *Manager) AppInfo(ctx context.Context, appID api.AppID) (k8sapp.AppInfo, bool) {
-	return m.stateWatcher.GetState(ctx, appID)
+// AppInfo returns the cached AppInfo for the workload from the K8s cache in a single call.
+// Returns (AppInfo{}, false) when the workload is not cached.
+func (m *Manager) AppInfo(ctx context.Context, ref k8sapp.WorkloadRef) (k8sapp.AppInfo, bool) {
+	return m.stateWatcher.GetState(ctx, ref)
 }
 
-func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig) (upstream *AppUpstream, err error) {
+func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig, workload k8sapp.WorkloadRef) (upstream *AppUpstream, err error) {
 	_, span := m.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.NewUpstream")
 	defer span.End(&err)
 
 	// Resolve target URL at creation time; immutable after this point.
 	var target *url.URL
-	if info, ok := m.stateWatcher.GetState(ctx, app.ID); ok {
+	var publicHost string
+	if info, ok := m.stateWatcher.GetState(ctx, workload); ok {
 		target = info.UpstreamTarget // pre-parsed by watcher on CRD event; may be nil
+		publicHost = info.PublicHost
+	}
+
+	// A Sandbox is reached only at the hostname it published, so that is the
+	// address its upstream's redirects must be rewritten to. The app config
+	// yields the App's hostname, which would bounce the user out of the Sandbox.
+	baseURL := app.BaseURL(m.config.API.PublicURL)
+	if workload.IsSandbox() && publicHost != "" {
+		baseURL = &url.URL{Scheme: baseURL.Scheme, Host: publicHost, Path: "/"}
 	}
 
 	// Create reverse proxy
 	upstream = &AppUpstream{
-		manager: m,
-		app:     app,
-		target:  target,
-		baseURL: app.BaseURL(m.config.API.PublicURL),
+		manager:  m,
+		app:      app,
+		workload: workload,
+		target:   target,
+		baseURL:  baseURL,
 	}
 	upstream.handler = upstream.newProxy(m.config.Upstream.HTTPTimeout)
 	upstream.wsHandler = upstream.newWebsocketProxy(m.config.Upstream.WsTimeout)
@@ -142,7 +154,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 
 	// K8s state pre-check: if we know the app is not running, handle it synchronously
 	// without attempting DNS/upstream. Falls through if state is unknown or Running.
-	if appInfo, ok := u.manager.stateWatcher.GetState(ctx, u.app.ID); ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
+	if appInfo, ok := u.manager.stateWatcher.GetState(ctx, u.workload); ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
 		switch {
 		case appInfo.ActualState == k8sapp.AppActualStateStarting:
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
@@ -215,7 +227,7 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 			// Always fetch the latest token from the state watcher to handle
 			// secret recreation (updates propagate asynchronously).
 			r.Out.Header.Del("e2b-traffic-access-token")
-			if info, ok := u.manager.AppInfo(r.Out.Context(), u.app.ID); ok && info.E2BAccessToken != "" {
+			if info, ok := u.manager.AppInfo(r.Out.Context(), u.workload); ok && info.E2BAccessToken != "" {
 				r.Out.Header.Set("e2b-traffic-access-token", info.E2BAccessToken)
 			}
 		},
@@ -387,7 +399,12 @@ func (u *AppUpstream) trace() chain.Middleware {
 					if streamlit.IsBackgroundPoll(reqPath) {
 						return
 					}
-					u.notify(ctx)
+					// notify bumps lastRequestTimestamp on the App, which is not
+					// this workload. Until a Sandbox has an idle timer of its
+					// own, draft traffic must not hold the App awake.
+					if !u.workload.IsSandbox() {
+						u.notify(ctx)
+					}
 					u.manager.sessions.Activity(ctx)
 				},
 			})
@@ -423,7 +440,7 @@ func (u *AppUpstream) wakeup(ctx context.Context, err error) {
 		wakeupCtx = telemetry.ContextWithSpan(wakeupCtx, span)
 
 		// Error is already logged by the Wakeup method itself.
-		err := u.manager.wakeup.Wakeup(wakeupCtx, u.app.ID) //nolint:contextcheck
+		err := u.manager.wakeup.Wakeup(wakeupCtx, u.workload) //nolint:contextcheck
 		span.End(&err)
 	})
 }

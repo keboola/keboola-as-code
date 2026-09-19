@@ -5,6 +5,7 @@ import (
 	"testing/synctest"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
@@ -52,4 +53,29 @@ func TestSyncMap_GetOrInit_Race(t *testing.T) {
 
 	// Check total requests count
 	assert.Equal(t, int64(10), accessCounter.Load())
+}
+
+// Without Delete a map keyed by a short-lived identity grows for the life of
+// the process, because GetOrInit is the only way in.
+func TestSyncMap_Delete(t *testing.T) {
+	t.Parallel()
+
+	inits := 0
+	m := syncmap.New[string, int](func(string) *int {
+		inits++
+		v := inits
+		return &v
+	})
+
+	first := m.GetOrInit("a")
+	require.Same(t, first, m.GetOrInit("a"), "same key must return the same item")
+
+	removed, ok := m.Delete("a")
+	assert.True(t, ok)
+	assert.Same(t, first, removed, "Delete returns the item it removed, so the caller can release it")
+
+	assert.NotSame(t, first, m.GetOrInit("a"), "after Delete the key is re-initialised")
+
+	_, ok = m.Delete("never-there")
+	assert.False(t, ok)
 }

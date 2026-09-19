@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/streamlit"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -207,7 +208,7 @@ func authProviderFromContext(ctx context.Context) (string, string) {
 // Middleware ensures every request carries a session cookie and puts the
 // session into the request context. It sits between authentication and the
 // upstream, so the X-Kbc-User-* headers are already present.
-func (m *Manager) Middleware(app api.AppConfig) chain.Middleware {
+func (m *Manager) Middleware(app api.AppConfig, workload k8sapp.WorkloadRef) chain.Middleware {
 	var key []byte
 	if m.enabled {
 		key = signingKey(app.ID, m.salt)
@@ -218,7 +219,10 @@ func (m *Manager) Middleware(app api.AppConfig) chain.Middleware {
 			// A frontend background poll is not user activity, so it must not
 			// start or extend a session either — otherwise a forgotten browser
 			// tab would keep producing sessions for an app nobody is watching.
-			if m.enabled && !streamlit.IsBackgroundPoll(req.URL.Path) {
+			// A Sandbox serves its own workload but carries no app config of its
+			// own, so a session minted here would be signed with the owning
+			// App's key and counted as that App's traffic.
+			if m.enabled && !workload.IsSandbox() && !streamlit.IsBackgroundPoll(req.URL.Path) {
 				if s := m.begin(rw, req, app, key); s != nil {
 					req = req.WithContext(contextWith(req.Context(), s))
 				}

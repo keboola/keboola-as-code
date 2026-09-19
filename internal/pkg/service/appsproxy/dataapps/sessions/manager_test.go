@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
@@ -51,6 +52,14 @@ func hashUserID(authProviderID, sub string) string {
 
 func testApp() api.AppConfig {
 	return api.AppConfig{ID: "12345", Name: "my-app", ProjectID: "789"}
+}
+
+func testWorkload() k8sapp.WorkloadRef {
+	return k8sapp.WorkloadRef{AppID: "12345"}
+}
+
+func testSandboxWorkload() k8sapp.WorkloadRef {
+	return k8sapp.WorkloadRef{AppID: "12345", SandboxName: "draft-abc"}
 }
 
 // streamServer stands in for the Stream HTTP source. The real writer talks
@@ -104,12 +113,19 @@ func newManagerWithProcess(t *testing.T, streamURL string) (*sessions.Manager, *
 func call(t *testing.T, m *sessions.Manager, inner func(req *http.Request), cookie *http.Cookie, headers map[string]string) *http.Response {
 	t.Helper()
 
+	return callWorkload(t, m, testWorkload(), inner, cookie, headers)
+}
+
+// callWorkload is call() for a route served by a specific workload.
+func callWorkload(t *testing.T, m *sessions.Manager, workload k8sapp.WorkloadRef, inner func(req *http.Request), cookie *http.Cookie, headers map[string]string) *http.Response {
+	t.Helper()
+
 	handler := chain.New(chain.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) error {
 		if inner != nil {
 			inner(req)
 		}
 		return nil
-	})).Prepend(m.Middleware(testApp()))
+	})).Prepend(m.Middleware(testApp(), workload))
 
 	return serve(t, handler, cookie, headers)
 }
@@ -452,7 +468,7 @@ func TestManager_AuthProvider(t *testing.T) {
 	// the upstream which of several configured providers admitted the request.
 	tracked := chain.New(chain.HandlerFunc(func(http.ResponseWriter, *http.Request) error {
 		return nil
-	})).Prepend(m.Middleware(testApp()))
+	})).Prepend(m.Middleware(testApp(), testWorkload()))
 	stamped := sessions.WithAuthProvider(tracked, provider.ID("company-sso"), provider.TypeOIDC)
 
 	serve(t, stamped, nil, nil)
@@ -472,7 +488,7 @@ func TestManager_ProviderUserIDHashIncludesAuthProvider(t *testing.T) {
 
 	tracked := chain.New(chain.HandlerFunc(func(http.ResponseWriter, *http.Request) error {
 		return nil
-	})).Prepend(m.Middleware(testApp()))
+	})).Prepend(m.Middleware(testApp(), testWorkload()))
 	stamped := sessions.WithAuthProvider(tracked, provider.ID("company-sso"), provider.TypeOIDC)
 
 	serve(t, stamped, nil, map[string]string{"X-Kbc-User-Id": "subject-1"})
@@ -714,7 +730,7 @@ func TestManager_BackgroundPollDoesNotStartSession(t *testing.T) {
 	handler := chain.New(chain.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) error {
 		_, sessionFound = sessions.FromContext(req.Context())
 		return nil
-	})).Prepend(m.Middleware(testApp()))
+	})).Prepend(m.Middleware(testApp(), testWorkload()))
 
 	for _, path := range []string{"/_stcore/health", "/_stcore/host-config"} {
 		resp := servePath(t, handler, path, nil, nil)
@@ -782,7 +798,7 @@ func TestManager_OnlyNavigationStartsSession(t *testing.T) {
 
 			handler := chain.New(chain.HandlerFunc(func(http.ResponseWriter, *http.Request) error {
 				return nil
-			})).Prepend(m.Middleware(testApp()))
+			})).Prepend(m.Middleware(testApp(), testWorkload()))
 
 			// servePath sets Sec-Fetch-Mode: navigate by default; drop it so
 			// each case controls the headers itself.
@@ -1078,4 +1094,73 @@ func TestManager_IdentityIsStillRecordedAfterStripping(t *testing.T) {
 	event := recvEvent(t, events)
 	assert.Equal(t, sessions.EventSessionStart, event.EventType)
 	assert.Equal(t, hashUserID("", "subject-1"), event.ProviderUserID)
+}
+
+func TestManager_SandboxRouteIsNotTracked(t *testing.T) {
+	t.Parallel()
+
+	// A Sandbox carries no app config of its own, so it is served with the
+	// owning App's. Tracking it would sign the session with the App's key and
+	// count draft traffic as the App's.
+	for _, tc := range []struct {
+		name     string
+		workload k8sapp.WorkloadRef
+		tracked  bool
+	}{
+		{"app route", testWorkload(), true},
+		{"sandbox route", testSandboxWorkload(), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			streamURL, events := streamServer(t)
+			m, _ := newManager(t, streamURL)
+
+			var sessionFound bool
+			resp := callWorkload(t, m, tc.workload, func(req *http.Request) {
+				_, sessionFound = sessions.FromContext(req.Context())
+				m.Activity(req.Context())
+			}, nil, nil)
+
+			assert.Equal(t, tc.tracked, sessionFound)
+			assert.Equal(t, tc.tracked, hasSessionCookie(resp))
+			if tc.tracked {
+				assert.Equal(t, sessions.EventSessionStart, recvEvent(t, events).EventType)
+			} else {
+				expectNoEvent(t, events)
+			}
+		})
+	}
+}
+
+func TestManager_UserIDHeaderIsStrippedOnASandboxRouteToo(t *testing.T) {
+	t.Parallel()
+
+	// The strip does not depend on tracking, so it must survive a workload
+	// that is deliberately not tracked at all.
+	headers := map[string]string{
+		"X-Kbc-User-Id":    "subject-1",
+		"X-Kbc-User-Email": "someone@example.com",
+	}
+
+	for _, tc := range []struct {
+		name     string
+		workload k8sapp.WorkloadRef
+	}{
+		{"app route", testWorkload()},
+		{"sandbox route", testSandboxWorkload()},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			streamURL, _ := streamServer(t)
+			m, _ := newManager(t, streamURL)
+
+			var seen http.Header
+			callWorkload(t, m, tc.workload, func(req *http.Request) { seen = req.Header.Clone() }, nil, headers)
+
+			assert.Empty(t, seen.Get("X-Kbc-User-Id"), "the app must not see the user id header")
+			assert.Equal(t, "someone@example.com", seen.Get("X-Kbc-User-Email"))
+		})
+	}
 }
