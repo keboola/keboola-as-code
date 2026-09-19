@@ -173,7 +173,7 @@ func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, 
 			w.logger.Warnf(ctx, "workload %s: failed to lazy-load E2B access token from secret %q: %s", ref, e.e2bSecretName, err)
 		} else if t, ok := token.(string); t != "" && ok {
 			e.e2bAccessToken = t
-			w.storeEntry(ref, e)
+			w.storeLoadedToken(ref, t)
 			w.logger.Infof(ctx, "workload %s: lazy-loaded E2B access token from secret %q", ref, e.e2bSecretName)
 		}
 	}
@@ -343,16 +343,24 @@ func (w *StateWatcher) entryFor(ref WorkloadRef) (entry, bool) {
 	return w.appEntry(ref.AppID)
 }
 
-func (w *StateWatcher) storeEntry(ref WorkloadRef, e entry) {
-	if !ref.IsSandbox() {
-		w.apps.Store(ref.AppID, e)
+// storeLoadedToken records a lazily loaded E2B token against the entry the cache
+// holds now. Writing back the whole entry the caller read would lose any CRD
+// event that landed while the token was being fetched.
+func (w *StateWatcher) storeLoadedToken(ref WorkloadRef, token string) {
+	w.routeLock.Lock()
+	defer w.routeLock.Unlock()
+
+	if ref.IsSandbox() {
+		if current, ok := w.sandboxes[ref.SandboxName]; ok {
+			current.e2bAccessToken = token
+			w.sandboxes[ref.SandboxName] = current
+		}
 		return
 	}
 
-	w.routeLock.Lock()
-	defer w.routeLock.Unlock()
-	if _, ok := w.sandboxes[ref.SandboxName]; ok {
-		w.sandboxes[ref.SandboxName] = e
+	if current, ok := w.appEntry(ref.AppID); ok {
+		current.e2bAccessToken = token
+		w.apps.Store(ref.AppID, current)
 	}
 }
 
@@ -608,10 +616,11 @@ func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
 		if !ok || e.k8sName != k8sName {
 			return true
 		}
-		w.apps.Delete(key)
 		// The App's hostname must be released with it, or a deleted App keeps
-		// winning the tie and its Sandboxes stay unroutable forever.
+		// winning the tie and its Sandboxes stay unroutable forever, and both
+		// must leave together for the same reason they are published together.
 		w.routeLock.Lock()
+		w.apps.Delete(key)
 		w.releaseAppHost(e.host, e.appID)
 		w.routeLock.Unlock()
 		w.logger.Debugf(ctx, "App CRD %q (appID=%s) removed from cache", k8sName, key)
