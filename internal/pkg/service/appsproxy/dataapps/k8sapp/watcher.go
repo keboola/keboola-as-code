@@ -54,9 +54,8 @@ type StateWatcher struct {
 	apps                sync.Map           // api.AppID → entry
 	tokenLoadGroup      singleflight.Group // coalesces concurrent lazy-load K8s API calls per secret
 
-	// routeLock guards both hostname indexes. One lock, because a resolve reads
-	// them together and must not see the App half and the Sandbox half of a
-	// concurrent update.
+	// routeLock guards both hostname indexes and every publish of an App entry,
+	// because a resolve decides from the App entry and both indexes together.
 	routeLock    sync.RWMutex
 	sandboxes    map[string]entry     // Sandbox K8s object name → entry
 	sandboxHosts map[string]string    // exact hostname → Sandbox K8s object name
@@ -276,7 +275,13 @@ func (w *StateWatcher) appOwnsHost(sandboxAppID api.AppID, host string) bool {
 	}
 
 	appEntry, ok := w.appEntry(sandboxAppID)
-	if !ok || !appEntry.proxyIngress || appEntry.host != "" {
+	if !ok || !appEntry.proxyIngress {
+		return false
+	}
+	if appEntry.host == host {
+		return true
+	}
+	if appEntry.host != "" {
 		return false
 	}
 
@@ -336,10 +341,13 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 	}
 
 	appID := api.AppID(parsed.appID)
+
+	// The entry and the hostname index are published together: appOwnsHost
+	// decides from both, so an entry visible without its hostname indexed makes
+	// a Sandbox win the App's own hostname.
+	w.routeLock.Lock()
 	prev, existed := w.appEntry(appID)
 	w.apps.Store(appID, parsed.entry)
-
-	w.routeLock.Lock()
 	if existed && prev.host != parsed.entry.host {
 		w.releaseAppHost(prev.host, appID)
 	}
