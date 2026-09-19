@@ -2,9 +2,13 @@ package apphandler
 
 import (
 	"net/http"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 )
 
 // TestAppHandlerWrapper_NeedsRebuild verifies that handler recreation is keyed on
@@ -34,4 +38,29 @@ func TestAppHandlerWrapper_NeedsRebuild(t *testing.T) {
 
 	// Upstream/E2B hash changed → rebuild.
 	assert.True(t, w.needsRebuild("etag-1", "hash-2"))
+}
+
+// The handler cache is keyed by workload. A draft is short-lived, so without
+// eviction the cache grows with every draft ever served and each stranded entry
+// keeps a reverse proxy and an uncancelled context alive.
+func TestManager_EvictWorkload(t *testing.T) {
+	t.Parallel()
+
+	m := &Manager{
+		handlers: syncmap.New[k8sapp.WorkloadRef, appHandlerWrapper](func(k8sapp.WorkloadRef) *appHandlerWrapper {
+			return &appHandlerWrapper{lock: &sync.Mutex{}}
+		}),
+	}
+
+	ref := k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"}
+
+	cancelled := false
+	wrapper := m.handlers.GetOrInit(ref)
+	wrapper.handler = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	wrapper.cancel = func(error) { cancelled = true }
+
+	m.evictWorkload(ref)
+
+	assert.True(t, cancelled, "the handler's context must be cancelled when its workload is gone")
+	assert.Nil(t, m.handlers.GetOrInit(ref).handler, "the entry must be gone, so the key re-initialises empty")
 }

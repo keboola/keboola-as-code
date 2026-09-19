@@ -3,6 +3,7 @@ package k8sapp_test
 import (
 	"context"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -494,4 +495,51 @@ func TestStateWatcher_Wakeup_ErrorsWhenWorkloadUnknown(t *testing.T) {
 	err := watcher.Wakeup(t.Context(), k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-gone"})
 	require.Error(t, err, "a wake that patches nothing must not look like a successful wake")
 	assert.Contains(t, err.Error(), "draft-gone")
+}
+
+// Caches keyed by workload cannot shed an entry unless the watcher says the
+// workload is gone.
+func TestStateWatcher_OnWorkloadRemoved(t *testing.T) {
+	t.Parallel()
+
+	fakeClient := newFakeClient()
+	createSandbox(t, fakeClient, newSandboxObject(
+		"draft-abc", "123", k8sapp.AppActualStateRunning,
+		"https://draft-abc.hub.example.com", "http://draft-abc.svc:8888",
+	))
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
+		t.Context(), newAppObjectWithPublicURL("456", "https://public-456.hub.example.com"), metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
+
+	var mu sync.Mutex
+	var removed []k8sapp.WorkloadRef
+	watcher.OnWorkloadRemoved(func(ref k8sapp.WorkloadRef) {
+		mu.Lock()
+		defer mu.Unlock()
+		removed = append(removed, ref)
+	})
+
+	require.True(t, watcher.WaitForCacheSync(t.Context()))
+	require.Eventually(t, func() bool {
+		_, sandbox := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"})
+		_, app := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "456"})
+		return sandbox && app
+	}, 5*time.Second, 50*time.Millisecond)
+
+	require.NoError(t, fakeClient.Resource(k8sapp.SandboxGVR()).Namespace(testNamespace).Delete(t.Context(), "draft-abc", metav1.DeleteOptions{}))
+	require.NoError(t, fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Delete(t.Context(), "prod-app", metav1.DeleteOptions{}))
+
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(removed) == 2
+	}, 5*time.Second, 50*time.Millisecond)
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Contains(t, removed, k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"})
+	assert.Contains(t, removed, k8sapp.WorkloadRef{AppID: "456"})
 }
