@@ -127,7 +127,7 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig, workload k
 	// address its upstream's redirects must be rewritten to. The app config
 	// yields the App's hostname, which would bounce the user out of the Sandbox.
 	baseURL := app.BaseURL(m.config.API.PublicURL)
-	if workload.SandboxName != "" && publicHost != "" {
+	if workload.IsSandbox() && publicHost != "" {
 		baseURL = &url.URL{Scheme: baseURL.Scheme, Host: publicHost, Path: "/"}
 	}
 
