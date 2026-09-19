@@ -168,3 +168,40 @@ func testSetup(t *testing.T) (http.Handler, log.DebugLogger) {
 	)
 	return handler, logger
 }
+
+// A draft's traffic is attributed to its owning App, which is correct, but
+// without the Sandbox alongside it a draft cannot be told apart from
+// production in logs, traces or metrics.
+func TestMiddleware_SandboxRouteCarriesTheSandboxAttribute(t *testing.T) {
+	t.Parallel()
+
+	resolver := &testResolver{sandboxHost: "draft-9f3c.example.com", sandboxName: "draft-9f3c", sandboxAppID: "1"}
+
+	logger := log.NewDebugLogger()
+	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		logger.Info(req.Context(), "served")
+		w.WriteHeader(http.StatusOK)
+	})
+	handler = middleware.Wrap(
+		handler,
+		middleware.RequestInfo(),
+		appconfig.Middleware(&testLoader{}, resolver, "example.com"),
+	)
+
+	get := func(url string) string {
+		t.Helper()
+		logger.Truncate()
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, url, nil))
+		require.Equal(t, http.StatusOK, rec.Code)
+		return logger.AllMessages()
+	}
+
+	// The Sandbox is named alongside the app id, which stays correct.
+	draft := get("https://draft-9f3c.example.com/")
+	assert.Contains(t, draft, `"proxy.sandbox.name":"draft-9f3c"`)
+	assert.Contains(t, draft, `"proxy.app.id":"1"`)
+
+	// An App route carries no Sandbox attribute at all.
+	assert.NotContains(t, get("https://app-1.example.com/"), "proxy.sandbox.name")
+}
