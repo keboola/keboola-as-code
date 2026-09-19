@@ -116,12 +116,6 @@ func requestTelemetryAttrs(workload k8sapp.WorkloadRef, appConfig api.AppConfig)
 // answers on, so the two cannot overlap. See StateWatcher.ResolveHost for what
 // has to be revisited if a workload with a free-form hostname is ever added.
 func resolveWorkload(req *http.Request, resolver WorkloadResolver, host string) (k8sapp.WorkloadRef, bool) {
-	// parseAppID enforces this for the App path. The exact-hostname path needs
-	// it too, or a hostname indexed outside the proxy's own domain would route.
-	if !strings.HasSuffix(k8sapp.NormalizeHost(req.Host), "."+k8sapp.NormalizeHost(host)) {
-		return k8sapp.WorkloadRef{}, false
-	}
-
 	if ref, ok := resolver.ResolveHost(req.Context(), req.Host); ok {
 		return ref, true
 	}

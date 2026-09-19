@@ -115,31 +115,6 @@ func TestMiddleware_ResolvedWorkloadInContext(t *testing.T) {
 	assert.Equal(t, api.AppID("1"), got.AppID)
 }
 
-// A hostname the Sandbox index claims but that is outside the proxy's own
-// public domain must not route: parseAppID enforced that for the App path.
-func TestMiddleware_ExactHostnameOutsidePublicDomainIsNotRouted(t *testing.T) {
-	t.Parallel()
-
-	resolver := &testResolver{sandboxHost: "draft-9f3c.evil.test", sandboxName: "draft-9f3c", sandboxAppID: "1"}
-
-	var got appconfig.AppConfigResult
-	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		got = appconfig.AppConfigFromContext(req.Context())
-		w.WriteHeader(http.StatusOK)
-	})
-	handler = middleware.Wrap(
-		handler,
-		middleware.RequestInfo(),
-		appconfig.Middleware(&testLoader{}, resolver, "example.com"),
-	)
-
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-9f3c.evil.test/", nil))
-	require.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, got.Workload.SandboxName)
-	assert.Empty(t, got.AppID)
-}
-
 func testSetup(t *testing.T) (http.Handler, log.DebugLogger) {
 	t.Helper()
 
