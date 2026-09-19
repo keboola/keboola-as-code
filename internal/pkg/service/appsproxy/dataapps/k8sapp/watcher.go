@@ -60,6 +60,9 @@ type StateWatcher struct {
 	sandboxes    map[string]entry     // Sandbox K8s object name → entry
 	sandboxHosts map[string]string    // exact hostname → Sandbox K8s object name
 	appHosts     map[string]api.AppID // exact hostname → App that published it
+
+	removedLock sync.RWMutex
+	removed     []func(WorkloadRef)
 }
 
 type dependencies interface {
@@ -224,6 +227,25 @@ func (w *StateWatcher) Wakeup(ctx context.Context, ref WorkloadRef) error {
 		metav1.PatchOptions{},
 	)
 	return err
+}
+
+// OnWorkloadRemoved registers a callback fired when a workload leaves the
+// cache, so a consumer keyed by WorkloadRef can drop what it holds for it.
+func (w *StateWatcher) OnWorkloadRemoved(fn func(WorkloadRef)) {
+	w.removedLock.Lock()
+	defer w.removedLock.Unlock()
+	w.removed = append(w.removed, fn)
+}
+
+// notifyRemoved must be called with no lock held: a callback may re-enter the watcher.
+func (w *StateWatcher) notifyRemoved(ref WorkloadRef) {
+	w.removedLock.RLock()
+	callbacks := w.removed
+	w.removedLock.RUnlock()
+
+	for _, fn := range callbacks {
+		fn(ref)
+	}
 }
 
 // ResolveHost maps a request hostname, and the appID already normalised out
@@ -557,6 +579,7 @@ func (w *StateWatcher) handleSandboxDelete(ctx context.Context, obj any) {
 
 	if found {
 		w.logger.Debugf(ctx, "Sandbox CRD %q (appID=%s) removed from cache", k8sName, e.appID)
+		w.notifyRemoved(WorkloadRef{AppID: e.appID, SandboxName: k8sName})
 	}
 }
 
@@ -592,6 +615,7 @@ func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
 		w.releaseAppHost(e.host, e.appID)
 		w.routeLock.Unlock()
 		w.logger.Debugf(ctx, "App CRD %q (appID=%s) removed from cache", k8sName, key)
+		w.notifyRemoved(WorkloadRef{AppID: e.appID})
 		return false
 	})
 }

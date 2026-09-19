@@ -177,3 +177,46 @@ func TestManager_Wakeup_LogsTheWake(t *testing.T) {
 
 	assert.Contains(t, mock.DebugLogger().AllMessagesTxt(), `woken workload "app"`)
 }
+
+// The rate-limiter map is keyed by workload too, so it needs the same eviction
+// as the handler cache.
+func TestManager_EvictWorkload(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	clk := clockwork.NewFakeClock()
+	d, mock := dependencies.NewMockedServiceScope(t, ctx, config.New(), commonDeps.WithClock(clk))
+
+	appID := api.AppID("app")
+	fakeClient := mock.TestFakeK8sClient()
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
+		ctx, newTestApp(string(appID)), metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	watcher := d.AppStateWatcher()
+	require.Eventually(t, func() bool {
+		_, ok := watcher.GetState(ctx, k8sapp.WorkloadRef{AppID: appID})
+		return ok
+	}, 10*time.Second, 50*time.Millisecond)
+
+	manager := d.WakeupManager()
+	ref := k8sapp.WorkloadRef{AppID: appID}
+
+	// First wake patches and arms the throttle.
+	fakeClient.ClearActions()
+	require.NoError(t, manager.Wakeup(ctx, ref))
+	require.Equal(t, 1, patchCount(fakeClient.Actions()))
+
+	// Throttled while the interval has not elapsed.
+	fakeClient.ClearActions()
+	require.NoError(t, manager.Wakeup(ctx, ref))
+	require.Equal(t, 0, patchCount(fakeClient.Actions()))
+
+	// Evicting the workload drops its throttle state with it.
+	manager.EvictWorkload(ref)
+
+	fakeClient.ClearActions()
+	require.NoError(t, manager.Wakeup(ctx, ref))
+	assert.Equal(t, 1, patchCount(fakeClient.Actions()), "a re-created workload must not inherit the old throttle")
+}

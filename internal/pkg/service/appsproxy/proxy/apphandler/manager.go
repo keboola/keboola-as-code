@@ -67,6 +67,7 @@ type dependencies interface {
 	AuthProxyManager() *authproxy.Manager
 	AppConfigLoader() appconfig.Loader
 	SessionsManager() *sessions.Manager
+	AppStateWatcher() *k8sapp.StateWatcher
 }
 
 func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
@@ -78,7 +79,7 @@ func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Manager{
+	m := &Manager{
 		logger:           d.Logger(),
 		config:           cfg,
 		telemetry:        d.Telemetry(),
@@ -92,7 +93,28 @@ func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
 		clock:                d.Clock(),
 		storageTokenVerifier: verifier,
 		sessionsManager:      d.SessionsManager(),
-	}, nil
+	}
+
+	d.AppStateWatcher().OnWorkloadRemoved(m.evictWorkload)
+
+	return m, nil
+}
+
+// evictWorkload drops the cached handler for a workload that no longer exists.
+// The cache is keyed by workload and a draft is short-lived, so without this it
+// grows with every draft ever served and strands each handler's reverse proxy
+// and its uncancelled context.
+func (m *Manager) evictWorkload(ref k8sapp.WorkloadRef) {
+	wrapper, ok := m.handlers.Delete(ref)
+	if !ok {
+		return
+	}
+
+	wrapper.lock.Lock()
+	defer wrapper.lock.Unlock()
+	if wrapper.cancel != nil {
+		wrapper.cancel(errors.New("workload removed"))
+	}
 }
 
 func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {

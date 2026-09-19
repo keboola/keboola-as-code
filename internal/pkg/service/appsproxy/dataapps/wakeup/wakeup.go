@@ -37,7 +37,7 @@ type dependencies interface {
 }
 
 func NewManager(d dependencies) *Manager {
-	return &Manager{
+	m := &Manager{
 		clock:   d.Clock(),
 		logger:  d.Logger(),
 		watcher: d.AppStateWatcher(),
@@ -45,6 +45,16 @@ func NewManager(d dependencies) *Manager {
 			return &state{}
 		}),
 	}
+
+	d.AppStateWatcher().OnWorkloadRemoved(m.EvictWorkload)
+
+	return m
+}
+
+// EvictWorkload drops the rate-limiter state for a workload that no longer
+// exists, so the map does not grow with every draft ever woken.
+func (l *Manager) EvictWorkload(ref k8sapp.WorkloadRef) {
+	l.stateMap.Delete(ref)
 }
 
 func (l *Manager) Wakeup(ctx context.Context, ref k8sapp.WorkloadRef) error {
