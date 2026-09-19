@@ -203,7 +203,7 @@ func (w *StateWatcher) Wakeup(ctx context.Context, ref WorkloadRef) error {
 	}
 
 	gvr := AppGVR()
-	if ref.SandboxName != "" {
+	if ref.IsSandbox() {
 		gvr = SandboxGVR()
 	}
 
@@ -226,7 +226,7 @@ func (w *StateWatcher) Wakeup(ctx context.Context, ref WorkloadRef) error {
 	return err
 }
 
-// ResolveWorkload maps a request hostname, and the appID already normalised out
+// ResolveHost maps a request hostname, and the appID already normalised out
 // of it, to the workload that serves the route.
 //
 // A Sandbox that publishes status.appsProxy.publicUrl owns that exact hostname,
@@ -311,7 +311,7 @@ func (w *StateWatcher) appEntry(appID api.AppID) (entry, bool) {
 }
 
 func (w *StateWatcher) entryFor(ref WorkloadRef) (entry, bool) {
-	if ref.SandboxName != "" {
+	if ref.IsSandbox() {
 		w.routeLock.RLock()
 		defer w.routeLock.RUnlock()
 		e, ok := w.sandboxes[ref.SandboxName]
@@ -322,7 +322,7 @@ func (w *StateWatcher) entryFor(ref WorkloadRef) (entry, bool) {
 }
 
 func (w *StateWatcher) storeEntry(ref WorkloadRef, e entry) {
-	if ref.SandboxName == "" {
+	if !ref.IsSandbox() {
 		w.apps.Store(ref.AppID, e)
 		return
 	}
@@ -492,7 +492,7 @@ func (w *StateWatcher) storeSandbox(ctx context.Context, appID api.AppID, e entr
 // The tie is reported when a claim is registered, not per request: today every
 // deployment member publishes production's own hostname, so the tie is hit on
 // every single production request. The tieReported flag is set under
-// sandboxLock by both this path and storeSandbox, so concurrent App and Sandbox
+// routeLock by both this path and storeSandbox, so concurrent App and Sandbox
 // events report the same claim exactly once.
 func (w *StateWatcher) warnIfClaimedBySandbox(ctx context.Context, appID api.AppID, host string) {
 	if host == "" {
@@ -520,7 +520,7 @@ func (w *StateWatcher) reportTie(ctx context.Context, k8sName, host string, appI
 	w.logger.Warnf(ctx, "Sandbox CRD %q claims hostname %q owned by App %s; the App keeps the route", k8sName, host, appID)
 }
 
-// releaseHost removes the hostname from the index. The caller must hold sandboxLock.
+// releaseHost removes the hostname from the index. The caller must hold routeLock.
 func (w *StateWatcher) releaseHost(host, k8sName string) {
 	if host == "" {
 		return
@@ -551,11 +551,13 @@ func (w *StateWatcher) handleSandboxDelete(ctx context.Context, obj any) {
 	e, found := w.sandboxes[k8sName]
 	if found {
 		w.releaseHost(e.host, k8sName)
+		delete(w.sandboxes, k8sName)
 	}
-	delete(w.sandboxes, k8sName)
 	w.routeLock.Unlock()
 
-	w.logger.Debugf(ctx, "Sandbox CRD %q (appID=%s) removed from cache", k8sName, e.appID)
+	if found {
+		w.logger.Debugf(ctx, "Sandbox CRD %q (appID=%s) removed from cache", k8sName, e.appID)
+	}
 }
 
 func objectFromDeleteEvent(obj any) (*unstructured.Unstructured, bool) {
