@@ -17,6 +17,11 @@ type ctxKey string
 
 const (
 	appConfigCtxKey = ctxKey("app-config")
+
+	// attrContextAppID duplicates the app id under the same key the sandboxes
+	// service uses.
+	attrContextAppID = "context.appId"
+	attrSandboxName  = "proxy.sandbox.name"
 )
 
 type AppConfigResult struct {
@@ -57,9 +62,7 @@ func Middleware(configLoader Loader, resolver WorkloadResolver, host string) mid
 				ctx = context.WithValue(ctx, appConfigCtxKey, result)
 				if err == nil {
 					// Enrich context with telemetry attributes for downstream operations.
-					telemetryAttrs := appConfig.Telemetry()
-					// Duplicate app ID in the event attributes under the same key as sandboxes service.
-					telemetryAttrs = append(telemetryAttrs, attribute.String("context.appId", string(appID)))
+					telemetryAttrs := requestTelemetryAttrs(workload, appConfig)
 
 					ctx = ctxattr.ContextWith(ctx, telemetryAttrs...)
 
@@ -85,6 +88,20 @@ func Middleware(configLoader Loader, resolver WorkloadResolver, host string) mid
 			next.ServeHTTP(w, req)
 		})
 	}
+}
+
+// requestTelemetryAttrs describes the workload serving the request, for the log
+// line, the request span and the HTTP metrics.
+//
+// The app id is right for a Sandbox route too, but on its own it cannot tell a
+// draft from production, so the Sandbox is named alongside it.
+func requestTelemetryAttrs(workload k8sapp.WorkloadRef, appConfig api.AppConfig) []attribute.KeyValue {
+	attrs := appConfig.Telemetry()
+	attrs = append(attrs, attribute.String(attrContextAppID, workload.AppID.String()))
+	if workload.IsSandbox() {
+		attrs = append(attrs, attribute.String(attrSandboxName, workload.SandboxName))
+	}
+	return attrs
 }
 
 // resolveWorkload picks the workload for the request hostname.
