@@ -43,6 +43,7 @@ type Manager struct {
 
 type appHandlerWrapper struct {
 	lock        *sync.Mutex
+	evicted     bool // the workload is gone and this entry has left the cache; never build into it again
 	handler     http.Handler
 	cancel      context.CancelCauseFunc
 	handlerHash string // hash of UpstreamTarget + E2BAccessToken; handler is recreated when it changes
@@ -112,22 +113,37 @@ func (m *Manager) evictWorkload(ref k8sapp.WorkloadRef) {
 
 	wrapper.lock.Lock()
 	defer wrapper.lock.Unlock()
+	wrapper.evicted = true
 	if wrapper.cancel != nil {
 		wrapper.cancel(errors.New("workload removed"))
+		wrapper.cancel = nil
 	}
+	wrapper.handler = nil
 }
 
 func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {
-	wrapper := m.handlers.GetOrInit(result.Workload)
+	// The entry can be evicted between taking the pointer and taking its lock,
+	// in which case it is no longer the cache's and must not be built into.
+	for {
+		if handler, ok := m.handlerFor(ctx, result, m.handlers.GetOrInit(result.Workload)); ok {
+			return handler
+		}
+	}
+}
 
+func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResult, wrapper *appHandlerWrapper) (http.Handler, bool) {
 	// Only one newHandler method runs in parallel per app.
 	// If there is an in-flight update, we are waiting for its results.
 	wrapper.lock.Lock()
 	defer wrapper.lock.Unlock()
 
+	if wrapper.evicted {
+		return nil, false
+	}
+
 	// Load configuration for the app
 	if result.Err != nil {
-		return m.newErrorHandler(ctx, api.AppConfig{ID: result.AppID}, result.Err)
+		return m.newErrorHandler(ctx, api.AppConfig{ID: result.AppID}, result.Err), true
 	}
 
 	// Create a new handler when the config changed (ETag), upstream URL changed, or E2B token changed.
@@ -143,7 +159,7 @@ func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResu
 		wrapper.configETag = configETag
 	}
 
-	return wrapper.handler
+	return wrapper.handler, true
 }
 
 func (m *Manager) newHandler(ctx context.Context, app api.AppConfig, workload k8sapp.WorkloadRef) (http.Handler, context.CancelCauseFunc) {

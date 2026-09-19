@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 )
@@ -63,4 +64,42 @@ func TestManager_EvictWorkload(t *testing.T) {
 
 	assert.True(t, cancelled, "the handler's context must be cancelled when its workload is gone")
 	assert.Nil(t, m.handlers.GetOrInit(ref).handler, "the entry must be gone, so the key re-initialises empty")
+}
+
+// A request takes the wrapper pointer before it takes the wrapper's lock. If the
+// workload is evicted in that window, the request must not build a handler into
+// the entry that eviction just detached from the map: that handler's cancel
+// would never be reachable again.
+func TestManager_EvictedWrapperIsNotRepopulated(t *testing.T) {
+	t.Parallel()
+
+	m := &Manager{
+		handlers: syncmap.New[k8sapp.WorkloadRef, appHandlerWrapper](func(k8sapp.WorkloadRef) *appHandlerWrapper {
+			return &appHandlerWrapper{lock: &sync.Mutex{}}
+		}),
+	}
+
+	ref := k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"}
+
+	// The request has the pointer but has not locked it yet.
+	stale := m.handlers.GetOrInit(ref)
+
+	m.evictWorkload(ref)
+
+	// The request now proceeds on the pointer it captured.
+	_, ok := m.handlerFor(t.Context(), appconfig.AppConfigResult{Workload: ref}, stale)
+	assert.False(t, ok, "an evicted wrapper must be rejected so the caller retries on a fresh one")
+	assert.Nil(t, stale.handler, "nothing may be built into a detached entry")
+}
+
+// A Sandbox that republishes under a different hostname must rebuild its
+// handler: the old one rewrites upstream redirects to the hostname it was built
+// with, which would send the user to an address this workload no longer owns.
+func TestHandlerHash_ChangesWithThePublishedHostname(t *testing.T) {
+	t.Parallel()
+
+	before := handlerHash(k8sapp.AppInfo{PublicHost: "draft-abc.hub.example.com"}, true)
+	after := handlerHash(k8sapp.AppInfo{PublicHost: "draft-xyz.hub.example.com"}, true)
+
+	assert.NotEqual(t, before, after)
 }
