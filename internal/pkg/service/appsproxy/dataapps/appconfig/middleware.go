@@ -119,7 +119,16 @@ func resolveWorkload(req *http.Request, resolver WorkloadResolver, host string) 
 	if ref, ok := resolver.ResolveWorkloadForHost(req.Context(), req.Host); ok {
 		return ref, true
 	}
+	if ref, ok := workloadForAppID(req, host); ok {
+		return ref, true
+	}
+	return k8sapp.WorkloadRef{}, false
+}
 
+// workloadForAppID names the App the hostname normalises to. Unlike the
+// exact-hostname match it does not check that the App exists: an App is
+// validated by loading its config, not against the K8s cache.
+func workloadForAppID(req *http.Request, host string) (k8sapp.WorkloadRef, bool) {
 	appID, ok := parseAppID(req, host)
 	if !ok {
 		return k8sapp.WorkloadRef{}, false
