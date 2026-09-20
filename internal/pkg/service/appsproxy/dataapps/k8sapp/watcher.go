@@ -25,8 +25,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// entry stores the K8s object name and last observed state of one workload
-// (an App CR or a Sandbox CR).
 type entry struct {
 	k8sName            string
 	appID              api.AppID
@@ -242,18 +240,14 @@ func (w *StateWatcher) notifyRemoved(ref WorkloadRef) {
 	}
 }
 
-// ResolveWorkloadForHost maps a request hostname to the workload that owns it, and reports
-// whether one does.
+// ResolveWorkloadForHost reports the workload that owns an exact hostname. A
+// Sandbox that publishes status.appsProxy.publicUrl owns it, and its own
+// spec.appId names the app config, so the hostname need not contain an app id.
 //
-// A Sandbox that publishes status.appsProxy.publicUrl owns that exact hostname,
-// and its own spec.appId names the app config, so such a hostname need not
-// contain an app id. The match is authoritative: a caller falls back to app-id
-// normalisation only when no Sandbox claims the hostname.
-//
-// Nothing arbitrates between a Sandbox and an App here. The platform allocates
-// every published hostname and does not issue one to a Sandbox that an App
-// already answers on. A workload kind with a free-form hostname would break that
-// assumption, and this decision has to be revisited before one exists.
+// Nothing arbitrates between a Sandbox and an App: the platform allocates every
+// published hostname and does not issue one to a Sandbox that an App already
+// answers on. A workload kind with a free-form hostname breaks that assumption
+// and has to be reconsidered here before one exists.
 func (w *StateWatcher) ResolveWorkloadForHost(_ context.Context, host string) (WorkloadRef, bool) {
 	host = NormalizeHost(host)
 
@@ -292,9 +286,9 @@ func (w *StateWatcher) entryFor(ref WorkloadRef) (entry, bool) {
 	return w.appEntry(ref.AppID)
 }
 
-// storeLoadedToken records a lazily loaded E2B token against the entry the cache
-// holds now. Writing back the whole entry the caller read would lose any CRD
-// event that landed while the token was being fetched.
+// storeLoadedToken writes only the token, onto the entry the cache holds now:
+// writing back the whole entry the caller read would lose a CRD event that
+// landed while the token was being fetched.
 func (w *StateWatcher) storeLoadedToken(ref WorkloadRef, token string) {
 	w.routeLock.Lock()
 	defer w.routeLock.Unlock()
@@ -378,9 +372,6 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 		}
 	}
 
-	// A non-empty status.appsProxy.publicUrl is the operator's statement that
-	// this object owns that exact hostname. Nothing is published for a workload
-	// that owns no route, so an empty field means "not routable by hostname".
 	var host string
 	if rawURL := appObj.Status.AppsProxy.PublicURL; rawURL != "" {
 		if t, err := url.Parse(rawURL); err == nil {
@@ -418,8 +409,8 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 	}, true
 }
 
-// storeSandbox stores the entry and keeps the exact-hostname index in step with
-// it, releasing the hostname the object claimed before.
+// storeSandbox releases the hostname the object claimed before, so a Sandbox
+// that republishes does not leave the old one routable.
 func (w *StateWatcher) storeSandbox(ctx context.Context, appID api.AppID, e entry) {
 	var claimedFrom string
 

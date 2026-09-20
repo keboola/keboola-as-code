@@ -87,11 +87,9 @@ func Middleware(configLoader Loader, resolver WorkloadResolver, host string) mid
 	}
 }
 
-// requestTelemetryAttrs describes the workload serving the request, for the log
-// line, the request span and the HTTP metrics.
-//
-// The app id is right for a Sandbox route too, but on its own it cannot tell a
-// draft from production, so the Sandbox is named alongside it.
+// requestTelemetryAttrs reaches the log line, the request span and the HTTP
+// metrics. The app id is right for a Sandbox route too, but on its own it
+// cannot tell a draft from production.
 func requestTelemetryAttrs(workload k8sapp.WorkloadRef, appConfig api.AppConfig) []attribute.KeyValue {
 	attrs := appConfig.Telemetry()
 	attrs = append(attrs, attribute.String(attrContextAppID, workload.AppID.String()))
@@ -101,17 +99,9 @@ func requestTelemetryAttrs(workload k8sapp.WorkloadRef, appConfig api.AppConfig)
 	return attrs
 }
 
-// resolveWorkload picks the workload for the request hostname.
-//
-// A Sandbox that owns the exact hostname is authoritative and supplies the
-// appId from its own spec, so such a hostname does not have to contain one.
-// Everything else falls through to the unchanged App normalisation.
-//
-// The order is a priority, not a tie-break: a Sandbox match is taken without
-// asking whether an App also answers on that hostname. The platform allocates
-// every published hostname and will not issue one to a Sandbox that an App
-// answers on, so the two cannot overlap. See StateWatcher.ResolveWorkloadForHost for what
-// has to be revisited if a workload with a free-form hostname is ever added.
+// resolveWorkload picks the workload for the request hostname. The order is a
+// priority, not a tie-break; see StateWatcher.ResolveWorkloadForHost for why
+// nothing arbitrates between a Sandbox and an App.
 func resolveWorkload(req *http.Request, resolver WorkloadResolver, host string) (k8sapp.WorkloadRef, bool) {
 	if ref, ok := resolver.ResolveWorkloadForHost(req.Context(), req.Host); ok {
 		return ref, true
@@ -122,9 +112,8 @@ func resolveWorkload(req *http.Request, resolver WorkloadResolver, host string) 
 	return k8sapp.WorkloadRef{}, false
 }
 
-// workloadForAppID names the App the hostname normalises to. Unlike the
-// exact-hostname match it does not check that the App exists: an App is
-// validated by loading its config, not against the K8s cache.
+// workloadForAppID does not check that the App exists: an App is validated by
+// loading its config, not against the K8s cache.
 func workloadForAppID(req *http.Request, host string) (k8sapp.WorkloadRef, bool) {
 	appID, ok := parseAppID(req, host)
 	if !ok {

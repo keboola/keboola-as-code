@@ -79,10 +79,8 @@ func (r WorkloadRef) String() string {
 	return b.String()
 }
 
-// appObject is a minimal struct for unmarshalling App and Sandbox CRD objects.
-// Both kinds are read through this one struct: every field the proxy needs has
-// the same JSON name and meaning on both, because the Sandbox CRD reuses the
-// App's RuntimeSpec/DevModeSpec and inlines the same WorkloadStatus.
+// appObject unmarshals both App and Sandbox CRDs: every field the proxy needs
+// has the same JSON name and meaning on each.
 type appObject struct {
 	Spec   appSpec   `json:"spec"`
 	Status appStatus `json:"status"`
