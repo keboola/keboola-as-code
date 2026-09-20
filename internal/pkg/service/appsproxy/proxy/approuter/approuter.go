@@ -35,7 +35,7 @@ func New(d dependencies) *Router {
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	result := appconfig.AppConfigFromContext(ctx)
-	if result.AppID != "" {
+	if result.Workload.AppID != "" {
 		r.appHandlers.HandlerFor(ctx, result).ServeHTTP(w, req)
 		return
 	}

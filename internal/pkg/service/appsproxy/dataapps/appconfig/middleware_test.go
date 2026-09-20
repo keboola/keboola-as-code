@@ -105,14 +105,14 @@ func TestMiddleware_ResolvedWorkloadInContext(t *testing.T) {
 	// The exact-hostname match runs first and its appId loads the app config.
 	get("https://draft-9f3c.example.com/")
 	assert.Equal(t, k8sapp.WorkloadRef{AppID: "1", SandboxName: "draft-9f3c"}, got.Workload)
-	assert.Equal(t, api.AppID("1"), got.AppID)
+	assert.Equal(t, api.AppID("1"), got.Workload.AppID)
 	require.NoError(t, got.Err)
 	assert.Equal(t, api.AppID("1"), got.AppConfig.ID)
 
 	// Everything else falls through to the unchanged App normalisation.
 	get("https://app-1.example.com/")
 	assert.Equal(t, k8sapp.WorkloadRef{AppID: "1"}, got.Workload)
-	assert.Equal(t, api.AppID("1"), got.AppID)
+	assert.Equal(t, api.AppID("1"), got.Workload.AppID)
 }
 
 func testSetup(t *testing.T) (http.Handler, log.DebugLogger) {

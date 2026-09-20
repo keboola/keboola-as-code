@@ -25,7 +25,6 @@ const (
 )
 
 type AppConfigResult struct {
-	AppID     api.AppID
 	Workload  k8sapp.WorkloadRef
 	AppConfig api.AppConfig
 	Err       error
@@ -49,11 +48,9 @@ func Middleware(configLoader Loader, resolver WorkloadResolver, host string) mid
 			workload, ok := resolveWorkload(req, resolver, host)
 			if ok {
 				ctx := req.Context()
-				appID := workload.AppID
 
-				appConfig, err := configLoader.GetConfig(ctx, appID)
+				appConfig, err := configLoader.GetConfig(ctx, workload.AppID)
 				result := AppConfigResult{
-					AppID:     appID,
 					Workload:  workload,
 					AppConfig: appConfig,
 					Err:       err,

@@ -143,7 +143,7 @@ func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResu
 
 	// Load configuration for the app
 	if result.Err != nil {
-		return m.newErrorHandler(ctx, api.AppConfig{ID: result.AppID}, result.Err), true
+		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, result.Err), true
 	}
 
 	// Create a new handler when the config changed (ETag), upstream URL changed, or E2B token changed.
