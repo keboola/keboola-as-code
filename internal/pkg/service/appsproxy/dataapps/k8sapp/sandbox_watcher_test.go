@@ -19,13 +19,13 @@ const prodUpstreamURL = "http://prod.keboola.svc.cluster.local:8888"
 
 // resolveHost returns the resolved workload, zero when the App keeps the route.
 func resolveHost(w *k8sapp.StateWatcher, ctx context.Context, host string) k8sapp.WorkloadRef {
-	ref, _ := w.ResolveHost(ctx, host)
+	ref, _ := w.ResolveWorkloadForHost(ctx, host)
 	return ref
 }
 
 // sandboxNameFor returns the Sandbox that owns the hostname, "" when the App does.
 func sandboxNameFor(w *k8sapp.StateWatcher, ctx context.Context, host string) string {
-	ref, _ := w.ResolveHost(ctx, host)
+	ref, _ := w.ResolveWorkloadForHost(ctx, host)
 	return ref.SandboxName
 }
 
@@ -63,7 +63,7 @@ func createSandbox(t *testing.T, client *k8sfake.FakeDynamicClient, obj *unstruc
 	require.NoError(t, err)
 }
 
-func TestStateWatcher_ResolveHost_SandboxOwnsExactHostname(t *testing.T) {
+func TestStateWatcher_ResolveWorkloadForHost_SandboxOwnsExactHostname(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -90,7 +90,7 @@ func TestStateWatcher_ResolveHost_SandboxOwnsExactHostname(t *testing.T) {
 
 // A Sandbox with no publicUrl owns no route: the operator publishes the field
 // only for a workload that owns its hostname.
-func TestStateWatcher_ResolveHost_SandboxWithoutPublicURLIsNotRouted(t *testing.T) {
+func TestStateWatcher_ResolveWorkloadForHost_SandboxWithoutPublicURLIsNotRouted(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -108,7 +108,7 @@ func TestStateWatcher_ResolveHost_SandboxWithoutPublicURLIsNotRouted(t *testing.
 // A Sandbox is reached only by an exact match on the hostname it published, and
 // that match is authoritative. Draft hostnames are allocated by the platform, so
 // one cannot collide with a hostname an App answers on.
-func TestStateWatcher_ResolveHost_ExactMatchWinsOverTheApp(t *testing.T) {
+func TestStateWatcher_ResolveWorkloadForHost_ExactMatchWinsOverTheApp(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -126,12 +126,12 @@ func TestStateWatcher_ResolveHost_ExactMatchWinsOverTheApp(t *testing.T) {
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 
 	require.Eventually(t, func() bool {
-		ref, ok := watcher.ResolveHost(t.Context(), "myslug-42.hub.example.com")
+		ref, ok := watcher.ResolveWorkloadForHost(t.Context(), "myslug-42.hub.example.com")
 		return ok && ref.SandboxName == "member-2"
 	}, 5*time.Second, 50*time.Millisecond)
 }
 
-func TestStateWatcher_ResolveHost_HostnameReleasedOnPublicURLChange(t *testing.T) {
+func TestStateWatcher_ResolveWorkloadForHost_HostnameReleasedOnPublicURLChange(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -156,7 +156,7 @@ func TestStateWatcher_ResolveHost_HostnameReleasedOnPublicURLChange(t *testing.T
 	assert.Empty(t, sandboxNameFor(watcher, t.Context(), "draft-abc.hub.example.com"))
 }
 
-func TestStateWatcher_ResolveHost_HostnameReleasedOnDelete(t *testing.T) {
+func TestStateWatcher_ResolveWorkloadForHost_HostnameReleasedOnDelete(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -203,7 +203,7 @@ func TestStateWatcher_Wakeup_PatchesSandboxCRD(t *testing.T) {
 }
 
 // Hostname matching ignores the request port and letter case.
-func TestStateWatcher_ResolveHost_HostnameNormalisation(t *testing.T) {
+func TestStateWatcher_ResolveWorkloadForHost_HostnameNormalisation(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -239,7 +239,7 @@ func newAppObjectWithPublicURL(appID, publicURL string) *unstructured.Unstructur
 // A draft owns a hostname of its own under the same appId as its owning App.
 // The App is reached through hostname normalisation and keeps its own route, so
 // both are routable at the same time.
-func TestStateWatcher_ResolveHost_DraftAndAppCoexist(t *testing.T) {
+func TestStateWatcher_ResolveWorkloadForHost_DraftAndAppCoexist(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -267,7 +267,7 @@ func TestStateWatcher_ResolveHost_DraftAndAppCoexist(t *testing.T) {
 
 	// The App's own hostname is untouched: no Sandbox owns it, so the caller
 	// falls through to hostname normalisation.
-	_, claimed := watcher.ResolveHost(t.Context(), "public-123.hub.example.com")
+	_, claimed := watcher.ResolveWorkloadForHost(t.Context(), "public-123.hub.example.com")
 	assert.False(t, claimed)
 	appInfo, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
 	require.True(t, ok)
@@ -277,7 +277,7 @@ func TestStateWatcher_ResolveHost_DraftAndAppCoexist(t *testing.T) {
 
 // The hostname the operator will publish for a draft carries no appId at all.
 // The appId comes from the Sandbox's own spec.
-func TestStateWatcher_ResolveHost_AppIDComesFromSandboxSpec(t *testing.T) {
+func TestStateWatcher_ResolveWorkloadForHost_AppIDComesFromSandboxSpec(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -297,7 +297,7 @@ func TestStateWatcher_ResolveHost_AppIDComesFromSandboxSpec(t *testing.T) {
 	var ref k8sapp.WorkloadRef
 	var claimed bool
 	require.Eventually(t, func() bool {
-		ref, claimed = watcher.ResolveHost(t.Context(), "draft-9f3c.hub.example.com")
+		ref, claimed = watcher.ResolveWorkloadForHost(t.Context(), "draft-9f3c.hub.example.com")
 		return claimed
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -307,7 +307,7 @@ func TestStateWatcher_ResolveHost_AppIDComesFromSandboxSpec(t *testing.T) {
 // An App with apps-proxy ingress disabled never publishes a hostname, so the
 // backfill guard must not treat it as owning one — that would block its drafts
 // permanently rather than for a startup window.
-func TestStateWatcher_ResolveHost_IngressDisabledAppDoesNotBlockDraft(t *testing.T) {
+func TestStateWatcher_ResolveWorkloadForHost_IngressDisabledAppDoesNotBlockDraft(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -342,7 +342,7 @@ func withProxyIngressSlug(obj *unstructured.Unstructured, slug string) *unstruct
 // An App that has never been promoted keeps spec.features.appsProxyIngress set
 // while status.appsProxy stays null forever, so "no published hostname" is not
 // a startup window there. It must not defend a hostname it would never publish.
-func TestStateWatcher_ResolveHost_NeverPublishedAppDoesNotBlockUnrelatedDraft(t *testing.T) {
+func TestStateWatcher_ResolveWorkloadForHost_NeverPublishedAppDoesNotBlockUnrelatedDraft(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
@@ -366,7 +366,7 @@ func TestStateWatcher_ResolveHost_NeverPublishedAppDoesNotBlockUnrelatedDraft(t 
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
-	ref, claimed := watcher.ResolveHost(t.Context(), "draft-01a0aa03-4886-74b4-87c2-8518d0ebf7f1.hub.example.com")
+	ref, claimed := watcher.ResolveWorkloadForHost(t.Context(), "draft-01a0aa03-4886-74b4-87c2-8518d0ebf7f1.hub.example.com")
 	assert.True(t, claimed, "the draft owns this hostname; the App publishes none and would never publish this one")
 	assert.Equal(t, k8sapp.WorkloadRef{AppID: "7327412", SandboxName: "app-7327412-dft-01a0aa03"}, ref)
 }

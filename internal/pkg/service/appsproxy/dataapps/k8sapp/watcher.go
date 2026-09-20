@@ -242,7 +242,7 @@ func (w *StateWatcher) notifyRemoved(ref WorkloadRef) {
 	}
 }
 
-// ResolveHost maps a request hostname to the workload that owns it, and reports
+// ResolveWorkloadForHost maps a request hostname to the workload that owns it, and reports
 // whether one does.
 //
 // A Sandbox that publishes status.appsProxy.publicUrl owns that exact hostname,
@@ -254,7 +254,7 @@ func (w *StateWatcher) notifyRemoved(ref WorkloadRef) {
 // every published hostname and does not issue one to a Sandbox that an App
 // already answers on. A workload kind with a free-form hostname would break that
 // assumption, and this decision has to be revisited before one exists.
-func (w *StateWatcher) ResolveHost(_ context.Context, host string) (WorkloadRef, bool) {
+func (w *StateWatcher) ResolveWorkloadForHost(_ context.Context, host string) (WorkloadRef, bool) {
 	host = NormalizeHost(host)
 
 	w.routeLock.RLock()
