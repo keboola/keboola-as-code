@@ -17,19 +17,18 @@ import (
 
 const prodUpstreamURL = "http://prod.keboola.svc.cluster.local:8888"
 
-// resolveHost returns the resolved workload, zero when the App keeps the route.
+// resolveHost returns the resolved workload, zero when no Sandbox owns the hostname.
 func resolveHost(w *k8sapp.StateWatcher, ctx context.Context, host string) k8sapp.WorkloadRef {
 	ref, _ := w.ResolveWorkloadForHost(ctx, host)
 	return ref
 }
 
-// sandboxNameFor returns the Sandbox that owns the hostname, "" when the App does.
+// sandboxNameFor returns the Sandbox that owns the hostname, "" when none does.
 func sandboxNameFor(w *k8sapp.StateWatcher, ctx context.Context, host string) string {
 	ref, _ := w.ResolveWorkloadForHost(ctx, host)
 	return ref.SandboxName
 }
 
-// newSandboxObject creates an unstructured Sandbox CRD object.
 func newSandboxObject(k8sName, appID string, state k8sapp.AppActualState, publicURL, upstreamURL string) *unstructured.Unstructured {
 	appsProxy := map[string]any{}
 	if publicURL != "" {
@@ -202,7 +201,6 @@ func TestStateWatcher_Wakeup_PatchesSandboxCRD(t *testing.T) {
 	assert.Equal(t, string(k8sapp.AppActualStateRunning), state)
 }
 
-// Hostname matching ignores the request port and letter case.
 func TestStateWatcher_ResolveWorkloadForHost_HostnameNormalisation(t *testing.T) {
 	t.Parallel()
 
@@ -217,18 +215,9 @@ func TestStateWatcher_ResolveWorkloadForHost_HostnameNormalisation(t *testing.T)
 	}, 5*time.Second, 50*time.Millisecond)
 }
 
-// withProxyIngress marks the workload as having apps-proxy ingress enabled, which
-// is what makes the operator publish a hostname for it.
-func withProxyIngress(obj *unstructured.Unstructured) *unstructured.Unstructured {
-	obj.Object["spec"].(map[string]any)["features"] = map[string]any{
-		"appsProxyIngress": map[string]any{"targetPort": int64(8888)},
-	}
-	return obj
-}
-
 // newAppObjectWithPublicURL creates an App CRD object publishing both proxy URLs.
 func newAppObjectWithPublicURL(appID, publicURL string) *unstructured.Unstructured {
-	obj := withProxyIngress(newAppObject("prod-app", appID, k8sapp.AppActualStateRunning))
+	obj := newAppObject("prod-app", appID, k8sapp.AppActualStateRunning)
 	obj.Object["status"].(map[string]any)["appsProxy"] = map[string]any{
 		"publicUrl":   publicURL,
 		"upstreamUrl": prodUpstreamURL,
@@ -304,51 +293,14 @@ func TestStateWatcher_ResolveWorkloadForHost_AppIDComesFromSandboxSpec(t *testin
 	assert.Equal(t, k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-9f3c"}, ref)
 }
 
-// An App with apps-proxy ingress disabled never publishes a hostname, so the
-// backfill guard must not treat it as owning one — that would block its drafts
-// permanently rather than for a startup window.
-func TestStateWatcher_ResolveWorkloadForHost_IngressDisabledAppDoesNotBlockDraft(t *testing.T) {
-	t.Parallel()
-
-	fakeClient := newFakeClient()
-
-	// No spec.features.appsProxyIngress, and therefore no status publicUrl.
-	appObj := newAppObjectWithUpstreamURL("prod-app", "123", k8sapp.AppActualStateRunning, "http://prod.keboola.svc.cluster.local:8888")
-	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(t.Context(), appObj, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	createSandbox(t, fakeClient, newSandboxObject(
-		"draft-9f3c", "123", k8sapp.AppActualStateRunning,
-		"https://draft-9f3c.hub.example.com", "http://draft-9f3c.keboola.svc.cluster.local:8888",
-	))
-
-	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
-	require.True(t, watcher.WaitForCacheSync(t.Context()))
-
-	require.Eventually(t, func() bool {
-		return sandboxNameFor(watcher, t.Context(), "draft-9f3c.hub.example.com") == "draft-9f3c"
-	}, 5*time.Second, 50*time.Millisecond)
-}
-
-// withProxyIngressSlug marks apps-proxy ingress enabled and sets the slug the
-// operator builds the workload's own hostname from.
-func withProxyIngressSlug(obj *unstructured.Unstructured, slug string) *unstructured.Unstructured {
-	obj.Object["spec"].(map[string]any)["features"] = map[string]any{
-		"appsProxyIngress": map[string]any{"targetPort": int64(8888), "slug": slug},
-	}
-	return obj
-}
-
-// An App that has never been promoted keeps spec.features.appsProxyIngress set
-// while status.appsProxy stays null forever, so "no published hostname" is not
-// a startup window there. It must not defend a hostname it would never publish.
+// An App that has never been promoted publishes no hostname of its own. Its
+// drafts were once refused because of that; they must route.
 func TestStateWatcher_ResolveWorkloadForHost_NeverPublishedAppDoesNotBlockUnrelatedDraft(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
 
-	// spec.features.appsProxyIngress set, status.appsProxy absent.
-	appObj := withProxyIngressSlug(newAppObject("app-7327412", "7327412", k8sapp.AppActualStateRunning), "myapp")
+	appObj := newAppObject("app-7327412", "7327412", k8sapp.AppActualStateRunning)
 	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(t.Context(), appObj, metav1.CreateOptions{})
 	require.NoError(t, err)
 

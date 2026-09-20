@@ -3786,7 +3786,7 @@ func setupDraftSandboxInState(appID, appPublicURL, draftName, draftPublicURL str
 	return func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 		t.Helper()
 
-		appPatch := []byte(`{"spec":{"features":{"appsProxyIngress":{"targetPort":8888}}},"status":{"appsProxy":{"publicUrl":"` + appPublicURL + `"}}}`)
+		appPatch := []byte(`{"status":{"appsProxy":{"publicUrl":"` + appPublicURL + `"}}}`)
 		app, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
 			t.Context(), "app-"+appID, k8stypes.MergePatchType, appPatch, metav1.PatchOptions{},
 		)
