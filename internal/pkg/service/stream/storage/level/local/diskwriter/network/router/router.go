@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jonboulle/clockwork"
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/exp/maps"
 
@@ -37,6 +38,7 @@ type Router struct {
 	config       network.Config
 	logger       log.Logger
 	telemetry    telemetry.Telemetry
+	clock        clockwork.Clock
 	balancer     balancer.Balancer
 	connections  *connection.Manager
 	encoding     *encoding.Manager
@@ -52,6 +54,7 @@ type Router struct {
 type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
+	Clock() clockwork.Clock
 	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
@@ -70,6 +73,7 @@ func New(d dependencies, sourceNodeID, sourceType string, config network.Config)
 		config:      config,
 		logger:      logger,
 		telemetry:   d.Telemetry(),
+		clock:       d.Clock(),
 		connections: d.ConnectionManager(),
 		encoding:    d.EncodingManager(),
 		pipelines:   pipeline.NewCollection[key.SinkKey, *pipeline.SinkPipeline](logger),
@@ -174,7 +178,7 @@ func (r *Router) OpenPipeline(ctx context.Context, sinkKey key.SinkKey, onClose 
 		onClose(ctx, cause)
 	}
 
-	p := pipeline.NewSinkPipeline(sinkKey, r.logger, r.telemetry, r.connections, r.encoding, r.balancer, onClose2)
+	p := pipeline.NewSinkPipeline(sinkKey, r.logger, r.telemetry, r.clock, r.connections, r.encoding, r.balancer, onClose2)
 
 	r.pipelines.Register(ctx, sinkKey, p)
 

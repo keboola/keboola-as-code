@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jonboulle/clockwork"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/definition/key"
@@ -25,6 +27,7 @@ type SinkPipeline struct {
 	sinkKey     key.SinkKey
 	logger      log.Logger
 	telemetry   telemetry.Telemetry
+	clock       clockwork.Clock
 	connections *connection.Manager
 	encoding    *encoding.Manager
 	balancer    balancer.Balancer
@@ -39,11 +42,12 @@ type SinkPipeline struct {
 	closed chan struct{}
 }
 
-func NewSinkPipeline(sinkKey key.SinkKey, logger log.Logger, telemetry telemetry.Telemetry, connections *connection.Manager, encoding *encoding.Manager, b balancer.Balancer, onClose func(ctx context.Context, cause string)) *SinkPipeline {
+func NewSinkPipeline(sinkKey key.SinkKey, logger log.Logger, telemetry telemetry.Telemetry, clock clockwork.Clock, connections *connection.Manager, encoding *encoding.Manager, b balancer.Balancer, onClose func(ctx context.Context, cause string)) *SinkPipeline {
 	p := &SinkPipeline{
 		sinkKey:     sinkKey,
 		logger:      logger.With(sinkKey.Telemetry()...),
 		telemetry:   telemetry,
+		clock:       clock,
 		connections: connections,
 		encoding:    encoding,
 		balancer:    b,
@@ -126,7 +130,7 @@ func (p *SinkPipeline) UpdateSlicePipelines(ctx context.Context, sinkSlices []*S
 			unregister := func(ctx context.Context, _ string) {
 				p.collection.Unregister(ctx, slice.SliceKey)
 			}
-			newPipelines = append(newPipelines, NewSlicePipeline(ctx, p.logger, p.telemetry, p.connections, p.encoding, ready, slice, unregister))
+			newPipelines = append(newPipelines, NewSlicePipeline(ctx, p.logger, p.telemetry, p.clock, p.connections, p.encoding, ready, slice, unregister))
 		}
 	}
 
@@ -134,7 +138,7 @@ func (p *SinkPipeline) UpdateSlicePipelines(ctx context.Context, sinkSlices []*S
 	if existingCount == 0 && openedCount > 0 {
 		select {
 		case <-ready.WaitCh():
-		case <-time.After(3 * time.Second): // move to config
+		case <-p.clock.After(3 * time.Second): // move to config
 		}
 	}
 

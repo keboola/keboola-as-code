@@ -14,9 +14,11 @@ import (
 )
 
 // newTestSlicePipeline builds a SlicePipeline with the open-retry goroutine simulated directly
-// (no real encoding/connection managers involved), mirroring exactly the `select { case
-// <-time.After(delay): ...; case <-p.ctx.Done(): return }` shape of the real retry loop in
-// NewSlicePipeline while it waits for OpenPipeline to keep failing.
+// (no real encoding/connection managers involved), standing in for the real retry loop in
+// NewSlicePipeline for tests that only care about tryOpen/Close semantics, not retry timing.
+// The real retry loop's use of the injected clockwork.Clock (see NewSlicePipeline) isn't
+// exercised by a dedicated unit test here - doing so against the real loop needs a working
+// encoding/connection.Manager setup, which belongs in a heavier integration test if it's wanted.
 func newTestSlicePipeline(t *testing.T, onClose func(ctx context.Context, cause string)) *SlicePipeline {
 	t.Helper()
 

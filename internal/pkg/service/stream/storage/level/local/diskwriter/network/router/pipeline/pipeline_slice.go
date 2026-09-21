@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
+	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -57,6 +58,7 @@ func NewSlicePipeline(
 	ctx context.Context,
 	logger log.Logger,
 	telemetry telemetry.Telemetry,
+	clock clockwork.Clock,
 	connections *connection.Manager,
 	encoding *encoding.Manager,
 	ready *readyNotifier,
@@ -89,7 +91,7 @@ func NewSlicePipeline(
 				delay := b.NextBackOff()
 				p.logger.Warnf(p.ctx, "%s, waiting %s", err, delay)
 				select {
-				case <-time.After(delay):
+				case <-clock.After(delay):
 					continue
 				case <-p.ctx.Done():
 					return
