@@ -705,12 +705,25 @@ func TestEncodingPipeline_ChunkRetryGivesUpAndCloses(t *testing.T) {
 		t.Fatal("timeout waiting for closeFunc to be called after exhausting chunk retries")
 	}
 
-	// Deliberately not calling w.Close() here: the abandoned chunk is never drained by anyone
-	// once processChunks has given up on it, so Close (via the syncer's Stop -> forced sync)
-	// would block for up to its own real-time (non-fake-clock) 30s Flush timeout - twice, once
-	// for the pending auto-triggered sync woken by the Clock.Advance above, once for Stop's own
-	// forced one. That's an existing, pre-existing latency (Syncer.Stop ignores the caller's ctx
-	// for the underlying sync goroutine), not something this test needs to exercise.
+	// The pipeline must stop accepting new records the moment it gives up, not only once the
+	// async closeFunc above finishes - otherwise the balancer keeps routing to a pipeline
+	// nobody will ever drain.
+	assert.False(t, w.IsReady())
+
+	// Close must not hang: without the pipeline.gaveUp flag, the syncer's forced sync on Close
+	// would call Flush, which would block on its own real-time (non-fake-clock) 30s timeout
+	// waiting for the abandoned chunk to be processed - which nobody will ever do, since
+	// processChunks has already returned. gaveUp makes Flush fail fast instead.
+	closeErrCh := make(chan error, 1)
+	go func() {
+		closeErrCh <- w.Close(context.Background())
+	}()
+	select {
+	case err := <-closeErrCh:
+		assert.Error(t, err, "Close should report the abandoned chunk as a failure, not silent success")
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for Close to return - it should fail fast once the pipeline has given up")
+	}
 }
 
 // encodingTestCase is a helper to open encoding pipeline in tests.

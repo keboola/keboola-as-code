@@ -95,6 +95,10 @@ type pipeline struct {
 
 	readyLock sync.RWMutex
 	ready     bool
+	// gaveUp is true once chunk write retries have been exhausted and buffered chunks were
+	// discarded (see Abandon). Flush checks it instead of trusting WaitAllProcessedCh alone,
+	// which a discarded chunk's notifier would otherwise close as if it had been written.
+	gaveUp bool
 
 	// closed blocks new writes
 	closed chan struct{}
@@ -393,6 +397,11 @@ func (p *pipeline) Flush(ctx context.Context) error {
 	p.flushLock.Lock()
 	defer p.flushLock.Unlock()
 
+	// Nobody will ever process chunks written from here on, don't buffer them for nothing.
+	if p.hasGivenUp() {
+		return errors.New("cannot flush pipeline, chunk write retries were exhausted and buffered chunks were discarded")
+	}
+
 	ctx, cancel := context.WithTimeoutCause(ctx, 30*time.Second, errors.New("pipeline flush timeout"))
 	defer cancel()
 
@@ -404,10 +413,20 @@ func (p *pipeline) Flush(ctx context.Context) error {
 	// We have chunks, what next?
 	select {
 	case <-p.chunks.WaitAllProcessedCh():
+		// The notifier is also closed by Abandon, when chunks are discarded rather than written.
+		if p.hasGivenUp() {
+			return errors.New("cannot flush pipeline, chunk write retries were exhausted and buffered chunks were discarded")
+		}
 		return nil
 	case <-ctx.Done():
 		return errors.PrefixErrorf(ctx.Err(), "cannot flush pipeline %d chunks", p.chunks.CompletedChunks())
 	}
+}
+
+func (p *pipeline) hasGivenUp() bool {
+	p.readyLock.RLock()
+	defer p.readyLock.RUnlock()
+	return p.gaveUp
 }
 
 // Sync at first Flush all internal buffers to the NetworkOutput.
@@ -473,7 +492,8 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 		<-p.chunks.WaitForChunkCh()
 
 		// All done
-		if p.chunks.CompletedChunks() == 0 {
+		countBefore := p.chunks.CompletedChunks()
+		if countBefore == 0 {
 			return
 		}
 
@@ -521,13 +541,28 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 				p.readyLock.Unlock()
 			}
 
-			// Give up after writes have been failing continuously for too long, instead of
-			// retrying forever - a permanently unreachable volume would otherwise leave this
-			// goroutine, and the pipeline it belongs to, running until the process restarts.
-			if failingSince.IsZero() {
+			// A round that wrote at least one chunk before failing on the rest is progress,
+			// not a stall - treat it the same as a fully clean round below, instead of letting
+			// a link that is slowly draining get killed by the give-up window.
+			if cnt < countBefore {
+				failingSince = time.Time{}
+				b.Reset()
+			} else if failingSince.IsZero() {
 				failingSince = clk.Now()
-			} else if clk.Since(failingSince) > maxChunkRetryDuration {
-				p.logger.Errorf(ctx, "chunks write failed for over %s, giving up: %s", maxChunkRetryDuration, err)
+			} else if clk.Since(failingSince) > encodingCfg.MaxChunkRetryDuration.Duration() {
+				// Give up after writes have been failing continuously for too long, instead of
+				// retrying forever - a permanently broken network output would otherwise leave
+				// this goroutine, and the pipeline it belongs to, running until process restart.
+				p.logger.Errorf(ctx, "chunks write failed for over %s, giving up, abandoning %d chunk(s): %s", encodingCfg.MaxChunkRetryDuration, cnt, err)
+
+				// Mark not ready and given-up right away, don't wait for the async closeFunc
+				// below - the balancer checks IsReady before routing records here (see IsReady),
+				// and Flush checks gaveUp before relying on the writer's notifier (see Flush).
+				p.readyLock.Lock()
+				p.ready = false
+				p.gaveUp = true
+				p.readyLock.Unlock()
+
 				// Nobody else will ever process these chunks, don't leave a future Flush call
 				// (e.g. from the syncer, during Close) waiting forever for them.
 				p.chunks.Abandon()
@@ -543,6 +578,7 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 		}
 
 		failingSince = time.Time{}
+		b.Reset()
 
 		// All chunks have been written, mark the pipeline ready
 		p.readyLock.Lock()
