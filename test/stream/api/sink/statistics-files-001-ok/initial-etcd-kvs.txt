@@ -28,6 +28,7 @@ storage/file/all/%%TEST_KBC_PROJECT_ID%%/%%TEST_DEFAULT_BRANCH_ID%%/my-source/my
     "inputBuffer": "1MB",
     "maxChunkSize": "512KB",
     "failedChunksThreshold": 3,
+    "maxChunkRetryDuration": "5m0s",
     "compression": {
       "type": "gzip",
       "gzip": {

@@ -135,6 +135,7 @@ func TestFile_Validation(t *testing.T) {
 - "encoding.encoder.rowSizeLimit" must be 1KB or greater
 - "encoding.maxChunkSize" is a required field
 - "encoding.failedChunksThreshold" is a required field
+- "encoding.maxChunkRetryDuration" is a required field
 - "encoding.compression.type" is a required field
 - "encoding.sync.mode" is a required field
 - "encoding.sync.checkInterval" is a required field
