@@ -720,7 +720,7 @@ func TestEncodingPipeline_ChunkRetryGivesUpAndCloses(t *testing.T) {
 	}()
 	select {
 	case err := <-closeErrCh:
-		assert.Error(t, err, "Close should report the abandoned chunk as a failure, not silent success")
+		require.Error(t, err, "Close should report the abandoned chunk as a failure, not silent success")
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for Close to return - it should fail fast once the pipeline has given up")
 	}

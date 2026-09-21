@@ -544,12 +544,13 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 			// A round that wrote at least one chunk before failing on the rest is progress,
 			// not a stall - treat it the same as a fully clean round below, instead of letting
 			// a link that is slowly draining get killed by the give-up window.
-			if cnt < countBefore {
+			switch {
+			case cnt < countBefore:
 				failingSince = time.Time{}
 				b.Reset()
-			} else if failingSince.IsZero() {
+			case failingSince.IsZero():
 				failingSince = clk.Now()
-			} else if clk.Since(failingSince) > encodingCfg.MaxChunkRetryDuration.Duration() {
+			case clk.Since(failingSince) > encodingCfg.MaxChunkRetryDuration.Duration():
 				// Give up after writes have been failing continuously for too long, instead of
 				// retrying forever - a permanently broken network output would otherwise leave
 				// this goroutine, and the pipeline it belongs to, running until process restart.
