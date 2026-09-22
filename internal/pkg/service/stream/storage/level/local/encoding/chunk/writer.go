@@ -167,6 +167,17 @@ func (w *Writer) CompletedChunks() int {
 	return len(w.completedChunks)
 }
 
+// CompletedBytes is the total size of all completed, not yet processed chunks.
+func (w *Writer) CompletedBytes() datasize.ByteSize {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	var total int
+	for _, c := range w.completedChunks {
+		total += c.Len()
+	}
+	return datasize.ByteSize(total) //nolint:gosec // chunk sizes are bounded by maxChunkSize, never negative
+}
+
 // ProcessCompletedChunks iterates over completed chunks.
 // The method can be used, for example, to send/upload chunks to the next stage.
 // If the callback is successful, the chunk is removed from the list and the internal buffer is reused.

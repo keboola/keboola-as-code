@@ -486,18 +486,23 @@ func (p *pipeline) Close(ctx context.Context) error {
 func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encodingCfg encoding.Config) {
 	b := newChunkBackoff()
 	var failingSince time.Time
+	// Floor a zero/negative give-up window - see chunkRetryDuration for why a stored config
+	// value can decode as zero even though live config validation forbids it.
+	maxRetryDuration := chunkRetryDuration(encodingCfg.MaxChunkRetryDuration.Duration())
 	for {
 		// The channel is unblocked if there is an unprocessed chunk,
 		// or all chunks have been processed and the writer is closed.
 		<-p.chunks.WaitForChunkCh()
 
 		// All done
-		countBefore := p.chunks.CompletedChunks()
-		if countBefore == 0 {
+		if p.chunks.CompletedChunks() == 0 {
 			return
 		}
 
-		// Write all chunks to the network output
+		// Write all chunks to the network output, counting only chunks actually written -
+		// ProcessCompletedChunks runs with the writer lock released, so new chunks can complete
+		// concurrently and inflate the before/after count even when nothing was written this round.
+		written := 0
 		err := p.chunks.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
 			if !p.network.IsReady() {
 				return errors.New("network is not ready")
@@ -530,6 +535,7 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 				return err
 			}
 			p.logger.Debugf(ctx, "chunk written, size %q", l.String())
+			written++
 			return nil
 		})
 		if err != nil {
@@ -545,16 +551,17 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 			// not a stall - treat it the same as a fully clean round below, instead of letting
 			// a link that is slowly draining get killed by the give-up window.
 			switch {
-			case cnt < countBefore:
+			case written > 0:
 				failingSince = time.Time{}
 				b.Reset()
 			case failingSince.IsZero():
 				failingSince = clk.Now()
-			case clk.Since(failingSince) > encodingCfg.MaxChunkRetryDuration.Duration():
+			case clk.Since(failingSince) > maxRetryDuration:
 				// Give up after writes have been failing continuously for too long, instead of
 				// retrying forever - a permanently broken network output would otherwise leave
 				// this goroutine, and the pipeline it belongs to, running until process restart.
-				p.logger.Errorf(ctx, "chunks write failed for over %s, giving up, abandoning %d chunk(s): %s", encodingCfg.MaxChunkRetryDuration, cnt, err)
+				abandonedBytes := p.chunks.CompletedBytes()
+				p.logger.Errorf(ctx, "chunks write failed for over %s, giving up, abandoning %d chunk(s) (%s): %s", maxRetryDuration, cnt, abandonedBytes.String(), err)
 
 				// Mark not ready and given-up right away, don't wait for the async closeFunc
 				// below - the balancer checks IsReady before routing records here (see IsReady),

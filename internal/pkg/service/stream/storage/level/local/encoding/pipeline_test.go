@@ -726,6 +726,71 @@ func TestEncodingPipeline_ChunkRetryGivesUpAndCloses(t *testing.T) {
 	}
 }
 
+func TestEncodingPipeline_ChunkRetryZeroConfigFloorsToDefault(t *testing.T) {
+	t.Parallel()
+
+	tc := newEncodingTestCase(t)
+	tc.Slice.Encoding.Sync.Mode = writesync.ModeDisk
+	tc.Slice.Encoding.Sync.Wait = false
+	tc.Slice.Encoding.MaxChunkSize = 64 * datasize.KB // minimum allowed, keeps the test payload small
+	tc.Slice.Encoding.Sync.CheckInterval = duration.From(30 * time.Second)
+	// Simulates a File/Slice record persisted before this field existed: decoding such a record
+	// skips validation (etcd serde only validates non-struct/pointer values), so the field comes
+	// back as the zero value instead of the validated minimum of 1s. tc.OpenPipeline() validates
+	// tc.Slice up front (as a fresh Slice creation would), so it's bypassed here to reach the
+	// pipeline with an invalid-but-decoded zero value, same as a reload from etcd would.
+	tc.Slice.Encoding.MaxChunkRetryDuration = duration.From(0)
+
+	closed := make(chan string, 1)
+	tc.CloseFunc = func(ctx context.Context, cause string) {
+		closed <- cause
+	}
+
+	w, err := tc.Manager.OpenPipeline(
+		tc.Ctx,
+		tc.Slice.SliceKey,
+		tc.Telemetry,
+		tc.ConnectionManager,
+		tc.Slice.Mapping,
+		tc.Slice.Encoding,
+		tc.Slice.LocalStorage,
+		tc.Slice.Encoding.Compression.Type != compression.TypeNone,
+		tc.CloseFunc,
+		tc.Output,
+	)
+	require.NoError(t, err)
+
+	tc.Output.WriteError = errors.New("some error")
+
+	body := strings.Repeat("x", 64*1024-1)
+	_, err = w.WriteRecord(tc.TestRecord(body))
+	require.NoError(t, err)
+	tc.ExpectWritesCount(t, 1)
+
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		tc.Logger.AssertJSONMessages(c, `{"level":"warn","message":"chunks write failed: some error, waiting %s, chunks count = 1"}`)
+	}, 5*time.Second, 100*time.Millisecond)
+
+	// A zero config value must not mean "give up almost immediately" - advancing well past the
+	// first backoff retry, but nowhere near the 5 minute default, must not trigger give-up.
+	tc.Clock.Advance(5 * time.Second)
+	select {
+	case cause := <-closed:
+		t.Fatalf("pipeline gave up after 5s on a zero-value config, cause: %s", cause)
+	case <-time.After(200 * time.Millisecond):
+		// Expected: still retrying.
+	}
+
+	// Advancing past the floored default should still give up, so the fallback isn't "never".
+	tc.Clock.Advance(6 * time.Minute)
+	select {
+	case cause := <-closed:
+		assert.NotEmpty(t, cause)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for closeFunc after exhausting the default retry duration")
+	}
+}
+
 // encodingTestCase is a helper to open encoding pipeline in tests.
 type encodingTestCase struct {
 	*writerSyncHelper
