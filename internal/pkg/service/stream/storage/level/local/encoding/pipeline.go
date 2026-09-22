@@ -93,8 +93,13 @@ type pipeline struct {
 	withBackup   bool
 	closeFunc    func(ctx context.Context, cause string)
 
-	readyLock sync.RWMutex
+	// stateLock guards ready and gaveUp.
+	stateLock sync.RWMutex
 	ready     bool
+	// gaveUp is true once chunk write retries have been exhausted and buffered chunks were
+	// discarded (see Abandon). Flush checks it instead of trusting WaitAllProcessedCh alone,
+	// which a discarded chunk's notifier would otherwise close as if it had been written.
+	gaveUp bool
 
 	// closed blocks new writes
 	closed chan struct{}
@@ -305,8 +310,8 @@ func (p *pipeline) IsReady() bool {
 	}
 
 	// ready == false means: too many failed Flush ops
-	p.readyLock.RLock()
-	defer p.readyLock.RUnlock()
+	p.stateLock.RLock()
+	defer p.stateLock.RUnlock()
 	return p.ready
 }
 
@@ -393,6 +398,11 @@ func (p *pipeline) Flush(ctx context.Context) error {
 	p.flushLock.Lock()
 	defer p.flushLock.Unlock()
 
+	// Nobody will ever process chunks written from here on, don't buffer them for nothing.
+	if p.hasGivenUp() {
+		return errors.New("cannot flush pipeline, chunk write retries were exhausted and buffered chunks were discarded")
+	}
+
 	ctx, cancel := context.WithTimeoutCause(ctx, 30*time.Second, errors.New("pipeline flush timeout"))
 	defer cancel()
 
@@ -404,10 +414,20 @@ func (p *pipeline) Flush(ctx context.Context) error {
 	// We have chunks, what next?
 	select {
 	case <-p.chunks.WaitAllProcessedCh():
+		// The notifier is also closed by Abandon, when chunks are discarded rather than written.
+		if p.hasGivenUp() {
+			return errors.New("cannot flush pipeline, chunk write retries were exhausted and buffered chunks were discarded")
+		}
 		return nil
 	case <-ctx.Done():
 		return errors.PrefixErrorf(ctx.Err(), "cannot flush pipeline %d chunks", p.chunks.CompletedChunks())
 	}
+}
+
+func (p *pipeline) hasGivenUp() bool {
+	p.stateLock.RLock()
+	defer p.stateLock.RUnlock()
+	return p.gaveUp
 }
 
 // Sync at first Flush all internal buffers to the NetworkOutput.
@@ -466,6 +486,10 @@ func (p *pipeline) Close(ctx context.Context) error {
 
 func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encodingCfg encoding.Config) {
 	b := newChunkBackoff()
+	var failingSince time.Time
+	// Floor a zero/negative give-up window - see chunkRetryDuration for why a stored config
+	// value can decode as zero even though live config validation forbids it.
+	maxRetryDuration := chunkRetryDuration(encodingCfg.MaxChunkRetryDuration.Duration())
 	for {
 		// The channel is unblocked if there is an unprocessed chunk,
 		// or all chunks have been processed and the writer is closed.
@@ -476,7 +500,10 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 			return
 		}
 
-		// Write all chunks to the network output
+		// Write all chunks to the network output, counting only chunks actually written -
+		// ProcessCompletedChunks runs with the writer lock released, so new chunks can complete
+		// concurrently and inflate the before/after count even when nothing was written this round.
+		written := 0
 		err := p.chunks.ProcessCompletedChunks(func(chunk *chunk.Chunk) error {
 			if !p.network.IsReady() {
 				return errors.New("network is not ready")
@@ -509,15 +536,47 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 				return err
 			}
 			p.logger.Debugf(ctx, "chunk written, size %q", l.String())
+			written++
 			return nil
 		})
 		if err != nil {
 			// Mark the pipeline not ready
 			cnt := p.chunks.CompletedChunks()
 			if cnt >= encodingCfg.FailedChunksThreshold {
-				p.readyLock.Lock()
+				p.stateLock.Lock()
 				p.ready = false
-				p.readyLock.Unlock()
+				p.stateLock.Unlock()
+			}
+
+			// A round that wrote at least one chunk before failing on the rest is progress,
+			// not a stall - treat it the same as a fully clean round below, instead of letting
+			// a link that is slowly draining get killed by the give-up window.
+			switch {
+			case written > 0:
+				failingSince = time.Time{}
+				b.Reset()
+			case failingSince.IsZero():
+				failingSince = clk.Now()
+			case clk.Since(failingSince) > maxRetryDuration:
+				// Give up after writes have been failing continuously for too long, instead of
+				// retrying forever - a permanently broken network output would otherwise leave
+				// this goroutine, and the pipeline it belongs to, running until process restart.
+				abandonedBytes := p.chunks.CompletedBytes()
+				p.logger.Errorf(ctx, "chunks write failed for over %s, giving up, abandoning %d chunk(s) (%s): %s", maxRetryDuration, cnt, abandonedBytes.String(), err)
+
+				// Mark not ready and given-up right away, don't wait for the async closeFunc
+				// below - the balancer checks IsReady before routing records here (see IsReady),
+				// and Flush checks gaveUp before relying on the writer's notifier (see Flush).
+				p.stateLock.Lock()
+				p.ready = false
+				p.gaveUp = true
+				p.stateLock.Unlock()
+
+				// Nobody else will ever process these chunks, don't leave a future Flush call
+				// (e.g. from the syncer, during Close) waiting forever for them.
+				p.chunks.Abandon()
+				go p.closeFunc(ctx, "chunk write retries exhausted")
+				return
 			}
 
 			// Wait before retry
@@ -527,10 +586,13 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 			continue
 		}
 
+		failingSince = time.Time{}
+		b.Reset()
+
 		// All chunks have been written, mark the pipeline ready
-		p.readyLock.Lock()
+		p.stateLock.Lock()
 		p.ready = true
-		p.readyLock.Unlock()
+		p.stateLock.Unlock()
 	}
 }
 

@@ -306,3 +306,38 @@ func TestWriter_ProcessCompletedChunks(t *testing.T) {
 		assert.Fail(t, "the channel shouldn't be blocked")
 	}
 }
+
+func TestWriter_Abandon(t *testing.T) {
+	t.Parallel()
+
+	// Create writer, with 3 unprocessed completed chunks
+	maxChunkSize := 10
+	w := chunk.NewWriter(log.NewNopLogger(), maxChunkSize)
+	n, err := w.Write([]byte("123456789012345678901234567890")) // 3 chunks of 10 bytes
+	assert.Equal(t, 30, n)
+	require.NoError(t, err)
+	assert.Equal(t, 3, w.CompletedChunks())
+
+	// A waiter parked before Abandon, e.g. a pipeline.Flush call blocked on the pending chunks
+	notifier := w.WaitAllProcessedCh()
+	select {
+	case <-notifier:
+		assert.Fail(t, "the channel should be blocked, 3 chunks are unprocessed")
+	default:
+	}
+
+	w.Abandon()
+
+	// The parked waiter is unblocked, its caller must check for itself that chunks were
+	// discarded rather than written, see pipeline.gaveUp.
+	select {
+	case <-notifier:
+	default:
+		assert.Fail(t, "expected Abandon to unblock the parked waiter")
+	}
+	assert.Equal(t, 0, w.CompletedChunks())
+
+	// Calling it again, with nothing to abandon, must not panic
+	w.Abandon()
+	assert.Equal(t, 0, w.CompletedChunks())
+}

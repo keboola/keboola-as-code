@@ -10,12 +10,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	commonDeps "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/duration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/mapping/recordctx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/stream/storage/level/local/diskwriter/network/connection"
@@ -657,6 +659,138 @@ foo3
 `)
 }
 
+func TestEncodingPipeline_ChunkRetryGivesUpAndCloses(t *testing.T) {
+	t.Parallel()
+
+	tc := newEncodingTestCase(t)
+	tc.Slice.Encoding.Sync.Mode = writesync.ModeDisk
+	tc.Slice.Encoding.Sync.Wait = false
+	tc.Slice.Encoding.MaxChunkSize = 64 * datasize.KB // minimum allowed, keeps the test payload small
+	// Max allowed check interval, so advancing the clock by minutes below doesn't replay hundreds
+	// of thousands of periodic-sync ticks (each real-time-scheduled) through the fake clock.
+	tc.Slice.Encoding.Sync.CheckInterval = duration.From(30 * time.Second)
+
+	closed := make(chan string, 1)
+	tc.CloseFunc = func(ctx context.Context, cause string) {
+		closed <- cause
+	}
+
+	w, err := tc.OpenPipeline()
+	require.NoError(t, err)
+
+	// All writes fail permanently, e.g. the volume is unreachable.
+	tc.Output.WriteError = errors.New("some error")
+
+	// A record that exactly fills one chunk completes it immediately via the size-based split in
+	// chunk.Writer.Write, without needing an explicit Flush/Sync trigger (which has its own,
+	// real-time-based 30s timeout, unrelated to what this test is verifying).
+	body := strings.Repeat("x", 64*1024-1)
+	_, err = w.WriteRecord(tc.TestRecord(body))
+	require.NoError(t, err)
+	tc.ExpectWritesCount(t, 1)
+
+	// Wait for the first failed attempt, it starts the retry-duration clock.
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		tc.Logger.AssertJSONMessages(c, `{"level":"warn","message":"chunks write failed: some error, waiting %s, chunks count = 1"}`)
+	}, 5*time.Second, 100*time.Millisecond)
+
+	// Move well past the retry bound, the currently pending backoff wait fires,
+	// the next attempt fails again and the pipeline should give up instead of retrying forever.
+	tc.Clock.Advance(10 * time.Minute)
+
+	select {
+	case cause := <-closed:
+		assert.NotEmpty(t, cause)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for closeFunc to be called after exhausting chunk retries")
+	}
+
+	// The pipeline must stop accepting new records the moment it gives up, not only once the
+	// async closeFunc above finishes - otherwise the balancer keeps routing to a pipeline
+	// nobody will ever drain.
+	assert.False(t, w.IsReady())
+
+	// Close must not hang: without the pipeline.gaveUp flag, the syncer's forced sync on Close
+	// would call Flush, which would block on its own real-time (non-fake-clock) 30s timeout
+	// waiting for the abandoned chunk to be processed - which nobody will ever do, since
+	// processChunks has already returned. gaveUp makes Flush fail fast instead.
+	closeErrCh := make(chan error, 1)
+	go func() {
+		closeErrCh <- w.Close(context.Background())
+	}()
+	select {
+	case err := <-closeErrCh:
+		require.Error(t, err, "Close should report the abandoned chunk as a failure, not silent success")
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for Close to return - it should fail fast once the pipeline has given up")
+	}
+}
+
+func TestEncodingPipeline_ChunkRetryZeroConfigFloorsToDefault(t *testing.T) {
+	t.Parallel()
+
+	tc := newEncodingTestCase(t)
+	tc.Slice.Encoding.Sync.Mode = writesync.ModeDisk
+	tc.Slice.Encoding.Sync.Wait = false
+	tc.Slice.Encoding.MaxChunkSize = 64 * datasize.KB // minimum allowed, keeps the test payload small
+	tc.Slice.Encoding.Sync.CheckInterval = duration.From(30 * time.Second)
+	// Simulates a File/Slice record persisted before this field existed: decoding such a record
+	// skips validation (etcd serde only validates non-struct/pointer values), so the field comes
+	// back as the zero value instead of the validated minimum of 1s. tc.OpenPipeline() validates
+	// tc.Slice up front (as a fresh Slice creation would), so it's bypassed here to reach the
+	// pipeline with an invalid-but-decoded zero value, same as a reload from etcd would.
+	tc.Slice.Encoding.MaxChunkRetryDuration = duration.From(0)
+
+	closed := make(chan string, 1)
+	tc.CloseFunc = func(ctx context.Context, cause string) {
+		closed <- cause
+	}
+
+	w, err := tc.Manager.OpenPipeline(
+		tc.Ctx,
+		tc.Slice.SliceKey,
+		tc.Telemetry,
+		tc.ConnectionManager,
+		tc.Slice.Mapping,
+		tc.Slice.Encoding,
+		tc.Slice.LocalStorage,
+		tc.Slice.Encoding.Compression.Type != compression.TypeNone,
+		tc.CloseFunc,
+		tc.Output,
+	)
+	require.NoError(t, err)
+
+	tc.Output.WriteError = errors.New("some error")
+
+	body := strings.Repeat("x", 64*1024-1)
+	_, err = w.WriteRecord(tc.TestRecord(body))
+	require.NoError(t, err)
+	tc.ExpectWritesCount(t, 1)
+
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		tc.Logger.AssertJSONMessages(c, `{"level":"warn","message":"chunks write failed: some error, waiting %s, chunks count = 1"}`)
+	}, 5*time.Second, 100*time.Millisecond)
+
+	// A zero config value must not mean "give up almost immediately" - advancing well past the
+	// first backoff retry, but nowhere near the 5 minute default, must not trigger give-up.
+	tc.Clock.Advance(5 * time.Second)
+	select {
+	case cause := <-closed:
+		t.Fatalf("pipeline gave up after 5s on a zero-value config, cause: %s", cause)
+	case <-time.After(200 * time.Millisecond):
+		// Expected: still retrying.
+	}
+
+	// Advancing past the floored default should still give up, so the fallback isn't "never".
+	tc.Clock.Advance(6 * time.Minute)
+	select {
+	case cause := <-closed:
+		assert.NotEmpty(t, cause)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for closeFunc after exhausting the default retry duration")
+	}
+}
+
 // encodingTestCase is a helper to open encoding pipeline in tests.
 type encodingTestCase struct {
 	*writerSyncHelper
@@ -670,6 +804,7 @@ type encodingTestCase struct {
 	Events            *events.Events[encoding.Pipeline]
 	Manager           *encoding.Manager
 	Slice             *model.Slice
+	CloseFunc         func(ctx context.Context, cause string)
 }
 
 type writerSyncHelper struct {
@@ -707,6 +842,7 @@ func newEncodingTestCase(t *testing.T) *encodingTestCase {
 		Events:            events.New[encoding.Pipeline](),
 		Manager:           d.EncodingManager(),
 		Slice:             slice,
+		CloseFunc:         func(ctx context.Context, cause string) {},
 	}
 	return tc
 }
@@ -725,7 +861,7 @@ func (tc *encodingTestCase) OpenPipeline() (encoding.Pipeline, error) {
 		tc.Slice.Encoding,
 		tc.Slice.LocalStorage,
 		tc.Slice.Encoding.Compression.Type != compression.TypeNone,
-		func(ctx context.Context, cause string) {},
+		tc.CloseFunc,
 		tc.Output,
 	)
 	if err != nil {

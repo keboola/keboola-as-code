@@ -206,6 +206,8 @@ storage:
                 maxChunkSize: 512KB
                 # If the defined number of chunks cannot be sent, the pipeline is marked as not ready. Validation rules: required,min=1,max=100
                 failedChunksThreshold: 3
+                # If chunks cannot be sent for longer than this, the pipeline gives up and closes. Validation rules: required,minDuration=1s,maxDuration=1h
+                maxChunkRetryDuration: 5m0s
                 compression:
                     # Compression type. Validation rules: required,oneof=none gzip
                     type: gzip
@@ -463,6 +465,16 @@ func TestTableSinkConfigPatch_ToKVs(t *testing.T) {
     "overwritten": false,
     "protected": true,
     "validation": "maxBytes=16MB"
+  },
+  {
+    "key": "storage.level.local.encoding.maxChunkRetryDuration",
+    "type": "string",
+    "description": "If chunks cannot be sent for longer than this, the pipeline gives up and closes.",
+    "value": "5m0s",
+    "defaultValue": "5m0s",
+    "overwritten": false,
+    "protected": true,
+    "validation": "required,minDuration=1s,maxDuration=1h"
   },
   {
     "key": "storage.level.local.encoding.maxChunkSize",

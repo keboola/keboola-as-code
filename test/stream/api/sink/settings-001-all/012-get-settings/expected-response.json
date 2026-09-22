@@ -90,6 +90,16 @@
       "validation": "maxBytes=16MB"
     },
     {
+      "key": "storage.level.local.encoding.maxChunkRetryDuration",
+      "type": "string",
+      "description": "If chunks cannot be sent for longer than this, the pipeline gives up and closes.",
+      "value": "5m0s",
+      "defaultValue": "5m0s",
+      "overwritten": false,
+      "protected": true,
+      "validation": "required,minDuration=1s,maxDuration=1h"
+    },
+    {
       "key": "storage.level.local.encoding.maxChunkSize",
       "type": "string",
       "description": "Max size of a chunk sent over the network to a disk writer node.",
