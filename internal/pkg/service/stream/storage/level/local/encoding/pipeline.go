@@ -93,7 +93,8 @@ type pipeline struct {
 	withBackup   bool
 	closeFunc    func(ctx context.Context, cause string)
 
-	readyLock sync.RWMutex
+	// stateLock guards ready and gaveUp.
+	stateLock sync.RWMutex
 	ready     bool
 	// gaveUp is true once chunk write retries have been exhausted and buffered chunks were
 	// discarded (see Abandon). Flush checks it instead of trusting WaitAllProcessedCh alone,
@@ -309,8 +310,8 @@ func (p *pipeline) IsReady() bool {
 	}
 
 	// ready == false means: too many failed Flush ops
-	p.readyLock.RLock()
-	defer p.readyLock.RUnlock()
+	p.stateLock.RLock()
+	defer p.stateLock.RUnlock()
 	return p.ready
 }
 
@@ -424,8 +425,8 @@ func (p *pipeline) Flush(ctx context.Context) error {
 }
 
 func (p *pipeline) hasGivenUp() bool {
-	p.readyLock.RLock()
-	defer p.readyLock.RUnlock()
+	p.stateLock.RLock()
+	defer p.stateLock.RUnlock()
 	return p.gaveUp
 }
 
@@ -542,9 +543,9 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 			// Mark the pipeline not ready
 			cnt := p.chunks.CompletedChunks()
 			if cnt >= encodingCfg.FailedChunksThreshold {
-				p.readyLock.Lock()
+				p.stateLock.Lock()
 				p.ready = false
-				p.readyLock.Unlock()
+				p.stateLock.Unlock()
 			}
 
 			// A round that wrote at least one chunk before failing on the rest is progress,
@@ -566,10 +567,10 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 				// Mark not ready and given-up right away, don't wait for the async closeFunc
 				// below - the balancer checks IsReady before routing records here (see IsReady),
 				// and Flush checks gaveUp before relying on the writer's notifier (see Flush).
-				p.readyLock.Lock()
+				p.stateLock.Lock()
 				p.ready = false
 				p.gaveUp = true
-				p.readyLock.Unlock()
+				p.stateLock.Unlock()
 
 				// Nobody else will ever process these chunks, don't leave a future Flush call
 				// (e.g. from the syncer, during Close) waiting forever for them.
@@ -589,9 +590,9 @@ func (p *pipeline) processChunks(ctx context.Context, clk clockwork.Clock, encod
 		b.Reset()
 
 		// All chunks have been written, mark the pipeline ready
-		p.readyLock.Lock()
+		p.stateLock.Lock()
 		p.ready = true
-		p.readyLock.Unlock()
+		p.stateLock.Unlock()
 	}
 }
 
