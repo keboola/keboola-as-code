@@ -69,7 +69,7 @@ func (r WorkloadRef) IsSandbox() bool {
 }
 
 func (r WorkloadRef) String() string {
-	if r.SandboxName == "" {
+	if !r.IsSandbox() {
 		return r.AppID.String()
 	}
 	var b strings.Builder
