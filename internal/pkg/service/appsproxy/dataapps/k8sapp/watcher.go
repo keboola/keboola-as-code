@@ -308,9 +308,7 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 
 	appID := api.AppID(parsed.appID)
 
-	w.routeLock.Lock()
-	w.apps[appID] = parsed.entry
-	w.routeLock.Unlock()
+	w.putApp(appID, parsed.entry)
 
 	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v devMode=%v upstreamTarget=%v", parsed.entry.k8sName, appID, parsed.entry.state, parsed.entry.autoRestartEnabled, parsed.entry.devMode, parsed.entry.upstreamTarget != nil)
 }
@@ -405,13 +403,28 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 // storeSandbox releases the hostname the object claimed before, so a Sandbox
 // that republishes does not leave the old one routable.
 func (w *StateWatcher) storeSandbox(ctx context.Context, appID api.AppID, e entry) {
-	var claimedFrom string
+	if claimedFrom := w.putSandbox(e); claimedFrom != "" {
+		w.logger.Warnf(ctx, "Sandbox CRD %q (appID=%s) claims hostname %q already claimed by Sandbox %q; the newest claim wins", e.k8sName, appID, e.host, claimedFrom)
+	}
+}
 
+func (w *StateWatcher) putApp(appID api.AppID, e entry) {
 	w.routeLock.Lock()
-	prev, existed := w.sandboxes[e.k8sName]
-	if existed && prev.host != e.host {
+	defer w.routeLock.Unlock()
+	w.apps[appID] = e
+}
+
+// putSandbox stores the entry and takes its hostname, reporting the Sandbox
+// that held the hostname before, if any.
+func (w *StateWatcher) putSandbox(e entry) string {
+	w.routeLock.Lock()
+	defer w.routeLock.Unlock()
+
+	if prev, existed := w.sandboxes[e.k8sName]; existed && prev.host != e.host {
 		w.releaseHost(prev.host, e.k8sName)
 	}
+
+	var claimedFrom string
 	if e.host != "" {
 		if owner, ok := w.sandboxHosts[e.host]; ok && owner != e.k8sName {
 			claimedFrom = owner
@@ -419,11 +432,20 @@ func (w *StateWatcher) storeSandbox(ctx context.Context, appID api.AppID, e entr
 		w.sandboxHosts[e.host] = e.k8sName
 	}
 	w.sandboxes[e.k8sName] = e
-	w.routeLock.Unlock()
+	return claimedFrom
+}
 
-	if claimedFrom != "" {
-		w.logger.Warnf(ctx, "Sandbox CRD %q (appID=%s) claims hostname %q already claimed by Sandbox %q; the newest claim wins", e.k8sName, appID, e.host, claimedFrom)
+// deleteSandbox removes the Sandbox and releases the hostname it held.
+func (w *StateWatcher) deleteSandbox(k8sName string) (entry, bool) {
+	w.routeLock.Lock()
+	defer w.routeLock.Unlock()
+
+	e, found := w.sandboxes[k8sName]
+	if found {
+		w.releaseHost(e.host, k8sName)
+		delete(w.sandboxes, k8sName)
 	}
+	return e, found
 }
 
 // deleteAppByName removes the App cached under a K8s object name and reports
@@ -458,14 +480,7 @@ func (w *StateWatcher) handleSandboxDelete(ctx context.Context, obj any) {
 	}
 	k8sName := u.GetName()
 
-	w.routeLock.Lock()
-	e, found := w.sandboxes[k8sName]
-	if found {
-		w.releaseHost(e.host, k8sName)
-		delete(w.sandboxes, k8sName)
-	}
-	w.routeLock.Unlock()
-
+	e, found := w.deleteSandbox(k8sName)
 	if found {
 		w.logger.Debugf(ctx, "Sandbox CRD %q (appID=%s) removed from cache", k8sName, e.appID)
 		w.notifyRemoved(WorkloadRef{AppID: e.appID, SandboxName: k8sName})
