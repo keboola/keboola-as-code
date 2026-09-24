@@ -45,8 +45,8 @@ func AppConfigFromContext(ctx context.Context) AppConfigResult {
 func Middleware(configLoader Loader, resolver WorkloadResolver, host string) middleware.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			workload, ok := resolveWorkload(req, resolver, host)
-			if ok {
+			workload := resolveWorkload(req, resolver, host)
+			if workload.AppID != "" {
 				ctx := req.Context()
 
 				appConfig, err := configLoader.GetConfig(ctx, workload.AppID)
@@ -102,24 +102,21 @@ func requestTelemetryAttrs(workload k8sapp.WorkloadRef, appConfig api.AppConfig)
 // resolveWorkload picks the workload for the request hostname. The order is a
 // priority, not a tie-break; see StateWatcher.ResolveWorkloadForHost for why
 // nothing arbitrates between a Sandbox and an App.
-func resolveWorkload(req *http.Request, resolver WorkloadResolver, host string) (k8sapp.WorkloadRef, bool) {
+func resolveWorkload(req *http.Request, resolver WorkloadResolver, host string) k8sapp.WorkloadRef {
 	if ref, ok := resolver.ResolveWorkloadForHost(req.Context(), req.Host); ok {
-		return ref, true
+		return ref
 	}
-	if ref, ok := workloadForAppID(req, host); ok {
-		return ref, true
-	}
-	return k8sapp.WorkloadRef{}, false
+	return workloadForAppID(req, host)
 }
 
 // workloadForAppID does not check that the App exists: an App is validated by
 // loading its config, not against the K8s cache.
-func workloadForAppID(req *http.Request, host string) (k8sapp.WorkloadRef, bool) {
+func workloadForAppID(req *http.Request, host string) k8sapp.WorkloadRef {
 	appID, ok := parseAppID(req, host)
 	if !ok {
-		return k8sapp.WorkloadRef{}, false
+		return k8sapp.WorkloadRef{}
 	}
-	return k8sapp.WorkloadRef{AppID: appID}, true
+	return k8sapp.WorkloadRef{AppID: appID}
 }
 
 func parseAppID(req *http.Request, host string) (api.AppID, bool) {
