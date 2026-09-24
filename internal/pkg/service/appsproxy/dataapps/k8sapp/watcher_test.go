@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,21 +29,27 @@ const testNamespace = "keboola"
 type watcherDeps struct {
 	logger log.Logger
 	proc   *servicectx.Process
+	clock  clockwork.Clock
 }
 
 func newTestDeps(t *testing.T) *watcherDeps {
 	t.Helper()
-	logger := log.NewNopLogger()
+	return newTestDepsWith(t, log.NewNopLogger(), clockwork.NewRealClock())
+}
+
+func newTestDepsWith(t *testing.T, logger log.Logger, clock clockwork.Clock) *watcherDeps {
+	t.Helper()
 	proc := servicectx.New(servicectx.WithLogger(logger), servicectx.WithoutSignals())
 	t.Cleanup(func() {
 		proc.Shutdown(context.Background(), nil)
 		proc.WaitForShutdown()
 	})
-	return &watcherDeps{logger: logger, proc: proc}
+	return &watcherDeps{logger: logger, proc: proc, clock: clock}
 }
 
 func (d *watcherDeps) Logger() log.Logger           { return d.logger }
 func (d *watcherDeps) Process() *servicectx.Process { return d.proc }
+func (d *watcherDeps) Clock() clockwork.Clock       { return d.clock }
 
 // newFakeClient creates a fake dynamic client with the App and Secret list kinds registered.
 func newFakeClient() *k8sfake.FakeDynamicClient {
@@ -326,4 +333,181 @@ func TestStateWatcher_GetState_NonE2BApp_NoToken(t *testing.T) {
 	info, ok := watcher.GetState(t.Context(), api.AppID("app-regular"))
 	require.True(t, ok)
 	assert.Empty(t, info.E2BAccessToken)
+}
+
+// newProductAppObject creates a product-role App CRD: no containerSpec (absence is what
+// marks the product role) and status.e2bSandbox.accessTokenSecretName set. backendType is
+// written to spec.runtime.backend.type, or omitted entirely when empty.
+func newProductAppObject(k8sName, appID string, state k8sapp.AppActualState, backendType, secretName string) *unstructured.Unstructured {
+	obj := newAppObject(k8sName, appID, state)
+	if backendType != "" {
+		obj.Object["spec"].(map[string]any)["runtime"] = map[string]any{
+			"backend": map[string]any{"type": backendType},
+		}
+	}
+	obj.Object["status"].(map[string]any)["e2bSandbox"] = map[string]any{
+		"accessTokenSecretName": secretName,
+	}
+	return obj
+}
+
+// newWorkloadAppObject creates a workload-role App CRD: containerSpec present, plus
+// spec.runtime.backend.type and status.e2bSandbox.accessTokenSecretName.
+func newWorkloadAppObject(k8sName, appID string, state k8sapp.AppActualState, backendType, secretName string) *unstructured.Unstructured {
+	obj := newProductAppObject(k8sName, appID, state, backendType, secretName)
+	obj.Object["spec"].(map[string]any)["containerSpec"] = map[string]any{
+		"image": "keboola/data-app:latest",
+	}
+	return obj
+}
+
+// requireTokenLoaded starts a watcher over the given app + secret and returns the
+// AppInfo once the app is cached.
+func stateAfterSync(t *testing.T, appObj *unstructured.Unstructured, appID, secretName, tokenValue string) k8sapp.AppInfo {
+	t.Helper()
+
+	fakeClient := newFakeClient()
+	d := newTestDeps(t)
+
+	secret := newSecretObject(secretName, testNamespace, tokenValue)
+	_, err := fakeClient.Resource(k8sapp.SecretGVR()).Namespace(testNamespace).Create(
+		t.Context(), secret, metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	_, err = fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
+		t.Context(), appObj, metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
+
+	require.Eventually(t, func() bool {
+		_, ok := watcher.GetState(t.Context(), api.AppID(appID))
+		return ok
+	}, 5*time.Second, 50*time.Millisecond)
+
+	info, ok := watcher.GetState(t.Context(), api.AppID(appID))
+	require.True(t, ok)
+	return info
+}
+
+// A product App built by sandboxes-service carries no spec.runtime at all — the backend
+// belongs to the member Sandbox it routes to. The token must still be read, or the app
+// gets a route it cannot authenticate against.
+func TestStateWatcher_GetState_E2BAccessToken_ProductAppWithoutRuntime(t *testing.T) {
+	t.Parallel()
+
+	appObj := newProductAppObject("my-product-app", "app-product", k8sapp.AppActualStateRunning, "", "product-secret")
+	info := stateAfterSync(t, appObj, "app-product", "product-secret", "product-token")
+
+	assert.Equal(t, "product-token", info.E2BAccessToken)
+}
+
+// A /v1 App adopted into the product role keeps the spec.runtime its /v1 flow wrote,
+// which names the backend of a workload that no longer exists. It is residue, not the
+// app's backend, so it must not gate the read.
+func TestStateWatcher_GetState_E2BAccessToken_AdoptedProductAppWithK8sRuntimeResidue(t *testing.T) {
+	t.Parallel()
+
+	appObj := newProductAppObject("my-adopted-app", "app-adopted", k8sapp.AppActualStateRunning, "k8sDeployment", "adopted-secret")
+	info := stateAfterSync(t, appObj, "app-adopted", "adopted-secret", "adopted-token")
+
+	assert.Equal(t, "adopted-token", info.E2BAccessToken)
+}
+
+// A workload App switched away from the E2B backend keeps a stale
+// status.e2bSandbox.accessTokenSecretName — nothing clears it. Its own backend type is
+// authoritative, so the token must NOT be read: the Secret is owned by the deleted
+// E2bSandbox, and sending the header would hand an E2B credential to a k8s Deployment.
+func TestStateWatcher_GetState_E2BAccessToken_NotReadForK8sWorkload(t *testing.T) {
+	t.Parallel()
+
+	appObj := newWorkloadAppObject("my-switched-app", "app-switched", k8sapp.AppActualStateRunning, "k8sDeployment", "stale-secret")
+	info := stateAfterSync(t, appObj, "app-switched", "stale-secret", "stale-token")
+
+	assert.Empty(t, info.E2BAccessToken)
+}
+
+// A workload App on the E2B backend is the pre-existing case and must keep working.
+func TestStateWatcher_GetState_E2BAccessToken_E2BWorkload(t *testing.T) {
+	t.Parallel()
+
+	appObj := newWorkloadAppObject("my-e2b-workload", "app-e2b-workload", k8sapp.AppActualStateRunning, k8sapp.BackendTypeE2BSandbox, "workload-secret")
+	info := stateAfterSync(t, appObj, "app-e2b-workload", "workload-secret", "workload-token")
+
+	assert.Equal(t, "workload-token", info.E2BAccessToken)
+}
+
+// countSecretGets returns how many times the Secret named was fetched from the API.
+func countSecretGets(fakeClient *k8sfake.FakeDynamicClient, name string) int {
+	n := 0
+	for _, a := range fakeClient.Actions() {
+		if get, ok := a.(k8stesting.GetAction); ok && get.GetResource() == k8sapp.SecretGVR() && get.GetName() == name {
+			n++
+		}
+	}
+	return n
+}
+
+// GetState runs on the request path, so a Secret that cannot be loaded must not cost a
+// K8s API call and a WARN on every request. The retry is gated, not abandoned: the Secret
+// may legitimately appear later, and the app must still converge when it does.
+func TestStateWatcher_GetState_E2BAccessToken_FailedLoadIsNotRetriedPerRequest(t *testing.T) {
+	t.Parallel()
+
+	fakeClient := newFakeClient()
+	logger := log.NewDebugLogger()
+	clock := clockwork.NewFakeClock()
+	d := newTestDepsWith(t, logger, clock)
+
+	// The App names a Secret that does not exist yet.
+	appObj := newProductAppObject("my-app", "app-1", k8sapp.AppActualStateRunning, "", "late-secret")
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
+		t.Context(), appObj, metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
+	require.Eventually(t, func() bool {
+		_, ok := watcher.GetState(t.Context(), api.AppID("app-1"))
+		return ok
+	}, 5*time.Second, 50*time.Millisecond)
+
+	// handleUpsert already attempted the load once and armed the retry gate.
+	getsAfterSync := countSecretGets(fakeClient, "late-secret")
+	logger.Truncate()
+
+	// Many requests inside the retry window must not produce a single further API call
+	// or WARN — this is the behaviour that fails before the gate exists.
+	for range 20 {
+		info, ok := watcher.GetState(t.Context(), api.AppID("app-1"))
+		require.True(t, ok)
+		assert.Empty(t, info.E2BAccessToken)
+	}
+	assert.Equal(t, getsAfterSync, countSecretGets(fakeClient, "late-secret"),
+		"a failed token load must not be retried on every request")
+	assert.Empty(t, logger.WarnMessages(),
+		"a failed token load must not warn on every request")
+
+	// Past the retry window the load is attempted again — the gate delays, it does not
+	// give up. The Secret still does not exist, so exactly one further attempt is made.
+	clock.Advance(2 * time.Second)
+	_, ok := watcher.GetState(t.Context(), api.AppID("app-1"))
+	require.True(t, ok)
+	assert.Equal(t, getsAfterSync+1, countSecretGets(fakeClient, "late-secret"))
+	assert.Contains(t, logger.WarnMessages(), "failed to lazy-load E2B access token")
+
+	// Once the Secret appears, the next attempt after the window converges.
+	secret := newSecretObject("late-secret", testNamespace, "late-token")
+	_, err = fakeClient.Resource(k8sapp.SecretGVR()).Namespace(testNamespace).Create(
+		t.Context(), secret, metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	clock.Advance(64 * time.Second)
+	info, ok := watcher.GetState(t.Context(), api.AppID("app-1"))
+	require.True(t, ok)
+	assert.Equal(t, "late-token", info.E2BAccessToken,
+		"the retry gate must delay the load, not abandon it")
 }
