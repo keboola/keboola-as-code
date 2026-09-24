@@ -45,8 +45,8 @@ type StateWatcher struct {
 	logger              log.Logger
 	hasSynced           cache.InformerSynced
 	sandboxesHaveSynced cache.InformerSynced
-	apps                sync.Map           // api.AppID → entry
-	tokenLoadGroup      singleflight.Group // coalesces concurrent lazy-load K8s API calls per secret
+	apps                map[api.AppID]entry // guarded by routeLock, like the Sandbox caches
+	tokenLoadGroup      singleflight.Group  // coalesces concurrent lazy-load K8s API calls per secret
 
 	// routeLock guards the Sandbox cache and serialises writes to the App cache,
 	// which are read-modify-write on the lazy E2B token path.
@@ -96,6 +96,7 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 		logger:              d.Logger().WithComponent("k8sapp.watcher"),
 		hasSynced:           appInformer.HasSynced,
 		sandboxesHaveSynced: sandboxInformer.HasSynced,
+		apps:                make(map[api.AppID]entry),
 		sandboxes:           make(map[string]entry),
 		sandboxHosts:        make(map[string]string),
 	}
@@ -266,24 +267,16 @@ func (w *StateWatcher) ResolveWorkloadForHost(_ context.Context, host string) (W
 	return WorkloadRef{AppID: e.appID, SandboxName: k8sName}, true
 }
 
-func (w *StateWatcher) appEntry(appID api.AppID) (entry, bool) {
-	v, ok := w.apps.Load(appID)
-	if !ok {
-		return entry{}, false
-	}
-	e, ok := v.(entry)
-	return e, ok
-}
-
 func (w *StateWatcher) entryFor(ref WorkloadRef) (entry, bool) {
+	w.routeLock.RLock()
+	defer w.routeLock.RUnlock()
+
 	if ref.IsSandbox() {
-		w.routeLock.RLock()
-		defer w.routeLock.RUnlock()
 		e, ok := w.sandboxes[ref.SandboxName]
 		return e, ok
 	}
-
-	return w.appEntry(ref.AppID)
+	e, ok := w.apps[ref.AppID]
+	return e, ok
 }
 
 // storeLoadedToken writes only the token, onto the entry the cache holds now:
@@ -301,9 +294,9 @@ func (w *StateWatcher) storeLoadedToken(ref WorkloadRef, token string) {
 		return
 	}
 
-	if current, ok := w.appEntry(ref.AppID); ok {
+	if current, ok := w.apps[ref.AppID]; ok {
 		current.e2bAccessToken = token
-		w.apps.Store(ref.AppID, current)
+		w.apps[ref.AppID] = current
 	}
 }
 
@@ -316,7 +309,7 @@ func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 	appID := api.AppID(parsed.appID)
 
 	w.routeLock.Lock()
-	w.apps.Store(appID, parsed.entry)
+	w.apps[appID] = parsed.entry
 	w.routeLock.Unlock()
 
 	w.logger.Debugf(ctx, "App CRD %q (appID=%s) state updated: actualState=%q autoRestartEnabled=%v devMode=%v upstreamTarget=%v", parsed.entry.k8sName, appID, parsed.entry.state, parsed.entry.autoRestartEnabled, parsed.entry.devMode, parsed.entry.upstreamTarget != nil)
@@ -433,6 +426,21 @@ func (w *StateWatcher) storeSandbox(ctx context.Context, appID api.AppID, e entr
 	}
 }
 
+// deleteAppByName removes the App cached under a K8s object name and reports
+// which app id it held.
+func (w *StateWatcher) deleteAppByName(k8sName string) (api.AppID, bool) {
+	w.routeLock.Lock()
+	defer w.routeLock.Unlock()
+
+	for appID, e := range w.apps {
+		if e.k8sName == k8sName {
+			delete(w.apps, appID)
+			return appID, true
+		}
+	}
+	return "", false
+}
+
 // releaseHost removes the hostname from the index. The caller must hold routeLock.
 func (w *StateWatcher) releaseHost(host, k8sName string) {
 	if host == "" {
@@ -484,18 +492,13 @@ func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
 	}
 	k8sName := u.GetName()
 
-	w.apps.Range(func(key, val any) bool {
-		e, ok := val.(entry)
-		if !ok || e.k8sName != k8sName {
-			return true
-		}
-		w.routeLock.Lock()
-		w.apps.Delete(key)
-		w.routeLock.Unlock()
-		w.logger.Debugf(ctx, "App CRD %q (appID=%s) removed from cache", k8sName, key)
-		w.notifyRemoved(WorkloadRef{AppID: e.appID})
-		return false
-	})
+	removed, found := w.deleteAppByName(k8sName)
+	if !found {
+		return
+	}
+
+	w.logger.Debugf(ctx, "App CRD %q (appID=%s) removed from cache", k8sName, removed)
+	w.notifyRemoved(WorkloadRef{AppID: removed})
 }
 
 // loadSecretToken fetches a K8s Secret by name and returns the value of the "token" key.
