@@ -1,6 +1,7 @@
 package apphandler
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 )
 
 // TestAppHandlerWrapper_NeedsRebuild verifies that handler recreation is keyed on
@@ -86,9 +88,10 @@ func TestManager_EvictedWrapperIsNotRepopulated(t *testing.T) {
 
 	m.evictWorkload(ref)
 
-	// The request now proceeds on the pointer it captured.
-	_, ok := m.handlerFor(t.Context(), appconfig.AppConfigResult{Workload: ref}, stale)
-	assert.False(t, ok, "an evicted wrapper must be rejected so the caller retries on a fresh one")
+	// The request now proceeds on the pointer it captured. It is answered
+	// without the cache: the workload it named no longer exists.
+	ctx := context.WithValue(t.Context(), middleware.RequestIDCtxKey, "test-request-id")
+	assert.NotNil(t, m.handlerFor(ctx, appconfig.AppConfigResult{Workload: ref}, stale))
 	assert.Nil(t, stale.handler, "nothing may be built into a detached entry")
 }
 

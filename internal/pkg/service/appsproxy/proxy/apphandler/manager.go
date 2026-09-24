@@ -122,28 +122,25 @@ func (m *Manager) evictWorkload(ref k8sapp.WorkloadRef) {
 }
 
 func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {
-	// The entry can be evicted between taking the pointer and taking its lock,
-	// in which case it is no longer the cache's and must not be built into.
-	for {
-		if handler, ok := m.handlerFor(ctx, result, m.handlers.GetOrInit(result.Workload)); ok {
-			return handler
-		}
-	}
+	return m.handlerFor(ctx, result, m.handlers.GetOrInit(result.Workload))
 }
 
-func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResult, wrapper *appHandlerWrapper) (http.Handler, bool) {
+func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResult, wrapper *appHandlerWrapper) http.Handler {
 	// Only one newHandler method runs in parallel per app.
 	// If there is an in-flight update, we are waiting for its results.
 	wrapper.lock.Lock()
 	defer wrapper.lock.Unlock()
 
+	// The entry can be evicted between taking the pointer and taking its lock.
+	// Building into it would strand the handler, and the workload it serves is
+	// gone anyway, so the request ends here.
 	if wrapper.evicted {
-		return nil, false
+		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, svcErrors.NewResourceNotFoundError("workload", result.Workload.String(), "cluster"))
 	}
 
 	// Load configuration for the app
 	if result.Err != nil {
-		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, result.Err), true
+		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, result.Err)
 	}
 
 	// Create a new handler when the config changed (ETag), upstream URL changed, or E2B token changed.
@@ -159,7 +156,7 @@ func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResu
 		wrapper.configETag = configETag
 	}
 
-	return wrapper.handler, true
+	return wrapper.handler
 }
 
 func (m *Manager) newHandler(ctx context.Context, app api.AppConfig, workload k8sapp.WorkloadRef) (http.Handler, context.CancelCauseFunc) {
