@@ -54,27 +54,27 @@ type StateWatcher struct {
 	sandboxes    map[string]entry  // Sandbox K8s object name → entry
 	sandboxHosts map[string]string // exact hostname → Sandbox K8s object name
 
-	workloadRemoved workloadRemoved
+	workloadRemovalNotifier workloadRemovalNotifier
 }
 
-// workloadRemoved is the event raised when a workload leaves the cache, so a
+// workloadRemovalNotifier tells subscribers that a workload left the cache, so a
 // consumer keyed by WorkloadRef can drop what it holds for it.
-type workloadRemoved struct {
+type workloadRemovalNotifier struct {
 	lock        sync.RWMutex
 	subscribers []func(WorkloadRef)
 }
 
-func (e *workloadRemoved) subscribe(fn func(WorkloadRef)) {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	e.subscribers = append(e.subscribers, fn)
+func (n *workloadRemovalNotifier) subscribe(fn func(WorkloadRef)) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+	n.subscribers = append(n.subscribers, fn)
 }
 
-// emit must be called with no watcher lock held: a subscriber may re-enter the watcher.
-func (e *workloadRemoved) emit(ref WorkloadRef) {
-	e.lock.RLock()
-	subscribers := e.subscribers
-	e.lock.RUnlock()
+// notify must be called with no watcher lock held: a subscriber may re-enter the watcher.
+func (n *workloadRemovalNotifier) notify(ref WorkloadRef) {
+	n.lock.RLock()
+	subscribers := n.subscribers
+	n.lock.RUnlock()
 
 	for _, fn := range subscribers {
 		fn(ref)
@@ -247,7 +247,7 @@ func (w *StateWatcher) Wakeup(ctx context.Context, ref WorkloadRef) error {
 
 // OnWorkloadRemoved registers a callback fired when a workload leaves the cache.
 func (w *StateWatcher) OnWorkloadRemoved(fn func(WorkloadRef)) {
-	w.workloadRemoved.subscribe(fn)
+	w.workloadRemovalNotifier.subscribe(fn)
 }
 
 // ResolveWorkloadForHost reports the workload that owns an exact hostname. A
@@ -492,7 +492,7 @@ func (w *StateWatcher) handleSandboxDelete(ctx context.Context, obj any) {
 	e, found := w.deleteSandbox(k8sName)
 	if found {
 		w.logger.Debugf(ctx, "Sandbox CRD %q (appID=%s) removed from cache", k8sName, e.appID)
-		w.workloadRemoved.emit(WorkloadRef{AppID: e.appID, SandboxName: k8sName})
+		w.workloadRemovalNotifier.notify(WorkloadRef{AppID: e.appID, SandboxName: k8sName})
 	}
 }
 
@@ -522,7 +522,7 @@ func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
 	}
 
 	w.logger.Debugf(ctx, "App CRD %q (appID=%s) removed from cache", k8sName, removed)
-	w.workloadRemoved.emit(WorkloadRef{AppID: removed})
+	w.workloadRemovalNotifier.notify(WorkloadRef{AppID: removed})
 }
 
 // loadSecretToken fetches a K8s Secret by name and returns the value of the "token" key.
