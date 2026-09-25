@@ -2816,7 +2816,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, appServer *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				t.Helper()
 
-				ref, ok := watcher.ResolveWorkloadForHost(t.Context(), "draft-abc.hub.keboola.local")
+				ref, ok := watcher.ResolveWorkloadForHost("draft-abc.hub.keboola.local")
 				require.True(t, ok)
 				assert.Equal(t, k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"}, ref)
 
@@ -3816,7 +3816,7 @@ func setupDraftSandboxInState(appID, appPublicURL, draftName, draftPublicURL str
 
 		host := strings.TrimPrefix(draftPublicURL, "https://")
 		require.Eventually(t, func() bool {
-			ref, ok := watcher.ResolveWorkloadForHost(t.Context(), host)
+			ref, ok := watcher.ResolveWorkloadForHost(host)
 			return ok && ref.SandboxName == draftName
 		}, 5*time.Second, 50*time.Millisecond)
 	}

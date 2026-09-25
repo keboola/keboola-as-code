@@ -32,7 +32,7 @@ type AppConfigResult struct {
 
 // WorkloadResolver reports the workload that owns an exact hostname, if any.
 type WorkloadResolver interface {
-	ResolveWorkloadForHost(ctx context.Context, host string) (k8sapp.WorkloadRef, bool)
+	ResolveWorkloadForHost(host string) (k8sapp.WorkloadRef, bool)
 }
 
 func AppConfigFromContext(ctx context.Context) AppConfigResult {
@@ -103,7 +103,7 @@ func requestTelemetryAttrs(workload k8sapp.WorkloadRef, appConfig api.AppConfig)
 // priority, not a tie-break; see StateWatcher.ResolveWorkloadForHost for why
 // nothing arbitrates between a Sandbox and an App.
 func resolveWorkload(req *http.Request, resolver WorkloadResolver, host string) k8sapp.WorkloadRef {
-	if ref, ok := resolver.ResolveWorkloadForHost(req.Context(), req.Host); ok {
+	if ref, ok := resolver.ResolveWorkloadForHost(req.Host); ok {
 		return ref
 	}
 	return workloadForAppID(req, host)

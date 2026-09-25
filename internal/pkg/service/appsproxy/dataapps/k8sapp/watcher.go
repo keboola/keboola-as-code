@@ -258,7 +258,7 @@ func (w *StateWatcher) OnWorkloadRemoved(fn func(WorkloadRef)) {
 // published hostname and does not issue one to a Sandbox that an App already
 // answers on. A workload kind with a free-form hostname breaks that assumption
 // and has to be reconsidered here before one exists.
-func (w *StateWatcher) ResolveWorkloadForHost(_ context.Context, host string) (WorkloadRef, bool) {
+func (w *StateWatcher) ResolveWorkloadForHost(host string) (WorkloadRef, bool) {
 	host = NormalizeHost(host)
 
 	w.routeLock.RLock()

@@ -26,7 +26,7 @@ type testResolver struct {
 	sandboxAppID api.AppID
 }
 
-func (r *testResolver) ResolveWorkloadForHost(_ context.Context, host string) (k8sapp.WorkloadRef, bool) {
+func (r *testResolver) ResolveWorkloadForHost(host string) (k8sapp.WorkloadRef, bool) {
 	if r.sandboxHost != "" && host == r.sandboxHost {
 		return k8sapp.WorkloadRef{AppID: r.sandboxAppID, SandboxName: r.sandboxName}, true
 	}

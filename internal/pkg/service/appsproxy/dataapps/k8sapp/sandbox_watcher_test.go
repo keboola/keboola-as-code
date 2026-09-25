@@ -1,7 +1,6 @@
 package k8sapp_test
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
@@ -18,14 +17,14 @@ import (
 const prodUpstreamURL = "http://prod.keboola.svc.cluster.local:8888"
 
 // resolveHost returns the resolved workload, zero when no Sandbox owns the hostname.
-func resolveHost(w *k8sapp.StateWatcher, ctx context.Context, host string) k8sapp.WorkloadRef {
-	ref, _ := w.ResolveWorkloadForHost(ctx, host)
+func resolveHost(w *k8sapp.StateWatcher, host string) k8sapp.WorkloadRef {
+	ref, _ := w.ResolveWorkloadForHost(host)
 	return ref
 }
 
 // sandboxNameFor returns the Sandbox that owns the hostname, "" when none does.
-func sandboxNameFor(w *k8sapp.StateWatcher, ctx context.Context, host string) string {
-	ref, _ := w.ResolveWorkloadForHost(ctx, host)
+func sandboxNameFor(w *k8sapp.StateWatcher, host string) string {
+	ref, _ := w.ResolveWorkloadForHost(host)
 	return ref.SandboxName
 }
 
@@ -75,11 +74,11 @@ func TestStateWatcher_ResolveWorkloadForHost_SandboxOwnsExactHostname(t *testing
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 
 	assert.Eventually(t, func() bool {
-		ref := resolveHost(watcher, t.Context(), "draft-abc.hub.example.com")
+		ref := resolveHost(watcher, "draft-abc.hub.example.com")
 		return ref.SandboxName == "draft-abc"
 	}, 5*time.Second, 50*time.Millisecond)
 
-	ref := resolveHost(watcher, t.Context(), "draft-abc.hub.example.com")
+	ref := resolveHost(watcher, "draft-abc.hub.example.com")
 	info, ok := watcher.GetState(t.Context(), ref)
 	require.True(t, ok)
 	require.NotNil(t, info.UpstreamTarget)
@@ -100,7 +99,7 @@ func TestStateWatcher_ResolveWorkloadForHost_SandboxWithoutPublicURLIsNotRouted(
 	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 
-	ref := resolveHost(watcher, t.Context(), "member-1.hub.example.com")
+	ref := resolveHost(watcher, "member-1.hub.example.com")
 	assert.Empty(t, ref.SandboxName)
 }
 
@@ -125,7 +124,7 @@ func TestStateWatcher_ResolveWorkloadForHost_ExactMatchWinsOverTheApp(t *testing
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 
 	require.Eventually(t, func() bool {
-		ref, ok := watcher.ResolveWorkloadForHost(t.Context(), "myslug-42.hub.example.com")
+		ref, ok := watcher.ResolveWorkloadForHost("myslug-42.hub.example.com")
 		return ok && ref.SandboxName == "member-2"
 	}, 5*time.Second, 50*time.Millisecond)
 }
@@ -141,7 +140,7 @@ func TestStateWatcher_ResolveWorkloadForHost_HostnameReleasedOnPublicURLChange(t
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 
 	assert.Eventually(t, func() bool {
-		return sandboxNameFor(watcher, t.Context(), "draft-abc.hub.example.com") == "draft-abc"
+		return sandboxNameFor(watcher, "draft-abc.hub.example.com") == "draft-abc"
 	}, 5*time.Second, 50*time.Millisecond)
 
 	updated := newSandboxObject("draft-abc", "app-123", k8sapp.AppActualStateRunning, "https://draft-xyz.hub.example.com", "http://a:8888")
@@ -149,10 +148,10 @@ func TestStateWatcher_ResolveWorkloadForHost_HostnameReleasedOnPublicURLChange(t
 	require.NoError(t, err)
 
 	assert.Eventually(t, func() bool {
-		return sandboxNameFor(watcher, t.Context(), "draft-xyz.hub.example.com") == "draft-abc"
+		return sandboxNameFor(watcher, "draft-xyz.hub.example.com") == "draft-abc"
 	}, 5*time.Second, 50*time.Millisecond)
 
-	assert.Empty(t, sandboxNameFor(watcher, t.Context(), "draft-abc.hub.example.com"))
+	assert.Empty(t, sandboxNameFor(watcher, "draft-abc.hub.example.com"))
 }
 
 func TestStateWatcher_ResolveWorkloadForHost_HostnameReleasedOnDelete(t *testing.T) {
@@ -165,13 +164,13 @@ func TestStateWatcher_ResolveWorkloadForHost_HostnameReleasedOnDelete(t *testing
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 
 	assert.Eventually(t, func() bool {
-		return sandboxNameFor(watcher, t.Context(), "draft-abc.hub.example.com") == "draft-abc"
+		return sandboxNameFor(watcher, "draft-abc.hub.example.com") == "draft-abc"
 	}, 5*time.Second, 50*time.Millisecond)
 
 	require.NoError(t, fakeClient.Resource(k8sapp.SandboxGVR()).Namespace(testNamespace).Delete(t.Context(), "draft-abc", metav1.DeleteOptions{}))
 
 	assert.Eventually(t, func() bool {
-		return sandboxNameFor(watcher, t.Context(), "draft-abc.hub.example.com") == ""
+		return sandboxNameFor(watcher, "draft-abc.hub.example.com") == ""
 	}, 5*time.Second, 50*time.Millisecond)
 }
 
@@ -187,7 +186,7 @@ func TestStateWatcher_Wakeup_PatchesSandboxCRD(t *testing.T) {
 
 	var ref k8sapp.WorkloadRef
 	assert.Eventually(t, func() bool {
-		ref = resolveHost(watcher, t.Context(), "draft-abc.hub.example.com")
+		ref = resolveHost(watcher, "draft-abc.hub.example.com")
 		return ref.SandboxName == "draft-abc"
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -211,7 +210,7 @@ func TestStateWatcher_ResolveWorkloadForHost_HostnameNormalisation(t *testing.T)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 
 	assert.Eventually(t, func() bool {
-		return sandboxNameFor(watcher, t.Context(), "draft-abc.hub.example.com:8443") == "draft-abc"
+		return sandboxNameFor(watcher, "draft-abc.hub.example.com:8443") == "draft-abc"
 	}, 5*time.Second, 50*time.Millisecond)
 }
 
@@ -246,17 +245,17 @@ func TestStateWatcher_ResolveWorkloadForHost_DraftAndAppCoexist(t *testing.T) {
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 
 	assert.Eventually(t, func() bool {
-		return sandboxNameFor(watcher, t.Context(), "draft-abc-123.hub.example.com") == "draft-abc"
+		return sandboxNameFor(watcher, "draft-abc-123.hub.example.com") == "draft-abc"
 	}, 5*time.Second, 50*time.Millisecond)
 
-	draftInfo, ok := watcher.GetState(t.Context(), resolveHost(watcher, t.Context(), "draft-abc-123.hub.example.com"))
+	draftInfo, ok := watcher.GetState(t.Context(), resolveHost(watcher, "draft-abc-123.hub.example.com"))
 	require.True(t, ok)
 	require.NotNil(t, draftInfo.UpstreamTarget)
 	assert.Equal(t, "http://draft-abc.keboola.svc.cluster.local:8888", draftInfo.UpstreamTarget.String())
 
 	// The App's own hostname is untouched: no Sandbox owns it, so the caller
 	// falls through to hostname normalisation.
-	_, claimed := watcher.ResolveWorkloadForHost(t.Context(), "public-123.hub.example.com")
+	_, claimed := watcher.ResolveWorkloadForHost("public-123.hub.example.com")
 	assert.False(t, claimed)
 	appInfo, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
 	require.True(t, ok)
@@ -286,7 +285,7 @@ func TestStateWatcher_ResolveWorkloadForHost_AppIDComesFromSandboxSpec(t *testin
 	var ref k8sapp.WorkloadRef
 	var claimed bool
 	require.Eventually(t, func() bool {
-		ref, claimed = watcher.ResolveWorkloadForHost(t.Context(), "draft-9f3c.hub.example.com")
+		ref, claimed = watcher.ResolveWorkloadForHost("draft-9f3c.hub.example.com")
 		return claimed
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -318,7 +317,7 @@ func TestStateWatcher_ResolveWorkloadForHost_NeverPublishedAppDoesNotBlockUnrela
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
-	ref, claimed := watcher.ResolveWorkloadForHost(t.Context(), "draft-01a0aa03-4886-74b4-87c2-8518d0ebf7f1.hub.example.com")
+	ref, claimed := watcher.ResolveWorkloadForHost("draft-01a0aa03-4886-74b4-87c2-8518d0ebf7f1.hub.example.com")
 	assert.True(t, claimed, "the draft owns this hostname; the App publishes none and would never publish this one")
 	assert.Equal(t, k8sapp.WorkloadRef{AppID: "7327412", SandboxName: "app-7327412-dft-01a0aa03"}, ref)
 }
