@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 )
@@ -16,12 +17,22 @@ type ctxKey string
 
 const (
 	appConfigCtxKey = ctxKey("app-config")
+
+	// attrContextAppID duplicates the app id under the same key the sandboxes
+	// service uses.
+	attrContextAppID = "context.appId"
+	attrSandboxName  = "proxy.sandbox.name"
 )
 
 type AppConfigResult struct {
-	AppID     api.AppID
+	Workload  k8sapp.WorkloadRef
 	AppConfig api.AppConfig
 	Err       error
+}
+
+// WorkloadResolver reports the workload that owns an exact hostname, if any.
+type WorkloadResolver interface {
+	ResolveWorkloadForHost(host string) (k8sapp.WorkloadRef, bool)
 }
 
 func AppConfigFromContext(ctx context.Context) AppConfigResult {
@@ -31,16 +42,16 @@ func AppConfigFromContext(ctx context.Context) AppConfigResult {
 	return AppConfigResult{}
 }
 
-func Middleware(configLoader Loader, host string) middleware.Middleware {
+func Middleware(configLoader Loader, resolver WorkloadResolver, host string) middleware.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			appID, ok := parseAppID(req, host)
-			if ok {
+			workload := resolveWorkload(req, resolver, host)
+			if workload.AppID != "" {
 				ctx := req.Context()
 
-				appConfig, err := configLoader.GetConfig(ctx, appID)
+				appConfig, err := configLoader.GetConfig(ctx, workload.AppID)
 				result := AppConfigResult{
-					AppID:     appID,
+					Workload:  workload,
 					AppConfig: appConfig,
 					Err:       err,
 				}
@@ -48,9 +59,7 @@ func Middleware(configLoader Loader, host string) middleware.Middleware {
 				ctx = context.WithValue(ctx, appConfigCtxKey, result)
 				if err == nil {
 					// Enrich context with telemetry attributes for downstream operations.
-					telemetryAttrs := appConfig.Telemetry()
-					// Duplicate app ID in the event attributes under the same key as sandboxes service.
-					telemetryAttrs = append(telemetryAttrs, attribute.String("context.appId", string(appID)))
+					telemetryAttrs := requestTelemetryAttrs(workload, appConfig)
 
 					ctx = ctxattr.ContextWith(ctx, telemetryAttrs...)
 
@@ -76,6 +85,38 @@ func Middleware(configLoader Loader, host string) middleware.Middleware {
 			next.ServeHTTP(w, req)
 		})
 	}
+}
+
+// requestTelemetryAttrs reaches the log line, the request span and the HTTP
+// metrics. The app id is right for a Sandbox route too, but on its own it
+// cannot tell a draft from production.
+func requestTelemetryAttrs(workload k8sapp.WorkloadRef, appConfig api.AppConfig) []attribute.KeyValue {
+	attrs := appConfig.Telemetry()
+	attrs = append(attrs, attribute.String(attrContextAppID, workload.AppID.String()))
+	if workload.IsSandbox() {
+		attrs = append(attrs, attribute.String(attrSandboxName, workload.SandboxName))
+	}
+	return attrs
+}
+
+// resolveWorkload picks the workload for the request hostname. The order is a
+// priority, not a tie-break; see StateWatcher.ResolveWorkloadForHost for why
+// nothing arbitrates between a Sandbox and an App.
+func resolveWorkload(req *http.Request, resolver WorkloadResolver, host string) k8sapp.WorkloadRef {
+	if ref, ok := resolver.ResolveWorkloadForHost(req.Host); ok {
+		return ref
+	}
+	return workloadForAppID(req, host)
+}
+
+// workloadForAppID does not check that the App exists: an App is validated by
+// loading its config, not against the K8s cache.
+func workloadForAppID(req *http.Request, host string) k8sapp.WorkloadRef {
+	appID, ok := parseAppID(req, host)
+	if !ok {
+		return k8sapp.WorkloadRef{}
+	}
+	return k8sapp.WorkloadRef{AppID: appID}
 }
 
 func parseAppID(req *http.Request, host string) (api.AppID, bool) {

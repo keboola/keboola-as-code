@@ -1899,7 +1899,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
 					return ok && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -1918,7 +1918,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
 					return ok && info.ActualState == k8sapp.AppActualStateRunning
 				}, 5*time.Second, 50*time.Millisecond)
 
@@ -1945,7 +1945,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
 					return ok && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -2003,7 +2003,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
 					return ok && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -2058,7 +2058,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("oidc"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "oidc"})
 					return ok && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -2123,7 +2123,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("oidc"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "oidc"})
 					return ok && info.ActualState == k8sapp.AppActualStateRunning
 				}, 5*time.Second, 50*time.Millisecond)
 
@@ -2147,7 +2147,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("oidc"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "oidc"})
 					return ok && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -2494,7 +2494,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("123"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
 					return ok && !info.AutoRestartEnabled
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -2523,7 +2523,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("devmode"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "devmode"})
 					// AutoRestartEnabled must default to true (spec omits it).
 					return ok && info.DevMode && info.AutoRestartEnabled && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
@@ -2564,7 +2564,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("devmode"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "devmode"})
 					return ok && info.DevMode && !info.AutoRestartEnabled && info.ActualState == k8sapp.AppActualStateStopped
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -2604,7 +2604,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("devmode"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "devmode"})
 					return ok && info.DevMode && info.ActualState == k8sapp.AppActualStateRunning
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -2657,7 +2657,7 @@ func TestAppProxyRouter(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Eventually(t, func() bool {
-					info, ok := watcher.GetState(t.Context(), api.AppID("devmode"))
+					info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "devmode"})
 					return ok && info.DevMode && info.ActualState == k8sapp.AppActualStateRunning
 				}, 5*time.Second, 50*time.Millisecond)
 			},
@@ -2805,6 +2805,178 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 		}
 	}
+
+	testCases = append(testCases,
+		testCase{
+			// A draft Sandbox owns one hostname of its own, carrying no app id.
+			// It is reached by exact match, so it is served instead of being
+			// redirected to the App's canonical host.
+			name:     "draft-sandbox-public-app-is-served",
+			setupK8s: setupDraftSandbox("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local"),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, appServer *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				t.Helper()
+
+				ref, ok := watcher.ResolveWorkloadForHost("draft-abc.hub.keboola.local")
+				require.True(t, ok)
+				assert.Equal(t, k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"}, ref)
+
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-abc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Equal(t, "Hello, client", string(body))
+				require.Len(t, *appServer.Requests, 1)
+			},
+			// notify bumps lastRequestTimestamp on the App, which is not this
+			// workload. Draft traffic must not hold the App awake. Paired with
+			// the case below, which shares this fixture and asserts the App's
+			// own hostname still notifies — the notify throttle is keyed per
+			// app id, so only two separate cases can show both halves.
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
+			// The other half of the case above: on the same fixture, a request
+			// to the App's own hostname still notifies.
+			name:     "draft-sandbox-fixture-app-host-still-notifies",
+			setupK8s: setupDraftSandbox("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local"),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				_ = response.Body.Close()
+			},
+			expectedNotifications: map[string]int{"123": 1},
+		},
+		testCase{
+			// A Stopped draft must be woken: the proxy patches the Sandbox CR's
+			// spec.state, not the App's. A wake that is dropped leaves the draft
+			// showing the spinner forever.
+			name:     "draft-sandbox-stopped-is-woken",
+			setupK8s: setupDraftSandboxInState("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local", k8sapp.AppActualStateStopped),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-abc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "<title>Starting</title>")
+
+				require.Eventually(t, func() bool {
+					obj, err := fakeClient.Resource(k8sapp.SandboxGVR()).Namespace("keboola").Get(t.Context(), "draft-abc", metav1.GetOptions{})
+					if err != nil {
+						return false
+					}
+					state, found, err := unstructured.NestedString(obj.Object, "spec", "state")
+					return err == nil && found && state == string(k8sapp.AppActualStateRunning)
+				}, 5*time.Second, 50*time.Millisecond, "expected the wake to patch the Sandbox CR spec.state=Running")
+
+				appObj, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Get(t.Context(), "app-123", metav1.GetOptions{})
+				require.NoError(t, err)
+				appState, _, err := unstructured.NestedString(appObj.Object, "spec", "state")
+				require.NoError(t, err)
+				assert.NotEqual(t, string(k8sapp.AppActualStateRunning), appState, "the App must not be woken in place of the draft")
+			},
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
+			// An upstream redirect must land back on the draft's own hostname.
+			// Rewriting to the app config's host would bounce the user out of
+			// the draft and into production.
+			name:     "draft-sandbox-absolute-redirect-stays-on-draft-host",
+			setupK8s: setupDraftSandbox("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local"),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-abc.hub.keboola.local/redirect", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusMovedPermanently, response.StatusCode)
+				assert.Equal(t, "https://draft-abc.hub.keboola.local/redirect/", response.Header.Get("Location"))
+			},
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
+			// A password-protected app's draft prompts for its own password:
+			// the form cookie is scoped to the request host, so the draft
+			// hostname carries its own session rather than production's.
+			name:     "draft-sandbox-basic-auth-prompts-on-draft-host",
+			setupK8s: setupDraftSandbox("auth", "https://basic-auth.hub.keboola.local", "draft-auth", "https://draft-auth.hub.keboola.local"),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, appServer *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-auth.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), `autocomplete="current-password"`, "the draft must prompt for the password, not serve the app")
+				assert.NotContains(t, string(body), "Hello, client")
+				assert.Empty(t, *appServer.Requests, "the upstream must not be reached before authentication")
+
+				// The password is accepted on the draft's own hostname, and the
+				// session cookie is scoped to it rather than to production.
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://draft-auth.hub.keboola.local/_proxy/form", bytes.NewBuffer([]byte("password=abc")))
+				require.NoError(t, err)
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusMovedPermanently, response.StatusCode)
+
+				cookies := response.Cookies()
+				if assert.Len(t, cookies, 1) {
+					assert.Equal(t, "proxyBasicAuth", cookies[0].Name)
+					assert.Equal(t, "draft-auth.hub.keboola.local", cookies[0].Domain)
+				}
+				assert.Contains(t, response.Header.Get("Location"), "https://draft-auth.hub.keboola.local/")
+
+				// With that cookie the draft serves the app.
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-auth.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err = io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Equal(t, "Hello, client", string(body))
+			},
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
+			// An OIDC-protected app's draft cannot complete a login yet, since
+			// no per-draft callback URL is registered with the IdP. It must
+			// fail closed - never serve the upstream unauthenticated.
+			name:     "draft-sandbox-oidc-fails-closed",
+			setupK8s: setupDraftSandbox("oidc", "https://oidc.hub.keboola.local", "draft-oidc", "https://draft-oidc.hub.keboola.local"),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, appServer *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.NotContains(t, string(body), "Hello, client", "an unauthenticated draft must never reach the upstream")
+				assert.Empty(t, *appServer.Requests, "the upstream must not be reached without authentication")
+			},
+			expectedNotifications: map[string]int{},
+		},
+	)
 
 	testCases = append(
 		testCases,
@@ -3406,7 +3578,7 @@ func TestKaiPreviewSlidingRefresh(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.Eventually(t, func() bool {
-		info, ok := d.AppStateWatcher().GetState(ctx, api.AppID("devmode"))
+		info, ok := d.AppStateWatcher().GetState(ctx, k8sapp.WorkloadRef{AppID: "devmode"})
 		return ok && info.DevMode && info.ActualState == k8sapp.AppActualStateRunning
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -3602,6 +3774,54 @@ func TestWebsocketActivityTracking(t *testing.T) {
 // makeDefaultK8sObjects converts a slice of app configs into K8s unstructured App CRD objects
 // with Running state and the given upstream URL. Pass the result to NewMockedServiceScopeWithK8sObjects
 // so the fake client is pre-populated before the informer starts.
+// setupDraftSandbox publishes the App's own public URL on its CRD and creates a
+// Sandbox CR that owns draftPublicURL, so the proxy routes that hostname to the
+// Sandbox. The Sandbox reuses the App's upstream, so the same test app server
+// answers for both.
+func setupDraftSandbox(appID, appPublicURL, draftName, draftPublicURL string) func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+	return setupDraftSandboxInState(appID, appPublicURL, draftName, draftPublicURL, k8sapp.AppActualStateRunning)
+}
+
+func setupDraftSandboxInState(appID, appPublicURL, draftName, draftPublicURL string, state k8sapp.AppActualState) func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+	return func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+		t.Helper()
+
+		appPatch := []byte(`{"status":{"appsProxy":{"publicUrl":"` + appPublicURL + `"}}}`)
+		app, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+			t.Context(), "app-"+appID, k8stypes.MergePatchType, appPatch, metav1.PatchOptions{},
+		)
+		require.NoError(t, err)
+
+		upstreamURL, found, err := unstructured.NestedString(app.Object, "status", "appsProxy", "upstreamUrl")
+		require.NoError(t, err)
+		require.True(t, found)
+
+		sandbox := &unstructured.Unstructured{
+			Object: map[string]any{
+				"apiVersion": k8sapp.Group + "/" + k8sapp.SandboxVersion,
+				"kind":       "Sandbox",
+				"metadata":   map[string]any{"name": draftName, "namespace": "keboola"},
+				"spec":       map[string]any{"appId": appID},
+				"status": map[string]any{
+					"currentState": string(state),
+					"appsProxy": map[string]any{
+						"publicUrl":   draftPublicURL,
+						"upstreamUrl": upstreamURL,
+					},
+				},
+			},
+		}
+		_, err = fakeClient.Resource(k8sapp.SandboxGVR()).Namespace("keboola").Create(t.Context(), sandbox, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		host := strings.TrimPrefix(draftPublicURL, "https://")
+		require.Eventually(t, func() bool {
+			ref, ok := watcher.ResolveWorkloadForHost(host)
+			return ok && ref.SandboxName == draftName
+		}, 5*time.Second, 50*time.Millisecond)
+	}
+}
+
 func makeDefaultK8sObjects(apps []api.AppConfig, serviceURL string) []runtime.Object {
 	objects := make([]runtime.Object, 0, len(apps))
 	for _, app := range apps {
