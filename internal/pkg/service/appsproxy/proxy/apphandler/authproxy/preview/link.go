@@ -4,7 +4,7 @@ import "strings"
 
 const maxLogValueLength = 64
 
-func SanitizeForLog(value string) string {
+func SanitizeClaimForLog(value string) string {
 	var b strings.Builder
 	for i, r := range value {
 		if i >= maxLogValueLength {
