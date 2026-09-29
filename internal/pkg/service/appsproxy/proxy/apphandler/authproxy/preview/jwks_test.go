@@ -3,9 +3,12 @@ package preview_test
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -190,6 +193,65 @@ func TestKeySet_UnknownKidRefetchAtMostOncePerMinute(t *testing.T) {
 	_, err = keys.Key(ctx, "k3")
 	require.Error(t, err)
 	assert.Equal(t, int64(2), server.Hits())
+}
+
+func TestKeySet_ConcurrentUnknownKidCallersShareOneRefetch(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	clock := clockwork.NewFakeClock()
+	k1 := previewtest.NewSigner(t, "k1")
+	k2 := previewtest.NewSigner(t, "k2")
+
+	var served atomic.Value
+	served.Store([]map[string]any{k1.JWK()})
+	var hits atomic.Int64
+	entered := make(chan struct{}, 1)
+	release := make(chan struct{})
+	var block atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits.Add(1)
+		if block.Load() {
+			entered <- struct{}{}
+			<-release
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"keys": served.Load()})
+	}))
+	t.Cleanup(server.Close)
+
+	keys := newKeySet(t, server.URL, clock)
+	require.NoError(t, keys.Refresh(ctx))
+	require.Equal(t, int64(1), hits.Load())
+
+	served.Store([]map[string]any{k1.JWK(), k2.JWK()})
+	block.Store(true)
+	clock.Advance(61 * time.Second)
+
+	const callers = 8
+	errs := make(chan error, callers+1)
+	var wg sync.WaitGroup
+	call := func() {
+		defer wg.Done()
+		_, err := keys.Key(ctx, "k2")
+		errs <- err
+	}
+	wg.Add(1)
+	go call()
+	<-entered
+
+	for range callers {
+		wg.Add(1)
+		go call()
+	}
+	time.Sleep(100 * time.Millisecond)
+	close(release)
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
+	}
+	assert.Equal(t, int64(2), hits.Load())
 }
 
 func TestKeySet_UnknownKidRefetchIgnoresRequestCancellation(t *testing.T) {

@@ -9,10 +9,11 @@ import (
 	"io"
 	"net/http"
 	"sort"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jonboulle/clockwork"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -36,10 +37,14 @@ type KeySet struct {
 	clock  clockwork.Clock
 	logger log.Logger
 
-	lock        sync.Mutex
-	keys        map[string]*ecdsa.PublicKey
-	fetchedAt   time.Time
-	lastAttempt time.Time
+	snapshot    atomic.Pointer[keySnapshot]
+	lastAttempt atomic.Pointer[time.Time]
+	refetch     singleflight.Group
+}
+
+type keySnapshot struct {
+	keys      map[string]*ecdsa.PublicKey
+	fetchedAt time.Time
 }
 
 type jwksDocument struct {
@@ -61,7 +66,6 @@ func NewKeySet(cfg KeySetConfig, clock clockwork.Clock, logger log.Logger) *KeyS
 		cfg:    cfg,
 		clock:  clock,
 		logger: logger,
-		keys:   make(map[string]*ecdsa.PublicKey),
 		client: &http.Client{
 			Timeout: jwksFetchTimeout,
 			CheckRedirect: func(*http.Request, []*http.Request) error {
@@ -103,10 +107,12 @@ func (s *KeySet) Key(ctx context.Context, kid string) (*ecdsa.PublicKey, error) 
 	if key, ok := s.lookup(kid); ok {
 		return key, nil
 	}
-	if !s.claimRefetch() {
-		return nil, errors.Errorf(`preview: no usable key for kid "%s"`, SanitizeClaimForLog(kid))
-	}
-	s.refreshAndLog(context.WithoutCancel(ctx))
+	<-s.refetch.DoChan("jwks", func() (any, error) {
+		if s.claimRefetch() {
+			s.refreshAndLog(context.WithoutCancel(ctx))
+		}
+		return nil, nil
+	})
 	if key, ok := s.lookup(kid); ok {
 		return key, nil
 	}
@@ -122,36 +128,34 @@ func (s *KeySet) refreshAndLog(ctx context.Context) {
 }
 
 func (s *KeySet) markAttempt() {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	s.lastAttempt = s.clock.Now()
+	now := s.clock.Now()
+	s.lastAttempt.Store(&now)
 }
 
 func (s *KeySet) store(keys map[string]*ecdsa.PublicKey) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	s.keys = keys
-	s.fetchedAt = s.clock.Now()
+	s.snapshot.Store(&keySnapshot{keys: keys, fetchedAt: s.clock.Now()})
 }
 
 func (s *KeySet) lookup(kid string) (*ecdsa.PublicKey, bool) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	if s.fetchedAt.IsZero() || s.clock.Since(s.fetchedAt) > s.cfg.MaxStaleness {
+	snap := s.snapshot.Load()
+	if snap == nil || s.clock.Since(snap.fetchedAt) > s.cfg.MaxStaleness {
 		return nil, false
 	}
-	key, ok := s.keys[kid]
+	key, ok := snap.keys[kid]
 	return key, ok
 }
 
 func (s *KeySet) claimRefetch() bool {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	if !s.lastAttempt.IsZero() && s.clock.Since(s.lastAttempt) < unknownKidRefetchInterval {
-		return false
+	for {
+		now := s.clock.Now()
+		last := s.lastAttempt.Load()
+		if last != nil && now.Sub(*last) < unknownKidRefetchInterval {
+			return false
+		}
+		if s.lastAttempt.CompareAndSwap(last, &now) {
+			return true
+		}
 	}
-	s.lastAttempt = s.clock.Now()
-	return true
 }
 
 func (s *KeySet) fetch(ctx context.Context) (map[string]*ecdsa.PublicKey, []string, error) {
