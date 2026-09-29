@@ -192,6 +192,25 @@ func TestKeySet_UnknownKidRefetchAtMostOncePerMinute(t *testing.T) {
 	assert.Equal(t, int64(2), server.Hits())
 }
 
+func TestKeySet_UnknownKidRefetchIgnoresRequestCancellation(t *testing.T) {
+	t.Parallel()
+	clock := clockwork.NewFakeClock()
+	k1 := previewtest.NewSigner(t, "k1")
+	k2 := previewtest.NewSigner(t, "k2")
+	server := previewtest.NewJWKSServer(t, k1.JWK())
+	keys := newKeySet(t, server.JWKSURL(), clock)
+	require.NoError(t, keys.Refresh(t.Context()))
+
+	server.SetKeys(k1.JWK(), k2.JWK())
+	clock.Advance(61 * time.Second)
+	cancelled, cancel := context.WithCancelCause(t.Context())
+	cancel(nil)
+
+	_, err := keys.Key(cancelled, "k2")
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), server.Hits())
+}
+
 func TestKeySet_RunSurvivesDownJWKS(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancelCause(t.Context())

@@ -106,7 +106,7 @@ func (s *KeySet) Key(ctx context.Context, kid string) (*ecdsa.PublicKey, error) 
 	if !s.claimRefetch() {
 		return nil, errors.Errorf(`preview: no usable key for kid "%s"`, SanitizeClaimForLog(kid))
 	}
-	s.refreshAndLog(ctx)
+	s.refreshAndLog(context.WithoutCancel(ctx))
 	if key, ok := s.lookup(kid); ok {
 		return key, nil
 	}
