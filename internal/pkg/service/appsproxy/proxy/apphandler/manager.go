@@ -17,12 +17,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -39,6 +41,7 @@ type Manager struct {
 	clock                clockwork.Clock
 	storageTokenVerifier kaipreview.StorageTokenVerifier
 	sessionsManager      *sessions.Manager
+	preview              *preview.Service
 }
 
 type appHandlerWrapper struct {
@@ -69,6 +72,7 @@ type dependencies interface {
 	AppConfigLoader() appconfig.Loader
 	SessionsManager() *sessions.Manager
 	AppStateWatcher() *k8sapp.StateWatcher
+	Process() *servicectx.Process
 }
 
 func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
@@ -94,6 +98,10 @@ func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
 		clock:                d.Clock(),
 		storageTokenVerifier: verifier,
 		sessionsManager:      d.SessionsManager(),
+	}
+
+	if cfg.Preview.Enabled() {
+		m.preview = preview.New(d, cfg.Preview)
 	}
 
 	d.AppStateWatcher().OnWorkloadRemoved(m.evictWorkload)
