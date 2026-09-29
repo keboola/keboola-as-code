@@ -77,7 +77,7 @@ func (s *Sessions) valid(c *SessionClaims, now time.Time) bool {
 }
 
 func (s *Sessions) shouldSlide(c *SessionClaims, now time.Time) bool {
-	return now.Sub(c.IssuedAt.Time) >= s.idle/2 && s.expiry(now, c.AuthTime).After(c.ExpiresAt.Time)
+	return now.Sub(c.IssuedAt.Time) >= SessionSlideInterval && s.expiry(now, c.AuthTime).After(c.ExpiresAt.Time)
 }
 
 func (s *Sessions) expiry(now time.Time, authTime int64) time.Time {

@@ -83,20 +83,42 @@ func TestSessions_IdleSlide(t *testing.T) {
 	cookie, err := sessions.Issue(testOrigin, "link-jti")
 	require.NoError(t, err)
 
-	clock.Advance(2*time.Hour - time.Second)
+	clock.Advance(preview.SessionSlideInterval - time.Second)
 	_, refresh, ok := sessions.Check(cookie.Value, testOrigin)
 	require.True(t, ok)
-	assert.Nil(t, refresh, "no slide before half the idle time")
+	assert.Nil(t, refresh, "no slide before the slide interval")
 
 	clock.Advance(time.Second)
 	_, refresh, ok = sessions.Check(cookie.Value, testOrigin)
 	require.True(t, ok)
-	require.NotNil(t, refresh, "slide once half the idle time has passed")
-	assert.Equal(t, sessionStart.Add(6*time.Hour), refresh.Expires)
+	require.NotNil(t, refresh, "slide once the slide interval has passed")
+	assert.Equal(t, sessionStart.Add(preview.SessionSlideInterval+4*time.Hour), refresh.Expires)
 	claims := unverifiedClaims(t, refresh.Value)
 	assert.Equal(t, sessionStart.Unix(), claims.AuthTime, "authTime never changes")
 	assert.Equal(t, "link-jti", claims.LinkJTI)
 	assert.NotEqual(t, unverifiedClaims(t, cookie.Value).ID, claims.ID)
+}
+
+func TestSessions_RealIdleTimeoutIsFourHours(t *testing.T) {
+	t.Parallel()
+	clock := clockwork.NewFakeClockAt(sessionStart)
+	sessions := newSessions(clock)
+	cookie, err := sessions.Issue(testOrigin, "link-jti")
+	require.NoError(t, err)
+
+	clock.Advance(time.Hour + 59*time.Minute)
+	_, refresh, ok := sessions.Check(cookie.Value, testOrigin)
+	require.True(t, ok)
+	require.NotNil(t, refresh)
+	assert.Equal(t, clock.Now().Add(4*time.Hour), refresh.Expires)
+
+	clock.Advance(4*time.Hour - time.Second)
+	_, _, ok = sessions.Check(refresh.Value, testOrigin)
+	assert.True(t, ok, "valid until four hours after the last request")
+
+	clock.Advance(time.Second)
+	_, _, ok = sessions.Check(refresh.Value, testOrigin)
+	assert.False(t, ok, "expired four hours after the last request")
 }
 
 func TestSessions_IdleExpiry(t *testing.T) {
