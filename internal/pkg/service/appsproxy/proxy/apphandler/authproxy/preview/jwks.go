@@ -114,9 +114,11 @@ func (s *KeySet) Key(ctx context.Context, kid string) (*ecdsa.PublicKey, error) 
 }
 
 func (s *KeySet) refreshAndLog(ctx context.Context) {
-	if err := s.Refresh(ctx); err != nil {
-		s.logger.Warnf(ctx, "preview: JWKS refresh failed: %s", err)
+	err := s.Refresh(ctx)
+	if err == nil || ctx.Err() != nil {
+		return
 	}
+	s.logger.Warnf(ctx, "preview: JWKS refresh failed: %s", err)
 }
 
 func (s *KeySet) markAttempt() {

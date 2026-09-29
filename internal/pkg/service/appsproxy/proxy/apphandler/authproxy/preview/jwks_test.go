@@ -211,6 +211,58 @@ func TestKeySet_UnknownKidRefetchIgnoresRequestCancellation(t *testing.T) {
 	assert.Equal(t, int64(2), server.Hits())
 }
 
+func TestKeySet_RunDoesNotWarnWhenCancelledDuringFetch(t *testing.T) {
+	t.Parallel()
+	started := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		close(started)
+		<-r.Context().Done()
+	}))
+	t.Cleanup(server.Close)
+	logger := log.NewDebugLogger()
+	keys := preview.NewKeySet(preview.KeySetConfig{
+		URL:             server.URL,
+		RefreshInterval: 10 * time.Minute,
+		MaxStaleness:    time.Hour,
+	}, clockwork.NewFakeClock(), logger)
+
+	ctx, cancel := context.WithCancelCause(t.Context())
+	defer cancel(nil)
+	done := make(chan struct{})
+	go func() {
+		keys.Run(ctx)
+		close(done)
+	}()
+	<-started
+	cancel(nil)
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Run did not stop on context cancellation")
+	}
+	assert.Empty(t, logger.WarnAndErrorMessages())
+}
+
+func TestKeySet_RunWarnsWhenRefreshFails(t *testing.T) {
+	t.Parallel()
+	signer := previewtest.NewSigner(t, "k1")
+	server := previewtest.NewJWKSServer(t, signer.JWK())
+	server.SetStatus(http.StatusServiceUnavailable)
+	logger := log.NewDebugLogger()
+	keys := preview.NewKeySet(preview.KeySetConfig{
+		URL:             server.JWKSURL(),
+		RefreshInterval: 10 * time.Minute,
+		MaxStaleness:    time.Hour,
+	}, clockwork.NewFakeClock(), logger)
+
+	ctx, cancel := context.WithCancelCause(t.Context())
+	defer cancel(nil)
+	go keys.Run(ctx)
+	require.Eventually(t, func() bool {
+		return strings.Contains(logger.WarnMessages(), "JWKS refresh failed")
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
 func TestKeySet_RunSurvivesDownJWKS(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancelCause(t.Context())
