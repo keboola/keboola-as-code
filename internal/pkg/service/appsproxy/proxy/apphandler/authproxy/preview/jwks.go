@@ -180,6 +180,9 @@ func parseJWKS(body []byte) (map[string]*ecdsa.PublicKey, []string, error) {
 	if err := json.Unmarshal(body, &doc); err != nil {
 		return nil, nil, errors.Errorf("preview: invalid JWKS: %w", err)
 	}
+	if doc.Keys == nil {
+		return nil, nil, errors.New("preview: JWKS has no keys field")
+	}
 	keys := make(map[string]*ecdsa.PublicKey, len(doc.Keys))
 	var skipped []string
 	for _, k := range doc.Keys {

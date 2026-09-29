@@ -94,6 +94,26 @@ func TestKeySet_FailedFetchKeepsLastGoodSet(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestKeySet_BodyWithoutKeysFieldKeepsLastGoodSet(t *testing.T) {
+	t.Parallel()
+	for _, body := range []string{`{}`, `null`, `{"error":"x"}`, `{"keys":null}`} {
+		t.Run(body, func(t *testing.T) {
+			t.Parallel()
+			ctx := t.Context()
+			signer := previewtest.NewSigner(t, "k1")
+			server := previewtest.NewJWKSServer(t, signer.JWK())
+			keys := newKeySet(t, server.JWKSURL(), clockwork.NewFakeClock())
+			require.NoError(t, keys.Refresh(ctx))
+
+			server.SetBody([]byte(body))
+			require.Error(t, keys.Refresh(ctx))
+
+			_, err := keys.Key(ctx, "k1")
+			assert.NoError(t, err)
+		})
+	}
+}
+
 func TestKeySet_EmptySetRemovesKeys(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
