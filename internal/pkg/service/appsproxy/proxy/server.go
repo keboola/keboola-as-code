@@ -32,18 +32,6 @@ import (
 const (
 	readHeaderTimeout = 10 * time.Second
 
-	// gracefulShutdownTimeout has to leave room for the callbacks that run
-	// after this one. Shutdown callbacks are sequential and LIFO, and the pod
-	// gets 30 s in total before SIGKILL (the Kubernetes default; the chart sets
-	// no terminationGracePeriodSeconds). At the old 30 s this stage could use
-	// the whole budget on its own — a request arriving just before SIGTERM can
-	// legitimately hold it for upstream.httpTimeout — and the later stages,
-	// including the session-event flush, never ran at all.
-	//
-	// 20 s here plus 5 s of session drain leaves headroom. Raise either one and
-	// the sum has to stay under the pod's grace period, or raise that first.
-	gracefulShutdownTimeout = 20 * time.Second
-
 	ErrorNamePrefix   = "apps-proxy."
 	ExceptionIDPrefix = "keboola-apps-proxy-"
 )
@@ -110,21 +98,27 @@ func StartServer(ctx context.Context, d dependencies.ServiceScope) error {
 		shutdown(context.WithoutCancel(ctx), serverErr)
 	})
 
-	// Register graceful shutdown
+	registerGracefulShutdown(proc, logger, srv, cfg.Upstream.HTTPTimeout)
+
+	return nil
+}
+
+// registerGracefulShutdown drains in-flight requests for up to drainTimeout.
+// Shutdown callbacks run sequentially and the session flush runs after this one,
+// so the pod's terminationGracePeriodSeconds (kbc-stacks apps-proxy chart) must
+// exceed drainTimeout plus the session drain.
+func registerGracefulShutdown(proc *servicectx.Process, logger log.Logger, srv *http.Server, drainTimeout time.Duration) {
 	proc.OnShutdown(func(ctx context.Context) {
-		// Shutdown gracefully with a timeout.
-		ctx, cancel := context.WithTimeoutCause(ctx, gracefulShutdownTimeout, errors.New("graceful shutdown timeout"))
+		ctx, cancel := context.WithTimeoutCause(ctx, drainTimeout, errors.New("graceful shutdown timeout"))
 		defer cancel()
 
-		logger.Infof(ctx, "shutting down HTTP server at %q", cfg.API.Listen)
+		logger.Infof(ctx, "shutting down HTTP server at %q", srv.Addr)
 
 		if err := srv.Shutdown(ctx); err != nil {
 			logger.Errorf(ctx, `HTTP server shutdown error: %s`, err)
 		}
 		logger.Info(ctx, "HTTP server shutdown finished")
 	})
-
-	return nil
 }
 
 func NewHandler(ctx context.Context, d dependencies.ServiceScope) http.Handler {
