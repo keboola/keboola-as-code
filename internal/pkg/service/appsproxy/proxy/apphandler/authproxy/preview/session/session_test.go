@@ -1,4 +1,4 @@
-package preview_test
+package session_test
 
 import (
 	"net/http"
@@ -12,20 +12,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/session"
 )
+
+const testOrigin = "https://my-app-123.hub.keboola.local"
 
 const sessionKey = "0123456789abcdef0123456789abcdef0123456789abcdef"
 
 var sessionStart = time.Date(2026, 9, 27, 10, 0, 0, 0, time.UTC) //nolint:gochecknoglobals // test fixture
 
-func newSessions(clock clockwork.Clock) *preview.Sessions {
-	return preview.NewSessions(sessionKey, 4*time.Hour, 12*time.Hour, clock)
+func newSessions(clock clockwork.Clock) *session.Manager {
+	return session.NewManager(sessionKey, 4*time.Hour, 12*time.Hour, clock)
 }
 
-func unverifiedClaims(t *testing.T, raw string) *preview.SessionClaims {
+func unverifiedClaims(t *testing.T, raw string) *session.Claims {
 	t.Helper()
-	claims := &preview.SessionClaims{}
+	claims := &session.Claims{}
 	_, _, err := jwt.NewParser().ParseUnverified(raw, claims)
 	require.NoError(t, err)
 	return claims
@@ -83,7 +85,7 @@ func TestSessions_IdleSlide(t *testing.T) {
 	cookie, err := sessions.Issue(testOrigin, "link-jti")
 	require.NoError(t, err)
 
-	clock.Advance(preview.SessionSlideInterval - time.Second)
+	clock.Advance(session.SlideInterval - time.Second)
 	_, refresh, ok := sessions.Check(cookie.Value, testOrigin)
 	require.True(t, ok)
 	assert.Nil(t, refresh, "no slide before the slide interval")
@@ -92,7 +94,7 @@ func TestSessions_IdleSlide(t *testing.T) {
 	_, refresh, ok = sessions.Check(cookie.Value, testOrigin)
 	require.True(t, ok)
 	require.NotNil(t, refresh, "slide once the slide interval has passed")
-	assert.Equal(t, sessionStart.Add(preview.SessionSlideInterval+4*time.Hour), refresh.Expires)
+	assert.Equal(t, sessionStart.Add(session.SlideInterval+4*time.Hour), refresh.Expires)
 	claims := unverifiedClaims(t, refresh.Value)
 	assert.Equal(t, sessionStart.Unix(), claims.AuthTime, "authTime never changes")
 	assert.Equal(t, "link-jti", claims.LinkJTI)
@@ -167,7 +169,7 @@ func TestSessions_ToleratesReplicaClockSkew(t *testing.T) {
 	require.NoError(t, err)
 
 	checker := clockwork.NewFakeClockAt(sessionStart.Add(-time.Second))
-	behind := preview.NewSessions(sessionKey, 4*time.Hour, 12*time.Hour, checker)
+	behind := session.NewManager(sessionKey, 4*time.Hour, 12*time.Hour, checker)
 	_, _, ok := behind.Check(cookie.Value, testOrigin)
 	assert.True(t, ok, "a cookie issued by a replica whose clock is slightly ahead must still be accepted")
 }
@@ -178,7 +180,7 @@ func TestSessions_CapIsEnforcedOnCheck(t *testing.T) {
 	cookie, err := newSessions(clock).Issue(testOrigin, "link-jti")
 	require.NoError(t, err)
 
-	shorter := preview.NewSessions(sessionKey, 4*time.Hour, time.Hour, clock)
+	shorter := session.NewManager(sessionKey, 4*time.Hour, time.Hour, clock)
 	clock.Advance(time.Hour + time.Second)
 	_, _, ok := shorter.Check(cookie.Value, testOrigin)
 	assert.False(t, ok, "a lowered cap applies to cookies issued before")
@@ -187,7 +189,7 @@ func TestSessions_CapIsEnforcedOnCheck(t *testing.T) {
 func TestSessions_CapShorterThanIdle(t *testing.T) {
 	t.Parallel()
 	clock := clockwork.NewFakeClockAt(sessionStart)
-	cookie, err := preview.NewSessions(sessionKey, 4*time.Hour, time.Hour, clock).Issue(testOrigin, "j")
+	cookie, err := session.NewManager(sessionKey, 4*time.Hour, time.Hour, clock).Issue(testOrigin, "j")
 	require.NoError(t, err)
 	assert.Equal(t, sessionStart.Add(time.Hour), cookie.Expires.UTC())
 }
@@ -202,7 +204,7 @@ func TestSessions_RejectsForeignCookies(t *testing.T) {
 	_, _, ok := sessions.Check(cookie.Value, "https://other-999.hub.keboola.local")
 	assert.False(t, ok, "wrong sub")
 
-	_, _, ok = preview.NewSessions(strings.Repeat("x", 48), 4*time.Hour, 12*time.Hour, clock).Check(cookie.Value, testOrigin)
+	_, _, ok = session.NewManager(strings.Repeat("x", 48), 4*time.Hour, 12*time.Hour, clock).Check(cookie.Value, testOrigin)
 	assert.False(t, ok, "wrong key")
 
 	none := jwt.NewWithClaims(jwt.SigningMethodNone, unverifiedClaims(t, cookie.Value))
@@ -241,52 +243,4 @@ func TestSessions_RejectsForeignCookies(t *testing.T) {
 
 	_, _, ok = sessions.Check("", testOrigin)
 	assert.False(t, ok, "empty")
-}
-
-func TestClearSessionCookie(t *testing.T) {
-	t.Parallel()
-	c := preview.ClearSessionCookie()
-	assert.Equal(t, preview.SessionCookieName, c.Name)
-	assert.Equal(t, "/", c.Path)
-	assert.Negative(t, c.MaxAge)
-	assert.True(t, c.Secure)
-	assert.True(t, c.Partitioned)
-}
-
-func TestTakeSessionCookie(t *testing.T) {
-	t.Parallel()
-	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://my-app-123.hub.keboola.local/", nil)
-	req.Header.Add("Cookie", "a=1; __Host-kbc-app-preview-session=secret; b=2")
-	req.Header.Add("Cookie", "__Host-kbc-app-preview-session=dup")
-	req.Header.Add("Cookie", "c=3;")
-
-	assert.Equal(t, "secret", preview.TakeSessionCookie(req))
-	assert.Equal(t, []string{"a=1; b=2", "c=3"}, req.Header.Values("Cookie"))
-	_, err := req.Cookie(preview.SessionCookieName)
-	require.ErrorIs(t, err, http.ErrNoCookie)
-
-	empty := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://my-app-123.hub.keboola.local/", nil)
-	assert.Empty(t, preview.TakeSessionCookie(empty))
-	assert.Empty(t, empty.Header.Values("Cookie"))
-}
-
-func TestTakeSessionCookie_TrailingWhitespaceInName(t *testing.T) {
-	t.Parallel()
-	for _, name := range []string{
-		"__Host-kbc-app-preview-session space",
-		"__Host-kbc-app-preview-session tab",
-	} {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			raw := "__Host-kbc-app-preview-session =v"
-			if name == "__Host-kbc-app-preview-session tab" {
-				raw = "__Host-kbc-app-preview-session\t=v"
-			}
-			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://my-app-123.hub.keboola.local/", nil)
-			req.Header.Add("Cookie", "a=1; "+raw+"; b=2")
-
-			assert.Equal(t, "v", preview.TakeSessionCookie(req))
-			assert.Equal(t, []string{"a=1; b=2"}, req.Header.Values("Cookie"))
-		})
-	}
 }

@@ -1,8 +1,7 @@
-package preview
+package session
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,13 +12,15 @@ import (
 )
 
 const (
-	SessionCookieName = "__Host-kbc-app-preview-session"
-	sessionPurpose    = "app-preview-session"
-	sessionVersion    = 1
-	sessionIDLength   = 32
+	IdleTTL         = 4 * time.Hour
+	MaxTTL          = 12 * time.Hour
+	SlideInterval   = 5 * time.Minute
+	sessionPurpose  = "app-preview-session"
+	sessionVersion  = 1
+	sessionIDLength = 32
 )
 
-type SessionClaims struct {
+type Claims struct {
 	jwt.RegisteredClaims
 	Ver      int    `json:"ver"`
 	Purpose  string `json:"purpose"`
@@ -27,28 +28,28 @@ type SessionClaims struct {
 	LinkJTI  string `json:"linkJti"`
 }
 
-type Sessions struct {
+type Manager struct {
 	key    []byte
 	idle   time.Duration
 	maxTTL time.Duration
 	clock  clockwork.Clock
 }
 
-func NewSessions(key string, idle, maxTTL time.Duration, clock clockwork.Clock) *Sessions {
-	return &Sessions{key: []byte(key), idle: idle, maxTTL: maxTTL, clock: clock}
+func NewManager(key string, idle, maxTTL time.Duration, clock clockwork.Clock) *Manager {
+	return &Manager{key: []byte(key), idle: idle, maxTTL: maxTTL, clock: clock}
 }
 
-func (s *Sessions) Issue(origin, linkJTI string) (*http.Cookie, error) {
+func (s *Manager) Issue(origin, linkJTI string) (*http.Cookie, error) {
 	now := s.clock.Now()
 	return s.cookie(origin, now, now.Unix(), linkJTI)
 }
 
-func (s *Sessions) Check(raw, origin string) (*SessionClaims, *http.Cookie, bool) {
+func (s *Manager) Check(raw, origin string) (*Claims, *http.Cookie, bool) {
 	if raw == "" {
 		return nil, nil, false
 	}
 	now := s.clock.Now()
-	claims := &SessionClaims{}
+	claims := &Claims{}
 	_, err := jwt.NewParser(
 		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
 		jwt.WithSubject(origin),
@@ -68,7 +69,7 @@ func (s *Sessions) Check(raw, origin string) (*SessionClaims, *http.Cookie, bool
 	return claims, refresh, true
 }
 
-func (s *Sessions) valid(c *SessionClaims, now time.Time) bool {
+func (s *Manager) valid(c *Claims, now time.Time) bool {
 	return c.Purpose == sessionPurpose &&
 		c.Ver == sessionVersion &&
 		c.AuthTime > 0 &&
@@ -76,11 +77,11 @@ func (s *Sessions) valid(c *SessionClaims, now time.Time) bool {
 		now.Before(time.Unix(c.AuthTime, 0).Add(s.maxTTL))
 }
 
-func (s *Sessions) shouldSlide(c *SessionClaims, now time.Time) bool {
-	return now.Sub(c.IssuedAt.Time) >= SessionSlideInterval && s.expiry(now, c.AuthTime).After(c.ExpiresAt.Time)
+func (s *Manager) shouldSlide(c *Claims, now time.Time) bool {
+	return now.Sub(c.IssuedAt.Time) >= SlideInterval && s.expiry(now, c.AuthTime).After(c.ExpiresAt.Time)
 }
 
-func (s *Sessions) expiry(now time.Time, authTime int64) time.Time {
+func (s *Manager) expiry(now time.Time, authTime int64) time.Time {
 	exp := now.Add(s.idle)
 	if hardCap := time.Unix(authTime, 0).Add(s.maxTTL); hardCap.Before(exp) {
 		exp = hardCap
@@ -88,9 +89,9 @@ func (s *Sessions) expiry(now time.Time, authTime int64) time.Time {
 	return exp.Truncate(time.Second)
 }
 
-func (s *Sessions) cookie(origin string, now time.Time, authTime int64, linkJTI string) (*http.Cookie, error) {
+func (s *Manager) cookie(origin string, now time.Time, authTime int64, linkJTI string) (*http.Cookie, error) {
 	exp := s.expiry(now, authTime)
-	claims := SessionClaims{
+	claims := Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   origin,
 			ID:        idgenerator.Random(sessionIDLength),
@@ -107,7 +108,7 @@ func (s *Sessions) cookie(origin string, now time.Time, authTime int64, linkJTI 
 		return nil, errors.Errorf("preview: sign session: %w", err)
 	}
 	return &http.Cookie{
-		Name:        SessionCookieName,
+		Name:        CookieName,
 		Value:       signed,
 		Path:        "/",
 		Expires:     exp,
@@ -117,52 +118,4 @@ func (s *Sessions) cookie(origin string, now time.Time, authTime int64, linkJTI 
 		SameSite:    http.SameSiteNoneMode,
 		Partitioned: true,
 	}, nil
-}
-
-func ClearSessionCookie() *http.Cookie {
-	return &http.Cookie{
-		Name:        SessionCookieName,
-		Path:        "/",
-		MaxAge:      -1,
-		Secure:      true,
-		HttpOnly:    true,
-		SameSite:    http.SameSiteNoneMode,
-		Partitioned: true,
-	}
-}
-
-func TakeSessionCookie(req *http.Request) string {
-	value := ""
-	if c, err := req.Cookie(SessionCookieName); err == nil {
-		value = c.Value
-	}
-	lines := req.Header.Values("Cookie")
-	if len(lines) == 0 {
-		return value
-	}
-	kept := make([]string, 0, len(lines))
-	for _, line := range lines {
-		if l := withoutCookie(line, SessionCookieName); l != "" {
-			kept = append(kept, l)
-		}
-	}
-	req.Header.Del("Cookie")
-	for _, l := range kept {
-		req.Header.Add("Cookie", l)
-	}
-	return value
-}
-
-func withoutCookie(line, name string) string {
-	parts := strings.Split(line, ";")
-	kept := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		cookieName, _, _ := strings.Cut(p, "=")
-		if p == "" || strings.TrimSpace(cookieName) == name {
-			continue
-		}
-		kept = append(kept, p)
-	}
-	return strings.Join(kept, "; ")
 }
