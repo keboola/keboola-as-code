@@ -86,7 +86,7 @@ func (s *KeySet) Refresh(ctx context.Context) error {
 		return err
 	}
 	for _, kid := range skipped {
-		s.logger.Warnf(ctx, `preview: JWKS key "%s" skipped: only kty=EC, crv=P-256, use=sig, alg ES256 or absent, and 32-byte x/y are accepted`, SanitizeClaimForLog(kid))
+		s.logger.Warnf(ctx, `preview: JWKS key "%s" skipped: only kty=EC, crv=P-256, use=sig, alg ES256 or absent, and 32-byte x/y are accepted`, log.Sanitize(kid))
 	}
 	s.store(keys)
 	s.logger.Debugf(ctx, "preview: JWKS loaded, kids=%v", sortedKids(keys))
@@ -106,7 +106,7 @@ func (s *KeySet) Key(ctx context.Context, kid string) (*ecdsa.PublicKey, error) 
 	if key, ok := s.lookup(kid); ok {
 		return key, nil
 	}
-	return nil, errors.Errorf(`preview: no usable key for kid "%s"`, SanitizeClaimForLog(kid))
+	return nil, errors.Errorf(`preview: no usable key for kid "%s"`, log.Sanitize(kid))
 }
 
 func (s *KeySet) refreshAndLog(ctx context.Context) {
@@ -211,7 +211,7 @@ func parseJWK(raw json.RawMessage) (string, *ecdsa.PublicKey, bool) {
 func sortedKids(keys map[string]*ecdsa.PublicKey) []string {
 	kids := make([]string, 0, len(keys))
 	for kid := range keys {
-		kids = append(kids, SanitizeClaimForLog(kid))
+		kids = append(kids, log.Sanitize(kid))
 	}
 	sort.Strings(kids)
 	return kids
