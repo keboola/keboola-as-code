@@ -1,4 +1,4 @@
-package preview_test
+package jwks_test
 
 import (
 	"context"
@@ -17,13 +17,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/jwks"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
 )
 
-func newKeySet(t *testing.T, url string, clock clockwork.Clock) *preview.KeySet {
+func newKeySet(t *testing.T, url string, clock clockwork.Clock) *jwks.Set {
 	t.Helper()
-	return preview.NewKeySet(preview.KeySetConfig{
+	return jwks.New(jwks.Config{
 		URL:             url,
 		RefreshInterval: 10 * time.Minute,
 		MaxStaleness:    time.Hour,
@@ -287,7 +287,7 @@ func TestKeySet_RunDoesNotWarnWhenCancelledDuringFetch(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 	logger := log.NewDebugLogger()
-	keys := preview.NewKeySet(preview.KeySetConfig{
+	keys := jwks.New(jwks.Config{
 		URL:             server.URL,
 		RefreshInterval: 10 * time.Minute,
 		MaxStaleness:    time.Hour,
@@ -316,7 +316,7 @@ func TestKeySet_RunWarnsWhenRefreshFails(t *testing.T) {
 	server := previewtest.NewJWKSServer(t, signer.JWK())
 	server.SetStatus(http.StatusServiceUnavailable)
 	logger := log.NewDebugLogger()
-	keys := preview.NewKeySet(preview.KeySetConfig{
+	keys := jwks.New(jwks.Config{
 		URL:             server.JWKSURL(),
 		RefreshInterval: 10 * time.Minute,
 		MaxStaleness:    time.Hour,

@@ -14,7 +14,5 @@ func TestTimingConstants(t *testing.T) {
 	assert.Equal(t, 4*time.Hour, preview.SessionIdleTTL)
 	assert.Equal(t, 12*time.Hour, preview.SessionMaxTTL)
 	assert.Equal(t, 5*time.Minute, preview.SessionSlideInterval)
-	assert.Equal(t, 10*time.Minute, preview.JWKSRefreshInterval)
-	assert.Equal(t, time.Hour, preview.JWKSMaxStaleness)
 	assert.Equal(t, 30*time.Second, preview.ClockSkew)
 }

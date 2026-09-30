@@ -1,4 +1,4 @@
-package preview
+package jwks
 
 import (
 	"context"
@@ -20,19 +20,21 @@ import (
 )
 
 const (
+	RefreshInterval           = 10 * time.Minute
+	MaxStaleness              = time.Hour
 	unknownKidRefetchInterval = time.Minute
 	maxJWKSBodySize           = 64 << 10
 	jwksFetchTimeout          = 10 * time.Second
 )
 
-type KeySetConfig struct {
+type Config struct {
 	URL             string
 	RefreshInterval time.Duration
 	MaxStaleness    time.Duration
 }
 
-type KeySet struct {
-	cfg    KeySetConfig
+type Set struct {
+	cfg    Config
 	client *http.Client
 	clock  clockwork.Clock
 	logger log.Logger
@@ -51,8 +53,8 @@ type jwksDocument struct {
 	Keys *[]json.RawMessage `json:"keys"`
 }
 
-func NewKeySet(cfg KeySetConfig, clock clockwork.Clock, logger log.Logger) *KeySet {
-	return &KeySet{
+func New(cfg Config, clock clockwork.Clock, logger log.Logger) *Set {
+	return &Set{
 		cfg:    cfg,
 		clock:  clock,
 		logger: logger,
@@ -65,7 +67,7 @@ func NewKeySet(cfg KeySetConfig, clock clockwork.Clock, logger log.Logger) *KeyS
 	}
 }
 
-func (s *KeySet) Run(ctx context.Context) {
+func (s *Set) Run(ctx context.Context) {
 	s.refreshAndLog(ctx)
 	ticker := s.clock.NewTicker(s.cfg.RefreshInterval)
 	defer ticker.Stop()
@@ -79,7 +81,7 @@ func (s *KeySet) Run(ctx context.Context) {
 	}
 }
 
-func (s *KeySet) Refresh(ctx context.Context) error {
+func (s *Set) Refresh(ctx context.Context) error {
 	s.markAttempt()
 	keys, skipped, err := s.fetch(ctx)
 	if err != nil {
@@ -93,7 +95,7 @@ func (s *KeySet) Refresh(ctx context.Context) error {
 	return nil
 }
 
-func (s *KeySet) Key(ctx context.Context, kid string) (*ecdsa.PublicKey, error) {
+func (s *Set) Key(ctx context.Context, kid string) (*ecdsa.PublicKey, error) {
 	if key, ok := s.lookup(kid); ok {
 		return key, nil
 	}
@@ -109,7 +111,7 @@ func (s *KeySet) Key(ctx context.Context, kid string) (*ecdsa.PublicKey, error) 
 	return nil, errors.Errorf(`preview: no usable key for kid "%s"`, log.Sanitize(kid))
 }
 
-func (s *KeySet) refreshAndLog(ctx context.Context) {
+func (s *Set) refreshAndLog(ctx context.Context) {
 	err := s.Refresh(ctx)
 	if err == nil || ctx.Err() != nil {
 		return
@@ -117,16 +119,16 @@ func (s *KeySet) refreshAndLog(ctx context.Context) {
 	s.logger.Warnf(ctx, "preview: JWKS refresh failed: %s", err)
 }
 
-func (s *KeySet) markAttempt() {
+func (s *Set) markAttempt() {
 	now := s.clock.Now()
 	s.lastAttempt.Store(&now)
 }
 
-func (s *KeySet) store(keys map[string]*ecdsa.PublicKey) {
+func (s *Set) store(keys map[string]*ecdsa.PublicKey) {
 	s.snapshot.Store(&keySnapshot{keys: keys, fetchedAt: s.clock.Now()})
 }
 
-func (s *KeySet) lookup(kid string) (*ecdsa.PublicKey, bool) {
+func (s *Set) lookup(kid string) (*ecdsa.PublicKey, bool) {
 	snap := s.snapshot.Load()
 	if snap == nil || s.clock.Since(snap.fetchedAt) > s.cfg.MaxStaleness {
 		return nil, false
@@ -135,7 +137,7 @@ func (s *KeySet) lookup(kid string) (*ecdsa.PublicKey, bool) {
 	return key, ok
 }
 
-func (s *KeySet) claimRefetch() bool {
+func (s *Set) claimRefetch() bool {
 	now := s.clock.Now()
 	last := s.lastAttempt.Load()
 	if last != nil && now.Sub(*last) < unknownKidRefetchInterval {
@@ -144,7 +146,7 @@ func (s *KeySet) claimRefetch() bool {
 	return s.lastAttempt.CompareAndSwap(last, &now)
 }
 
-func (s *KeySet) fetch(ctx context.Context) (map[string]*ecdsa.PublicKey, []string, error) {
+func (s *Set) fetch(ctx context.Context) (map[string]*ecdsa.PublicKey, []string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.URL, nil)
 	if err != nil {
 		return nil, nil, errors.Errorf("preview: JWKS request: %w", err)
