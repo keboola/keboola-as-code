@@ -17,6 +17,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	kpendpoints "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview/endpoints"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/session"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
@@ -180,15 +182,23 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		return nil
 	}
 
-	// kai-preview: dev-mode iframe-auth path.
-	// (routing decision documented in spec § "apps-proxy: routing decision for dev-mode apps")
-	if h.isDevMode(req.Context()) { //nolint:contextcheck // false positive: req.Context() is the correct context here
-		if handled, err := h.serveKaiPreview(w, req); handled {
-			return err
-		}
+	if req.URL.Path == preview.Path {
+		return h.servePreviewEndpoint(w, req)
 	}
 
-	// Route internal URLs if there is at least one auth handler
+	// Removed from every request, so no upstream path ever sees it.
+	previewCookie := session.TakeCookie(req)
+
+	if req.URL.Path == selector.SignOutPath {
+		h.clearPreviewSession(w, previewCookie)
+		previewCookie = ""
+	}
+
+	if strings.HasPrefix(req.URL.Path, kpendpoints.PathPrefix) && h.isDevMode(req.Context()) { //nolint:contextcheck // false positive
+		return h.kaiPreview.ServeHTTPOrError(w, req)
+	}
+
+	// Internal paths are routed before any preview session, so sign-out and the OIDC callback never reach the app.
 	if strings.HasPrefix(req.URL.Path, config.InternalPrefix) && h.allAuthHandlers != nil {
 		// A sign-out ends the session explicitly. Internal paths never reach
 		// the upstream, so this cannot be handled by the sessions middleware.
@@ -196,6 +206,16 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 			h.manager.sessionsManager.SignOut(w, req, h.app)
 		}
 		return h.allAuthHandlers.ServeHTTPOrError(w, req)
+	}
+
+	if h.previewSessionValid(w, req, previewCookie) {
+		return h.upstream.ServeHTTPOrError(w, req)
+	}
+
+	if h.isDevMode(req.Context()) { //nolint:contextcheck // false positive
+		if handled, err := h.serveKaiPreview(w, req); handled {
+			return err
+		}
 	}
 
 	// Find the matching rule
@@ -221,14 +241,10 @@ func (h *appHandler) serveRule(w http.ResponseWriter, req *http.Request, index r
 	return h.upstream.ServeHTTPOrError(w, req)
 }
 
-// serveKaiPreview handles the three dev-mode routing cases for the kai-preview iframe-auth path.
+// serveKaiPreview handles the dev-mode kai-preview session and iframe fallback.
 // Returns (true, err) when it handled the request, or (false, nil) when the caller should continue routing.
 func (h *appHandler) serveKaiPreview(w http.ResponseWriter, req *http.Request) (bool, error) {
-	// 1. /_proxy/kai-preview/* routes go to the kai-preview composite handler.
-	if strings.HasPrefix(req.URL.Path, kpendpoints.PathPrefix) {
-		return true, h.kaiPreview.ServeHTTPOrError(w, req)
-	}
-	// 2. Valid session cookie → forward to upstream (skip AuthRules), with sliding refresh.
+	// Valid session cookie → forward to upstream (skip AuthRules), with sliding refresh.
 	if claims, ok := kaipreview.ValidateSessionCookie(
 		req,
 		h.manager.config.KaiPreview.SessionSigningKey,
@@ -239,7 +255,7 @@ func (h *appHandler) serveKaiPreview(w http.ResponseWriter, req *http.Request) (
 		h.maybeRefreshSessionCookie(w, req, claims)
 		return true, h.upstream.ServeHTTPOrError(w, req)
 	}
-	// 3. Iframe document load on a dev-mode app with no session → serve bootstrap shim.
+	// Iframe document load on a dev-mode app with no session → serve bootstrap shim.
 	if kaipreview.IsIframeDocumentLoad(req) {
 		bootstrapReq := req.Clone(req.Context()) //nolint:contextcheck // false positive: req.Context() is the correct context here
 		bootstrapReq.URL.Path = kpendpoints.PathPrefix + "/bootstrap"

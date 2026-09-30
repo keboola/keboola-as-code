@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer">
+    <title>Opening preview</title>
+</head>
+<body>
+<p id="status"></p>
+<noscript><p>JavaScript is required to open the preview link.</p></noscript>
+<form id="redeem" method="POST" action="/_proxy/preview"><input type="hidden" name="token" id="token"></form>
+<script nonce="{{ .Nonce }}">
+(function () {
+  "use strict";
+  var match = /(?:^#|&)t=([^&]*)/.exec(window.location.hash);
+  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  var token = "";
+  if (match) {
+    try { token = decodeURIComponent(match[1]); } catch (e) { token = ""; }
+  }
+  if (!token) {
+    document.getElementById("status").textContent = "The preview link has no token. Get a new link.";
+    return;
+  }
+  document.getElementById("token").value = token;
+  document.getElementById("redeem").submit();
+})();
+</script>
+</body>
+</html>

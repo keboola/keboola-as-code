@@ -85,25 +85,33 @@ Incoming request
 ├─1─ Host != canonical host?
 │       └─ YES → 308 redirect to canonical URL
 │
-├─2─ App has dev-mode enabled?
-│     │
-│     ├─ YES + path starts with /_proxy/kai-preview/*
-│     │       └─ kai-preview composite handler (handshake-token / bootstrap / exchange / refresh)
-│     │
-│     ├─ YES + request has a valid kbc-kai-preview-session cookie
-│     │       └─ forward to upstream app
-│     │             (if cookie is past its midpoint TTL, slide the cookie on the way out)
-│     │
-│     └─ YES + Sec-Fetch-Dest=iframe|frame, Accept=text/html, no valid session cookie
-│               └─ serve bootstrap shim (rewrites path to /_proxy/kai-preview/bootstrap)
+├─2─ Path == /_proxy/preview (dev-mode app preview link)?
+│       └─ YES → preview landing page / redeem — see preview-link.md
 │
-├─3─ Path starts with /_proxy/* (internal auth URLs)?
+├─3─ App has dev-mode enabled + path starts with /_proxy/kai-preview/*?
+│       └─ YES → kai-preview composite handler (handshake-token / bootstrap / exchange / refresh)
+│
+├─4─ Path starts with /_proxy/* (other internal auth URLs)?
 │       └─ existing auth handler (OAuth2 Proxy / Basic)
 │
-└─4─ AuthRules matching
+├─5─ App has dev-mode enabled + valid app preview session cookie?
+│       └─ YES → forward to upstream app — see preview-link.md
+│
+├─6─ App has dev-mode enabled + request has a valid kbc-kai-preview-session cookie?
+│       └─ YES → forward to upstream app
+│             (if cookie is past its midpoint TTL, slide the cookie on the way out)
+│
+├─7─ App has dev-mode enabled + Sec-Fetch-Dest=iframe|frame, Accept=text/html, no valid session cookie?
+│       └─ YES → serve bootstrap shim (rewrites path to /_proxy/kai-preview/bootstrap)
+│
+└─8─ AuthRules matching
         └─ matching rule found → apply configured auth (OAuth / Basic / none), forward to upstream
            no match → 404
 ```
+
+The app preview session cookie (`__Host-kbc-app-preview-session`) is stripped
+from every request right after step 2, so no auth handler or upstream app ever
+sees it. Details: [preview-link.md](preview-link.md).
 
 ---
 

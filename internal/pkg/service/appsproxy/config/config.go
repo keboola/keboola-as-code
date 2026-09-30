@@ -29,6 +29,7 @@ type Config struct {
 	CsrfTokenSalt    string            `configKey:"csrfTokenSalt" configUsage:"Salt used for generating CSRF tokens" validate:"required" sensitive:"true"`
 	StorageAPIURL    *url.URL          `configKey:"storageApiUrl" configUsage:"Base URL of the Keboola Storage API for this stack, used for Storage token verification (kai-preview flow). Must match the stack the proxy fronts — e.g. https://connection.eu-central-1.keboola.com for an EU stack. No default; required." validate:"required"`
 	KaiPreview       KaiPreview        `configKey:"kaiPreview" configUsage:"kai-preview iframe-auth configuration."`
+	Preview          Preview           `configKey:"preview" configUsage:"Dev-mode app preview links minted by sandboxes-service."`
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`
 	Sessions         Sessions          `configKey:"sessions" configUsage:"End-user session tracking for data apps."`
@@ -85,6 +86,53 @@ type KaiPreview struct {
 	SessionSigningKey   string        `configKey:"sessionSigningKey" configUsage:"HMAC key for kai-preview session cookie JWT." validate:"required" sensitive:"true"`
 	SessionTTL          time.Duration `configKey:"sessionTTL" configUsage:"Lifetime of the kai-preview session cookie (sliding)." validate:"required,minDuration=1m"`
 	AllowedOrigins      []string      `configKey:"allowedOrigins" configUsage:"Origins allowed to embed apps via kai-preview and mint handshake tokens (e.g. https://connection.keboola.com). Drives both the CORS allowlist and the bootstrap CSP frame-ancestors directive." validate:"required,min=1,dive,http_url"`
+}
+
+type Preview struct {
+	JWKSURL               string   `configKey:"jwksURL" configUsage:"In-cluster URL of the sandboxes-service JWKS. Empty disables preview links." validate:"omitempty,http_url"`
+	Issuer                string   `configKey:"issuer" configUsage:"Expected iss claim of preview links, e.g. https://apps.<suffix>. Required when jwksURL is set."`
+	SessionSigningKey     string   `configKey:"sessionSigningKey" configUsage:"HMAC key for the preview session cookie, at least 32 characters. Required when jwksURL is set. Generate with 'openssl rand -hex 32'." sensitive:"true"`
+	AllowedFrameAncestors []string `configKey:"allowedFrameAncestors" configUsage:"Origins allowed to frame the preview landing page (CSP frame-ancestors), e.g. https://connection.keboola.com."`
+}
+
+func (c Preview) Enabled() bool {
+	return c.JWKSURL != ""
+}
+
+func (c *Preview) Normalize() {
+	for i, o := range c.AllowedFrameAncestors {
+		c.AllowedFrameAncestors[i] = strings.TrimRight(strings.TrimSpace(o), "/")
+	}
+}
+
+func (c *Preview) Validate() error {
+	if !c.Enabled() {
+		return nil
+	}
+	errs := errors.NewMultiError()
+	if c.Issuer == "" {
+		errs.Append(errors.New("preview.issuer is required when preview.jwksURL is set"))
+	}
+	if len(c.SessionSigningKey) < 32 {
+		errs.Append(errors.New("preview.sessionSigningKey must have at least 32 characters when preview.jwksURL is set"))
+	}
+	for _, origin := range c.AllowedFrameAncestors {
+		if !isPlainOrigin(origin) {
+			errs.Append(errors.Errorf(`preview.allowedFrameAncestors: "%s" must be a scheme and host only`, origin))
+		}
+	}
+	return errs.ErrorOrNil()
+}
+
+func isPlainOrigin(origin string) bool {
+	if strings.ContainsAny(origin, " ;,'\"") {
+		return false
+	}
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	return (u.Scheme == "https" || u.Scheme == "http") && u.Host != "" && u.Path == "" && u.RawQuery == "" && u.Fragment == "" && u.User == nil
 }
 
 type API struct {
