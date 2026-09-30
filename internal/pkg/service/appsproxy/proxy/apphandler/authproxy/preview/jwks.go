@@ -136,16 +136,12 @@ func (s *KeySet) lookup(kid string) (*ecdsa.PublicKey, bool) {
 }
 
 func (s *KeySet) claimRefetch() bool {
-	for {
-		now := s.clock.Now()
-		last := s.lastAttempt.Load()
-		if last != nil && now.Sub(*last) < unknownKidRefetchInterval {
-			return false
-		}
-		if s.lastAttempt.CompareAndSwap(last, &now) {
-			return true
-		}
+	now := s.clock.Now()
+	last := s.lastAttempt.Load()
+	if last != nil && now.Sub(*last) < unknownKidRefetchInterval {
+		return false
 	}
+	return s.lastAttempt.CompareAndSwap(last, &now)
 }
 
 func (s *KeySet) fetch(ctx context.Context) (map[string]*ecdsa.PublicKey, []string, error) {
