@@ -50,9 +50,14 @@ func TestKeySet_KeyFilter(t *testing.T) {
 	noAlg := previewtest.NewSigner(t, "no-alg")
 	base := previewtest.NewSigner(t, "x").JWK()
 	zero := base64.RawURLEncoding.EncodeToString(make([]byte, 32))
+	private := previewtest.NewSigner(t, "private")
+	scalar, err := private.Key.Bytes()
+	require.NoError(t, err)
+	privateJWK := withField(private.JWK(), "d", base64.RawURLEncoding.EncodeToString(scalar))
 
 	server := previewtest.NewJWKSServer(t,
 		good.JWK(),
+		privateJWK,
 		withField(noAlg.JWK(), "alg", nil),
 		withField(withField(base, "kid", "rsa"), "kty", "RSA"),
 		withField(withField(base, "kid", "p384"), "crv", "P-384"),
@@ -69,7 +74,7 @@ func TestKeySet_KeyFilter(t *testing.T) {
 		_, err := keys.Key(ctx, kid)
 		require.NoError(t, err, kid)
 	}
-	for _, kid := range []string{"rsa", "p384", "enc", "rs256", "", "off-curve", "short"} {
+	for _, kid := range []string{"rsa", "p384", "enc", "rs256", "", "off-curve", "short", "private"} {
 		_, err := keys.Key(ctx, kid)
 		assert.Error(t, err, kid)
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/go-jose/go-jose/v4"
 	"github.com/jonboulle/clockwork"
 	"golang.org/x/sync/singleflight"
 
@@ -48,17 +48,7 @@ type keySnapshot struct {
 }
 
 type jwksDocument struct {
-	Keys []jwk `json:"keys"`
-}
-
-type jwk struct {
-	Kty string `json:"kty"`
-	Crv string `json:"crv"`
-	Use string `json:"use"`
-	Alg string `json:"alg"`
-	Kid string `json:"kid"`
-	X   string `json:"x"`
-	Y   string `json:"y"`
+	Keys *[]json.RawMessage `json:"keys"`
 }
 
 func NewKeySet(cfg KeySetConfig, clock clockwork.Clock, logger log.Logger) *KeySet {
@@ -189,40 +179,37 @@ func parseJWKS(body []byte) (map[string]*ecdsa.PublicKey, []string, error) {
 	if doc.Keys == nil {
 		return nil, nil, errors.New("preview: JWKS has no keys field")
 	}
-	keys := make(map[string]*ecdsa.PublicKey, len(doc.Keys))
+	keys := make(map[string]*ecdsa.PublicKey, len(*doc.Keys))
 	var skipped []string
-	for _, k := range doc.Keys {
-		pub, ok := parseJWK(k)
+	for _, raw := range *doc.Keys {
+		kid, pub, ok := parseJWK(raw)
 		if !ok {
-			skipped = append(skipped, k.Kid)
+			skipped = append(skipped, kid)
 			continue
 		}
-		keys[k.Kid] = pub
+		keys[kid] = pub
 	}
 	return keys, skipped, nil
 }
 
-func parseJWK(k jwk) (*ecdsa.PublicKey, bool) {
-	if k.Kid == "" || k.Kty != "EC" || k.Crv != "P-256" || k.Use != "sig" {
-		return nil, false
+func parseJWK(raw json.RawMessage) (string, *ecdsa.PublicKey, bool) {
+	var ident struct {
+		Kid string `json:"kid"`
 	}
-	if k.Alg != "" && k.Alg != "ES256" {
-		return nil, false
+	_ = json.Unmarshal(raw, &ident)
+
+	var k jose.JSONWebKey
+	if err := json.Unmarshal(raw, &k); err != nil {
+		return ident.Kid, nil, false
 	}
-	x, errX := base64.RawURLEncoding.DecodeString(k.X)
-	y, errY := base64.RawURLEncoding.DecodeString(k.Y)
-	if errX != nil || errY != nil || len(x) != 32 || len(y) != 32 {
-		return nil, false
+	if k.KeyID == "" || k.Use != "sig" || (k.Algorithm != "" && k.Algorithm != "ES256") {
+		return ident.Kid, nil, false
 	}
-	point := make([]byte, 0, 65)
-	point = append(point, 4)
-	point = append(point, x...)
-	point = append(point, y...)
-	pub, err := ecdsa.ParseUncompressedPublicKey(elliptic.P256(), point)
-	if err != nil {
-		return nil, false
+	pub, ok := k.Key.(*ecdsa.PublicKey)
+	if !ok || pub.Curve != elliptic.P256() {
+		return ident.Kid, nil, false
 	}
-	return pub, true
+	return k.KeyID, pub, true
 }
 
 func sortedKids(keys map[string]*ecdsa.PublicKey) []string {
