@@ -186,7 +186,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.parentScopes = parentScp
 	d.config = cfg
 
-	d.upstreamTransport, err = transport.New(d)
+	d.upstreamTransport, err = transport.New(d, cfg.Upstream.HTTPTimeout)
 	if err != nil {
 		return nil, err
 	}

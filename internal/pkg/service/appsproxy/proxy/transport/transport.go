@@ -14,9 +14,6 @@ import (
 // TLSHandshakeTimeout specifies the default timeout of TLS handshake.
 const TLSHandshakeTimeout = 5 * time.Second
 
-// ResponseHeaderTimeout specifies the default amount of time to wait for a server's response headers.
-const ResponseHeaderTimeout = 15 * time.Second
-
 // MaxIdleConnections specifies the default maximum number of open connections at all.
 const MaxIdleConnections = 128
 
@@ -37,7 +34,7 @@ type dependencies interface {
 }
 
 // New creates new http transport intended to be used with NewSingleHostReverseProxy.
-func New(d dependencies) (http.RoundTripper, error) {
+func New(d dependencies, responseHeaderTimeout time.Duration) (http.RoundTripper, error) {
 	dialer := newDialer()
 
 	httpTransport := &http.Transport{
@@ -46,7 +43,7 @@ func New(d dependencies) (http.RoundTripper, error) {
 		ForceAttemptHTTP2:     true, // HTTP2 is preferred.
 		DisableKeepAlives:     false,
 		TLSHandshakeTimeout:   TLSHandshakeTimeout,
-		ResponseHeaderTimeout: ResponseHeaderTimeout,
+		ResponseHeaderTimeout: responseHeaderTimeout,
 		MaxIdleConns:          MaxIdleConnections,
 		MaxConnsPerHost:       MaxConnectionsPerHost,
 		MaxIdleConnsPerHost:   MaxConnectionsPerHost,
