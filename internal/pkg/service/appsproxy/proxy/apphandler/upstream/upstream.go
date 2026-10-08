@@ -351,7 +351,9 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 		// timeout and any per-request cancellation.
 		reqCtx := res.Request.Context()
 		wrapped := wsactivity.Wrap(rwc, func() {
-			u.notify(reqCtx)
+			if !u.workload.IsSandbox() {
+				u.notify(reqCtx)
+			}
 			u.manager.sessions.ActivityWS(reqCtx)
 		})
 		// A websocket close is the most reliable end-of-session signal a

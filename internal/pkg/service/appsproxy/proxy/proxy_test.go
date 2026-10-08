@@ -2855,6 +2855,36 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{"123": 1},
 		},
 		testCase{
+			// The websocket counterpart of draft-sandbox-public-app-is-served:
+			// frames on a draft's websocket must not hold the App awake either.
+			name:     "draft-sandbox-websocket-does-not-notify",
+			setupK8s: setupDraftSandbox("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local"),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
+				defer cancel()
+
+				c, _, err := websocket.Dial(
+					ctx,
+					"wss://draft-abc.hub.keboola.local/ws",
+					&websocket.DialOptions{
+						HTTPClient: client,
+					},
+				)
+				require.NoError(t, err)
+
+				var v any
+				err = wsjson.Read(ctx, c, &v)
+				require.NoError(t, err)
+
+				assert.Equal(t, "Hello websocket", v)
+
+				require.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
+			},
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
 			// A Stopped draft must be woken: the proxy patches the Sandbox CR's
 			// spec.state, not the App's. A wake that is dropped leaves the draft
 			// showing the spinner forever.
