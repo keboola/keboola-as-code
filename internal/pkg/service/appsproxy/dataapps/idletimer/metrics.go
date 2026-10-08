@@ -20,6 +20,7 @@ type metrics struct {
 	notSuspendable atomic.Int64
 
 	suspends             counter
+	suspendsSuppressed   counter
 	wokeSoonAfterSuspend counter
 	recordErrors         counter
 }
@@ -63,6 +64,11 @@ func newMetrics(meter telemetry.Meter) *metrics {
 	m.suspends.instrument = meter.IntCounter(
 		"keboola.go.appsproxy.idletimer.suspends",
 		"Workloads this replica has suspended for inactivity.",
+		"",
+	)
+	m.suspendsSuppressed.instrument = meter.IntCounter(
+		"keboola.go.appsproxy.idletimer.suspends_suppressed",
+		"Workloads this replica would have suspended, counted once per idle episode, while the suspend action is off.",
 		"",
 	)
 	m.wokeSoonAfterSuspend.instrument = meter.IntCounter(

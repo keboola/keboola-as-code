@@ -2,6 +2,7 @@ package idletimer
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -53,7 +54,24 @@ type harness struct {
 	fake    *k8sfake.FakeDynamicClient
 }
 
+// newHarness builds a manager with the suspend action on, which is what the
+// loop's own behaviour has to be correct for once the gate is flipped.
 func newHarness(t *testing.T, candidates ...k8sapp.SuspendCandidate) *harness {
+	t.Helper()
+	return buildHarness(t, log.NewNopLogger(), true, candidates)
+}
+
+func newGatedHarness(t *testing.T, candidates ...k8sapp.SuspendCandidate) *harness {
+	t.Helper()
+	return buildHarness(t, log.NewNopLogger(), false, candidates)
+}
+
+func newGatedHarnessWithLogger(t *testing.T, logger log.Logger, candidates ...k8sapp.SuspendCandidate) *harness {
+	t.Helper()
+	return buildHarness(t, logger, false, candidates)
+}
+
+func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidates []k8sapp.SuspendCandidate) *harness {
 	t.Helper()
 
 	c := newTestClient()
@@ -61,7 +79,7 @@ func newHarness(t *testing.T, candidates ...k8sapp.SuspendCandidate) *harness {
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
 
 	return &harness{
-		manager: newManager(clock, log.NewNopLogger(), c, source, newMetrics(nil)),
+		manager: newManager(clock, logger, c, source, newMetrics(nil), suspendEnabled),
 		source:  source,
 		clock:   clock,
 		fake:    c.dyn.(*k8sfake.FakeDynamicClient),
@@ -366,4 +384,89 @@ func TestRecordActivity_DoesNotBlockTheRequestPath(t *testing.T) {
 
 	close(release)
 	h.manager.Shutdown(t.Context())
+}
+
+// The constant ships off. Flipping it is a release decision, so a change here
+// should be deliberate enough to need this test updated with it.
+func TestSuspendEnabled_ShipsOff(t *testing.T) {
+	t.Parallel()
+
+	assert.False(t, suspendEnabled, "the suspend action is staged by release; flipping it is its own PR")
+}
+
+func TestTick_GateSuppressesOnlyTheSuspendAction(t *testing.T) {
+	t.Parallel()
+
+	h := newGatedHarness(t, candidate(appRef, "member-1", threshold))
+	h.manager.tick(t.Context())
+	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
+	h.manager.tick(t.Context())
+
+	assert.Empty(t, h.source.slept, "the gate must stop the patch")
+	assert.Zero(t, h.manager.metrics.suspends.Load())
+	assert.Equal(t, int64(1), h.manager.metrics.suspendsSuppressed.Load())
+
+	// Everything leading up to the suspend still has to run: that is what the
+	// gated deploy exists to exercise against a real apiserver.
+	rec, err := h.manager.client.get(t.Context(), "member-1")
+	require.NoError(t, err)
+	assert.False(t, rec.lastRequestAt.IsZero(), "the record must still be created")
+	assert.Zero(t, h.manager.metrics.notSuspendable.Load())
+}
+
+// A suppressed suspend leaves the workload Running, so every later tick decides
+// to suspend it again. Reporting each decision would be four lines a minute for
+// every idle workload on the stack.
+func TestTick_SuppressedSuspendIsReportedOncePerIdleEpisode(t *testing.T) {
+	t.Parallel()
+
+	logger := log.NewDebugLogger()
+	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1", threshold))
+	h.manager.tick(t.Context())
+	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
+
+	for range 5 {
+		h.manager.tick(t.Context())
+		h.clock.Advance(tickInterval)
+	}
+
+	assert.Equal(t, int64(1), h.manager.metrics.suspendsSuppressed.Load())
+	assert.Equal(t, 1, strings.Count(logger.AllMessages(), "would suspend"))
+}
+
+// A workload that came back and went idle again is a second episode, and the
+// comparison against the cron counts it separately.
+func TestTick_ASecondIdleEpisodeIsReportedAgain(t *testing.T) {
+	t.Parallel()
+
+	h := newGatedHarness(t, candidate(appRef, "member-1", threshold))
+	h.manager.tick(t.Context())
+	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
+	h.manager.tick(t.Context())
+	require.Equal(t, int64(1), h.manager.metrics.suspendsSuppressed.Load())
+
+	// Someone used it again.
+	h.manager.RecordActivity(t.Context(), appRef)
+	h.manager.Shutdown(t.Context())
+	h.manager.tick(t.Context())
+
+	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
+	h.manager.tick(t.Context())
+
+	assert.Equal(t, int64(2), h.manager.metrics.suspendsSuppressed.Load())
+}
+
+func TestTick_SuppressedSuspendNamesTheWorkloadAndHowLongItWasIdle(t *testing.T) {
+	t.Parallel()
+
+	logger := log.NewDebugLogger()
+	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1", threshold))
+	h.manager.tick(t.Context())
+	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
+	h.manager.tick(t.Context())
+
+	messages := logger.AllMessages()
+	assert.Contains(t, messages, "would suspend")
+	assert.Contains(t, messages, appRef.String())
+	assert.Contains(t, messages, "idle for")
 }
