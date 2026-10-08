@@ -26,7 +26,6 @@ func GVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: k8sapp.Group, Version: version, Resource: resource}
 }
 
-// record is one workload's shared last-seen value, as stored on its IdleTimer.
 type record struct {
 	lastRequestAt   time.Time
 	resourceVersion string
@@ -62,12 +61,12 @@ func (c *client) get(ctx context.Context, name string) (record, error) {
 	return record{lastRequestAt: at, resourceVersion: obj.GetResourceVersion()}, nil
 }
 
-// create registers the record with an ownerReference to the Sandbox it is named
-// after, which is what deletes it: there is no controller for this kind.
+// create points the record at the Sandbox it is named after, which is the only
+// thing that ever deletes it: there is no controller for this kind.
 //
-// The uid is not decoration. The apiserver rejects an ownerReference without
-// one, and garbage collection matches on it rather than on the name, so a stale
-// uid reads as "the owner is already gone" and collects the record immediately.
+// The apiserver rejects an ownerReference with no uid, and collection matches
+// on the uid rather than the name, so a stale one reads as an owner that is
+// already gone and the record is collected at once.
 func (c *client) create(ctx context.Context, name string, ownerUID types.UID, at time.Time) error {
 	obj := &unstructured.Unstructured{
 		Object: map[string]any{
@@ -95,14 +94,14 @@ func (c *client) create(ctx context.Context, name string, ownerUID types.UID, at
 	return err
 }
 
-// cas raises the stored timestamp to at, and leaves it alone if it is already
-// at least that late. Both replicas write the same record, so the maximum is
-// maintained here rather than by the reader.
+// cas raises the stored timestamp, leaving it alone if it is already later.
+// Both replicas write the same record, so the maximum is maintained here.
 //
-// The comparison is redone against the value the conflict exposed, never
-// against the one read before it: retrying the original decision is how a
-// writer that lost the race drags the timestamp backwards.
+// After a conflict the comparison is redone against the value the conflict
+// exposed: retrying the original decision is how a writer that lost the race
+// drags the timestamp backwards.
 func (c *client) cas(ctx context.Context, name string, at time.Time) error {
+	var lastErr error
 	for attempt := range 2 {
 		rec, err := c.get(ctx, name)
 		if err != nil {
@@ -111,23 +110,21 @@ func (c *client) cas(ctx context.Context, name string, at time.Time) error {
 		if !at.After(rec.lastRequestAt) {
 			return nil
 		}
-		if err := c.update(ctx, name, rec.resourceVersion, at); err != nil {
-			if attempt == 0 && k8serrors.IsConflict(err) {
-				continue
-			}
-			return err
+		lastErr = c.update(ctx, name, rec.resourceVersion, at)
+		if lastErr == nil {
+			return nil
 		}
-		return nil
+		if attempt == 0 && k8serrors.IsConflict(lastErr) {
+			continue
+		}
+		return lastErr
 	}
-	return nil
+	return lastErr
 }
 
-// update patches the one field rather than putting the whole object back. A
-// full write would carry only what this process chose to send, which drops the
-// ownerReference and leaks the record: nothing else ever deletes one.
-//
-// resourceVersion in the patch body is the precondition, so a write that lost a
-// race is rejected rather than silently applied, exactly as Sleep does it.
+// update patches the one field rather than putting the whole object back: a
+// full write carries only what this process built, dropping the ownerReference
+// and leaking the record. resourceVersion in the body is the precondition.
 func (c *client) update(ctx context.Context, name, resourceVersion string, at time.Time) error {
 	patch, err := json.Marshal(map[string]any{
 		"metadata": map[string]any{"resourceVersion": resourceVersion},

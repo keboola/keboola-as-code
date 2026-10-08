@@ -61,11 +61,6 @@ type StateWatcher struct {
 	sandboxHosts map[string]string // exact hostname → Sandbox K8s object name
 
 	workloadRemovalNotifier workloadRemovalNotifier
-
-	// unresolvedLock guards warnedUnresolved, which keeps the idle-suspend
-	// warning to one line per App rather than one per tick.
-	unresolvedLock   sync.Mutex
-	warnedUnresolved map[api.AppID]bool
 }
 
 type dependencies interface {

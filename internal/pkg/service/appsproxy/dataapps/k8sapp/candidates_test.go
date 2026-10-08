@@ -1,7 +1,6 @@
 package k8sapp_test
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 )
 
@@ -76,7 +76,7 @@ func TestRunningWorkloads_AppRouteCarriesItsMemberSandboxThreshold(t *testing.T)
 
 	var got []k8sapp.SuspendCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.RunningWorkloads(t.Context()).Candidates
+		got = watcher.RunningWorkloads().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -97,7 +97,7 @@ func TestRunningWorkloads_AbsentThresholdIsReportedAsZero(t *testing.T) {
 
 	var got []k8sapp.SuspendCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.RunningWorkloads(t.Context()).Candidates
+		got = watcher.RunningWorkloads().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -113,24 +113,27 @@ func TestRunningWorkloads_SkipsAWorkloadThatIsNotRunning(t *testing.T) {
 	)
 
 	assert.Never(t, func() bool {
-		return len(watcher.RunningWorkloads(t.Context()).Candidates) > 0
+		return len(watcher.RunningWorkloads().Candidates) > 0
 	}, time.Second, 50*time.Millisecond)
 }
 
-// An App that is Running but names no member must be skipped loudly, never
-// suspended and never dereferenced.
+// An App that is Running but names no member is skipped and reported, never
+// suspended and never dereferenced. Reporting it is the caller's business.
 func TestRunningWorkloads_SkipsAnAppNamingNoMember(t *testing.T) {
 	t.Parallel()
 
-	logger := log.NewDebugLogger()
-	watcher := syncedWatcher(t, logger,
+	watcher := syncedWatcher(t, log.NewNopLogger(),
 		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, ""),
 	)
 
-	assert.Never(t, func() bool {
-		return len(watcher.RunningWorkloads(t.Context()).Candidates) > 0
-	}, time.Second, 50*time.Millisecond)
-	assert.Contains(t, logger.AllMessages(), "productionSandbox")
+	var snapshot k8sapp.WorkloadSnapshot
+	assert.Eventually(t, func() bool {
+		snapshot = watcher.RunningWorkloads()
+		return len(snapshot.Unresolved) == 1
+	}, 5*time.Second, 50*time.Millisecond)
+
+	assert.Empty(t, snapshot.Candidates)
+	assert.Equal(t, api.AppID("123"), snapshot.Unresolved[0])
 }
 
 func TestRunningWorkloads_SkipsAnAppWhoseMemberIsNotCached(t *testing.T) {
@@ -141,7 +144,7 @@ func TestRunningWorkloads_SkipsAnAppWhoseMemberIsNotCached(t *testing.T) {
 	)
 
 	assert.Never(t, func() bool {
-		return len(watcher.RunningWorkloads(t.Context()).Candidates) > 0
+		return len(watcher.RunningWorkloads().Candidates) > 0
 	}, time.Second, 50*time.Millisecond)
 }
 
@@ -155,7 +158,7 @@ func TestRunningWorkloads_DraftRouteIsItsOwnWorkload(t *testing.T) {
 
 	var got []k8sapp.SuspendCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.RunningWorkloads(t.Context()).Candidates
+		got = watcher.RunningWorkloads().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -176,7 +179,7 @@ func TestRunningWorkloads_MemberSandboxIsNotAWorkloadOfItsOwn(t *testing.T) {
 
 	var got []k8sapp.SuspendCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.RunningWorkloads(t.Context()).Candidates
+		got = watcher.RunningWorkloads().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -208,37 +211,16 @@ func TestRunningWorkloads_CountsUnresolvedApps(t *testing.T) {
 
 	var snapshot k8sapp.WorkloadSnapshot
 	assert.Eventually(t, func() bool {
-		snapshot = watcher.RunningWorkloads(t.Context())
-		return snapshot.Unresolved == 1
+		snapshot = watcher.RunningWorkloads()
+		return len(snapshot.Unresolved) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
 	assert.Empty(t, snapshot.Candidates)
 }
 
-// At a 15s cadence a standing misconfiguration would otherwise log four lines
-// a minute for as long as it lasts.
-func TestRunningWorkloads_WarnsOncePerAppNotOncePerTick(t *testing.T) {
-	t.Parallel()
-
-	logger := log.NewDebugLogger()
-	watcher := syncedWatcher(t, logger,
-		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, "app-123-dpl-gone"),
-	)
-
-	assert.Eventually(t, func() bool {
-		return watcher.RunningWorkloads(t.Context()).Unresolved == 1
-	}, 5*time.Second, 50*time.Millisecond)
-
-	before := strings.Count(logger.AllMessages(), "productionSandbox")
-	watcher.RunningWorkloads(t.Context())
-	watcher.RunningWorkloads(t.Context())
-
-	assert.Equal(t, before, strings.Count(logger.AllMessages(), "productionSandbox"))
-}
-
-// The IdleTimer's ownerReference needs the member's uid: without it the
-// apiserver rejects the record, and with a stale one garbage collection reads
-// the owner as already gone and deletes the record straight away.
+// The IdleTimer's ownerReference needs the member's uid: the apiserver rejects
+// one without it, and collection matches on the uid, so a stale one reads as an
+// owner already gone.
 func TestRunningWorkloads_CarriesTheSandboxUID(t *testing.T) {
 	t.Parallel()
 
@@ -252,7 +234,7 @@ func TestRunningWorkloads_CarriesTheSandboxUID(t *testing.T) {
 
 	var got []k8sapp.SuspendCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.RunningWorkloads(t.Context()).Candidates
+		got = watcher.RunningWorkloads().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
