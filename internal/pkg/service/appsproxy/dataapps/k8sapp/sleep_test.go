@@ -29,7 +29,7 @@ func TestStateWatcher_Sleep_PatchesTheAppCRForAnAppRoute(t *testing.T) {
 	}, 5*time.Second, 50*time.Millisecond)
 
 	fakeClient.ClearActions()
-	suspended, err := watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+	suspended, err := watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123"}, "")
 	require.NoError(t, err)
 	assert.True(t, suspended)
 
@@ -55,7 +55,7 @@ func TestStateWatcher_Sleep_PatchesTheSandboxCRForADraftRoute(t *testing.T) {
 	}, 5*time.Second, 50*time.Millisecond)
 
 	fakeClient.ClearActions()
-	suspended, err := watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"})
+	suspended, err := watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"}, "draft-abc")
 	require.NoError(t, err)
 	assert.True(t, suspended)
 
@@ -81,7 +81,7 @@ func TestStateWatcher_Sleep_SendsAResourceVersionPrecondition(t *testing.T) {
 	}, 5*time.Second, 50*time.Millisecond)
 
 	fakeClient.ClearActions()
-	_, err = watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+	_, err = watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123"}, "")
 	require.NoError(t, err)
 
 	assert.Contains(t, string(lastPatch(t, fakeClient).GetPatch()), `"resourceVersion"`)
@@ -105,7 +105,7 @@ func TestStateWatcher_Sleep_NeverWritesAutoRestartEnabled(t *testing.T) {
 	}, 5*time.Second, 50*time.Millisecond)
 
 	fakeClient.ClearActions()
-	_, err = watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+	_, err = watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123"}, "")
 	require.NoError(t, err)
 
 	assert.NotContains(t, string(lastPatch(t, fakeClient).GetPatch()), "autoRestartEnabled")
@@ -129,7 +129,7 @@ func TestStateWatcher_Sleep_SkipsAWorkloadNoLongerRunning(t *testing.T) {
 	}, 5*time.Second, 50*time.Millisecond)
 
 	fakeClient.ClearActions()
-	suspended, err := watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+	suspended, err := watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123"}, "")
 	require.NoError(t, err)
 	assert.False(t, suspended)
 
@@ -143,7 +143,7 @@ func TestStateWatcher_Sleep_ReportsUnknownWorkload(t *testing.T) {
 
 	watcher := k8sapp.NewStateWatcher(newTestDeps(t), newFakeClient(), testNamespace)
 
-	_, err := watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "nope"})
+	_, err := watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "nope"}, "")
 	require.Error(t, err)
 }
 
@@ -156,4 +156,58 @@ func lastPatch(t *testing.T, fakeClient *k8sfake.FakeDynamicClient) k8stesting.P
 	}
 	t.Fatal("no patch action was recorded")
 	return nil
+}
+
+// The tick judges one member idle; by the time the patch goes out the App may
+// have been redeployed onto another. Stopping the App then stops the deployment
+// that just started. The resourceVersion precondition cannot catch this: it
+// guards the gap between the read and the patch, not between the decision and
+// the read.
+func TestStateWatcher_Sleep_SkipsWhenTheMemberChanged(t *testing.T) {
+	t.Parallel()
+
+	fakeClient := newFakeClient()
+	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
+
+	app := newAppObject("app-123", "123", k8sapp.AppActualStateRunning)
+	app.Object["status"].(map[string]any)["productionSandbox"] = "member-new"
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).
+		Create(t.Context(), app, metav1.CreateOptions{})
+	require.NoError(t, err)
+	require.True(t, watcher.WaitForCacheSync(t.Context()))
+	assert.Eventually(t, func() bool {
+		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+		return ok
+	}, 5*time.Second, 50*time.Millisecond)
+
+	fakeClient.ClearActions()
+	suspended, err := watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123"}, "member-old")
+	require.NoError(t, err)
+	assert.False(t, suspended)
+
+	for _, action := range fakeClient.Actions() {
+		assert.NotEqual(t, "patch", action.GetVerb(), "a redeployed App must not be stopped on the old member's idleness")
+	}
+}
+
+func TestStateWatcher_Sleep_PatchesWhenTheMemberStillMatches(t *testing.T) {
+	t.Parallel()
+
+	fakeClient := newFakeClient()
+	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
+
+	app := newAppObject("app-123", "123", k8sapp.AppActualStateRunning)
+	app.Object["status"].(map[string]any)["productionSandbox"] = "member-1"
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).
+		Create(t.Context(), app, metav1.CreateOptions{})
+	require.NoError(t, err)
+	require.True(t, watcher.WaitForCacheSync(t.Context()))
+	assert.Eventually(t, func() bool {
+		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+		return ok
+	}, 5*time.Second, 50*time.Millisecond)
+
+	suspended, err := watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123"}, "member-1")
+	require.NoError(t, err)
+	assert.True(t, suspended)
 }
