@@ -177,3 +177,14 @@ type SuspendCandidate struct {
 	Threshold   time.Duration
 	LastStarted time.Time
 }
+
+// WorkloadSnapshot is one round's view of what the idle-suspend loop can act on.
+//
+// Unresolved counts Running Apps left out because status.productionSandbox
+// named no cached Sandbox. They never suspend, so they belong with workloads
+// that carry no threshold: both are reasons the loop is doing nothing, and a
+// gate that watches only one of them reads clear while the other is happening.
+type WorkloadSnapshot struct {
+	Candidates []SuspendCandidate
+	Unresolved int
+}

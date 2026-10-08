@@ -29,7 +29,7 @@ const writeTimeout = 5 * time.Second
 // workloadSource is the part of the K8s state watcher this loop needs.
 type workloadSource interface {
 	HasSynced() bool
-	RunningWorkloads(ctx context.Context) []k8sapp.SuspendCandidate
+	RunningWorkloads(ctx context.Context) k8sapp.WorkloadSnapshot
 	Sleep(ctx context.Context, ref k8sapp.WorkloadRef) (bool, error)
 }
 
@@ -155,7 +155,7 @@ func (m *Manager) RecordActivity(ctx context.Context, ref k8sapp.WorkloadRef) {
 		defer cancel()
 
 		if err := m.client.cas(writeCtx, name, now); err != nil {
-			m.metrics.recordErrors.Add(1)
+			m.metrics.recordErrors.Add(writeCtx)
 			m.logger.Warnf(writeCtx, "failed to record activity for workload %q: %s", ref, err)
 		}
 	}()
@@ -185,12 +185,24 @@ func (m *Manager) tick(ctx context.Context) {
 		return
 	}
 
-	for _, c := range m.source.RunningWorkloads(ctx) {
-		m.visit(ctx, c)
+	snapshot := m.source.RunningWorkloads(ctx)
+
+	// Counted per round, not accumulated: this gauge is what gates retiring the
+	// cron that still suspends apps today, and the question it answers is
+	// "is anything being skipped now", not "has anything ever been skipped".
+	notSuspendable := int64(snapshot.Unresolved)
+	for _, c := range snapshot.Candidates {
+		if !m.visit(ctx, c) {
+			notSuspendable++
+		}
 	}
+	m.metrics.notSuspendable.Store(notSuspendable)
 }
 
-func (m *Manager) visit(ctx context.Context, c k8sapp.SuspendCandidate) {
+// visit reports whether the workload was considered at all. A workload with no
+// threshold never auto-suspends, which is a reason the loop is doing nothing
+// and so belongs in the gate.
+func (m *Manager) visit(ctx context.Context, c k8sapp.SuspendCandidate) bool {
 	item := m.stateMap.GetOrInit(c.Ref)
 	now := m.clock.Now()
 
@@ -202,32 +214,35 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SuspendCandidate) {
 	suspendedAt := item.suspendedAt
 	item.lock.Unlock()
 
-	// A workload back in the Running set shortly after this replica stopped it
-	// is the cross-replica error this loop is measured by.
+	// A workload that started again shortly after this replica stopped it is
+	// the cross-replica error this loop is measured by.
+	//
+	// The restart is the discriminator, not merely still being in the Running
+	// set: a patched workload stays Running until the operator reconciles it
+	// and the informer delivers the change, which is this loop working.
 	if !suspendedAt.IsZero() {
-		if now.Sub(suspendedAt) <= wakeWindow {
-			m.metrics.wokeSoonAfterSuspend.Add(1)
+		if c.LastStarted.After(suspendedAt) && now.Sub(suspendedAt) <= wakeWindow {
+			m.metrics.wokeSoonAfterSuspend.Add(ctx)
 		}
-		m.clearSuspended(item)
+		if c.LastStarted.After(suspendedAt) || now.Sub(suspendedAt) > wakeWindow {
+			m.clearSuspended(item)
+		}
 	}
 
-	// Absent means never auto-suspend. Counted, because this reading gates
-	// retiring the cron that still suspends apps today.
+	// Absent means never auto-suspend.
 	if c.Threshold == 0 {
-		m.metrics.skippedNoThreshold.Add(1)
-		return
+		return false
 	}
 
 	rec, found := m.readRecord(ctx, c)
 	if !found {
-		return
+		return true
 	}
 
-	if !shouldSuspend(now.Sub(lastSeen(memory, rec.lastRequestAt, c.LastStarted)), c.Threshold) {
-		return
+	if shouldSuspend(now.Sub(lastSeen(memory, rec.lastRequestAt, c.LastStarted)), c.Threshold) {
+		m.suspend(ctx, c, item)
 	}
-
-	m.suspend(ctx, c, item)
+	return true
 }
 
 // readRecord returns the workload's shared record, creating it when it is
@@ -241,7 +256,7 @@ func (m *Manager) readRecord(ctx context.Context, c k8sapp.SuspendCandidate) (re
 	}
 
 	if !k8serrors.IsNotFound(err) {
-		m.metrics.recordErrors.Add(1)
+		m.metrics.recordErrors.Add(ctx)
 		m.logger.Warnf(ctx, "failed to read the idle timer of workload %q: %s", c.Ref, err)
 		return record{}, false
 	}
@@ -249,7 +264,7 @@ func (m *Manager) readRecord(ctx context.Context, c k8sapp.SuspendCandidate) (re
 	// A record created now gives the workload a full window before it can be
 	// judged, which is what makes a never-requested workload suspend at all.
 	if err := m.client.create(ctx, c.SandboxName, m.clock.Now()); err != nil {
-		m.metrics.recordErrors.Add(1)
+		m.metrics.recordErrors.Add(ctx)
 		m.logger.Warnf(ctx, "failed to create the idle timer of workload %q: %s", c.Ref, err)
 	}
 	return record{}, false
@@ -265,7 +280,7 @@ func (m *Manager) suspend(ctx context.Context, c k8sapp.SuspendCandidate, item *
 		return
 	}
 
-	m.metrics.suspends.Add(1)
+	m.metrics.suspends.Add(ctx)
 	m.logger.Infof(ctx, "suspended idle workload %q", c.Ref)
 
 	item.lock.Lock()

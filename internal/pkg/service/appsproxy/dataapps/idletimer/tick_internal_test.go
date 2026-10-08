@@ -25,6 +25,7 @@ var appRef = k8sapp.WorkloadRef{AppID: "123"} //nolint:gochecknoglobals // test 
 // fakeSource stands in for the K8s state watcher.
 type fakeSource struct {
 	synced     bool
+	unresolved int
 	candidates []k8sapp.SuspendCandidate
 	slept      []k8sapp.WorkloadRef
 	sleptOK    bool
@@ -33,8 +34,8 @@ type fakeSource struct {
 
 func (f *fakeSource) HasSynced() bool { return f.synced }
 
-func (f *fakeSource) RunningWorkloads(context.Context) []k8sapp.SuspendCandidate {
-	return f.candidates
+func (f *fakeSource) RunningWorkloads(context.Context) k8sapp.WorkloadSnapshot {
+	return k8sapp.WorkloadSnapshot{Candidates: f.candidates, Unresolved: f.unresolved}
 }
 
 func (f *fakeSource) Sleep(_ context.Context, ref k8sapp.WorkloadRef) (bool, error) {
@@ -94,7 +95,37 @@ func TestTick_AbsentThresholdIsSkippedAndCounted(t *testing.T) {
 
 	assert.Empty(t, h.source.slept)
 	assert.Empty(t, h.fake.Actions(), "a workload that never auto-suspends needs no record")
-	assert.Equal(t, int64(1), h.manager.metrics.skippedNoThreshold.Load())
+	assert.Equal(t, int64(1), h.manager.metrics.notSuspendable.Load())
+}
+
+// The gate reads the current round, not a running total: one transient skip
+// must not leave it permanently non-zero, or "zero for a full cycle" can never
+// be satisfied again.
+func TestTick_TheNotSuspendableGaugeReportsTheCurrentRound(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1", 0))
+	h.manager.tick(t.Context())
+	require.Equal(t, int64(1), h.manager.metrics.notSuspendable.Load())
+
+	h.source.candidates[0].Threshold = threshold
+	h.manager.tick(t.Context())
+
+	assert.Zero(t, h.manager.metrics.notSuspendable.Load())
+}
+
+// An App whose member cannot be resolved never suspends either, so it belongs
+// in the same gate: otherwise the gate reads zero while workloads are silently
+// being skipped.
+func TestTick_UnresolvedWorkloadsCountTowardsTheGate(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t)
+	h.source.unresolved = 2
+
+	h.manager.tick(t.Context())
+
+	assert.Equal(t, int64(2), h.manager.metrics.notSuspendable.Load())
 }
 
 func TestTick_AbsentRecordIsCreatedAtNowAndNotSuspended(t *testing.T) {
@@ -212,11 +243,31 @@ func TestTick_CountsASuspendFollowedByAWakeWithinAMinute(t *testing.T) {
 	h.manager.tick(t.Context())
 	require.Equal(t, int64(1), h.manager.metrics.suspends.Load())
 
-	// The workload is back in the Running set a moment later: something woke it.
+	// Something woke it: the workload started again, which moves lastStartedTime.
 	h.clock.Advance(30 * time.Second)
+	h.source.candidates[0].LastStarted = h.clock.Now()
 	h.manager.tick(t.Context())
 
 	assert.Equal(t, int64(1), h.manager.metrics.wokeSoonAfterSuspend.Load())
+}
+
+// A patched workload stays Running in the cache until the operator reconciles
+// it and the informer delivers the change. That is this loop working, not
+// failing, and counting it would drown the signal the metric exists to carry.
+func TestTick_DoesNotCountAnUnreconciledSuspendAsAWake(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h.manager.tick(t.Context())
+	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
+	h.manager.tick(t.Context())
+	require.Equal(t, int64(1), h.manager.metrics.suspends.Load())
+
+	// Still in the Running set a tick later, but it never restarted.
+	h.clock.Advance(15 * time.Second)
+	h.manager.tick(t.Context())
+
+	assert.Zero(t, h.manager.metrics.wokeSoonAfterSuspend.Load())
 }
 
 func TestTick_DoesNotCountAWakeLongAfterTheSuspend(t *testing.T) {
