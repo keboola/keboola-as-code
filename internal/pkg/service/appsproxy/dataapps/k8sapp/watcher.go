@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"sync"
+	"time"
 
 	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,6 +36,10 @@ type entry struct {
 	upstreamTarget     *url.URL // pre-parsed; nil when appsProxy.upstreamUrl absent/invalid
 	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
 	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
+
+	productionSandbox string        // App CRs only: the member Sandbox running the workload
+	autoSuspendAfter  time.Duration // Sandbox CRs only; zero means the CR carries no threshold
+	lastStarted       time.Time     // Sandbox CRs only
 }
 
 // StateWatcher watches App and Sandbox CRDs in Kubernetes and provides a local
@@ -197,11 +202,6 @@ func (w *StateWatcher) Wakeup(ctx context.Context, ref WorkloadRef) error {
 		return errors.Errorf("workload %q is not in the cache, nothing was woken", ref)
 	}
 
-	gvr := AppGVR()
-	if ref.IsSandbox() {
-		gvr = SandboxGVR()
-	}
-
 	patch, err := json.Marshal(map[string]any{
 		"spec": map[string]any{
 			"state": AppActualStateRunning,
@@ -211,7 +211,7 @@ func (w *StateWatcher) Wakeup(ctx context.Context, ref WorkloadRef) error {
 		return err
 	}
 
-	_, err = w.client.Resource(gvr).Namespace(w.namespace).Patch(
+	_, err = w.client.Resource(gvrFor(ref)).Namespace(w.namespace).Patch(
 		ctx,
 		e.k8sName,
 		k8stypes.MergePatchType,
@@ -369,10 +369,23 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 		}
 	}
 
+	var autoSuspendAfter time.Duration
+	if secs := appObj.Spec.AutoSuspendAfterSeconds; secs != nil {
+		autoSuspendAfter = time.Duration(*secs) * time.Second
+	}
+
+	var lastStarted time.Time
+	if t := appObj.Status.LastStartedTime; t != nil {
+		lastStarted = t.Time
+	}
+
 	return parsedObject{
 		appID: appObj.Spec.AppID,
 		entry: entry{
 			k8sName:            k8sName,
+			productionSandbox:  appObj.Status.ProductionSandbox,
+			autoSuspendAfter:   autoSuspendAfter,
+			lastStarted:        lastStarted,
 			appID:              api.AppID(appObj.Spec.AppID),
 			host:               host,
 			state:              appObj.Status.CurrentState,

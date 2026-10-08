@@ -5,7 +5,9 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
@@ -30,6 +32,15 @@ func AppGVR() schema.GroupVersionResource {
 // SandboxGVR returns the GroupVersionResource for the Sandbox CRD.
 func SandboxGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: Group, Version: SandboxVersion, Resource: SandboxResource}
+}
+
+// gvrFor returns the CRD that owns the workload's route, which is the one a
+// state patch has to go to.
+func gvrFor(ref WorkloadRef) schema.GroupVersionResource {
+	if ref.IsSandbox() {
+		return SandboxGVR()
+	}
+	return AppGVR()
 }
 
 // NormalizeHost strips any port and lowercases the hostname, so index keys and
@@ -91,6 +102,10 @@ type appSpec struct {
 	AutoRestartEnabled *bool           `json:"autoRestartEnabled,omitempty"`
 	DevMode            *appDevModeSpec `json:"devMode,omitempty"`
 	Runtime            appRuntime      `json:"runtime"`
+	// AutoSuspendAfterSeconds is set on Sandbox CRs only. Absent means the
+	// workload is never auto-suspended, which is why it is a pointer: zero is
+	// not the same answer as unset.
+	AutoSuspendAfterSeconds *int64 `json:"autoSuspendAfterSeconds,omitempty"`
 }
 
 // appDevModeSpec mirrors the App CRD's spec.devMode block. The proxy only
@@ -132,6 +147,11 @@ type appStatus struct {
 	CurrentState AppActualState `json:"currentState"`
 	AppsProxy    appsProxy      `json:"appsProxy"`
 	E2BSandbox   e2bSandbox     `json:"e2bSandbox"`
+	// ProductionSandbox is set on App CRs only: the member Sandbox that runs
+	// the workload the App routes to.
+	ProductionSandbox string `json:"productionSandbox,omitempty"`
+	// LastStartedTime is set on Sandbox CRs only.
+	LastStartedTime *metav1.Time `json:"lastStartedTime,omitempty"`
 }
 
 type e2bSandbox struct {
@@ -141,4 +161,19 @@ type e2bSandbox struct {
 type appsProxy struct {
 	UpstreamURL string `json:"upstreamUrl,omitempty"`
 	PublicURL   string `json:"publicUrl,omitempty"`
+}
+
+// SuspendCandidate is a Running workload the idle-suspend loop may act on.
+//
+// Ref keys the activity the proxy records; SandboxName is the workload itself,
+// which for an App route is the member the App names rather than the App. The
+// two differ for every production workload, and the record belongs to the
+// Sandbox, because that is what a restart and a deletion happen to.
+type SuspendCandidate struct {
+	Ref         WorkloadRef
+	SandboxName string
+	// Threshold is zero when the Sandbox carries none, which means never
+	// auto-suspend. The caller counts those; it is not a default.
+	Threshold   time.Duration
+	LastStarted time.Time
 }
