@@ -22,6 +22,19 @@ import (
 // this loop having been wrong rather than as a user coming back.
 const wakeWindow = time.Minute
 
+// suspendEnabled gates the suspend action, and nothing else. The tick, the
+// record, the CAS, the arithmetic and every metric run either way, so a deploy
+// with this off exercises the whole loop against a real apiserver — RBAC,
+// create, CAS, ownerReference collection, write volume — without stopping
+// anyone's app. What it would have suspended is counted and logged instead, so
+// the overlap with the sandboxes-service cron can be compared directly.
+//
+// Two things it cannot exercise, because nothing is ever suspended:
+// wokeSoonAfterSuspend can never fire, and Sleep's live re-check and
+// resourceVersion precondition stay untried. Flipping this is their first real
+// test, and is its own PR.
+const suspendEnabled = false
+
 // writeTimeout bounds an activity write, which runs detached from the request
 // that triggered it.
 const writeTimeout = 5 * time.Second
@@ -34,13 +47,14 @@ type workloadSource interface {
 }
 
 type Manager struct {
-	wg       sync.WaitGroup
-	clock    clockwork.Clock
-	logger   log.Logger
-	client   *client
-	source   workloadSource
-	metrics  *metrics
-	stateMap *syncmap.SyncMap[k8sapp.WorkloadRef, state]
+	wg             sync.WaitGroup
+	suspendEnabled bool
+	clock          clockwork.Clock
+	logger         log.Logger
+	client         *client
+	source         workloadSource
+	metrics        *metrics
+	stateMap       *syncmap.SyncMap[k8sapp.WorkloadRef, state]
 }
 
 // state is this replica's view of one workload. threshold is copied from the
@@ -56,6 +70,11 @@ type state struct {
 	thresholdKnown bool
 
 	suspendedAt time.Time
+
+	// suppressedAt makes a gated suspend edge-triggered. A real suspend takes
+	// the workload out of the Running set; a suppressed one leaves it there, so
+	// without this every later tick would decide, count and log it again.
+	suppressedAt time.Time
 }
 
 type dependencies interface {
@@ -75,6 +94,7 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 		newClient(d.K8sDynamicClient(), d.Config().K8s.AppsNamespace),
 		d.AppStateWatcher(),
 		newMetrics(d.Telemetry().Meter()),
+		suspendEnabled,
 	)
 
 	d.AppStateWatcher().OnWorkloadRemoved(m.evictWorkload)
@@ -99,13 +119,14 @@ func NewManager(ctx context.Context, d dependencies) *Manager {
 	return m
 }
 
-func newManager(clock clockwork.Clock, logger log.Logger, c *client, source workloadSource, metrics *metrics) *Manager {
+func newManager(clock clockwork.Clock, logger log.Logger, c *client, source workloadSource, metrics *metrics, suspendEnabled bool) *Manager {
 	return &Manager{
-		clock:   clock,
-		logger:  logger,
-		client:  c,
-		source:  source,
-		metrics: metrics,
+		suspendEnabled: suspendEnabled,
+		clock:          clock,
+		logger:         logger,
+		client:         c,
+		source:         source,
+		metrics:        metrics,
 		stateMap: syncmap.New[k8sapp.WorkloadRef, state](func(k8sapp.WorkloadRef) *state {
 			return &state{}
 		}),
@@ -239,9 +260,14 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SuspendCandidate) bool {
 		return true
 	}
 
-	if shouldSuspend(now.Sub(lastSeen(memory, rec.lastRequestAt, c.LastStarted)), c.Threshold) {
-		m.suspend(ctx, c, item)
+	idleFor := now.Sub(lastSeen(memory, rec.lastRequestAt, c.LastStarted))
+	if !shouldSuspend(idleFor, c.Threshold) {
+		// Back in use: the next time it goes idle is a new episode.
+		m.clearSuppressed(item)
+		return true
 	}
+
+	m.suspend(ctx, c, item, idleFor)
 	return true
 }
 
@@ -270,7 +296,12 @@ func (m *Manager) readRecord(ctx context.Context, c k8sapp.SuspendCandidate) (re
 	return record{}, false
 }
 
-func (m *Manager) suspend(ctx context.Context, c k8sapp.SuspendCandidate, item *state) {
+func (m *Manager) suspend(ctx context.Context, c k8sapp.SuspendCandidate, item *state, idleFor time.Duration) {
+	if !m.suspendEnabled {
+		m.reportSuppressed(ctx, c, item, idleFor)
+		return
+	}
+
 	suspended, err := m.source.Sleep(ctx, c.Ref)
 	if err != nil {
 		m.logger.Warnf(ctx, "failed to suspend idle workload %q: %s", c.Ref, err)
@@ -285,6 +316,30 @@ func (m *Manager) suspend(ctx context.Context, c k8sapp.SuspendCandidate, item *
 
 	item.lock.Lock()
 	item.suspendedAt = m.clock.Now()
+	item.lock.Unlock()
+}
+
+// reportSuppressed records one gated suspend per idle episode, so the overlap
+// with the cron can be compared without a line per workload per tick.
+func (m *Manager) reportSuppressed(ctx context.Context, c k8sapp.SuspendCandidate, item *state, idleFor time.Duration) {
+	item.lock.Lock()
+	first := item.suppressedAt.IsZero()
+	if first {
+		item.suppressedAt = m.clock.Now()
+	}
+	item.lock.Unlock()
+
+	if !first {
+		return
+	}
+
+	m.metrics.suspendsSuppressed.Add(ctx)
+	m.logger.Infof(ctx, "would suspend workload %q, idle for %s, but the suspend action is off", c.Ref, idleFor)
+}
+
+func (m *Manager) clearSuppressed(item *state) {
+	item.lock.Lock()
+	item.suppressedAt = time.Time{}
 	item.lock.Unlock()
 }
 
