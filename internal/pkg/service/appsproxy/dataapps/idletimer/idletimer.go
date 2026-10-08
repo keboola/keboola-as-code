@@ -1,0 +1,280 @@
+package idletimer
+
+import (
+	"context"
+	"sync"
+	"time"
+
+	"github.com/jonboulle/clockwork"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/dynamic"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+)
+
+// wakeWindow is how soon after a suspend a workload running again is read as
+// this loop having been wrong rather than as a user coming back.
+const wakeWindow = time.Minute
+
+// writeTimeout bounds an activity write, which runs detached from the request
+// that triggered it.
+const writeTimeout = 5 * time.Second
+
+// workloadSource is the part of the K8s state watcher this loop needs.
+type workloadSource interface {
+	HasSynced() bool
+	RunningWorkloads(ctx context.Context) []k8sapp.SuspendCandidate
+	Sleep(ctx context.Context, ref k8sapp.WorkloadRef) (bool, error)
+}
+
+type Manager struct {
+	wg       sync.WaitGroup
+	clock    clockwork.Clock
+	logger   log.Logger
+	client   *client
+	source   workloadSource
+	metrics  *metrics
+	stateMap *syncmap.SyncMap[k8sapp.WorkloadRef, state]
+}
+
+// state is this replica's view of one workload. threshold is copied from the
+// last tick so the request path can pace its writes without reading the cache.
+type state struct {
+	lock sync.Mutex
+
+	lastRequestAt time.Time
+	lastWriteAt   time.Time
+
+	sandboxName    string
+	threshold      time.Duration
+	thresholdKnown bool
+
+	suspendedAt time.Time
+}
+
+type dependencies interface {
+	Clock() clockwork.Clock
+	Logger() log.Logger
+	Config() config.Config
+	Process() *servicectx.Process
+	Telemetry() telemetry.Telemetry
+	AppStateWatcher() *k8sapp.StateWatcher
+	K8sDynamicClient() dynamic.Interface
+}
+
+func NewManager(ctx context.Context, d dependencies) *Manager {
+	m := newManager(
+		d.Clock(),
+		d.Logger().WithComponent("idletimer"),
+		newClient(d.K8sDynamicClient(), d.Config().K8s.AppsNamespace),
+		d.AppStateWatcher(),
+		newMetrics(d.Telemetry().Meter()),
+	)
+
+	d.AppStateWatcher().OnWorkloadRemoved(m.evictWorkload)
+
+	d.Process().OnShutdown(func(ctx context.Context) {
+		m.Shutdown(ctx)
+	})
+
+	ticker := m.clock.NewTicker(tickInterval)
+	go func() {
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.Chan():
+				m.tick(ctx)
+			}
+		}
+	}()
+
+	return m
+}
+
+func newManager(clock clockwork.Clock, logger log.Logger, c *client, source workloadSource, metrics *metrics) *Manager {
+	return &Manager{
+		clock:   clock,
+		logger:  logger,
+		client:  c,
+		source:  source,
+		metrics: metrics,
+		stateMap: syncmap.New[k8sapp.WorkloadRef, state](func(k8sapp.WorkloadRef) *state {
+			return &state{}
+		}),
+	}
+}
+
+// Shutdown waits for the activity writes already in flight. They are detached
+// from their requests, so nothing else would wait for them.
+func (m *Manager) Shutdown(ctx context.Context) {
+	m.logger.Info(ctx, "waiting for pending idle timer writes")
+	m.wg.Wait()
+}
+
+// evictWorkload drops the state for a workload that left the cache, so the map
+// does not grow with every workload the process ever saw.
+func (m *Manager) evictWorkload(ref k8sapp.WorkloadRef) {
+	m.stateMap.Delete(ref)
+}
+
+// RecordActivity marks a workload as in use. It is called from the request
+// path, so it does its own K8s write only once per heartbeat interval; the
+// in-memory mark is what every call updates.
+func (m *Manager) RecordActivity(ctx context.Context, ref k8sapp.WorkloadRef) {
+	item := m.stateMap.GetOrInit(ref)
+
+	item.lock.Lock()
+	now := m.clock.Now()
+	item.lastRequestAt = now
+	due, name := writeDue(item, now, ref)
+	if due {
+		item.lastWriteAt = now
+	}
+	item.lock.Unlock()
+
+	if !due {
+		return
+	}
+
+	// Detached from the request: this is called from the GotConn callback and,
+	// per frame, from the websocket observer, neither of which may wait on the
+	// apiserver. context.WithoutCancel keeps the write alive past the response.
+	m.wg.Add(1)
+	go func() {
+		defer m.wg.Done()
+
+		writeCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), writeTimeout, errors.New("idle timer write timeout"))
+		defer cancel()
+
+		if err := m.client.cas(writeCtx, name, now); err != nil {
+			m.metrics.recordErrors.Add(1)
+			m.logger.Warnf(writeCtx, "failed to record activity for workload %q: %s", ref, err)
+		}
+	}()
+}
+
+// writeDue decides whether this request owes a shared write. Until the first
+// tick has reported a threshold the cadence is the shortest one the thresholds
+// allow: writing too often only costs writes, while writing too rarely lets
+// another replica read a stale value and suspend early.
+func writeDue(item *state, now time.Time, ref k8sapp.WorkloadRef) (bool, string) {
+	name := item.sandboxName
+	if name == "" {
+		name = ref.SandboxName
+	}
+	if name == "" {
+		return false, ""
+	}
+	if item.thresholdKnown && item.threshold == 0 {
+		return false, ""
+	}
+	return now.Sub(item.lastWriteAt) > heartbeatInterval(item.threshold), name
+}
+
+func (m *Manager) tick(ctx context.Context) {
+	// Absence from a cache that is still filling is not absence of a workload.
+	if !m.source.HasSynced() {
+		return
+	}
+
+	for _, c := range m.source.RunningWorkloads(ctx) {
+		m.visit(ctx, c)
+	}
+}
+
+func (m *Manager) visit(ctx context.Context, c k8sapp.SuspendCandidate) {
+	item := m.stateMap.GetOrInit(c.Ref)
+	now := m.clock.Now()
+
+	item.lock.Lock()
+	item.threshold = c.Threshold
+	item.thresholdKnown = true
+	item.sandboxName = c.SandboxName
+	memory := item.lastRequestAt
+	suspendedAt := item.suspendedAt
+	item.lock.Unlock()
+
+	// A workload back in the Running set shortly after this replica stopped it
+	// is the cross-replica error this loop is measured by.
+	if !suspendedAt.IsZero() {
+		if now.Sub(suspendedAt) <= wakeWindow {
+			m.metrics.wokeSoonAfterSuspend.Add(1)
+		}
+		m.clearSuspended(item)
+	}
+
+	// Absent means never auto-suspend. Counted, because this reading gates
+	// retiring the cron that still suspends apps today.
+	if c.Threshold == 0 {
+		m.metrics.skippedNoThreshold.Add(1)
+		return
+	}
+
+	rec, found := m.readRecord(ctx, c)
+	if !found {
+		return
+	}
+
+	if !shouldSuspend(now.Sub(lastSeen(memory, rec.lastRequestAt, c.LastStarted)), c.Threshold) {
+		return
+	}
+
+	m.suspend(ctx, c, item)
+}
+
+// readRecord returns the workload's shared record, creating it when it is
+// genuinely absent. A read that failed for any other reason reports not-found
+// so the round is skipped: treating an error as absence would reset every
+// record on an apiserver wobble.
+func (m *Manager) readRecord(ctx context.Context, c k8sapp.SuspendCandidate) (record, bool) {
+	rec, err := m.client.get(ctx, c.SandboxName)
+	if err == nil {
+		return rec, true
+	}
+
+	if !k8serrors.IsNotFound(err) {
+		m.metrics.recordErrors.Add(1)
+		m.logger.Warnf(ctx, "failed to read the idle timer of workload %q: %s", c.Ref, err)
+		return record{}, false
+	}
+
+	// A record created now gives the workload a full window before it can be
+	// judged, which is what makes a never-requested workload suspend at all.
+	if err := m.client.create(ctx, c.SandboxName, m.clock.Now()); err != nil {
+		m.metrics.recordErrors.Add(1)
+		m.logger.Warnf(ctx, "failed to create the idle timer of workload %q: %s", c.Ref, err)
+	}
+	return record{}, false
+}
+
+func (m *Manager) suspend(ctx context.Context, c k8sapp.SuspendCandidate, item *state) {
+	suspended, err := m.source.Sleep(ctx, c.Ref)
+	if err != nil {
+		m.logger.Warnf(ctx, "failed to suspend idle workload %q: %s", c.Ref, err)
+		return
+	}
+	if !suspended {
+		return
+	}
+
+	m.metrics.suspends.Add(1)
+	m.logger.Infof(ctx, "suspended idle workload %q", c.Ref)
+
+	item.lock.Lock()
+	item.suspendedAt = m.clock.Now()
+	item.lock.Unlock()
+}
+
+func (m *Manager) clearSuspended(item *state) {
+	item.lock.Lock()
+	item.suspendedAt = time.Time{}
+	item.lock.Unlock()
+}
