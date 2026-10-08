@@ -19,12 +19,17 @@ import (
 // onto the member unconditionally, so a direct member patch is reverted on its
 // next pass.
 //
-// The object is read live rather than from the informer cache for two reasons:
-// the cache can lag a state change by longer than it takes to decide to
-// suspend, and the patch carries the resourceVersion of the object it just
-// read, so a workload that moved in between is rejected by the apiserver
-// instead of being stopped on stale information.
-func (w *StateWatcher) Sleep(ctx context.Context, ref WorkloadRef) (bool, error) {
+// The object is read live rather than from the cache, which can lag a state
+// change by longer than it takes to decide to suspend, and the patch carries
+// the resourceVersion just read, so a change between the read and the patch is
+// rejected by the apiserver.
+//
+// expectMember closes the gap the resourceVersion cannot: the decision was made
+// about one member, and an App redeployed since then is still Running under a
+// new one. Patching on the old member's idleness would stop a deployment that
+// has just started. Empty skips the check, which is what a Sandbox route wants,
+// since its ref already names the workload.
+func (w *StateWatcher) Sleep(ctx context.Context, ref WorkloadRef, expectMember string) (bool, error) {
 	e, ok := w.entryFor(ref)
 	if !ok {
 		return false, errors.Errorf("workload %q is not in the cache, nothing was suspended", ref)
@@ -42,6 +47,16 @@ func (w *StateWatcher) Sleep(ctx context.Context, ref WorkloadRef) (bool, error)
 	}
 	if AppActualState(state) != AppActualStateRunning {
 		return false, nil
+	}
+
+	if !ref.IsSandbox() && expectMember != "" {
+		member, _, err := unstructured.NestedString(obj.Object, "status", "productionSandbox")
+		if err != nil {
+			return false, err
+		}
+		if member != expectMember {
+			return false, nil
+		}
 	}
 
 	// spec.state only. Writing autoRestartEnabled here would leave the workload

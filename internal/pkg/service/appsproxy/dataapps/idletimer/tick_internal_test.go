@@ -3,6 +3,7 @@ package idletimer
 import (
 	"context"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -44,7 +45,7 @@ func (f *fakeSource) RunningWorkloads() k8sapp.WorkloadSnapshot {
 	return k8sapp.WorkloadSnapshot{Candidates: f.candidates, Unresolved: f.unresolved}
 }
 
-func (f *fakeSource) Sleep(_ context.Context, ref k8sapp.WorkloadRef) (bool, error) {
+func (f *fakeSource) Sleep(_ context.Context, ref k8sapp.WorkloadRef, _ string) (bool, error) {
 	if f.sleepErr != nil {
 		return false, f.sleepErr
 	}
@@ -542,4 +543,80 @@ func TestTick_WarnsOncePerUnresolvedApp(t *testing.T) {
 
 	assert.Equal(t, 1, strings.Count(logger.AllMessages(), "productionSandbox"))
 	assert.Equal(t, int64(1), h.manager.metrics.notSuspendable.Load())
+}
+
+// A write that failed did not refresh the shared record, so the next request
+// must try again rather than wait out a full interval. Waiting would let the
+// record fall two intervals behind while the margin covers one, and the other
+// replica, which has none of this traffic in memory, would suspend early.
+func TestRecordActivity_AFailedWriteDoesNotHoldOffTheNextOne(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h.manager.tick(t.Context())
+
+	var fail atomic.Bool
+	fail.Store(true)
+	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		if fail.Load() {
+			return true, nil, k8serrors.NewInternalError(errors.New("apiserver is unwell"))
+		}
+		return false, nil, nil
+	})
+
+	h.clock.Advance(time.Minute)
+	h.manager.RecordActivity(t.Context(), appRef)
+	h.manager.Shutdown(t.Context())
+
+	// Well inside one heartbeat interval, so without the reset this writes nothing.
+	fail.Store(false)
+	h.clock.Advance(time.Second)
+	h.manager.RecordActivity(t.Context(), appRef)
+	h.manager.Shutdown(t.Context())
+
+	rec, err := h.manager.client.get(t.Context(), "member-1")
+	require.NoError(t, err)
+	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want the retry to land %s, got %s", h.clock.Now(), rec.lastRequestAt)
+}
+
+// A missing RBAC rule or CRD fails for every workload on every tick. The PR
+// calls that a safe state, which it is not if it also buries the logs.
+func TestTick_RepeatedReadFailureIsLoggedOnce(t *testing.T) {
+	t.Parallel()
+
+	logger := log.NewDebugLogger()
+	h := buildHarness(t, logger, true,
+		[]k8sapp.SuspendCandidate{candidate(appRef, "member-1", threshold)})
+	h.fake.PrependReactor("get", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, k8serrors.NewForbidden(GVR().GroupResource(), "member-1", errors.New("no rbac"))
+	})
+
+	for range 4 {
+		h.manager.tick(t.Context())
+	}
+
+	assert.Equal(t, 1, strings.Count(logger.AllMessages(), "failed to read the idle timer"))
+	assert.Equal(t, int64(4), h.counterValue(t, "keboola.go.appsproxy.idletimer.record_errors"),
+		"the counter still carries every occurrence")
+}
+
+// A tick that ran out of time must stop, not spend the rest of the round
+// turning a cancelled context into one failure per remaining workload.
+func TestTick_StopsWhenTheRoundRunsOutOfTime(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t,
+		candidate(appRef, "member-1", threshold),
+		candidate(k8sapp.WorkloadRef{AppID: "456"}, "member-2", threshold),
+	)
+	h.fake.PrependReactor("get", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, context.DeadlineExceeded
+	})
+
+	ctx, cancel := context.WithCancelCause(t.Context())
+	cancel(errors.New("round out of time"))
+	h.manager.tick(ctx)
+
+	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.record_errors"),
+		"a cancelled round must not be counted as workloads failing")
 }

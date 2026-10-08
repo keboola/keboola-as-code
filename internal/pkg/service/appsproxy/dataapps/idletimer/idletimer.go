@@ -7,6 +7,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -35,7 +36,7 @@ const tickTimeout = 2 * tickInterval
 type workloadSource interface {
 	HasSynced() bool
 	RunningWorkloads() k8sapp.WorkloadSnapshot
-	Sleep(ctx context.Context, ref k8sapp.WorkloadRef) (bool, error)
+	Sleep(ctx context.Context, ref k8sapp.WorkloadRef, expectMember string) (bool, error)
 }
 
 type Manager struct {
@@ -48,8 +49,10 @@ type Manager struct {
 	metrics        *metrics
 	stateMap       *syncmap.SyncMap[k8sapp.WorkloadRef, state]
 
-	// warnedUnresolved is touched only by the tick goroutine.
-	warnedUnresolved map[api.AppID]bool
+	// These are touched only by the tick goroutine.
+	warnedUnresolved   map[api.AppID]bool
+	loggedRecordErrors map[metav1.StatusReason]bool
+	roundRecordErrors  map[metav1.StatusReason]bool
 }
 
 type state struct {
@@ -146,7 +149,9 @@ func (m *Manager) RecordActivity(ctx context.Context, ref k8sapp.WorkloadRef) {
 	item.lastRequestAt = now
 	due := writeDue(item, now)
 	name := item.sandboxName
+	previousWriteAt := item.lastWriteAt
 	if due {
+		// Claimed before the write so concurrent requests do not all fire one.
 		item.lastWriteAt = now
 	}
 	item.lock.Unlock()
@@ -167,8 +172,23 @@ func (m *Manager) RecordActivity(ctx context.Context, ref k8sapp.WorkloadRef) {
 		if err := m.client.cas(writeCtx, name, now); err != nil {
 			m.metrics.recordErrors.Add(writeCtx, 1)
 			m.logger.Warnf(writeCtx, "failed to record activity for workload %q: %s", ref, err)
+			m.releaseWriteClaim(item, now, previousWriteAt)
 		}
 	}()
+}
+
+// releaseWriteClaim undoes the claim a failed write made, so the next request
+// writes instead of waiting out an interval. Holding the claim would let the
+// record fall two heartbeat intervals behind while the margin covers one, and
+// the other replica, which never saw this traffic, would suspend early.
+func (m *Manager) releaseWriteClaim(item *state, claimed, previous time.Time) {
+	item.lock.Lock()
+	defer item.lock.Unlock()
+
+	// Only if nothing newer has landed since.
+	if item.lastWriteAt.Equal(claimed) {
+		item.lastWriteAt = previous
+	}
 }
 
 // writeDue reports whether this request owes a shared write. The caller holds
@@ -214,13 +234,21 @@ func (m *Manager) tick(ctx context.Context) {
 	snapshot := m.source.RunningWorkloads()
 	m.warnUnresolved(ctx, snapshot.Unresolved)
 
+	m.roundRecordErrors = map[metav1.StatusReason]bool{}
+
 	notSuspendable := int64(len(snapshot.Unresolved))
 	for _, c := range snapshot.Candidates {
+		// A round that ran out of time would otherwise turn one cancelled
+		// context into one failure per remaining workload.
+		if ctx.Err() != nil {
+			break
+		}
 		if !m.visit(ctx, c) {
 			notSuspendable++
 		}
 	}
 	m.metrics.notSuspendable.Store(notSuspendable)
+	m.loggedRecordErrors = m.roundRecordErrors
 }
 
 // visit reports whether the workload was considered at all.
@@ -287,8 +315,7 @@ func (m *Manager) readRecord(ctx context.Context, c k8sapp.SuspendCandidate) (re
 	}
 
 	if !k8serrors.IsNotFound(err) {
-		m.metrics.recordErrors.Add(ctx, 1)
-		m.logger.Warnf(ctx, "failed to read the idle timer of workload %q: %s", c.Ref, err)
+		m.noteRecordError(ctx, "read", c, err)
 		return record{}, false
 	}
 
@@ -296,8 +323,7 @@ func (m *Manager) readRecord(ctx context.Context, c k8sapp.SuspendCandidate) (re
 	// workload nobody has ever requested would otherwise never get one.
 	// AlreadyExists means the other replica won the race, which is this outcome.
 	if err := m.client.create(ctx, c.SandboxName, c.SandboxUID, m.clock.Now()); err != nil && !k8serrors.IsAlreadyExists(err) {
-		m.metrics.recordErrors.Add(ctx, 1)
-		m.logger.Warnf(ctx, "failed to create the idle timer of workload %q: %s", c.Ref, err)
+		m.noteRecordError(ctx, "create", c, err)
 	}
 	return record{}, false
 }
@@ -308,7 +334,7 @@ func (m *Manager) suspend(ctx context.Context, c k8sapp.SuspendCandidate, item *
 		return
 	}
 
-	suspended, err := m.source.Sleep(ctx, c.Ref)
+	suspended, err := m.source.Sleep(ctx, c.Ref, c.SandboxName)
 	if err != nil {
 		m.logger.Warnf(ctx, "failed to suspend idle workload %q: %s", c.Ref, err)
 		return
@@ -323,6 +349,21 @@ func (m *Manager) suspend(ctx context.Context, c k8sapp.SuspendCandidate, item *
 	item.lock.Lock()
 	item.suspendedAt = m.clock.Now()
 	item.lock.Unlock()
+}
+
+// noteRecordError counts every occurrence but logs each kind once. A missing
+// RBAC rule or CRD fails for every workload on every tick, so logging per
+// workload would bury the line that says what is wrong; record_errors carries
+// the continuous signal.
+func (m *Manager) noteRecordError(ctx context.Context, verb string, c k8sapp.SuspendCandidate, err error) {
+	m.metrics.recordErrors.Add(ctx, 1)
+
+	reason := k8serrors.ReasonForError(err)
+	m.roundRecordErrors[reason] = true
+	if m.loggedRecordErrors[reason] {
+		return
+	}
+	m.logger.Warnf(ctx, "failed to %s the idle timer of workload %q: %s", verb, c.Ref, err)
 }
 
 // reportSuppressed records one gated suspend per idle episode.
