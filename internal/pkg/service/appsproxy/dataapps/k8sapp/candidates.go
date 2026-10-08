@@ -1,7 +1,6 @@
 package k8sapp
 
 import (
-	"context"
 	"sort"
 
 	"k8s.io/client-go/tools/cache"
@@ -27,36 +26,15 @@ func synced(fn cache.InformerSynced) bool {
 // member Sandbox publishes none and is therefore never returned on its own
 // account: it reaches the caller as the SandboxName of the App that names it,
 // so one workload stays one entry and production is suspended through the App.
-func (w *StateWatcher) RunningWorkloads(ctx context.Context) WorkloadSnapshot {
+func (w *StateWatcher) RunningWorkloads() WorkloadSnapshot {
 	candidates, unresolved := w.collectCandidates()
-	w.warnUnresolved(ctx, unresolved)
 
 	sort.Slice(candidates, func(i, j int) bool {
 		return candidates[i].Ref.String() < candidates[j].Ref.String()
 	})
-	return WorkloadSnapshot{Candidates: candidates, Unresolved: len(unresolved)}
-}
+	sort.Slice(unresolved, func(i, j int) bool { return unresolved[i] < unresolved[j] })
 
-// warnUnresolved reports each App once, not once per tick: at a 15s cadence a
-// standing misconfiguration would otherwise produce four lines a minute
-// forever. The count in the snapshot is the continuous signal.
-//
-// Logged outside routeLock, which also serves the request path.
-func (w *StateWatcher) warnUnresolved(ctx context.Context, unresolved []api.AppID) {
-	current := make(map[api.AppID]bool, len(unresolved))
-	for _, appID := range unresolved {
-		current[appID] = true
-	}
-
-	w.unresolvedLock.Lock()
-	defer w.unresolvedLock.Unlock()
-
-	for appID := range current {
-		if !w.warnedUnresolved[appID] {
-			w.logger.Warnf(ctx, "App %q is Running but its status.productionSandbox names no cached Sandbox, skipping idle-suspend", appID)
-		}
-	}
-	w.warnedUnresolved = current
+	return WorkloadSnapshot{Candidates: candidates, Unresolved: unresolved}
 }
 
 func (w *StateWatcher) collectCandidates() (candidates []SuspendCandidate, unresolved []api.AppID) {

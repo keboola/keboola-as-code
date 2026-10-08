@@ -9,6 +9,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,7 +18,9 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -28,7 +31,7 @@ var appRef = k8sapp.WorkloadRef{AppID: "123"} //nolint:gochecknoglobals // test 
 // fakeSource stands in for the K8s state watcher.
 type fakeSource struct {
 	synced     bool
-	unresolved int
+	unresolved []api.AppID
 	candidates []k8sapp.SuspendCandidate
 	slept      []k8sapp.WorkloadRef
 	sleptOK    bool
@@ -37,7 +40,7 @@ type fakeSource struct {
 
 func (f *fakeSource) HasSynced() bool { return f.synced }
 
-func (f *fakeSource) RunningWorkloads(context.Context) k8sapp.WorkloadSnapshot {
+func (f *fakeSource) RunningWorkloads() k8sapp.WorkloadSnapshot {
 	return k8sapp.WorkloadSnapshot{Candidates: f.candidates, Unresolved: f.unresolved}
 }
 
@@ -54,6 +57,24 @@ type harness struct {
 	source  *fakeSource
 	clock   *clockwork.FakeClock
 	fake    *k8sfake.FakeDynamicClient
+	tel     telemetry.ForTest
+}
+
+// counterValue reads an emitted counter back, so the assertions are about what
+// a dashboard would show rather than about a field kept for the tests.
+func (h *harness) counterValue(t *testing.T, name string) int64 {
+	t.Helper()
+	for _, m := range h.tel.Metrics(t) {
+		if m.Name != name {
+			continue
+		}
+		sum, ok := m.Data.(metricdata.Sum[int64])
+		if !ok || len(sum.DataPoints) == 0 {
+			return 0
+		}
+		return sum.DataPoints[0].Value
+	}
+	return 0
 }
 
 // newHarness builds a manager with the suspend action on, which is what the
@@ -79,12 +100,14 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	c := newTestClient()
 	source := &fakeSource{synced: true, candidates: candidates, sleptOK: true}
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
+	tel := telemetry.NewForTest(t)
 
 	return &harness{
-		manager: newManager(clock, logger, c, source, newMetrics(nil), suspendEnabled),
+		manager: newManager(clock, logger, c, source, newMetrics(tel.Meter()), suspendEnabled),
 		source:  source,
 		clock:   clock,
 		fake:    c.dyn.(*k8sfake.FakeDynamicClient),
+		tel:     tel,
 	}
 }
 
@@ -141,7 +164,7 @@ func TestTick_UnresolvedWorkloadsCountTowardsTheGate(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t)
-	h.source.unresolved = 2
+	h.source.unresolved = []api.AppID{"a", "b"}
 
 	h.manager.tick(t.Context())
 
@@ -178,7 +201,7 @@ func TestTick_AReadErrorIsNotAbsence(t *testing.T) {
 	for _, action := range h.fake.Actions() {
 		assert.NotEqual(t, "create", action.GetVerb(), "an error must not be mistaken for absence")
 	}
-	assert.Equal(t, int64(1), h.manager.metrics.recordErrors.Load())
+	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.record_errors"))
 }
 
 func TestTick_SuspendsAWorkloadIdlePastTheMargin(t *testing.T) {
@@ -194,7 +217,7 @@ func TestTick_SuspendsAWorkloadIdlePastTheMargin(t *testing.T) {
 	h.manager.tick(t.Context())
 
 	assert.Equal(t, []k8sapp.WorkloadRef{appRef}, h.source.slept)
-	assert.Equal(t, int64(1), h.manager.metrics.suspends.Load())
+	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends"))
 }
 
 func TestTick_DoesNotSuspendBeforeTheThreshold(t *testing.T) {
@@ -261,14 +284,14 @@ func TestTick_CountsASuspendFollowedByAWakeWithinAMinute(t *testing.T) {
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
-	require.Equal(t, int64(1), h.manager.metrics.suspends.Load())
+	require.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends"))
 
 	// Something woke it: the workload started again, which moves lastStartedTime.
 	h.clock.Advance(30 * time.Second)
 	h.source.candidates[0].LastStarted = h.clock.Now()
 	h.manager.tick(t.Context())
 
-	assert.Equal(t, int64(1), h.manager.metrics.wokeSoonAfterSuspend.Load())
+	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.woke_soon_after_suspend"))
 }
 
 // A patched workload stays Running in the cache until the operator reconciles
@@ -281,13 +304,13 @@ func TestTick_DoesNotCountAnUnreconciledSuspendAsAWake(t *testing.T) {
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
-	require.Equal(t, int64(1), h.manager.metrics.suspends.Load())
+	require.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends"))
 
 	// Still in the Running set a tick later, but it never restarted.
 	h.clock.Advance(15 * time.Second)
 	h.manager.tick(t.Context())
 
-	assert.Zero(t, h.manager.metrics.wokeSoonAfterSuspend.Load())
+	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.woke_soon_after_suspend"))
 }
 
 func TestTick_DoesNotCountAWakeLongAfterTheSuspend(t *testing.T) {
@@ -301,7 +324,7 @@ func TestTick_DoesNotCountAWakeLongAfterTheSuspend(t *testing.T) {
 	h.clock.Advance(2 * time.Minute)
 	h.manager.tick(t.Context())
 
-	assert.Zero(t, h.manager.metrics.wokeSoonAfterSuspend.Load())
+	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.woke_soon_after_suspend"))
 }
 
 func TestRecordActivity_WritesTheSharedRecordAtTheHeartbeatCadence(t *testing.T) {
@@ -405,8 +428,8 @@ func TestTick_GateSuppressesOnlyTheSuspendAction(t *testing.T) {
 	h.manager.tick(t.Context())
 
 	assert.Empty(t, h.source.slept, "the gate must stop the patch")
-	assert.Zero(t, h.manager.metrics.suspends.Load())
-	assert.Equal(t, int64(1), h.manager.metrics.suspendsSuppressed.Load())
+	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends"))
+	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends_suppressed"))
 
 	// Everything leading up to the suspend still has to run: that is what the
 	// gated deploy exists to exercise against a real apiserver.
@@ -432,7 +455,7 @@ func TestTick_SuppressedSuspendIsReportedOncePerIdleEpisode(t *testing.T) {
 		h.clock.Advance(tickInterval)
 	}
 
-	assert.Equal(t, int64(1), h.manager.metrics.suspendsSuppressed.Load())
+	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends_suppressed"))
 	assert.Equal(t, 1, strings.Count(logger.AllMessages(), "would suspend"))
 }
 
@@ -445,7 +468,7 @@ func TestTick_ASecondIdleEpisodeIsReportedAgain(t *testing.T) {
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
-	require.Equal(t, int64(1), h.manager.metrics.suspendsSuppressed.Load())
+	require.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends_suppressed"))
 
 	// Someone used it again.
 	h.manager.RecordActivity(t.Context(), appRef)
@@ -455,7 +478,7 @@ func TestTick_ASecondIdleEpisodeIsReportedAgain(t *testing.T) {
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
 
-	assert.Equal(t, int64(2), h.manager.metrics.suspendsSuppressed.Load())
+	assert.Equal(t, int64(2), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends_suppressed"))
 }
 
 func TestTick_SuppressedSuspendNamesTheWorkloadAndHowLongItWasIdle(t *testing.T) {
@@ -486,7 +509,7 @@ func TestTick_AlreadyExistsIsNotAnError(t *testing.T) {
 
 	h.manager.tick(t.Context())
 
-	assert.Zero(t, h.manager.metrics.recordErrors.Load())
+	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.record_errors"))
 }
 
 func TestTick_PassesTheSandboxUIDToTheRecord(t *testing.T) {
@@ -502,4 +525,21 @@ func TestTick_PassesTheSandboxUIDToTheRecord(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, obj.GetOwnerReferences(), 1)
 	assert.Equal(t, k8stypes.UID("member-uid-1"), obj.GetOwnerReferences()[0].UID)
+}
+
+// A standing misconfiguration would otherwise log on every tick, for as long as
+// it lasts.
+func TestTick_WarnsOncePerUnresolvedApp(t *testing.T) {
+	t.Parallel()
+
+	logger := log.NewDebugLogger()
+	h := buildHarness(t, logger, true, nil)
+	h.source.unresolved = []api.AppID{"123"}
+
+	for range 3 {
+		h.manager.tick(t.Context())
+	}
+
+	assert.Equal(t, 1, strings.Count(logger.AllMessages(), "productionSandbox"))
+	assert.Equal(t, int64(1), h.manager.metrics.notSuspendable.Load())
 }

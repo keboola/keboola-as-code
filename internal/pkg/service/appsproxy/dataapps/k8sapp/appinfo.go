@@ -183,12 +183,10 @@ type SuspendCandidate struct {
 }
 
 // WorkloadSnapshot is one round's view of what the idle-suspend loop can act on.
-//
-// Unresolved counts Running Apps left out because status.productionSandbox
-// named no cached Sandbox. They never suspend, so they belong with workloads
-// that carry no threshold: both are reasons the loop is doing nothing, and a
-// gate that watches only one of them reads clear while the other is happening.
+// Unresolved names the Running Apps left out because status.productionSandbox
+// matched no cached Sandbox; they never suspend, so the caller counts them
+// alongside workloads that carry no threshold.
 type WorkloadSnapshot struct {
 	Candidates []SuspendCandidate
-	Unresolved int
+	Unresolved []api.AppID
 }

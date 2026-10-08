@@ -111,7 +111,6 @@ type serviceScope struct {
 	appStateWatcher   *k8sapp.StateWatcher
 	sessionsManager   *sessions.Manager
 	idleTimerManager  *idletimer.Manager
-	k8sDynamicClient  dynamic.Interface
 }
 
 type parentScopes interface {
@@ -219,11 +218,10 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 			return nil, err
 		}
 	}
-	d.k8sDynamicClient = k8sClient
 	d.appStateWatcher = k8sapp.NewStateWatcher(d, k8sClient, cfg.K8s.AppsNamespace)
 
 	d.wakeupManager = wakeup.NewManager(d)
-	d.idleTimerManager = idletimer.NewManager(ctx, d)
+	d.idleTimerManager = idletimer.NewManager(ctx, d, k8sClient)
 	d.sessionsManager = sessions.NewManager(ctx, d)
 	d.authProxyManager = authproxy.NewManager(d)
 	d.upstreamManager = upstream.NewManager(d)
@@ -277,10 +275,6 @@ func (v *serviceScope) WakeupManager() *wakeup.Manager {
 
 func (v *serviceScope) AppStateWatcher() *k8sapp.StateWatcher {
 	return v.appStateWatcher
-}
-
-func (v *serviceScope) K8sDynamicClient() dynamic.Interface {
-	return v.k8sDynamicClient
 }
 
 func (v *serviceScope) IdleTimerManager() *idletimer.Manager {
