@@ -146,6 +146,30 @@ func TestAppProxyHandler(t *testing.T) {
 	)
 	assert.JSONEq(t, `[
 		{
+			"Name": "keboola.go.appsproxy.idletimer.skipped.no_threshold",
+			"Description": "Running workloads skipped because their Sandbox carries no autoSuspendAfterSeconds.",
+			"Unit": "",
+			"Data": {"DataPoints": [{"Attributes": [], "Value": 0}]}
+		},
+		{
+			"Name": "keboola.go.appsproxy.idletimer.suspends",
+			"Description": "Workloads this replica has suspended for inactivity.",
+			"Unit": "",
+			"Data": {"DataPoints": [{"Attributes": [], "Value": 0}]}
+		},
+		{
+			"Name": "keboola.go.appsproxy.idletimer.woke_soon_after_suspend",
+			"Description": "Suspends followed by the workload running again within a minute, which is the cross-replica error rate.",
+			"Unit": "",
+			"Data": {"DataPoints": [{"Attributes": [], "Value": 0}]}
+		},
+		{
+			"Name": "keboola.go.appsproxy.idletimer.record_errors",
+			"Description": "Failed idle-timer reads and writes, including conflicts that outlived the retry.",
+			"Unit": "",
+			"Data": {"DataPoints": [{"Attributes": [], "Value": 0}]}
+		},
+		{
 			"Name": "keboola.go.appsproxy.sessions.enabled",
 			"Description": "1 if data app session tracking is active on this replica, 0 otherwise (e.g. a required secret is missing).",
 			"Unit": "",
