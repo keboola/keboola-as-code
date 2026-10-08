@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
@@ -233,4 +234,27 @@ func TestRunningWorkloads_WarnsOncePerAppNotOncePerTick(t *testing.T) {
 	watcher.RunningWorkloads(t.Context())
 
 	assert.Equal(t, before, strings.Count(logger.AllMessages(), "productionSandbox"))
+}
+
+// The IdleTimer's ownerReference needs the member's uid: without it the
+// apiserver rejects the record, and with a stale one garbage collection reads
+// the owner as already gone and deletes the record straight away.
+func TestRunningWorkloads_CarriesTheSandboxUID(t *testing.T) {
+	t.Parallel()
+
+	member := newMemberSandbox(k8sapp.AppActualStateRunning, int64(900))
+	member.SetUID("member-uid-1")
+
+	watcher := syncedWatcher(t, log.NewNopLogger(),
+		member,
+		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, memberName),
+	)
+
+	var got []k8sapp.SuspendCandidate
+	assert.Eventually(t, func() bool {
+		got = watcher.RunningWorkloads(t.Context()).Candidates
+		return len(got) == 1
+	}, 5*time.Second, 50*time.Millisecond)
+
+	assert.Equal(t, k8stypes.UID("member-uid-1"), got[0].SandboxUID)
 }

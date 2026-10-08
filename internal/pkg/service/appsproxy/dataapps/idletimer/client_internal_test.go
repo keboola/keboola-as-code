@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 	k8stesting "k8s.io/client-go/testing"
 
@@ -43,7 +44,7 @@ func TestClient_Create_StoresTimestampAndOwner(t *testing.T) {
 	c := newTestClient()
 	at := time.Date(2026, 10, 8, 14, 18, 5, 123456000, time.UTC)
 
-	require.NoError(t, c.create(t.Context(), "app-1-dpl-abc", at))
+	require.NoError(t, c.create(t.Context(), "app-1-dpl-abc", "uid-1", at))
 
 	rec, err := c.get(t.Context(), "app-1-dpl-abc")
 	require.NoError(t, err)
@@ -54,7 +55,7 @@ func TestClient_Create_OwnerReferenceNamesTheSandbox(t *testing.T) {
 	t.Parallel()
 
 	c := newTestClient()
-	require.NoError(t, c.create(t.Context(), "app-1-dpl-abc", time.Now()))
+	require.NoError(t, c.create(t.Context(), "app-1-dpl-abc", "uid-1", time.Now()))
 
 	obj, err := c.dyn.Resource(GVR()).Namespace(testNamespace).Get(t.Context(), "app-1-dpl-abc", metav1.GetOptions{})
 	require.NoError(t, err)
@@ -63,6 +64,26 @@ func TestClient_Create_OwnerReferenceNamesTheSandbox(t *testing.T) {
 	require.Len(t, owners, 1)
 	assert.Equal(t, "Sandbox", owners[0].Kind)
 	assert.Equal(t, "app-1-dpl-abc", owners[0].Name)
+	// The apiserver rejects an ownerReference without a uid, and garbage
+	// collection keys on it: a wrong one makes the owner look already deleted.
+	assert.Equal(t, k8stypes.UID("uid-1"), owners[0].UID)
+}
+
+// Garbage collection is the only thing that deletes these records, so a write
+// that drops the ownerReference leaks one per workload forever.
+func TestClient_CAS_KeepsTheOwnerReference(t *testing.T) {
+	t.Parallel()
+
+	c := newTestClient()
+	at := time.Date(2026, 10, 8, 14, 0, 0, 0, time.UTC)
+	require.NoError(t, c.create(t.Context(), "w", "uid-1", at))
+
+	require.NoError(t, c.cas(t.Context(), "w", at.Add(time.Minute)))
+
+	obj, err := c.dyn.Resource(GVR()).Namespace(testNamespace).Get(t.Context(), "w", metav1.GetOptions{})
+	require.NoError(t, err)
+	require.Len(t, obj.GetOwnerReferences(), 1)
+	assert.Equal(t, k8stypes.UID("uid-1"), obj.GetOwnerReferences()[0].UID)
 }
 
 func TestClient_CAS_WritesANewerTimestamp(t *testing.T) {
@@ -71,7 +92,7 @@ func TestClient_CAS_WritesANewerTimestamp(t *testing.T) {
 	c := newTestClient()
 	old := time.Date(2026, 10, 8, 14, 0, 0, 0, time.UTC)
 	fresh := old.Add(time.Minute)
-	require.NoError(t, c.create(t.Context(), "w", old))
+	require.NoError(t, c.create(t.Context(), "w", "uid-1", old))
 
 	require.NoError(t, c.cas(t.Context(), "w", fresh))
 
@@ -86,7 +107,7 @@ func TestClient_CAS_StaleWriterCannotMoveItBackwards(t *testing.T) {
 	c := newTestClient()
 	current := time.Date(2026, 10, 8, 14, 0, 0, 0, time.UTC)
 	stale := current.Add(-time.Minute)
-	require.NoError(t, c.create(t.Context(), "w", current))
+	require.NoError(t, c.create(t.Context(), "w", "uid-1", current))
 
 	require.NoError(t, c.cas(t.Context(), "w", stale))
 
@@ -100,7 +121,7 @@ func TestClient_CAS_EqualTimestampIsNotWritten(t *testing.T) {
 
 	c := newTestClient()
 	at := time.Date(2026, 10, 8, 14, 0, 0, 0, time.UTC)
-	require.NoError(t, c.create(t.Context(), "w", at))
+	require.NoError(t, c.create(t.Context(), "w", "uid-1", at))
 
 	before, err := c.get(t.Context(), "w")
 	require.NoError(t, err)
@@ -121,7 +142,7 @@ func TestClient_CAS_ConflictRereadsBeforeRetrying(t *testing.T) {
 	start := time.Date(2026, 10, 8, 14, 0, 0, 0, time.UTC)
 	mine := start.Add(time.Minute)
 	theirs := start.Add(2 * time.Minute)
-	require.NoError(t, c.create(t.Context(), "w", start))
+	require.NoError(t, c.create(t.Context(), "w", "uid-1", start))
 
 	fake := c.dyn.(*k8sfake.FakeDynamicClient)
 	var updates, gets int
@@ -129,7 +150,7 @@ func TestClient_CAS_ConflictRereadsBeforeRetrying(t *testing.T) {
 	// The reactors stand in for the other replica without writing through the
 	// tracker: the fake holds its lock across a reaction, so a nested write
 	// from inside one deadlocks.
-	fake.PrependReactor("update", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+	fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		updates++
 		if updates == 1 {
 			return true, nil, k8serrors.NewConflict(GVR().GroupResource(), "w", errors.New("conflict"))

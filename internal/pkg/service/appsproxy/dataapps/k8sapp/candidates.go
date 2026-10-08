@@ -77,6 +77,7 @@ func (w *StateWatcher) collectCandidates() (candidates []SuspendCandidate, unres
 		candidates = append(candidates, SuspendCandidate{
 			Ref:         WorkloadRef{AppID: appID},
 			SandboxName: e.productionSandbox,
+			SandboxUID:  member.uid,
 			Threshold:   member.autoSuspendAfter,
 			LastStarted: member.lastStarted,
 		})
@@ -89,6 +90,7 @@ func (w *StateWatcher) collectCandidates() (candidates []SuspendCandidate, unres
 		candidates = append(candidates, SuspendCandidate{
 			Ref:         WorkloadRef{AppID: e.appID, SandboxName: k8sName},
 			SandboxName: k8sName,
+			SandboxUID:  e.uid,
 			Threshold:   e.autoSuspendAfter,
 			LastStarted: e.lastStarted,
 		})

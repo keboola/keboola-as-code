@@ -9,6 +9,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 )
@@ -172,6 +173,9 @@ type appsProxy struct {
 type SuspendCandidate struct {
 	Ref         WorkloadRef
 	SandboxName string
+	// SandboxUID is the owner the IdleTimer points at. Garbage collection
+	// matches on it, so a record created with the wrong one is collected at once.
+	SandboxUID types.UID
 	// Threshold is zero when the Sandbox carries none, which means never
 	// auto-suspend. The caller counts those; it is not a default.
 	Threshold   time.Duration
