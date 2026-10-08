@@ -289,7 +289,9 @@ func (m *Manager) readRecord(ctx context.Context, c k8sapp.SuspendCandidate) (re
 
 	// A record created now gives the workload a full window before it can be
 	// judged, which is what makes a never-requested workload suspend at all.
-	if err := m.client.create(ctx, c.SandboxName, m.clock.Now()); err != nil {
+	// AlreadyExists means the other replica created it a moment ago, which is
+	// the outcome this wanted.
+	if err := m.client.create(ctx, c.SandboxName, c.SandboxUID, m.clock.Now()); err != nil && !k8serrors.IsAlreadyExists(err) {
 		m.metrics.recordErrors.Add(ctx)
 		m.logger.Warnf(ctx, "failed to create the idle timer of workload %q: %s", c.Ref, err)
 	}

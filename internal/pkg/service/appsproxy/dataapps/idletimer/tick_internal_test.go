@@ -10,7 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 	k8stesting "k8s.io/client-go/testing"
 
@@ -364,7 +366,7 @@ func TestRecordActivity_DoesNotBlockTheRequestPath(t *testing.T) {
 	h.manager.tick(t.Context())
 
 	release := make(chan struct{})
-	h.fake.PrependReactor("update", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		<-release
 		return false, nil, nil
 	})
@@ -469,4 +471,35 @@ func TestTick_SuppressedSuspendNamesTheWorkloadAndHowLongItWasIdle(t *testing.T)
 	assert.Contains(t, messages, "would suspend")
 	assert.Contains(t, messages, appRef.String())
 	assert.Contains(t, messages, "idle for")
+}
+
+// Both replicas tick, so both can try to create the same record. The loser is
+// not an error, and counting it as one would put noise into the metric that
+// gates retiring the cron.
+func TestTick_AlreadyExistsIsNotAnError(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h.fake.PrependReactor("create", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, k8serrors.NewAlreadyExists(GVR().GroupResource(), "member-1")
+	})
+
+	h.manager.tick(t.Context())
+
+	assert.Zero(t, h.manager.metrics.recordErrors.Load())
+}
+
+func TestTick_PassesTheSandboxUIDToTheRecord(t *testing.T) {
+	t.Parallel()
+
+	c := candidate(appRef, "member-1", threshold)
+	c.SandboxUID = "member-uid-1"
+	h := newHarness(t, c)
+
+	h.manager.tick(t.Context())
+
+	obj, err := h.fake.Resource(GVR()).Namespace(testNamespace).Get(t.Context(), "member-1", metav1.GetOptions{})
+	require.NoError(t, err)
+	require.Len(t, obj.GetOwnerReferences(), 1)
+	assert.Equal(t, k8stypes.UID("member-uid-1"), obj.GetOwnerReferences()[0].UID)
 }

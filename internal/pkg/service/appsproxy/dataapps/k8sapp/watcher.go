@@ -37,6 +37,7 @@ type entry struct {
 	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
 	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
 
+	uid               k8stypes.UID  // metadata.uid, required by any ownerReference naming this object
 	productionSandbox string        // App CRs only: the member Sandbox running the workload
 	autoSuspendAfter  time.Duration // Sandbox CRs only; zero means the CR carries no threshold
 	lastStarted       time.Time     // Sandbox CRs only
@@ -388,6 +389,7 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 		appID: appObj.Spec.AppID,
 		entry: entry{
 			k8sName:            k8sName,
+			uid:                u.GetUID(),
 			productionSandbox:  appObj.Status.ProductionSandbox,
 			autoSuspendAfter:   autoSuspendAfter,
 			lastStarted:        lastStarted,

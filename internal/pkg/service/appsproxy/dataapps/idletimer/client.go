@@ -2,12 +2,14 @@ package idletimer
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
@@ -62,7 +64,11 @@ func (c *client) get(ctx context.Context, name string) (record, error) {
 
 // create registers the record with an ownerReference to the Sandbox it is named
 // after, which is what deletes it: there is no controller for this kind.
-func (c *client) create(ctx context.Context, name string, at time.Time) error {
+//
+// The uid is not decoration. The apiserver rejects an ownerReference without
+// one, and garbage collection matches on it rather than on the name, so a stale
+// uid reads as "the owner is already gone" and collects the record immediately.
+func (c *client) create(ctx context.Context, name string, ownerUID types.UID, at time.Time) error {
 	obj := &unstructured.Unstructured{
 		Object: map[string]any{
 			"apiVersion": k8sapp.Group + "/" + version,
@@ -75,6 +81,7 @@ func (c *client) create(ctx context.Context, name string, at time.Time) error {
 						"apiVersion": k8sapp.Group + "/" + k8sapp.SandboxVersion,
 						"kind":       "Sandbox",
 						"name":       name,
+						"uid":        string(ownerUID),
 					},
 				},
 			},
@@ -115,23 +122,28 @@ func (c *client) cas(ctx context.Context, name string, at time.Time) error {
 	return nil
 }
 
+// update patches the one field rather than putting the whole object back. A
+// full write would carry only what this process chose to send, which drops the
+// ownerReference and leaks the record: nothing else ever deletes one.
+//
+// resourceVersion in the patch body is the precondition, so a write that lost a
+// race is rejected rather than silently applied, exactly as Sleep does it.
 func (c *client) update(ctx context.Context, name, resourceVersion string, at time.Time) error {
-	obj := &unstructured.Unstructured{
-		Object: map[string]any{
-			"apiVersion": k8sapp.Group + "/" + version,
-			"kind":       kind,
-			"metadata": map[string]any{
-				"name":            name,
-				"namespace":       c.namespace,
-				"resourceVersion": resourceVersion,
-			},
-			"spec": map[string]any{
-				"lastRequestAt": formatTime(at),
-			},
-		},
+	patch, err := json.Marshal(map[string]any{
+		"metadata": map[string]any{"resourceVersion": resourceVersion},
+		"spec":     map[string]any{"lastRequestAt": formatTime(at)},
+	})
+	if err != nil {
+		return err
 	}
 
-	_, err := c.dyn.Resource(GVR()).Namespace(c.namespace).Update(ctx, obj, metav1.UpdateOptions{})
+	_, err = c.dyn.Resource(GVR()).Namespace(c.namespace).Patch(
+		ctx,
+		name,
+		types.MergePatchType,
+		patch,
+		metav1.PatchOptions{},
+	)
 	return err
 }
 
