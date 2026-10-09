@@ -32,7 +32,7 @@ import (
 func (w *StateWatcher) Sleep(ctx context.Context, ref WorkloadRef, expectMember string) (bool, error) {
 	e, ok := w.entryFor(ref)
 	if !ok {
-		return false, errors.Errorf("workload %q is not in the cache, nothing was suspended", ref)
+		return false, errors.Errorf("workload %q is not in the cache, nothing was stopped", ref)
 	}
 
 	gvr := gvrFor(ref)

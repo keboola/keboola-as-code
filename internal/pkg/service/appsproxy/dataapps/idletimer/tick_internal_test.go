@@ -497,7 +497,7 @@ func TestTick_AlreadyExistsIsNotAnError(t *testing.T) {
 
 	h := newHarness(t, candidate(appRef, "member-1", threshold))
 	h.fake.PrependReactor("create", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
-		return true, nil, k8serrors.NewAlreadyExists(GVR().GroupResource(), "member-1")
+		return true, nil, k8serrors.NewAlreadyExists(gvr().GroupResource(), "member-1")
 	})
 
 	h.manager.tick(t.Context())
@@ -514,7 +514,7 @@ func TestTick_PassesTheSandboxUIDToTheRecord(t *testing.T) {
 
 	h.manager.tick(t.Context())
 
-	obj, err := h.fake.Resource(GVR()).Namespace(testNamespace).Get(t.Context(), "member-1", metav1.GetOptions{})
+	obj, err := h.fake.Resource(gvr()).Namespace(testNamespace).Get(t.Context(), "member-1", metav1.GetOptions{})
 	require.NoError(t, err)
 	require.Len(t, obj.GetOwnerReferences(), 1)
 	assert.Equal(t, k8stypes.UID("member-uid-1"), obj.GetOwnerReferences()[0].UID)
@@ -580,7 +580,7 @@ func TestTick_RepeatedReadFailureIsLoggedOnce(t *testing.T) {
 	h := buildHarness(t, logger, true,
 		[]k8sapp.SleepCandidate{candidate(appRef, "member-1", threshold)})
 	h.fake.PrependReactor("get", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
-		return true, nil, k8serrors.NewForbidden(GVR().GroupResource(), "member-1", errors.New("no rbac"))
+		return true, nil, k8serrors.NewForbidden(gvr().GroupResource(), "member-1", errors.New("no rbac"))
 	})
 
 	for range 4 {
