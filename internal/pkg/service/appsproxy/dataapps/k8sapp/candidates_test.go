@@ -66,7 +66,7 @@ func refsOf(candidates []k8sapp.SuspendCandidate) []k8sapp.WorkloadRef {
 	return refs
 }
 
-func TestRunningWorkloads_AppRouteCarriesItsMemberSandboxThreshold(t *testing.T) {
+func TestScanForSuspend_AppRouteCarriesItsMemberSandboxThreshold(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
@@ -76,7 +76,7 @@ func TestRunningWorkloads_AppRouteCarriesItsMemberSandboxThreshold(t *testing.T)
 
 	var got []k8sapp.SuspendCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.RunningWorkloads().Candidates
+		got = watcher.ScanForSuspend().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -87,7 +87,7 @@ func TestRunningWorkloads_AppRouteCarriesItsMemberSandboxThreshold(t *testing.T)
 	assert.Equal(t, lastStarted, got[0].LastStarted.UTC().Format(time.RFC3339))
 }
 
-func TestRunningWorkloads_AbsentThresholdIsReportedAsZero(t *testing.T) {
+func TestScanForSuspend_AbsentThresholdIsReportedAsZero(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
@@ -97,14 +97,14 @@ func TestRunningWorkloads_AbsentThresholdIsReportedAsZero(t *testing.T) {
 
 	var got []k8sapp.SuspendCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.RunningWorkloads().Candidates
+		got = watcher.ScanForSuspend().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
 	assert.Zero(t, got[0].Threshold, "an absent threshold must reach the caller as zero, not a default")
 }
 
-func TestRunningWorkloads_SkipsAWorkloadThatIsNotRunning(t *testing.T) {
+func TestScanForSuspend_SkipsAWorkloadThatIsNotRunning(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
@@ -113,22 +113,22 @@ func TestRunningWorkloads_SkipsAWorkloadThatIsNotRunning(t *testing.T) {
 	)
 
 	assert.Never(t, func() bool {
-		return len(watcher.RunningWorkloads().Candidates) > 0
+		return len(watcher.ScanForSuspend().Candidates) > 0
 	}, time.Second, 50*time.Millisecond)
 }
 
 // An App that is Running but names no member is skipped and reported, never
 // suspended and never dereferenced. Reporting it is the caller's business.
-func TestRunningWorkloads_SkipsAnAppNamingNoMember(t *testing.T) {
+func TestScanForSuspend_SkipsAnAppNamingNoMember(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
 		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, ""),
 	)
 
-	var snapshot k8sapp.WorkloadSnapshot
+	var snapshot k8sapp.SuspendScan
 	assert.Eventually(t, func() bool {
-		snapshot = watcher.RunningWorkloads()
+		snapshot = watcher.ScanForSuspend()
 		return len(snapshot.Unresolved) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -136,7 +136,7 @@ func TestRunningWorkloads_SkipsAnAppNamingNoMember(t *testing.T) {
 	assert.Equal(t, api.AppID("123"), snapshot.Unresolved[0])
 }
 
-func TestRunningWorkloads_SkipsAnAppWhoseMemberIsNotCached(t *testing.T) {
+func TestScanForSuspend_SkipsAnAppWhoseMemberIsNotCached(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
@@ -144,11 +144,11 @@ func TestRunningWorkloads_SkipsAnAppWhoseMemberIsNotCached(t *testing.T) {
 	)
 
 	assert.Never(t, func() bool {
-		return len(watcher.RunningWorkloads().Candidates) > 0
+		return len(watcher.ScanForSuspend().Candidates) > 0
 	}, time.Second, 50*time.Millisecond)
 }
 
-func TestRunningWorkloads_DraftRouteIsItsOwnWorkload(t *testing.T) {
+func TestScanForSuspend_DraftRouteIsItsOwnWorkload(t *testing.T) {
 	t.Parallel()
 
 	draft := newSandboxObject("draft-abc", "123", k8sapp.AppActualStateRunning, "https://draft-abc.hub.example.com", prodUpstreamURL)
@@ -158,7 +158,7 @@ func TestRunningWorkloads_DraftRouteIsItsOwnWorkload(t *testing.T) {
 
 	var got []k8sapp.SuspendCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.RunningWorkloads().Candidates
+		got = watcher.ScanForSuspend().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -169,7 +169,7 @@ func TestRunningWorkloads_DraftRouteIsItsOwnWorkload(t *testing.T) {
 
 // A member Sandbox is reached through its App, so returning it as well would
 // make one workload two and suspend production through the wrong CRD.
-func TestRunningWorkloads_MemberSandboxIsNotAWorkloadOfItsOwn(t *testing.T) {
+func TestScanForSuspend_MemberSandboxIsNotAWorkloadOfItsOwn(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
@@ -179,7 +179,7 @@ func TestRunningWorkloads_MemberSandboxIsNotAWorkloadOfItsOwn(t *testing.T) {
 
 	var got []k8sapp.SuspendCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.RunningWorkloads().Candidates
+		got = watcher.ScanForSuspend().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -201,7 +201,7 @@ func TestHasSynced_FalseBeforeTheInformersList(t *testing.T) {
 
 // The count is what a periodic caller watches; the warning is only emitted
 // once per App, so it cannot carry the signal on its own.
-func TestRunningWorkloads_CountsUnresolvedApps(t *testing.T) {
+func TestScanForSuspend_CountsUnresolvedApps(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
@@ -209,9 +209,9 @@ func TestRunningWorkloads_CountsUnresolvedApps(t *testing.T) {
 		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, "app-123-dpl-gone"),
 	)
 
-	var snapshot k8sapp.WorkloadSnapshot
+	var snapshot k8sapp.SuspendScan
 	assert.Eventually(t, func() bool {
-		snapshot = watcher.RunningWorkloads()
+		snapshot = watcher.ScanForSuspend()
 		return len(snapshot.Unresolved) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -221,7 +221,7 @@ func TestRunningWorkloads_CountsUnresolvedApps(t *testing.T) {
 // The IdleTimer's ownerReference needs the member's uid: the apiserver rejects
 // one without it, and collection matches on the uid, so a stale one reads as an
 // owner already gone.
-func TestRunningWorkloads_CarriesTheSandboxUID(t *testing.T) {
+func TestScanForSuspend_CarriesTheSandboxUID(t *testing.T) {
 	t.Parallel()
 
 	member := newMemberSandbox(k8sapp.AppActualStateRunning, int64(900))
@@ -234,7 +234,7 @@ func TestRunningWorkloads_CarriesTheSandboxUID(t *testing.T) {
 
 	var got []k8sapp.SuspendCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.RunningWorkloads().Candidates
+		got = watcher.ScanForSuspend().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
