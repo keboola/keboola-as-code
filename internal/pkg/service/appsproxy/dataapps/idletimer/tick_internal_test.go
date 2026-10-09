@@ -412,14 +412,6 @@ func TestRecordActivity_DoesNotBlockTheRequestPath(t *testing.T) {
 	h.manager.Shutdown(t.Context())
 }
 
-// The constant ships off. Flipping it is a release decision, so a change here
-// should be deliberate enough to need this test updated with it.
-func TestSuspendEnabled_ShipsOff(t *testing.T) {
-	t.Parallel()
-
-	assert.False(t, suspendEnabled, "the suspend action is staged by release; flipping it is its own PR")
-}
-
 func TestTick_GateSuppressesOnlyTheSuspendAction(t *testing.T) {
 	t.Parallel()
 

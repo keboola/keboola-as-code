@@ -158,6 +158,32 @@ func TestSessionsConfig_Envs(t *testing.T) {
 	assert.Equal(t, 3*time.Second, cfg.Sessions.SendTimeout)
 }
 
+// TestIdleSuspendConfig_ShipsOff pins the default. The loop runs either way and
+// reports what it would suspend; only this decides whether an app is stopped.
+func TestIdleSuspendConfig_ShipsOff(t *testing.T) {
+	t.Parallel()
+
+	assert.False(t, config.New().IdleSuspend.Enabled)
+}
+
+// TestIdleSuspendConfig_Envs pins the ENV name down: it is what the kbc-stacks
+// chart sets, per stack.
+func TestIdleSuspendConfig_Envs(t *testing.T) {
+	t.Parallel()
+
+	cfg := validConfig(t)
+
+	envs := env.Empty()
+	envs.Set("APPS_PROXY_IDLE_SUSPEND_ENABLED", "true")
+
+	require.NoError(t, configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
+		EnvNaming: env.NewNamingConvention("APPS_PROXY_"),
+		Envs:      envs,
+	}, &cfg))
+
+	assert.True(t, cfg.IdleSuspend.Enabled)
+}
+
 // validConfig returns a configuration with every required field filled in.
 // Binding validates the whole configuration, not just the bound fields.
 func validConfig(t *testing.T) config.Config {
