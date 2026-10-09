@@ -27,8 +27,6 @@ type Config struct {
 	Upstream         Upstream          `configKey:"-" configUsage:"Configuration options for upstream"`
 	SandboxesAPI     SandboxesAPI      `configKey:"sandboxesAPI"`
 	CsrfTokenSalt    string            `configKey:"csrfTokenSalt" configUsage:"Salt used for generating CSRF tokens" validate:"required" sensitive:"true"`
-	StorageAPIURL    *url.URL          `configKey:"storageApiUrl" configUsage:"Base URL of the Keboola Storage API for this stack, used for Storage token verification (kai-preview flow). Must match the stack the proxy fronts — e.g. https://connection.eu-central-1.keboola.com for an EU stack. No default; required." validate:"required"`
-	KaiPreview       KaiPreview        `configKey:"kaiPreview" configUsage:"kai-preview iframe-auth configuration."`
 	Preview          Preview           `configKey:"preview" configUsage:"Dev-mode app preview links minted by sandboxes-service."`
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`
@@ -80,19 +78,11 @@ type Sessions struct {
 	SendTimeout time.Duration `configKey:"sendTimeout" configUsage:"Timeout of a single event request to Stream." validate:"required,minDuration=1s"`
 }
 
-// KaiPreview configures the stateless iframe-auth path for the kai-preview flow.
-type KaiPreview struct {
-	HandshakeSigningKey string        `configKey:"handshakeSigningKey" configUsage:"HMAC key for kai-preview handshake JWT (30-60s lifetime)." validate:"required" sensitive:"true"`
-	SessionSigningKey   string        `configKey:"sessionSigningKey" configUsage:"HMAC key for kai-preview session cookie JWT." validate:"required" sensitive:"true"`
-	SessionTTL          time.Duration `configKey:"sessionTTL" configUsage:"Lifetime of the kai-preview session cookie (sliding)." validate:"required,minDuration=1m"`
-	AllowedOrigins      []string      `configKey:"allowedOrigins" configUsage:"Origins allowed to embed apps via kai-preview and mint handshake tokens (e.g. https://connection.keboola.com). Drives both the CORS allowlist and the bootstrap CSP frame-ancestors directive." validate:"required,min=1,dive,http_url"`
-}
-
 type Preview struct {
 	JWKSURL               string   `configKey:"jwksURL" configUsage:"In-cluster URL of the sandboxes-service JWKS. Empty disables preview links." validate:"omitempty,http_url"`
 	Issuer                string   `configKey:"issuer" configUsage:"Expected iss claim of preview links, e.g. https://apps.<suffix>. Required when jwksURL is set."`
 	SessionSigningKey     string   `configKey:"sessionSigningKey" configUsage:"HMAC key for the preview session cookie, at least 32 characters. Required when jwksURL is set. Generate with 'openssl rand -hex 32'." sensitive:"true"`
-	AllowedFrameAncestors []string `configKey:"allowedFrameAncestors" configUsage:"Origins allowed to frame the preview landing page (CSP frame-ancestors), e.g. https://connection.keboola.com."`
+	AllowedFrameAncestors []string `configKey:"allowedFrameAncestors" configUsage:"Origins allowed to frame the preview pages (CSP frame-ancestors), e.g. https://connection.keboola.com. A frame without a preview session posts app-preview-session-required to each of them; empty disables that page."`
 }
 
 func (c Preview) Enabled() bool {
@@ -182,9 +172,6 @@ func New() Config {
 				Host:   "localhost:8000",
 			},
 		},
-		KaiPreview: KaiPreview{
-			SessionTTL: 4 * time.Hour,
-		},
 		Sessions: Sessions{
 			MaxSessionLength:  12 * time.Hour,
 			HeartbeatInterval: 5 * time.Minute,
@@ -238,12 +225,6 @@ func (c *Sessions) Validate() error {
 		))
 	}
 	return errs.ErrorOrNil()
-}
-
-func (c *KaiPreview) Normalize() {
-	for i, o := range c.AllowedOrigins {
-		c.AllowedOrigins[i] = strings.TrimRight(o, "/")
-	}
 }
 
 func (c *API) Normalize() {
