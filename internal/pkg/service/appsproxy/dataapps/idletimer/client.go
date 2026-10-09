@@ -21,8 +21,8 @@ const (
 	version  = "v1"
 )
 
-// GVR returns the GroupVersionResource for the IdleTimer CRD.
-func GVR() schema.GroupVersionResource {
+// gvr is the IdleTimer CRD this package reads and writes.
+func gvr() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: k8sapp.Group, Version: version, Resource: resource}
 }
 
@@ -41,7 +41,7 @@ func newClient(dyn dynamic.Interface, namespace string) *client {
 }
 
 func (c *client) get(ctx context.Context, name string) (record, error) {
-	obj, err := c.dyn.Resource(GVR()).Namespace(c.namespace).Get(ctx, name, metav1.GetOptions{})
+	obj, err := c.dyn.Resource(gvr()).Namespace(c.namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return record{}, err
 	}
@@ -90,7 +90,7 @@ func (c *client) create(ctx context.Context, name string, ownerUID types.UID, at
 		},
 	}
 
-	_, err := c.dyn.Resource(GVR()).Namespace(c.namespace).Create(ctx, obj, metav1.CreateOptions{})
+	_, err := c.dyn.Resource(gvr()).Namespace(c.namespace).Create(ctx, obj, metav1.CreateOptions{})
 	return err
 }
 
@@ -134,7 +134,7 @@ func (c *client) update(ctx context.Context, name, resourceVersion string, at ti
 		return err
 	}
 
-	_, err = c.dyn.Resource(GVR()).Namespace(c.namespace).Patch(
+	_, err = c.dyn.Resource(gvr()).Namespace(c.namespace).Patch(
 		ctx,
 		name,
 		types.MergePatchType,

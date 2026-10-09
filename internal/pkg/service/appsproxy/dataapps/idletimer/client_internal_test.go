@@ -24,7 +24,7 @@ const testNamespace = "sandbox"
 func newTestClient() *client {
 	scheme := runtime.NewScheme()
 	dyn := k8sfake.NewSimpleDynamicClientWithCustomListKinds(scheme, map[schema.GroupVersionResource]string{
-		GVR(): "IdleTimerList",
+		gvr(): "IdleTimerList",
 	})
 	return newClient(dyn, testNamespace)
 }
@@ -57,7 +57,7 @@ func TestClient_Create_OwnerReferenceNamesTheSandbox(t *testing.T) {
 	c := newTestClient()
 	require.NoError(t, c.create(t.Context(), "app-1-dpl-abc", "uid-1", time.Now()))
 
-	obj, err := c.dyn.Resource(GVR()).Namespace(testNamespace).Get(t.Context(), "app-1-dpl-abc", metav1.GetOptions{})
+	obj, err := c.dyn.Resource(gvr()).Namespace(testNamespace).Get(t.Context(), "app-1-dpl-abc", metav1.GetOptions{})
 	require.NoError(t, err)
 
 	owners := obj.GetOwnerReferences()
@@ -80,7 +80,7 @@ func TestClient_CAS_KeepsTheOwnerReference(t *testing.T) {
 
 	require.NoError(t, c.cas(t.Context(), "w", at.Add(time.Minute)))
 
-	obj, err := c.dyn.Resource(GVR()).Namespace(testNamespace).Get(t.Context(), "w", metav1.GetOptions{})
+	obj, err := c.dyn.Resource(gvr()).Namespace(testNamespace).Get(t.Context(), "w", metav1.GetOptions{})
 	require.NoError(t, err)
 	require.Len(t, obj.GetOwnerReferences(), 1)
 	assert.Equal(t, k8stypes.UID("uid-1"), obj.GetOwnerReferences()[0].UID)
@@ -153,7 +153,7 @@ func TestClient_CAS_ConflictRereadsBeforeRetrying(t *testing.T) {
 	fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		updates++
 		if updates == 1 {
-			return true, nil, k8serrors.NewConflict(GVR().GroupResource(), "w", errors.New("conflict"))
+			return true, nil, k8serrors.NewConflict(gvr().GroupResource(), "w", errors.New("conflict"))
 		}
 		return true, nil, nil
 	})

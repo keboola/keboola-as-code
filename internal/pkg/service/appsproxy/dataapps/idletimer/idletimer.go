@@ -28,8 +28,8 @@ const writeTimeout = 5 * time.Second
 // stops a wedged call from stopping the loop for good.
 const tickTimeout = 2 * tickInterval
 
-// workloadSource is the part of the K8s state watcher this loop needs.
-type workloadSource interface {
+// k8sWorkloads is the part of the K8s state watcher this loop needs.
+type k8sWorkloads interface {
 	HasSynced() bool
 	ScanForSleepCandidates() k8sapp.SleepScan
 	Sleep(ctx context.Context, ref k8sapp.WorkloadRef, expectMember string) (bool, error)
@@ -41,7 +41,7 @@ type Manager struct {
 	clock          clockwork.Clock
 	logger         log.Logger
 	client         *client
-	source         workloadSource
+	workloads      k8sWorkloads
 	metrics        *metrics
 	stateMap       *syncmap.SyncMap[k8sapp.WorkloadRef, state]
 
@@ -110,13 +110,13 @@ func NewManager(ctx context.Context, d dependencies, k8sClient dynamic.Interface
 	return m
 }
 
-func newManager(clock clockwork.Clock, logger log.Logger, c *client, source workloadSource, metrics *metrics, suspendEnabled bool) *Manager {
+func newManager(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, metrics *metrics, suspendEnabled bool) *Manager {
 	return &Manager{
 		suspendEnabled: suspendEnabled,
 		clock:          clock,
 		logger:         logger,
 		client:         c,
-		source:         source,
+		workloads:      workloads,
 		metrics:        metrics,
 		stateMap: syncmap.New[k8sapp.WorkloadRef, state](func(k8sapp.WorkloadRef) *state {
 			return &state{}
@@ -220,14 +220,14 @@ func (m *Manager) warnUnresolved(ctx context.Context, unresolved []api.AppID) {
 
 func (m *Manager) tick(ctx context.Context) {
 	// Absence from a cache that is still filling is not absence of a workload.
-	if !m.source.HasSynced() {
+	if !m.workloads.HasSynced() {
 		return
 	}
 
 	ctx, cancel := context.WithTimeoutCause(ctx, tickTimeout, errors.New("idle suspend tick timeout"))
 	defer cancel()
 
-	scan := m.source.ScanForSleepCandidates()
+	scan := m.workloads.ScanForSleepCandidates()
 	m.warnUnresolved(ctx, scan.Unresolved)
 
 	m.roundRecordErrors = map[metav1.StatusReason]bool{}
@@ -330,7 +330,7 @@ func (m *Manager) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *st
 		return
 	}
 
-	suspended, err := m.source.Sleep(ctx, c.Ref, c.SandboxName)
+	suspended, err := m.workloads.Sleep(ctx, c.Ref, c.SandboxName)
 	if err != nil {
 		m.logger.Warnf(ctx, "failed to suspend idle workload %q: %s", c.Ref, err)
 		return
