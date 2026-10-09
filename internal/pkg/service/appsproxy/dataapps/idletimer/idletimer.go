@@ -28,6 +28,13 @@ const writeTimeout = 5 * time.Second
 // stops a wedged call from stopping the loop for good.
 const tickTimeout = 2 * tickInterval
 
+// recordErrorLogInterval bounds how often one kind of record failure is logged.
+// A missing RBAC rule or CRD fails for every workload on every tick, so logging
+// per workload buries the line that says what is wrong. Logging it only once
+// would be worse: this log is the only signal that the records are failing, so
+// it has to keep saying so until someone fixes it.
+const recordErrorLogInterval = time.Minute
+
 // k8sWorkloads is the part of the K8s state watcher this loop needs.
 type k8sWorkloads interface {
 	HasSynced() bool
@@ -47,8 +54,7 @@ type Manager struct {
 
 	// These are touched only by the tick goroutine.
 	warnedUnresolved   map[api.AppID]bool
-	loggedRecordErrors map[metav1.StatusReason]bool
-	roundRecordErrors  map[metav1.StatusReason]bool
+	lastRecordErrorLog map[metav1.StatusReason]time.Time
 }
 
 type state struct {
@@ -118,6 +124,9 @@ func newManager(clock clockwork.Clock, logger log.Logger, c *client, workloads k
 		client:         c,
 		workloads:      workloads,
 		metrics:        metrics,
+		// Written only by the tick goroutine, but written on the first failure,
+		// so it cannot be left nil.
+		lastRecordErrorLog: map[metav1.StatusReason]time.Time{},
 		stateMap: syncmap.New[k8sapp.WorkloadRef, state](func(k8sapp.WorkloadRef) *state {
 			return &state{}
 		}),
@@ -166,7 +175,6 @@ func (m *Manager) RecordActivity(ctx context.Context, ref k8sapp.WorkloadRef) {
 		defer cancel()
 
 		if err := m.client.cas(writeCtx, name, now); err != nil {
-			m.metrics.recordErrors.Add(writeCtx, 1)
 			m.logger.Warnf(writeCtx, "failed to record activity for workload %q: %s", ref, err)
 			m.releaseWriteClaim(item, now, previousWriteAt)
 		}
@@ -230,25 +238,26 @@ func (m *Manager) tick(ctx context.Context) {
 	scan := m.workloads.ScanForSleepCandidates()
 	m.warnUnresolved(ctx, scan.Unresolved)
 
-	m.roundRecordErrors = map[metav1.StatusReason]bool{}
-
-	notSuspendable := int64(len(scan.Unresolved))
+	var candidates, noThreshold int64
 	for _, c := range scan.Candidates {
 		// A round that ran out of time would otherwise turn one cancelled
 		// context into one failure per remaining workload.
 		if ctx.Err() != nil {
 			break
 		}
-		if !m.visit(ctx, c) {
-			notSuspendable++
+		if m.visit(ctx, c) == stateCandidate {
+			candidates++
+		} else {
+			noThreshold++
 		}
 	}
-	m.metrics.notSuspendable.Store(notSuspendable)
-	m.loggedRecordErrors = m.roundRecordErrors
+	m.metrics.candidates.Store(candidates)
+	m.metrics.noThreshold.Store(noThreshold)
+	m.metrics.unresolved.Store(int64(len(scan.Unresolved)))
 }
 
-// visit reports whether the workload was considered at all.
-func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) bool {
+// visit reports the state to count this workload under.
+func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) string {
 	item := m.stateMap.GetOrInit(c.Ref)
 	now := m.clock.Now()
 
@@ -261,22 +270,22 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) bool {
 	}
 
 	if c.Threshold == 0 {
-		return false
+		return stateNoThreshold
 	}
 
 	rec, found := m.readRecord(ctx, c)
 	if !found {
-		return true
+		return stateCandidate
 	}
 
 	idleFor := now.Sub(lastSeen(memory, rec.lastRequestAt, c.LastStarted))
 	if !shouldSuspend(idleFor, c.Threshold) {
 		m.clearSuppressed(item)
-		return true
+		return stateCandidate
 	}
 
 	m.suspend(ctx, c, item, idleFor)
-	return true
+	return stateCandidate
 }
 
 // observe folds this round's reading into the state under one lock, and reports
@@ -336,10 +345,13 @@ func (m *Manager) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *st
 		return
 	}
 	if !suspended {
+		// Sleep refused a decision that went stale between the tick and the
+		// patch. Harmless, the next tick decides again, but not silent.
+		m.logger.Debugf(ctx, "idle workload %q was not suspended: it changed since the decision", c.Ref)
 		return
 	}
 
-	m.metrics.suspends.Add(ctx, 1)
+	m.metrics.suspends.Add(ctx, 1, withOutcome(outcomePerformed))
 	m.logger.Infof(ctx, "suspended idle workload %q", c.Ref)
 
 	item.lock.Lock()
@@ -347,18 +359,15 @@ func (m *Manager) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *st
 	item.lock.Unlock()
 }
 
-// noteRecordError counts every occurrence but logs each kind once. A missing
-// RBAC rule or CRD fails for every workload on every tick, so logging per
-// workload would bury the line that says what is wrong; record_errors carries
-// the continuous signal.
+// noteRecordError logs each kind of failure at most once per
+// recordErrorLogInterval, however many workloads hit it.
 func (m *Manager) noteRecordError(ctx context.Context, verb string, c k8sapp.SleepCandidate, err error) {
-	m.metrics.recordErrors.Add(ctx, 1)
-
 	reason := k8serrors.ReasonForError(err)
-	m.roundRecordErrors[reason] = true
-	if m.loggedRecordErrors[reason] {
+	now := m.clock.Now()
+	if last, logged := m.lastRecordErrorLog[reason]; logged && now.Sub(last) < recordErrorLogInterval {
 		return
 	}
+	m.lastRecordErrorLog[reason] = now
 	m.logger.Warnf(ctx, "failed to %s the idle timer of workload %q: %s", verb, c.Ref, err)
 }
 
@@ -375,7 +384,7 @@ func (m *Manager) reportSuppressed(ctx context.Context, c k8sapp.SleepCandidate,
 		return
 	}
 
-	m.metrics.suspendsSuppressed.Add(ctx, 1)
+	m.metrics.suspends.Add(ctx, 1, withOutcome(outcomeSuppressed))
 	m.logger.Infof(ctx, "would suspend workload %q, idle for %s, but the suspend action is off", c.Ref, idleFor)
 }
 
