@@ -10,14 +10,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
-// Workload states reported by the workloads gauge.
 const (
 	stateCandidate   = "candidate"
 	stateNoThreshold = "no_threshold"
 	stateUnresolved  = "unresolved"
 )
 
-// Outcomes of a suspend decision.
 const (
 	outcomePerformed  = "performed"
 	outcomeSuppressed = "suppressed"
