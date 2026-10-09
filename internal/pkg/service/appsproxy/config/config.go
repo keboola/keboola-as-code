@@ -33,6 +33,7 @@ type Config struct {
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`
 	Sessions         Sessions          `configKey:"sessions" configUsage:"End-user session tracking for data apps."`
+	IdleSuspend      IdleSuspend       `configKey:"idleSuspend" configUsage:"Suspending data apps that have gone idle."`
 
 	ConnectionServiceAccountTokenPath string `configKey:"connectionServiceAccountTokenPath" configUsage:"Path to the projected Kubernetes ServiceAccount token used to authenticate to the Keboola APIs. Read per request, so a rotated token needs no restart." validate:"required"`
 }
@@ -78,6 +79,17 @@ type Sessions struct {
 	QueueSize   int           `configKey:"queueSize" configUsage:"Capacity of the outgoing event queue. Events are dropped when full." validate:"required,min=1"`
 	Workers     int           `configKey:"workers" configUsage:"Number of goroutines sending events to Stream." validate:"required,min=1"`
 	SendTimeout time.Duration `configKey:"sendTimeout" configUsage:"Timeout of a single event request to Stream." validate:"required,minDuration=1s"`
+}
+
+// IdleSuspend configures suspending data apps that have gone idle.
+//
+// The loop runs regardless and reports what it would suspend, so a stack can be
+// observed before anything is stopped.
+type IdleSuspend struct {
+	// Enabled must not be set on a stack whose sandboxes-service still runs its
+	// own suspend cron: both would stop apps, and neither would be accountable
+	// for a given suspend.
+	Enabled bool `configKey:"enabled" configUsage:"Suspend data apps that have gone idle. While off, the proxy only reports what it would have suspended. Turn the sandboxes-service suspend cron off on this stack before enabling."`
 }
 
 // KaiPreview configures the stateless iframe-auth path for the kai-preview flow.

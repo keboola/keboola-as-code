@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/idletimer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
@@ -49,6 +50,7 @@ type Manager struct {
 	notify       *notify.Manager
 	wakeup       *wakeup.Manager
 	sessions     *sessions.Manager
+	idleTimer    *idletimer.Manager
 	stateWatcher *k8sapp.StateWatcher
 	config       config.Config
 }
@@ -74,6 +76,7 @@ type dependencies interface {
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
 	SessionsManager() *sessions.Manager
+	IdleTimerManager() *idletimer.Manager
 	AppStateWatcher() *k8sapp.StateWatcher
 	Config() config.Config
 }
@@ -89,6 +92,7 @@ func NewManager(d dependencies) *Manager {
 		notify:       d.NotifyManager(),
 		wakeup:       d.WakeupManager(),
 		sessions:     d.SessionsManager(),
+		idleTimer:    d.IdleTimerManager(),
 		stateWatcher: d.AppStateWatcher(),
 		config:       d.Config(),
 	}
@@ -354,6 +358,7 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 			if !u.workload.IsSandbox() {
 				u.notify(reqCtx)
 			}
+			u.recordActivity(reqCtx)
 			u.manager.sessions.ActivityWS(reqCtx)
 		})
 		// A websocket close is the most reliable end-of-session signal a
@@ -407,6 +412,7 @@ func (u *AppUpstream) trace() chain.Middleware {
 					if !u.workload.IsSandbox() {
 						u.notify(ctx)
 					}
+					u.recordActivity(ctx)
 					u.manager.sessions.Activity(ctx)
 				},
 			})
@@ -414,6 +420,17 @@ func (u *AppUpstream) trace() chain.Middleware {
 			return next.ServeHTTPOrError(w, req.WithContext(reqCtx))
 		})
 	}
+}
+
+// recordActivity marks the workload as in use for idle-suspend. It hangs off
+// the same two callbacks as notify so it inherits their filtering: the HTTP
+// path has already dropped background polls, and the websocket path fires only
+// on data frames, never on the keepalives a parked browser tab produces.
+//
+// Unlike notify this is not gated on the route kind: a draft's timer belongs to
+// the draft, so draft traffic has to reach it.
+func (u *AppUpstream) recordActivity(ctx context.Context) {
+	u.manager.idleTimer.RecordActivity(ctx, u.workload)
 }
 
 func (u *AppUpstream) notify(ctx context.Context) {
