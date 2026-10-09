@@ -31,7 +31,7 @@ const tickTimeout = 2 * tickInterval
 // workloadSource is the part of the K8s state watcher this loop needs.
 type workloadSource interface {
 	HasSynced() bool
-	ScanForSuspendCandidates() k8sapp.SuspendScan
+	ScanForSleepCandidates() k8sapp.SleepScan
 	Sleep(ctx context.Context, ref k8sapp.WorkloadRef, expectMember string) (bool, error)
 }
 
@@ -227,7 +227,7 @@ func (m *Manager) tick(ctx context.Context) {
 	ctx, cancel := context.WithTimeoutCause(ctx, tickTimeout, errors.New("idle suspend tick timeout"))
 	defer cancel()
 
-	scan := m.source.ScanForSuspendCandidates()
+	scan := m.source.ScanForSleepCandidates()
 	m.warnUnresolved(ctx, scan.Unresolved)
 
 	m.roundRecordErrors = map[metav1.StatusReason]bool{}
@@ -248,7 +248,7 @@ func (m *Manager) tick(ctx context.Context) {
 }
 
 // visit reports whether the workload was considered at all.
-func (m *Manager) visit(ctx context.Context, c k8sapp.SuspendCandidate) bool {
+func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) bool {
 	item := m.stateMap.GetOrInit(c.Ref)
 	now := m.clock.Now()
 
@@ -282,7 +282,7 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SuspendCandidate) bool {
 // observe folds this round's reading into the state under one lock, and reports
 // the in-memory last request plus whether the workload came back from a suspend
 // this replica issued.
-func (m *Manager) observe(item *state, c k8sapp.SuspendCandidate, now time.Time) (memory time.Time, woke bool) {
+func (m *Manager) observe(item *state, c k8sapp.SleepCandidate, now time.Time) (memory time.Time, woke bool) {
 	item.lock.Lock()
 	defer item.lock.Unlock()
 
@@ -304,7 +304,7 @@ func (m *Manager) observe(item *state, c k8sapp.SuspendCandidate, now time.Time)
 // readRecord returns the shared record, creating it only when it is genuinely
 // absent. Any other error skips the round: treating an error as absence would
 // reset every record on an apiserver wobble.
-func (m *Manager) readRecord(ctx context.Context, c k8sapp.SuspendCandidate) (record, bool) {
+func (m *Manager) readRecord(ctx context.Context, c k8sapp.SleepCandidate) (record, bool) {
 	rec, err := m.client.get(ctx, c.SandboxName)
 	if err == nil {
 		return rec, true
@@ -324,7 +324,7 @@ func (m *Manager) readRecord(ctx context.Context, c k8sapp.SuspendCandidate) (re
 	return record{}, false
 }
 
-func (m *Manager) suspend(ctx context.Context, c k8sapp.SuspendCandidate, item *state, idleFor time.Duration) {
+func (m *Manager) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *state, idleFor time.Duration) {
 	if !m.suspendEnabled {
 		m.reportSuppressed(ctx, c, item, idleFor)
 		return
@@ -351,7 +351,7 @@ func (m *Manager) suspend(ctx context.Context, c k8sapp.SuspendCandidate, item *
 // RBAC rule or CRD fails for every workload on every tick, so logging per
 // workload would bury the line that says what is wrong; record_errors carries
 // the continuous signal.
-func (m *Manager) noteRecordError(ctx context.Context, verb string, c k8sapp.SuspendCandidate, err error) {
+func (m *Manager) noteRecordError(ctx context.Context, verb string, c k8sapp.SleepCandidate, err error) {
 	m.metrics.recordErrors.Add(ctx, 1)
 
 	reason := k8serrors.ReasonForError(err)
@@ -363,7 +363,7 @@ func (m *Manager) noteRecordError(ctx context.Context, verb string, c k8sapp.Sus
 }
 
 // reportSuppressed records one gated suspend per idle episode.
-func (m *Manager) reportSuppressed(ctx context.Context, c k8sapp.SuspendCandidate, item *state, idleFor time.Duration) {
+func (m *Manager) reportSuppressed(ctx context.Context, c k8sapp.SleepCandidate, item *state, idleFor time.Duration) {
 	item.lock.Lock()
 	first := item.suppressedAt.IsZero()
 	if first {

@@ -58,7 +58,7 @@ func syncedWatcher(t *testing.T, logger log.Logger, objects ...*unstructured.Uns
 	return watcher
 }
 
-func refsOf(candidates []k8sapp.SuspendCandidate) []k8sapp.WorkloadRef {
+func refsOf(candidates []k8sapp.SleepCandidate) []k8sapp.WorkloadRef {
 	refs := make([]k8sapp.WorkloadRef, 0, len(candidates))
 	for _, c := range candidates {
 		refs = append(refs, c.Ref)
@@ -66,7 +66,7 @@ func refsOf(candidates []k8sapp.SuspendCandidate) []k8sapp.WorkloadRef {
 	return refs
 }
 
-func TestScanForSuspendCandidates_AppRouteCarriesItsMemberSandboxThreshold(t *testing.T) {
+func TestScanForSleepCandidates_AppRouteCarriesItsMemberSandboxThreshold(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
@@ -74,9 +74,9 @@ func TestScanForSuspendCandidates_AppRouteCarriesItsMemberSandboxThreshold(t *te
 		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, "app-123-dpl-aaa"),
 	)
 
-	var got []k8sapp.SuspendCandidate
+	var got []k8sapp.SleepCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.ScanForSuspendCandidates().Candidates
+		got = watcher.ScanForSleepCandidates().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -87,7 +87,7 @@ func TestScanForSuspendCandidates_AppRouteCarriesItsMemberSandboxThreshold(t *te
 	assert.Equal(t, lastStarted, got[0].LastStarted.UTC().Format(time.RFC3339))
 }
 
-func TestScanForSuspendCandidates_AbsentThresholdIsReportedAsZero(t *testing.T) {
+func TestScanForSleepCandidates_AbsentThresholdIsReportedAsZero(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
@@ -95,16 +95,16 @@ func TestScanForSuspendCandidates_AbsentThresholdIsReportedAsZero(t *testing.T) 
 		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, "app-123-dpl-aaa"),
 	)
 
-	var got []k8sapp.SuspendCandidate
+	var got []k8sapp.SleepCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.ScanForSuspendCandidates().Candidates
+		got = watcher.ScanForSleepCandidates().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
 	assert.Zero(t, got[0].Threshold, "an absent threshold must reach the caller as zero, not a default")
 }
 
-func TestScanForSuspendCandidates_SkipsAWorkloadThatIsNotRunning(t *testing.T) {
+func TestScanForSleepCandidates_SkipsAWorkloadThatIsNotRunning(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
@@ -113,22 +113,22 @@ func TestScanForSuspendCandidates_SkipsAWorkloadThatIsNotRunning(t *testing.T) {
 	)
 
 	assert.Never(t, func() bool {
-		return len(watcher.ScanForSuspendCandidates().Candidates) > 0
+		return len(watcher.ScanForSleepCandidates().Candidates) > 0
 	}, time.Second, 50*time.Millisecond)
 }
 
 // An App that is Running but names no member is skipped and reported, never
 // suspended and never dereferenced. Reporting it is the caller's business.
-func TestScanForSuspendCandidates_SkipsAnAppNamingNoMember(t *testing.T) {
+func TestScanForSleepCandidates_SkipsAnAppNamingNoMember(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
 		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, ""),
 	)
 
-	var snapshot k8sapp.SuspendScan
+	var snapshot k8sapp.SleepScan
 	assert.Eventually(t, func() bool {
-		snapshot = watcher.ScanForSuspendCandidates()
+		snapshot = watcher.ScanForSleepCandidates()
 		return len(snapshot.Unresolved) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -136,7 +136,7 @@ func TestScanForSuspendCandidates_SkipsAnAppNamingNoMember(t *testing.T) {
 	assert.Equal(t, api.AppID("123"), snapshot.Unresolved[0])
 }
 
-func TestScanForSuspendCandidates_SkipsAnAppWhoseMemberIsNotCached(t *testing.T) {
+func TestScanForSleepCandidates_SkipsAnAppWhoseMemberIsNotCached(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
@@ -144,11 +144,11 @@ func TestScanForSuspendCandidates_SkipsAnAppWhoseMemberIsNotCached(t *testing.T)
 	)
 
 	assert.Never(t, func() bool {
-		return len(watcher.ScanForSuspendCandidates().Candidates) > 0
+		return len(watcher.ScanForSleepCandidates().Candidates) > 0
 	}, time.Second, 50*time.Millisecond)
 }
 
-func TestScanForSuspendCandidates_DraftRouteIsItsOwnWorkload(t *testing.T) {
+func TestScanForSleepCandidates_DraftRouteIsItsOwnWorkload(t *testing.T) {
 	t.Parallel()
 
 	draft := newSandboxObject("draft-abc", "123", k8sapp.AppActualStateRunning, "https://draft-abc.hub.example.com", prodUpstreamURL)
@@ -156,9 +156,9 @@ func TestScanForSuspendCandidates_DraftRouteIsItsOwnWorkload(t *testing.T) {
 
 	watcher := syncedWatcher(t, log.NewNopLogger(), draft)
 
-	var got []k8sapp.SuspendCandidate
+	var got []k8sapp.SleepCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.ScanForSuspendCandidates().Candidates
+		got = watcher.ScanForSleepCandidates().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -169,7 +169,7 @@ func TestScanForSuspendCandidates_DraftRouteIsItsOwnWorkload(t *testing.T) {
 
 // A member Sandbox is reached through its App, so returning it as well would
 // make one workload two and suspend production through the wrong CRD.
-func TestScanForSuspendCandidates_MemberSandboxIsNotAWorkloadOfItsOwn(t *testing.T) {
+func TestScanForSleepCandidates_MemberSandboxIsNotAWorkloadOfItsOwn(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
@@ -177,9 +177,9 @@ func TestScanForSuspendCandidates_MemberSandboxIsNotAWorkloadOfItsOwn(t *testing
 		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, "app-123-dpl-aaa"),
 	)
 
-	var got []k8sapp.SuspendCandidate
+	var got []k8sapp.SleepCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.ScanForSuspendCandidates().Candidates
+		got = watcher.ScanForSleepCandidates().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -201,7 +201,7 @@ func TestHasSynced_FalseBeforeTheInformersList(t *testing.T) {
 
 // The count is what a periodic caller watches; the warning is only emitted
 // once per App, so it cannot carry the signal on its own.
-func TestScanForSuspendCandidates_CountsUnresolvedApps(t *testing.T) {
+func TestScanForSleepCandidates_CountsUnresolvedApps(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
@@ -209,9 +209,9 @@ func TestScanForSuspendCandidates_CountsUnresolvedApps(t *testing.T) {
 		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, "app-123-dpl-gone"),
 	)
 
-	var snapshot k8sapp.SuspendScan
+	var snapshot k8sapp.SleepScan
 	assert.Eventually(t, func() bool {
-		snapshot = watcher.ScanForSuspendCandidates()
+		snapshot = watcher.ScanForSleepCandidates()
 		return len(snapshot.Unresolved) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -221,7 +221,7 @@ func TestScanForSuspendCandidates_CountsUnresolvedApps(t *testing.T) {
 // The IdleTimer's ownerReference needs the member's uid: the apiserver rejects
 // one without it, and collection matches on the uid, so a stale one reads as an
 // owner already gone.
-func TestScanForSuspendCandidates_CarriesTheSandboxUID(t *testing.T) {
+func TestScanForSleepCandidates_CarriesTheSandboxUID(t *testing.T) {
 	t.Parallel()
 
 	member := newMemberSandbox(k8sapp.AppActualStateRunning, int64(900))
@@ -232,9 +232,9 @@ func TestScanForSuspendCandidates_CarriesTheSandboxUID(t *testing.T) {
 		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, memberName),
 	)
 
-	var got []k8sapp.SuspendCandidate
+	var got []k8sapp.SleepCandidate
 	assert.Eventually(t, func() bool {
-		got = watcher.ScanForSuspendCandidates().Candidates
+		got = watcher.ScanForSleepCandidates().Candidates
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 

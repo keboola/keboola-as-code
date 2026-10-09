@@ -19,15 +19,15 @@ func synced(fn cache.InformerSynced) bool {
 	return fn != nil && fn()
 }
 
-// ScanForSuspendCandidates returns the Running workloads the idle-suspend loop
+// ScanForSleepCandidates returns the Running workloads the idle-suspend loop
 // may act on, as the cache holds them at this moment. It walks and sorts, so a
 // caller takes it once per round rather than per workload.
 //
 // A route is an App, or a Sandbox that published a hostname of its own. A
 // member Sandbox publishes none and is therefore never returned on its own
 // account: it reaches the caller as the SandboxName of the App that names it,
-// so one workload stays one entry and production is suspended through the App.
-func (w *StateWatcher) ScanForSuspendCandidates() SuspendScan {
+// so one workload stays one entry and production is slept through the App.
+func (w *StateWatcher) ScanForSleepCandidates() SleepScan {
 	candidates, unresolved := w.collectCandidates()
 
 	sort.Slice(candidates, func(i, j int) bool {
@@ -35,14 +35,14 @@ func (w *StateWatcher) ScanForSuspendCandidates() SuspendScan {
 	})
 	sort.Slice(unresolved, func(i, j int) bool { return unresolved[i] < unresolved[j] })
 
-	return SuspendScan{Candidates: candidates, Unresolved: unresolved}
+	return SleepScan{Candidates: candidates, Unresolved: unresolved}
 }
 
-func (w *StateWatcher) collectCandidates() (candidates []SuspendCandidate, unresolved []api.AppID) {
+func (w *StateWatcher) collectCandidates() (candidates []SleepCandidate, unresolved []api.AppID) {
 	w.routeLock.RLock()
 	defer w.routeLock.RUnlock()
 
-	candidates = make([]SuspendCandidate, 0, len(w.apps)+len(w.sandboxes))
+	candidates = make([]SleepCandidate, 0, len(w.apps)+len(w.sandboxes))
 
 	for appID, e := range w.apps {
 		if e.state != AppActualStateRunning {
@@ -53,7 +53,7 @@ func (w *StateWatcher) collectCandidates() (candidates []SuspendCandidate, unres
 			unresolved = append(unresolved, appID)
 			continue
 		}
-		candidates = append(candidates, SuspendCandidate{
+		candidates = append(candidates, SleepCandidate{
 			Ref:         WorkloadRef{AppID: appID},
 			SandboxName: e.productionSandbox,
 			SandboxUID:  member.uid,
@@ -66,7 +66,7 @@ func (w *StateWatcher) collectCandidates() (candidates []SuspendCandidate, unres
 		if e.state != AppActualStateRunning || e.host == "" {
 			continue
 		}
-		candidates = append(candidates, SuspendCandidate{
+		candidates = append(candidates, SleepCandidate{
 			Ref:         WorkloadRef{AppID: e.appID, SandboxName: k8sName},
 			SandboxName: k8sName,
 			SandboxUID:  e.uid,

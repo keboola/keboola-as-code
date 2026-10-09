@@ -164,13 +164,13 @@ type appsProxy struct {
 	PublicURL   string `json:"publicUrl,omitempty"`
 }
 
-// SuspendCandidate is a Running workload the idle-suspend loop may act on.
+// SleepCandidate is a Running workload the idle-suspend loop may act on.
 //
 // Ref keys the activity the proxy records; SandboxName is the workload itself,
 // which for an App route is the member the App names rather than the App. The
 // two differ for every production workload, and the record belongs to the
 // Sandbox, because that is what a restart and a deletion happen to.
-type SuspendCandidate struct {
+type SleepCandidate struct {
 	Ref         WorkloadRef
 	SandboxName string
 	// SandboxUID is the owner the IdleTimer points at. Garbage collection
@@ -182,11 +182,11 @@ type SuspendCandidate struct {
 	LastStarted time.Time
 }
 
-// SuspendScan is one round's view of what the idle-suspend loop can act on.
+// SleepScan is one round's view of what the idle-suspend loop can act on.
 // Unresolved names the Running Apps left out because status.productionSandbox
 // matched no cached Sandbox; they never suspend, so the caller counts them
 // alongside workloads that carry no threshold.
-type SuspendScan struct {
-	Candidates []SuspendCandidate
+type SleepScan struct {
+	Candidates []SleepCandidate
 	Unresolved []api.AppID
 }
