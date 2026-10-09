@@ -15,8 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
-	kpendpoints "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview/endpoints"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/session"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
@@ -36,20 +34,11 @@ type appHandler struct {
 	upstream           chain.Handler
 	allAuthHandlers    chain.Handler
 	authHandlerPerRule map[ruleIndex]chain.Handler
-	kaiPreview         *kpendpoints.Handler
 }
 
 type ruleIndex int
 
 func newAppHandler(manager *Manager, app api.AppConfig, workload k8sapp.WorkloadRef, appUpstream chain.Handler, authHandlers map[provider.ID]selector.Handler) (http.Handler, error) {
-	// DevModeChecker is backed by the live K8s state watcher: re-evaluates on every request.
-	// The appID argument is ignored: this handler serves exactly one workload, and the
-	// kai-preview endpoints only ever pass their own app id.
-	devModeChecker := kpendpoints.DevModeCheckerFunc(func(ctx context.Context, _ string) bool {
-		info, ok := manager.upstreamManager.AppInfo(ctx, workload)
-		return ok && info.DevMode
-	})
-
 	handler := &appHandler{
 		manager:            manager,
 		app:                app,
@@ -58,19 +47,6 @@ func newAppHandler(manager *Manager, app api.AppConfig, workload k8sapp.Workload
 		attrs:              app.Telemetry(),
 		upstream:           appUpstream,
 		authHandlerPerRule: make(map[ruleIndex]chain.Handler),
-		kaiPreview: kpendpoints.NewHandler(kpendpoints.HandlerDeps{
-			Logger:               manager.logger,
-			Clock:                manager.clock,
-			StorageTokenVerifier: manager.storageTokenVerifier,
-			DevMode:              devModeChecker,
-			CORS:                 kaipreview.NewCORS(manager.config.KaiPreview.AllowedOrigins),
-			HandshakeKey:         manager.config.KaiPreview.HandshakeSigningKey,
-			SessionKey:           manager.config.KaiPreview.SessionSigningKey,
-			SessionTTL:           manager.config.KaiPreview.SessionTTL,
-			AllowedOrigins:       manager.config.KaiPreview.AllowedOrigins,
-			AppID:                string(app.ID),
-			AppProjectID:         app.ProjectID,
-		}),
 	}
 
 	// Create handler with all auth handlers, to route internal URLs
@@ -194,10 +170,6 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		previewCookie = ""
 	}
 
-	if strings.HasPrefix(req.URL.Path, kpendpoints.PathPrefix) && h.isDevMode(req.Context()) { //nolint:contextcheck // false positive
-		return h.kaiPreview.ServeHTTPOrError(w, req)
-	}
-
 	// Internal paths are routed before any preview session, so sign-out and the OIDC callback never reach the app.
 	if strings.HasPrefix(req.URL.Path, config.InternalPrefix) && h.allAuthHandlers != nil {
 		// A sign-out ends the session explicitly. Internal paths never reach
@@ -212,10 +184,9 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		return h.upstream.ServeHTTPOrError(w, req)
 	}
 
-	if h.isDevMode(req.Context()) { //nolint:contextcheck // false positive
-		if handled, err := h.serveKaiPreview(w, req); handled {
-			return err
-		}
+	if h.previewSessionRequired(req) {
+		h.serveSessionRequiredPage(w, req)
+		return nil
 	}
 
 	// Find the matching rule
@@ -239,51 +210,6 @@ func (h *appHandler) serveRule(w http.ResponseWriter, req *http.Request, index r
 
 	// Serve the request without authentication
 	return h.upstream.ServeHTTPOrError(w, req)
-}
-
-// serveKaiPreview handles the dev-mode kai-preview session and iframe fallback.
-// Returns (true, err) when it handled the request, or (false, nil) when the caller should continue routing.
-func (h *appHandler) serveKaiPreview(w http.ResponseWriter, req *http.Request) (bool, error) {
-	// Valid session cookie → forward to upstream (skip AuthRules), with sliding refresh.
-	if claims, ok := kaipreview.ValidateSessionCookie(
-		req,
-		h.manager.config.KaiPreview.SessionSigningKey,
-		h.manager.clock,
-		string(h.app.ID),
-		h.app.ProjectID,
-	); ok {
-		h.maybeRefreshSessionCookie(w, req, claims)
-		return true, h.upstream.ServeHTTPOrError(w, req)
-	}
-	// Iframe document load on a dev-mode app with no session → serve bootstrap shim.
-	if kaipreview.IsIframeDocumentLoad(req) {
-		bootstrapReq := req.Clone(req.Context()) //nolint:contextcheck // false positive: req.Context() is the correct context here
-		bootstrapReq.URL.Path = kpendpoints.PathPrefix + "/bootstrap"
-		return true, h.kaiPreview.ServeHTTPOrError(w, bootstrapReq)
-	}
-	return false, nil
-}
-
-// maybeRefreshSessionCookie re-mints the session JWT when the session has passed its midpoint.
-// If minting fails, the existing cookie is left in place (it is still valid).
-func (h *appHandler) maybeRefreshSessionCookie(w http.ResponseWriter, req *http.Request, claims *kaipreview.SessionClaims) {
-	if !claims.NeedsRefresh(h.manager.clock.Now()) {
-		return
-	}
-	newJWT, err := kaipreview.MintSessionJWT(
-		h.manager.config.KaiPreview.SessionSigningKey,
-		h.manager.clock,
-		string(h.app.ID),
-		h.app.ProjectID,
-		h.manager.config.KaiPreview.SessionTTL,
-	)
-	if err == nil {
-		kaipreview.SetSessionCookie(w, newJWT, h.manager.config.KaiPreview.SessionTTL)
-		h.manager.logger.With(
-			attribute.String("appID", string(h.app.ID)),
-			attribute.String("projectID", h.app.ProjectID),
-		).Debug(req.Context(), "kai-preview: sliding session refresh")
-	}
 }
 
 // isDevMode reports whether this app currently has DevMode enabled.

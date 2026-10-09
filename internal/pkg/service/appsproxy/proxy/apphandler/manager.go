@@ -16,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
@@ -30,18 +29,16 @@ import (
 )
 
 type Manager struct {
-	logger               log.Logger
-	config               config.Config
-	telemetry            telemetry.Telemetry
-	configLoader         appconfig.Loader
-	upstreamManager      *upstream.Manager
-	authProxyManager     *authproxy.Manager
-	pageWriter           *pagewriter.Writer
-	handlers             *syncmap.SyncMap[k8sapp.WorkloadRef, appHandlerWrapper]
-	clock                clockwork.Clock
-	storageTokenVerifier kaipreview.StorageTokenVerifier
-	sessionsManager      *sessions.Manager
-	preview              *preview.Service
+	logger           log.Logger
+	config           config.Config
+	telemetry        telemetry.Telemetry
+	configLoader     appconfig.Loader
+	upstreamManager  *upstream.Manager
+	authProxyManager *authproxy.Manager
+	pageWriter       *pagewriter.Writer
+	handlers         *syncmap.SyncMap[k8sapp.WorkloadRef, appHandlerWrapper]
+	sessionsManager  *sessions.Manager
+	preview          *preview.Service
 }
 
 type appHandlerWrapper struct {
@@ -75,15 +72,8 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
+func NewManager(d dependencies) *Manager {
 	cfg := d.Config()
-	if cfg.StorageAPIURL == nil {
-		return nil, errors.New("appsproxy: StorageAPIURL is required for kai-preview Storage token verification")
-	}
-	verifier, err := kaipreview.NewSDKStorageTokenVerifier(ctx, cfg.StorageAPIURL.String())
-	if err != nil {
-		return nil, err
-	}
 	m := &Manager{
 		logger:           d.Logger(),
 		config:           cfg,
@@ -95,9 +85,7 @@ func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
 		handlers: syncmap.New[k8sapp.WorkloadRef, appHandlerWrapper](func(k8sapp.WorkloadRef) *appHandlerWrapper {
 			return &appHandlerWrapper{lock: &sync.Mutex{}}
 		}),
-		clock:                d.Clock(),
-		storageTokenVerifier: verifier,
-		sessionsManager:      d.SessionsManager(),
+		sessionsManager: d.SessionsManager(),
 	}
 
 	if cfg.Preview.Enabled() {
@@ -106,7 +94,7 @@ func NewManager(ctx context.Context, d dependencies) (*Manager, error) {
 
 	d.AppStateWatcher().OnWorkloadRemoved(m.evictWorkload)
 
-	return m, nil
+	return m
 }
 
 // evictWorkload drops the cached handler for a workload that no longer exists.

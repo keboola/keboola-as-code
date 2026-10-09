@@ -42,3 +42,28 @@ func TestWritePreviewLandingPage(t *testing.T) {
 	assert.NotContains(t, body, `<link rel="stylesheet"`)
 	assert.NotContains(t, body, ` style="`)
 }
+
+func TestWritePreviewSessionRequiredPage(t *testing.T) {
+	t.Parallel()
+	pw, err := pagewriter.New(writerDeps{})
+	require.NoError(t, err)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://my-app-123.hub.keboola.local/", nil)
+	pw.WritePreviewSessionRequiredPage(rec, req, pagewriter.PreviewSessionRequiredPageData{
+		Nonce:         "N0nce",
+		ParentOrigins: []string{"https://connection.keboola.com", "https://connection.north-europe.azure.keboola.com"},
+		MessageType:   "app-preview-session-required",
+	})
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	body := rec.Body.String()
+	assert.Contains(t, body, "The preview session ended. Reload the preview.")
+	assert.Contains(t, body, `<script nonce="N0nce">`)
+	assert.Contains(t, body, `type: "app-preview-session-required"`)
+	assert.Contains(t, body, `var origins = ["https://connection.keboola.com","https://connection.north-europe.azure.keboola.com"];`)
+	assert.Contains(t, body, "window.parent.postMessage(message, origins[i])")
+	assert.Contains(t, body, "setTimeout")
+	assert.NotContains(t, body, "sessionStorage")
+	assert.NotContains(t, body, "fetch(")
+	assert.NotContains(t, body, "<script src")
+}
