@@ -221,10 +221,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.sessionsManager = sessions.NewManager(ctx, d)
 	d.authProxyManager = authproxy.NewManager(d)
 	d.upstreamManager = upstream.NewManager(d)
-	d.appHandlers, err = apphandler.NewManager(ctx, d)
-	if err != nil {
-		return nil, err
-	}
+	d.appHandlers = apphandler.NewManager(d)
 
 	return d, nil
 }
