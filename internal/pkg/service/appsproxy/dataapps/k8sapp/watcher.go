@@ -51,11 +51,12 @@ type StateWatcher struct {
 	logger              log.Logger
 	hasSynced           cache.InformerSynced
 	sandboxesHaveSynced cache.InformerSynced
-	apps                map[api.AppID]entry // guarded by routeLock, like the Sandbox caches
+	apps                map[api.AppID]entry // guarded by routeLock
 	tokenLoadGroup      singleflight.Group  // coalesces concurrent lazy-load K8s API calls per secret
 
-	// routeLock guards the Sandbox cache and serialises writes to the App cache,
-	// which are read-modify-write on the lazy E2B token path.
+	// routeLock guards all three caches, for reads as well as writes. A write
+	// takes the write lock even when it changes one field, because the lazy E2B
+	// token path makes it read-modify-write.
 	routeLock    sync.RWMutex
 	sandboxes    map[string]entry  // Sandbox K8s object name → entry
 	sandboxHosts map[string]string // exact hostname → Sandbox K8s object name
