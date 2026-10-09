@@ -31,7 +31,7 @@ const tickTimeout = 2 * tickInterval
 // workloadSource is the part of the K8s state watcher this loop needs.
 type workloadSource interface {
 	HasSynced() bool
-	ScanForSuspend() k8sapp.SuspendScan
+	ScanForSuspendCandidates() k8sapp.SuspendScan
 	Sleep(ctx context.Context, ref k8sapp.WorkloadRef, expectMember string) (bool, error)
 }
 
@@ -227,7 +227,7 @@ func (m *Manager) tick(ctx context.Context) {
 	ctx, cancel := context.WithTimeoutCause(ctx, tickTimeout, errors.New("idle suspend tick timeout"))
 	defer cancel()
 
-	scan := m.source.ScanForSuspend()
+	scan := m.source.ScanForSuspendCandidates()
 	m.warnUnresolved(ctx, scan.Unresolved)
 
 	m.roundRecordErrors = map[metav1.StatusReason]bool{}
