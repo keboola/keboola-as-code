@@ -1,7 +1,6 @@
 package proxy_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -21,20 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 )
-
-type portManager struct{}
-
-func newZeroPortManager() server.PortManager {
-	return &portManager{}
-}
-
-func (p portManager) GeneratePorts(ctx context.Context) {}
-
-func (p portManager) GetFreePort() int {
-	return 0
-}
 
 func TestAppProxyHandler(t *testing.T) {
 	t.Parallel()
@@ -42,7 +28,7 @@ func TestAppProxyHandler(t *testing.T) {
 	ctx := t.Context()
 
 	// Start app
-	pm := newZeroPortManager()
+	pm := osAssignedPorts{}
 	appServer := testutil.StartAppServer(t, pm)
 	defer appServer.Close()
 
