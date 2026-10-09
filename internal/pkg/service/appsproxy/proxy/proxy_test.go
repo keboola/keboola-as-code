@@ -14,7 +14,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"path"
 	"strings"
 	"sync"
 	"testing"
@@ -2931,8 +2930,7 @@ func TestAppProxyRouter(t *testing.T) {
 		privateAppTestCaseFactory(http.MethodDelete),
 	)
 
-	tmpDir := path.Join(os.Getenv("TEST_KBC_TMP_DIR"), "TestAppsProxyRouter") // nolint:forbidigo
-	pm, _ := server.NewPortManager(t, tmpDir, "appsproxy")
+	pm := osAssignedPorts{}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -2974,14 +2972,10 @@ func TestAppProxyRouter(t *testing.T) {
 			// Create proxy handler
 			handler := createProxyHandler(ctx, d)
 
-			// Create a test server for the proxy handler
-			port := pm.GetFreePort()
+			// Create a test server for the proxy handler, the OS assigns a free port
 			var lc net.ListenConfig
-			l, err := lc.Listen(t.Context(), "tcp", fmt.Sprintf("127.0.0.1:%d", port))
-			for err != nil {
-				port = pm.GetFreePort()
-				l, err = lc.Listen(t.Context(), "tcp", fmt.Sprintf("[::1]:%d", port))
-			}
+			l, err := lc.Listen(t.Context(), "tcp", "127.0.0.1:0")
+			require.NoError(t, err)
 
 			proxySrv := &httptest.Server{
 				Listener: l,
@@ -3470,8 +3464,7 @@ func TestWebsocketActivityTracking(t *testing.T) {
 	fakeClock := clockwork.NewFakeClock()
 
 	// Standard testing scaffold: apps API + upstream app server + secrets + config.
-	tmpDir := t.TempDir()
-	pm, _ := server.NewPortManager(t, tmpDir, "appsproxy")
+	pm := osAssignedPorts{}
 	appsAPI := testutil.StartDataAppsAPI(t, pm)
 	t.Cleanup(func() { appsAPI.Close() })
 	appServer := testutil.StartAppServer(t, pm)
