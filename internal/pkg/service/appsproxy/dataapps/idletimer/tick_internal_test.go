@@ -85,6 +85,12 @@ func (h *harness) suspendCount(t *testing.T, outcome string) int64 {
 	return 0
 }
 
+// flush waits for the detached writes. Shutdown also waits, but it stops
+// admitting new ones, so a test that writes again afterwards cannot use it.
+func (h *harness) flush() {
+	h.manager.wg.Wait()
+}
+
 func (h *harness) counterValue(t *testing.T, name string) int64 {
 	t.Helper()
 	for _, m := range h.tel.Metrics(t) {
@@ -266,7 +272,7 @@ func TestTick_InMemoryActivityHoldsAWorkloadAwake(t *testing.T) {
 
 	h.clock.Advance(threshold)
 	h.manager.RecordActivity(t.Context(), appRef)
-	h.manager.Shutdown(t.Context())
+	h.flush()
 	h.clock.Advance(heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
 
@@ -359,7 +365,7 @@ func TestRecordActivity_WritesTheSharedRecordAtTheHeartbeatCadence(t *testing.T)
 
 	h.clock.Advance(time.Minute)
 	h.manager.RecordActivity(t.Context(), appRef)
-	h.manager.Shutdown(t.Context())
+	h.flush()
 
 	rec, err := h.manager.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
@@ -374,14 +380,14 @@ func TestRecordActivity_DoesNotWriteWithinOneHeartbeatInterval(t *testing.T) {
 
 	h.clock.Advance(time.Minute)
 	h.manager.RecordActivity(t.Context(), appRef)
-	h.manager.Shutdown(t.Context())
+	h.flush()
 
 	before, err := h.manager.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
 
 	h.clock.Advance(time.Second)
 	h.manager.RecordActivity(t.Context(), appRef)
-	h.manager.Shutdown(t.Context())
+	h.flush()
 
 	after, err := h.manager.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
@@ -398,7 +404,7 @@ func TestRecordActivity_WritesNothingWhenTheWorkloadHasNoThreshold(t *testing.T)
 
 	h.clock.Advance(time.Hour)
 	h.manager.RecordActivity(t.Context(), appRef)
-	h.manager.Shutdown(t.Context())
+	h.flush()
 
 	assert.Empty(t, h.fake.Actions())
 }
@@ -432,7 +438,7 @@ func TestRecordActivity_DoesNotBlockTheRequestPath(t *testing.T) {
 	}
 
 	close(release)
-	h.manager.Shutdown(t.Context())
+	h.flush()
 }
 
 func TestTick_GateSuppressesOnlyTheSuspendAction(t *testing.T) {
@@ -488,7 +494,7 @@ func TestTick_ASecondIdleEpisodeIsReportedAgain(t *testing.T) {
 
 	// Someone used it again.
 	h.manager.RecordActivity(t.Context(), appRef)
-	h.manager.Shutdown(t.Context())
+	h.flush()
 	h.manager.tick(t.Context())
 
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
@@ -518,13 +524,17 @@ func TestTick_SuppressedSuspendNamesTheWorkloadAndHowLongItWasIdle(t *testing.T)
 func TestTick_AlreadyExistsIsNotAnError(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	logger := log.NewDebugLogger()
+	h := buildHarness(t, logger, true,
+		[]k8sapp.SleepCandidate{candidate(appRef, "member-1", threshold)})
 	h.fake.PrependReactor("create", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, k8serrors.NewAlreadyExists(gvr().GroupResource(), "member-1")
 	})
 
 	h.manager.tick(t.Context())
 
+	assert.NotContains(t, logger.AllMessages(), "failed to create the idle timer",
+		"the other replica winning the race is this outcome, not a failure")
 }
 
 func TestTick_PassesTheSandboxUIDToTheRecord(t *testing.T) {
@@ -580,13 +590,13 @@ func TestRecordActivity_AFailedWriteDoesNotHoldOffTheNextOne(t *testing.T) {
 
 	h.clock.Advance(time.Minute)
 	h.manager.RecordActivity(t.Context(), appRef)
-	h.manager.Shutdown(t.Context())
+	h.flush()
 
 	// Well inside one heartbeat interval, so without the reset this writes nothing.
 	fail.Store(false)
 	h.clock.Advance(time.Second)
 	h.manager.RecordActivity(t.Context(), appRef)
-	h.manager.Shutdown(t.Context())
+	h.flush()
 
 	rec, err := h.manager.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
@@ -636,5 +646,25 @@ func TestTick_StopsWhenTheRoundRunsOutOfTime(t *testing.T) {
 	cancel(errors.New("round out of time"))
 	h.manager.tick(ctx)
 
-	assert.Empty(t, h.source.slept, "a cancelled round must not act on anything")
+	// Not "nothing was suspended": that holds even without the break, because
+	// the reactor fails every read. The round must not touch the apiserver.
+	assert.Empty(t, h.fake.Actions(), "a cancelled round must stop, not visit the rest")
+}
+
+// A websocket frame can arrive after Shutdown begins, because hijacked
+// connections are not drained by the HTTP server.
+func TestShutdown_StopsAdmittingWrites(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h.manager.tick(t.Context())
+	before := len(h.fake.Actions())
+
+	h.manager.Shutdown(t.Context())
+
+	h.clock.Advance(time.Minute)
+	h.manager.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	assert.Len(t, h.fake.Actions(), before, "a write admitted after Shutdown would race its Wait")
 }

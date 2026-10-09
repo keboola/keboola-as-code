@@ -43,7 +43,13 @@ type k8sWorkloads interface {
 }
 
 type Manager struct {
-	wg             sync.WaitGroup
+	wg sync.WaitGroup
+	// A websocket frame can arrive after Shutdown begins: hijacked connections
+	// are not drained by the HTTP server. Adding to the WaitGroup then would
+	// race its Wait, so admission closes under this lock first.
+	closeLock sync.RWMutex
+	closed    bool
+
 	suspendEnabled bool
 	clock          clockwork.Clock
 	logger         log.Logger
@@ -134,6 +140,10 @@ func newManager(clock clockwork.Clock, logger log.Logger, c *client, workloads k
 // Shutdown waits for the activity writes in flight. They are detached from
 // their requests, so nothing else would wait for them.
 func (m *Manager) Shutdown(ctx context.Context) {
+	m.closeLock.Lock()
+	m.closed = true
+	m.closeLock.Unlock()
+
 	m.logger.Info(ctx, "waiting for pending idle timer writes")
 	m.wg.Wait()
 }
@@ -165,7 +175,14 @@ func (m *Manager) RecordActivity(ctx context.Context, ref k8sapp.WorkloadRef) {
 
 	// Detached: this runs in the GotConn callback and, per frame, in the
 	// websocket observer, neither of which may wait on the apiserver.
+	m.closeLock.RLock()
+	if m.closed {
+		m.closeLock.RUnlock()
+		return
+	}
 	m.wg.Add(1)
+	m.closeLock.RUnlock()
+
 	go func() {
 		defer m.wg.Done()
 
