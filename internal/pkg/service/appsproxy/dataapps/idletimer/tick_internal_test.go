@@ -41,8 +41,8 @@ type fakeSource struct {
 
 func (f *fakeSource) HasSynced() bool { return f.synced }
 
-func (f *fakeSource) RunningWorkloads() k8sapp.WorkloadSnapshot {
-	return k8sapp.WorkloadSnapshot{Candidates: f.candidates, Unresolved: f.unresolved}
+func (f *fakeSource) ScanForSuspend() k8sapp.SuspendScan {
+	return k8sapp.SuspendScan{Candidates: f.candidates, Unresolved: f.unresolved}
 }
 
 func (f *fakeSource) Sleep(_ context.Context, ref k8sapp.WorkloadRef, _ string) (bool, error) {

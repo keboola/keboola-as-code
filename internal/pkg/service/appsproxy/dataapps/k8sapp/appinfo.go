@@ -182,11 +182,11 @@ type SuspendCandidate struct {
 	LastStarted time.Time
 }
 
-// WorkloadSnapshot is one round's view of what the idle-suspend loop can act on.
+// SuspendScan is one round's view of what the idle-suspend loop can act on.
 // Unresolved names the Running Apps left out because status.productionSandbox
 // matched no cached Sandbox; they never suspend, so the caller counts them
 // alongside workloads that carry no threshold.
-type WorkloadSnapshot struct {
+type SuspendScan struct {
 	Candidates []SuspendCandidate
 	Unresolved []api.AppID
 }
