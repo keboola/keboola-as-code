@@ -33,7 +33,7 @@ var appRef = k8sapp.WorkloadRef{AppID: "123"} //nolint:gochecknoglobals // test 
 type fakeSource struct {
 	synced     bool
 	unresolved []api.AppID
-	candidates []k8sapp.SuspendCandidate
+	candidates []k8sapp.SleepCandidate
 	slept      []k8sapp.WorkloadRef
 	sleptOK    bool
 	sleepErr   error
@@ -41,8 +41,8 @@ type fakeSource struct {
 
 func (f *fakeSource) HasSynced() bool { return f.synced }
 
-func (f *fakeSource) ScanForSuspendCandidates() k8sapp.SuspendScan {
-	return k8sapp.SuspendScan{Candidates: f.candidates, Unresolved: f.unresolved}
+func (f *fakeSource) ScanForSleepCandidates() k8sapp.SleepScan {
+	return k8sapp.SleepScan{Candidates: f.candidates, Unresolved: f.unresolved}
 }
 
 func (f *fakeSource) Sleep(_ context.Context, ref k8sapp.WorkloadRef, _ string) (bool, error) {
@@ -80,22 +80,22 @@ func (h *harness) counterValue(t *testing.T, name string) int64 {
 
 // newHarness builds a manager with the suspend action on, which is what the
 // loop's own behaviour has to be correct for once the gate is flipped.
-func newHarness(t *testing.T, candidates ...k8sapp.SuspendCandidate) *harness {
+func newHarness(t *testing.T, candidates ...k8sapp.SleepCandidate) *harness {
 	t.Helper()
 	return buildHarness(t, log.NewNopLogger(), true, candidates)
 }
 
-func newGatedHarness(t *testing.T, candidates ...k8sapp.SuspendCandidate) *harness {
+func newGatedHarness(t *testing.T, candidates ...k8sapp.SleepCandidate) *harness {
 	t.Helper()
 	return buildHarness(t, log.NewNopLogger(), false, candidates)
 }
 
-func newGatedHarnessWithLogger(t *testing.T, logger log.Logger, candidates ...k8sapp.SuspendCandidate) *harness {
+func newGatedHarnessWithLogger(t *testing.T, logger log.Logger, candidates ...k8sapp.SleepCandidate) *harness {
 	t.Helper()
 	return buildHarness(t, logger, false, candidates)
 }
 
-func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidates []k8sapp.SuspendCandidate) *harness {
+func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidates []k8sapp.SleepCandidate) *harness {
 	t.Helper()
 
 	c := newTestClient()
@@ -112,8 +112,8 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	}
 }
 
-func candidate(ref k8sapp.WorkloadRef, sandbox string, t time.Duration) k8sapp.SuspendCandidate {
-	return k8sapp.SuspendCandidate{Ref: ref, SandboxName: sandbox, Threshold: t}
+func candidate(ref k8sapp.WorkloadRef, sandbox string, t time.Duration) k8sapp.SleepCandidate {
+	return k8sapp.SleepCandidate{Ref: ref, SandboxName: sandbox, Threshold: t}
 }
 
 func TestTick_SkipsEverythingBeforeTheCacheHasSynced(t *testing.T) {
@@ -578,7 +578,7 @@ func TestTick_RepeatedReadFailureIsLoggedOnce(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	h := buildHarness(t, logger, true,
-		[]k8sapp.SuspendCandidate{candidate(appRef, "member-1", threshold)})
+		[]k8sapp.SleepCandidate{candidate(appRef, "member-1", threshold)})
 	h.fake.PrependReactor("get", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, k8serrors.NewForbidden(GVR().GroupResource(), "member-1", errors.New("no rbac"))
 	})
