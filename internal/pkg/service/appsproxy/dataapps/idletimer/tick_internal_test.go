@@ -41,7 +41,7 @@ type fakeSource struct {
 
 func (f *fakeSource) HasSynced() bool { return f.synced }
 
-func (f *fakeSource) ScanForSuspend() k8sapp.SuspendScan {
+func (f *fakeSource) ScanForSuspendCandidates() k8sapp.SuspendScan {
 	return k8sapp.SuspendScan{Candidates: f.candidates, Unresolved: f.unresolved}
 }
 

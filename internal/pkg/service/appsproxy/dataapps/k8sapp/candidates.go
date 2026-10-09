@@ -19,15 +19,15 @@ func synced(fn cache.InformerSynced) bool {
 	return fn != nil && fn()
 }
 
-// ScanForSuspend returns the Running workloads the idle-suspend loop may act
-// on, as the cache holds them at this moment. It walks and sorts, so a caller
-// takes it once per round rather than per workload.
+// ScanForSuspendCandidates returns the Running workloads the idle-suspend loop
+// may act on, as the cache holds them at this moment. It walks and sorts, so a
+// caller takes it once per round rather than per workload.
 //
 // A route is an App, or a Sandbox that published a hostname of its own. A
 // member Sandbox publishes none and is therefore never returned on its own
 // account: it reaches the caller as the SandboxName of the App that names it,
 // so one workload stays one entry and production is suspended through the App.
-func (w *StateWatcher) ScanForSuspend() SuspendScan {
+func (w *StateWatcher) ScanForSuspendCandidates() SuspendScan {
 	candidates, unresolved := w.collectCandidates()
 
 	sort.Slice(candidates, func(i, j int) bool {
