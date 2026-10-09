@@ -22,10 +22,6 @@ import (
 
 const wakeWindow = time.Minute
 
-// suspendEnabled gates the suspend patch only. Everything leading to it still
-// runs, so a deploy with this off exercises the loop without stopping an app.
-const suspendEnabled = false
-
 const writeTimeout = 5 * time.Second
 
 // Rounds are serial, so a slow one delays the next rather than piling up. This
@@ -89,7 +85,7 @@ func NewManager(ctx context.Context, d dependencies, k8sClient dynamic.Interface
 		newClient(k8sClient, d.Config().K8s.AppsNamespace),
 		d.AppStateWatcher(),
 		newMetrics(d.Telemetry().Meter()),
-		suspendEnabled,
+		d.Config().IdleSuspend.Enabled,
 	)
 
 	d.AppStateWatcher().OnWorkloadRemoved(m.evictWorkload)
