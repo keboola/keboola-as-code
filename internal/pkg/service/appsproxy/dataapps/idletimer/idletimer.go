@@ -118,14 +118,12 @@ func NewManager(ctx context.Context, d dependencies, k8sClient dynamic.Interface
 
 func newManager(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, metrics *metrics, suspendEnabled bool) *Manager {
 	return &Manager{
-		suspendEnabled: suspendEnabled,
-		clock:          clock,
-		logger:         logger,
-		client:         c,
-		workloads:      workloads,
-		metrics:        metrics,
-		// Written only by the tick goroutine, but written on the first failure,
-		// so it cannot be left nil.
+		suspendEnabled:     suspendEnabled,
+		clock:              clock,
+		logger:             logger,
+		client:             c,
+		workloads:          workloads,
+		metrics:            metrics,
 		lastRecordErrorLog: map[metav1.StatusReason]time.Time{},
 		stateMap: syncmap.New[k8sapp.WorkloadRef, state](func(k8sapp.WorkloadRef) *state {
 			return &state{}
@@ -345,8 +343,6 @@ func (m *Manager) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *st
 		return
 	}
 	if !suspended {
-		// Sleep refused a decision that went stale between the tick and the
-		// patch. Harmless, the next tick decides again, but not silent.
 		m.logger.Debugf(ctx, "idle workload %q was not suspended: it changed since the decision", c.Ref)
 		return
 	}
