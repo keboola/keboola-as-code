@@ -141,15 +141,22 @@ func TestAppProxyHandler(t *testing.T) {
 		telemetry.WithDataPointSortKey(func(attrs attribute.Set) string {
 			host, _ := attrs.Value("server.address")
 			status, _ := attrs.Value("http.response.status_code")
-			return fmt.Sprintf("%d:%s", status.AsInt64(), host.AsString())
+			// state orders the idle-timer gauge's series; the SDK does not emit
+			// them in the order they are observed.
+			state, _ := attrs.Value("state")
+			return fmt.Sprintf("%d:%s:%s", status.AsInt64(), host.AsString(), state.AsString())
 		}),
 	)
 	assert.JSONEq(t, `[
 		{
-			"Name": "keboola.go.appsproxy.idletimer.not_suspendable",
-			"Description": "Running workloads this pass could not consider: no autoSuspendAfterSeconds, or an App whose productionSandbox resolved to nothing.",
+			"Name": "keboola.go.appsproxy.idletimer.workloads",
+			"Description": "Running workloads this pass saw, by what the loop can do with them: candidate, no_threshold (no autoSuspendAfterSeconds, so it opted out), unresolved (an App whose productionSandbox matched no cached Sandbox, which is a bug smell).",
 			"Unit": "",
-			"Data": {"DataPoints": [{"Attributes": [], "Value": 0}]}
+			"Data": {"DataPoints": [
+				{"Attributes": [{"Key": "state", "Value": {"Type": "STRING", "Value": "candidate"}}], "Value": 0},
+				{"Attributes": [{"Key": "state", "Value": {"Type": "STRING", "Value": "no_threshold"}}], "Value": 0},
+				{"Attributes": [{"Key": "state", "Value": {"Type": "STRING", "Value": "unresolved"}}], "Value": 0}
+			]}
 		},
 		{
 			"Name": "keboola.go.appsproxy.sessions.enabled",

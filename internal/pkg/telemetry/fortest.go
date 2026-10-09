@@ -433,6 +433,31 @@ func cleanAndSortMetrics(metrics *[]metricdata.Metrics, opts ...TestMeterOption)
 		item := &filtered[i]
 
 		switch record := item.Data.(type) {
+		// Gauges carry attributes too, and the SDK does not emit their series in
+		// any fixed order, so a fixture over a multi-series gauge is flaky
+		// without this.
+		case metricdata.Gauge[int64]:
+			sort.SliceStable(record.DataPoints, func(i, j int) bool {
+				return dataPointKey(record.DataPoints[i].Attributes) < dataPointKey(record.DataPoints[j].Attributes)
+			})
+			for k := range record.DataPoints {
+				point := &record.DataPoints[k]
+				point.StartTime = time.Time{}
+				point.Time = time.Time{}
+				point.Attributes = mapAttributes(point.Attributes)
+				point.Exemplars = nil
+			}
+		case metricdata.Gauge[float64]:
+			sort.SliceStable(record.DataPoints, func(i, j int) bool {
+				return dataPointKey(record.DataPoints[i].Attributes) < dataPointKey(record.DataPoints[j].Attributes)
+			})
+			for k := range record.DataPoints {
+				point := &record.DataPoints[k]
+				point.StartTime = time.Time{}
+				point.Time = time.Time{}
+				point.Attributes = mapAttributes(point.Attributes)
+				point.Exemplars = nil
+			}
 		case metricdata.Sum[int64]:
 			sort.SliceStable(record.DataPoints, func(i, j int) bool {
 				return dataPointKey(record.DataPoints[i].Attributes) < dataPointKey(record.DataPoints[j].Attributes)

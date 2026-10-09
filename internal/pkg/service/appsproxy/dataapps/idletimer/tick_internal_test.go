@@ -10,6 +10,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,6 +64,27 @@ type harness struct {
 
 // counterValue reads an emitted counter back, so the assertions are about what
 // a dashboard would show rather than about a field kept for the tests.
+// suspendCount reads one outcome of the suspends counter. Taking the first
+// data point would read whichever outcome happened to be recorded first.
+func (h *harness) suspendCount(t *testing.T, outcome string) int64 {
+	t.Helper()
+	for _, m := range h.tel.Metrics(t) {
+		if m.Name != "keboola.go.appsproxy.idletimer.suspends" {
+			continue
+		}
+		sum, ok := m.Data.(metricdata.Sum[int64])
+		if !ok {
+			return 0
+		}
+		for _, dp := range sum.DataPoints {
+			if v, found := dp.Attributes.Value(attribute.Key("outcome")); found && v.AsString() == outcome {
+				return dp.Value
+			}
+		}
+	}
+	return 0
+}
+
 func (h *harness) counterValue(t *testing.T, name string) int64 {
 	t.Helper()
 	for _, m := range h.tel.Metrics(t) {
@@ -139,29 +161,30 @@ func TestTick_AbsentThresholdIsSkippedAndCounted(t *testing.T) {
 
 	assert.Empty(t, h.source.slept)
 	assert.Empty(t, h.fake.Actions(), "a workload that never auto-suspends needs no record")
-	assert.Equal(t, int64(1), h.manager.metrics.notSuspendable.Load())
+	assert.Equal(t, int64(1), h.manager.metrics.noThreshold.Load())
+	assert.Zero(t, h.manager.metrics.candidates.Load())
 }
 
-// The gate reads the current round, not a running total: one transient skip
-// must not leave it permanently non-zero, or "zero for a full cycle" can never
-// be satisfied again.
-func TestTick_TheNotSuspendableGaugeReportsTheCurrentRound(t *testing.T) {
+// The gauge reads the current round, not a running total: one transient skip
+// must not leave it permanently non-zero. A workload moves between states
+// rather than accumulating in both.
+func TestTick_TheWorkloadsGaugeReportsTheCurrentRound(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, "member-1", 0))
 	h.manager.tick(t.Context())
-	require.Equal(t, int64(1), h.manager.metrics.notSuspendable.Load())
+	require.Equal(t, int64(1), h.manager.metrics.noThreshold.Load())
 
 	h.source.candidates[0].Threshold = threshold
 	h.manager.tick(t.Context())
 
-	assert.Zero(t, h.manager.metrics.notSuspendable.Load())
+	assert.Zero(t, h.manager.metrics.noThreshold.Load())
+	assert.Equal(t, int64(1), h.manager.metrics.candidates.Load())
 }
 
-// An App whose member cannot be resolved never suspends either, so it belongs
-// in the same gate: otherwise the gate reads zero while workloads are silently
-// being skipped.
-func TestTick_UnresolvedWorkloadsCountTowardsTheGate(t *testing.T) {
+// An App whose member cannot be resolved never suspends either, and it is its
+// own state: a bug smell, unlike a workload that merely opted out.
+func TestTick_UnresolvedWorkloadsAreReportedSeparately(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t)
@@ -169,7 +192,8 @@ func TestTick_UnresolvedWorkloadsCountTowardsTheGate(t *testing.T) {
 
 	h.manager.tick(t.Context())
 
-	assert.Equal(t, int64(2), h.manager.metrics.notSuspendable.Load())
+	assert.Equal(t, int64(2), h.manager.metrics.unresolved.Load())
+	assert.Zero(t, h.manager.metrics.noThreshold.Load())
 }
 
 func TestTick_AbsentRecordIsCreatedAtNowAndNotSuspended(t *testing.T) {
@@ -202,7 +226,6 @@ func TestTick_AReadErrorIsNotAbsence(t *testing.T) {
 	for _, action := range h.fake.Actions() {
 		assert.NotEqual(t, "create", action.GetVerb(), "an error must not be mistaken for absence")
 	}
-	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.record_errors"))
 }
 
 func TestTick_SuspendsAWorkloadIdlePastTheMargin(t *testing.T) {
@@ -218,7 +241,7 @@ func TestTick_SuspendsAWorkloadIdlePastTheMargin(t *testing.T) {
 	h.manager.tick(t.Context())
 
 	assert.Equal(t, []k8sapp.WorkloadRef{appRef}, h.source.slept)
-	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends"))
+	assert.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
 }
 
 func TestTick_DoesNotSuspendBeforeTheThreshold(t *testing.T) {
@@ -285,7 +308,7 @@ func TestTick_CountsASuspendFollowedByAWakeWithinAMinute(t *testing.T) {
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
-	require.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends"))
+	require.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
 
 	// Something woke it: the workload started again, which moves lastStartedTime.
 	h.clock.Advance(30 * time.Second)
@@ -305,7 +328,7 @@ func TestTick_DoesNotCountAnUnreconciledSuspendAsAWake(t *testing.T) {
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
-	require.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends"))
+	require.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
 
 	// Still in the Running set a tick later, but it never restarted.
 	h.clock.Advance(15 * time.Second)
@@ -421,15 +444,15 @@ func TestTick_GateSuppressesOnlyTheSuspendAction(t *testing.T) {
 	h.manager.tick(t.Context())
 
 	assert.Empty(t, h.source.slept, "the gate must stop the patch")
-	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends"))
-	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends_suppressed"))
+	assert.Zero(t, h.suspendCount(t, outcomePerformed))
+	assert.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
 
 	// Everything leading up to the suspend still has to run: that is what the
 	// gated deploy exists to exercise against a real apiserver.
 	rec, err := h.manager.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
 	assert.False(t, rec.lastRequestAt.IsZero(), "the record must still be created")
-	assert.Zero(t, h.manager.metrics.notSuspendable.Load())
+	assert.Equal(t, int64(1), h.manager.metrics.candidates.Load())
 }
 
 // A suppressed suspend leaves the workload Running, so every later tick decides
@@ -448,7 +471,7 @@ func TestTick_SuppressedSuspendIsReportedOncePerIdleEpisode(t *testing.T) {
 		h.clock.Advance(tickInterval)
 	}
 
-	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends_suppressed"))
+	assert.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
 	assert.Equal(t, 1, strings.Count(logger.AllMessages(), "would suspend"))
 }
 
@@ -461,7 +484,7 @@ func TestTick_ASecondIdleEpisodeIsReportedAgain(t *testing.T) {
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
-	require.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends_suppressed"))
+	require.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
 
 	// Someone used it again.
 	h.manager.RecordActivity(t.Context(), appRef)
@@ -471,7 +494,7 @@ func TestTick_ASecondIdleEpisodeIsReportedAgain(t *testing.T) {
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
 
-	assert.Equal(t, int64(2), h.counterValue(t, "keboola.go.appsproxy.idletimer.suspends_suppressed"))
+	assert.Equal(t, int64(2), h.suspendCount(t, outcomeSuppressed))
 }
 
 func TestTick_SuppressedSuspendNamesTheWorkloadAndHowLongItWasIdle(t *testing.T) {
@@ -502,7 +525,6 @@ func TestTick_AlreadyExistsIsNotAnError(t *testing.T) {
 
 	h.manager.tick(t.Context())
 
-	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.record_errors"))
 }
 
 func TestTick_PassesTheSandboxUIDToTheRecord(t *testing.T) {
@@ -534,7 +556,7 @@ func TestTick_WarnsOncePerUnresolvedApp(t *testing.T) {
 	}
 
 	assert.Equal(t, 1, strings.Count(logger.AllMessages(), "productionSandbox"))
-	assert.Equal(t, int64(1), h.manager.metrics.notSuspendable.Load())
+	assert.Equal(t, int64(1), h.manager.metrics.unresolved.Load())
 }
 
 // A write that failed did not refresh the shared record, so the next request
@@ -588,8 +610,13 @@ func TestTick_RepeatedReadFailureIsLoggedOnce(t *testing.T) {
 	}
 
 	assert.Equal(t, 1, strings.Count(logger.AllMessages(), "failed to read the idle timer"))
-	assert.Equal(t, int64(4), h.counterValue(t, "keboola.go.appsproxy.idletimer.record_errors"),
-		"the counter still carries every occurrence")
+
+	// Once and then silent would be worse than too loud: this log is the only
+	// signal that the records are failing, so it has to keep saying so.
+	h.clock.Advance(recordErrorLogInterval + time.Second)
+	h.manager.tick(t.Context())
+	assert.Equal(t, 2, strings.Count(logger.AllMessages(), "failed to read the idle timer"),
+		"a failure that outlives the interval must be logged again")
 }
 
 // A tick that ran out of time must stop, not spend the rest of the round
@@ -609,6 +636,5 @@ func TestTick_StopsWhenTheRoundRunsOutOfTime(t *testing.T) {
 	cancel(errors.New("round out of time"))
 	h.manager.tick(ctx)
 
-	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.record_errors"),
-		"a cancelled round must not be counted as workloads failing")
+	assert.Empty(t, h.source.slept, "a cancelled round must not act on anything")
 }
