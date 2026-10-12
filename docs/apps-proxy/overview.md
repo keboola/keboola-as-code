@@ -16,7 +16,6 @@ The proxy calls the endpoints of an app's authentication provider itself (OIDC d
 - Configured provider URLs must use `https` and a public host name. IP addresses, single-label hosts, `localhost`, and the `.localhost`, `.local`, `.internal`, `.svc` and `.cluster.local` suffixes are rejected.
 - Requests to providers connect only to public unicast addresses. The address is checked after DNS resolution.
 - A provider that fails to initialize shows a generic error page. The detail is logged with the exception ID.
-- `authProviders.allowPrivateEndpoints` (`APPS_PROXY_AUTH_PROVIDERS_ALLOW_PRIVATE_ENDPOINTS`) turns both checks off. It is for local development and tests only.
 
 ## Apps Proxy Options
 

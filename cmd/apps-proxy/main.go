@@ -102,9 +102,7 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 	}
 
 	// OAuth2 Proxy sends all requests to authentication providers through this client.
-	if !cfg.AuthProviders.AllowPrivateEndpoints {
-		requests.DefaultHTTPClient = transport.NewPublicOnlyHTTPClient("oauth2-proxy/" + version.VERSION)
-	}
+	requests.DefaultHTTPClient = transport.NewPublicOnlyHTTPClient("oauth2-proxy/" + version.VERSION)
 
 	// Create dependencies
 	d, err := dependencies.NewServiceScope(ctx, cfg, proc, logger, tel, os.Stdout, os.Stderr) // nolint:forbidigo
