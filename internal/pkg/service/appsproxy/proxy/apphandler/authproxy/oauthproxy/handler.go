@@ -91,8 +91,12 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	return nil
 }
 
+// The error page is rendered for anonymous clients too, and the init error can
+// carry a response body fetched from the provider, so it goes to the log only.
 func wrapHandlerInitErr(app api.AppConfig, auth provider.Provider, err error) error {
+	msg := fmt.Sprintf(`application "%s" has invalid configuration for authentication provider "%s"`, app.IdAndName(), auth.ID())
 	return svcErrors.
-		NewServiceUnavailableError(errors.PrefixErrorf(err, `application "%s" has invalid configuration for authentication provider "%s"`, app.IdAndName(), auth.ID())).
-		WithUserMessage(fmt.Sprintf(`Application "%s" has invalid configuration for authentication provider "%s".`, app.IdAndName(), auth.ID()))
+		NewServiceUnavailableError(errors.New(msg)).
+		WithUserMessage(fmt.Sprintf(`Application "%s" has invalid configuration for authentication provider "%s".`, app.IdAndName(), auth.ID())).
+		WithLogMessage(errors.Format(errors.PrefixError(err, msg), errors.FormatWithUnwrap(), errors.FormatWithStack()))
 }
