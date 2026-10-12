@@ -110,6 +110,8 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	if path := cfg.ConnectionServiceAccountTokenPath; path == "" || path == management.DefaultServiceAccountTokenPath {
 		cfg.ConnectionServiceAccountTokenPath = writeTestServiceAccountToken(tb)
 	}
+	// Test identity providers listen on loopback over plain HTTP.
+	cfg.AuthProviders.AllowPrivateEndpoints = true
 	if cfg.K8s.AppsNamespace == "" {
 		cfg.K8s.AppsNamespace = "keboola"
 	}

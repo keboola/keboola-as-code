@@ -33,6 +33,7 @@ func testProxyConfigEnv(t *testing.T, scopesSupported string) (config.Config, ap
 	cfg := config.New()
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CookieSecretSalt = "salt"
+	cfg.AuthProviders.AllowPrivateEndpoints = true
 	app := api.AppConfig{ID: "123", ProjectID: "456", AppSlug: new("app")}
 	return cfg, app, newScopeResolver(log.NewDebugLogger(), client.New()), srv.URL
 }
