@@ -32,7 +32,7 @@ type Config struct {
 	Sessions         Sessions          `configKey:"sessions" configUsage:"End-user session tracking for data apps."`
 	AppUserToken     AppUserToken      `configKey:"appUserToken" configUsage:"Signed X-Kbc-App-User-Token passed to data apps."`
 	SessionStore     SessionStore      `configKey:"sessionStore" configUsage:"Store of OAuth/OIDC login sessions."`
-	AuthProviders    AuthProviders     `configKey:"authProviders"`
+	AuthProviders    AuthProviders     `configKey:"-"`
 
 	ConnectionServiceAccountTokenPath string `configKey:"connectionServiceAccountTokenPath" configUsage:"Path to the projected Kubernetes ServiceAccount token used to authenticate to the Keboola APIs. Read per request, so a rotated token needs no restart." validate:"required"`
 }
@@ -145,8 +145,9 @@ type API struct {
 	PublicURL *url.URL `configKey:"publicUrl" configUsage:"Public URL of the configuration HTTP API for link generation." validate:"required"`
 }
 
+// AuthProviders is not bound to ENVs or flags, so production always validates provider endpoint URLs.
 type AuthProviders struct {
-	AllowPrivateEndpoints bool `configKey:"allowPrivateEndpoints" configUsage:"Allow authentication provider endpoints on non-public addresses and over plain HTTP. For local development and tests only."`
+	AllowPrivateEndpoints bool
 }
 
 type SandboxesAPI struct {
