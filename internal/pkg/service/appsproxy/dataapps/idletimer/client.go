@@ -30,6 +30,10 @@ func gvr() schema.GroupVersionResource {
 type record struct {
 	lastRequestAt   time.Time
 	resourceVersion string
+	// cached marks a record read from the watch rather than the apiserver. The
+	// watch lags, and a lagging record reads as idle, so a decision taken on
+	// one is confirmed before it is acted on.
+	cached bool
 }
 
 type client struct {

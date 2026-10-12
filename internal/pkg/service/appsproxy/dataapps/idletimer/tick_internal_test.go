@@ -14,11 +14,13 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
@@ -56,11 +58,32 @@ func (f *fakeSource) Sleep(_ context.Context, ref k8sapp.WorkloadRef, _ string) 
 }
 
 type harness struct {
+	t       *testing.T
 	manager *Manager
 	source  *fakeSource
 	clock   *clockwork.FakeClock
 	fake    *k8sfake.FakeDynamicClient
 	tel     telemetry.ForTest
+	store   cache.Store
+	synced  *atomic.Bool
+}
+
+// cacheRecord puts a record in the watch cache without going near the
+// apiserver, so a test can say what the cache holds and what the apiserver
+// holds separately.
+func (h *harness) cacheRecord(name string, at time.Time) {
+	require.NoError(h.t, h.store.Add(&unstructured.Unstructured{
+		Object: map[string]any{
+			"apiVersion": k8sapp.Group + "/" + version,
+			"kind":       kind,
+			"metadata": map[string]any{
+				"name":            name,
+				"namespace":       testNamespace,
+				"resourceVersion": "1",
+			},
+			"spec": map[string]any{"lastRequestAt": formatTime(at)},
+		},
+	}))
 }
 
 // counterValue reads an emitted counter back, so the assertions are about what
@@ -132,12 +155,22 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
 	tel := telemetry.NewForTest(t)
 
+	m := newManager(t.Context(), clock, logger, c, source, newMetrics(tel.Meter()), suspendEnabled)
+
+	synced := &atomic.Bool{}
+	synced.Store(true)
+	store := cache.NewStore(cache.MetaNamespaceKeyFunc)
+	m.records = &recordCache{namespace: testNamespace, store: store, hasSynced: synced.Load}
+
 	return &harness{
-		manager: newManager(t.Context(), clock, logger, c, source, newMetrics(tel.Meter()), suspendEnabled),
+		t:       t,
+		manager: m,
 		source:  source,
 		clock:   clock,
 		fake:    c.dyn.(*k8sfake.FakeDynamicClient),
 		tel:     tel,
+		store:   store,
+		synced:  synced,
 	}
 }
 

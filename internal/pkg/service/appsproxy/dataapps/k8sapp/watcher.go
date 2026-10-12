@@ -93,8 +93,8 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 		cancel(nil)
 	})
 
-	appInformer := newCRDInformer(client, AppGVR(), namespace)
-	sandboxInformer := newCRDInformer(client, SandboxGVR(), namespace)
+	appInformer := NewCRDInformer(client, AppGVR(), namespace)
+	sandboxInformer := NewCRDInformer(client, SandboxGVR(), namespace)
 
 	w := &StateWatcher{
 		client:              client,
@@ -116,7 +116,8 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 	return w
 }
 
-func newCRDInformer(client dynamic.Interface, gvr schema.GroupVersionResource, namespace string) cache.SharedIndexInformer {
+// NewCRDInformer builds a watch-backed cache of one CRD kind in one namespace.
+func NewCRDInformer(client dynamic.Interface, gvr schema.GroupVersionResource, namespace string) cache.SharedIndexInformer {
 	lw := &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			return client.Resource(gvr).Namespace(namespace).List(ctx, opts)

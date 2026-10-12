@@ -64,6 +64,7 @@ type Manager struct {
 	logger         log.Logger
 	client         *client
 	workloads      k8sWorkloads
+	records        *recordCache
 	metrics        *metrics
 	stateMap       *syncmap.SyncMap[k8sapp.WorkloadRef, state]
 
@@ -120,6 +121,8 @@ func NewManager(ctx context.Context, d dependencies, k8sClient dynamic.Interface
 		newMetrics(d.Telemetry().Meter()),
 		d.Config().IdleSuspend.Enabled,
 	)
+
+	m.records = newRecordCache(ctx, k8sClient, d.Config().K8s.AppsNamespace)
 
 	d.AppStateWatcher().OnWorkloadRemoved(m.evictWorkload)
 
@@ -382,6 +385,21 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) string {
 		return stateCandidate
 	}
 
+	// Only the action needs the confirmation, and the gate is what decides
+	// whether there is one.
+	if rec.cached && m.suspendEnabled {
+		live, err := m.client.get(ctx, c.SandboxName)
+		if err != nil {
+			m.noteRecordError(ctx, "confirm", c, err)
+			return stateCandidate
+		}
+		idleFor = now.Sub(lastSeen(memory, live.lastRequestAt, c.LastStarted))
+		if !shouldSuspend(idleFor, c.Threshold) {
+			m.clearSuppressed(item)
+			return stateCandidate
+		}
+	}
+
 	m.suspend(ctx, c, item, idleFor)
 	return stateCandidate
 }
@@ -418,6 +436,10 @@ func (m *Manager) observe(item *state, c k8sapp.SleepCandidate, now time.Time) (
 // absent. Any other error skips the round: treating an error as absence would
 // reset every record on an apiserver wobble.
 func (m *Manager) readRecord(ctx context.Context, c k8sapp.SleepCandidate) (record, bool) {
+	if rec, found := m.records.lookup(c.SandboxName); found {
+		return rec, true
+	}
+
 	rec, err := m.client.get(ctx, c.SandboxName)
 	if err == nil {
 		return rec, true
