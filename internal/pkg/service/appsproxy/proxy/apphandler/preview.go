@@ -15,7 +15,7 @@ import (
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 )
 
-const landingNonceLength = 24
+const pageNonceLength = 24
 
 // previewOrigin never uses h.baseURL for a Sandbox: there it names the parent App.
 func (h *appHandler) previewOrigin(ctx context.Context) (string, bool) {
@@ -44,9 +44,7 @@ func (h *appHandler) servePreviewEndpoint(w http.ResponseWriter, req *http.Reque
 	w.Header().Set("Cache-Control", "no-store")
 	switch req.Method {
 	case http.MethodGet, http.MethodHead:
-		nonce := idgenerator.Random(landingNonceLength)
-		w.Header().Set("Content-Security-Policy", preview.LandingCSP(nonce, h.manager.preview.FrameAncestors()))
-		h.manager.pageWriter.WritePreviewLandingPage(w, req, nonce)
+		h.manager.pageWriter.WritePreviewLandingPage(w, req, h.setPreviewPageHeaders(w, preview.LandingCSP))
 	case http.MethodPost:
 		h.redeemPreviewLink(w, req)
 	default:
@@ -54,6 +52,34 @@ func (h *appHandler) servePreviewEndpoint(w http.ResponseWriter, req *http.Reque
 		h.writePreviewError(w, req, http.StatusMethodNotAllowed, "Method not allowed.")
 	}
 	return nil
+}
+
+// setPreviewPageHeaders returns the nonce the page's script must carry.
+func (h *appHandler) setPreviewPageHeaders(w http.ResponseWriter, csp func(nonce string, frameAncestors []string) string) string {
+	nonce := idgenerator.Random(pageNonceLength)
+	w.Header().Set("Referrer-Policy", "no-referrer")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Security-Policy", csp(nonce, h.manager.preview.FrameAncestors()))
+	return nonce
+}
+
+// previewSessionRequired reports a dev-mode app framed without a valid preview session by a parent that can be told so.
+// The caller has already checked the session.
+func (h *appHandler) previewSessionRequired(req *http.Request) bool {
+	if h.manager.preview == nil || len(h.manager.preview.FrameAncestors()) == 0 {
+		return false
+	}
+	return preview.IsFrameDocumentLoad(req) && h.isDevMode(req.Context())
+}
+
+// serveSessionRequiredPage tells the parent to open a new preview link.
+func (h *appHandler) serveSessionRequiredPage(w http.ResponseWriter, req *http.Request) {
+	nonce := h.setPreviewPageHeaders(w, preview.SessionRequiredCSP)
+	h.manager.pageWriter.WritePreviewSessionRequiredPage(w, req, pagewriter.PreviewSessionRequiredPageData{
+		Nonce:         nonce,
+		ParentOrigins: h.manager.preview.FrameAncestors(),
+		MessageType:   preview.SessionRequiredMessageType,
+	})
 }
 
 func (h *appHandler) previewSessionValid(w http.ResponseWriter, req *http.Request, raw string) bool {

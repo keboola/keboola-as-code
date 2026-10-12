@@ -162,8 +162,8 @@ who redeemed it.
 
 **Removed before the upstream.** The cookie is stripped from the `Cookie`
 header (`session.TakeCookie`) immediately after the `/_proxy/preview`
-path check and before any other routing decision, so the app itself, every
-auth handler and the kai-preview path never see it.
+path check and before any other routing decision, so neither the app itself
+nor any auth handler ever sees it.
 
 **The upgrade slides, open frames don't.** A websocket upgrade is an ordinary
 request/response pair — the slid `Set-Cookie` reaches the client on the `101`
@@ -196,34 +196,68 @@ Incoming request
 │    before any further routing — see §6; a request to /_proxy/sign_out
 │    clears it too, whether or not the app has an auth handler)
 │
-├─3─ App has dev-mode enabled + path starts with /_proxy/kai-preview/*?
-│       └─ YES → kai-preview composite handler
-│
-├─4─ Path starts with /_proxy/* and the app has an auth handler?
+├─3─ Path starts with /_proxy/* and the app has an auth handler?
 │       └─ YES → existing auth handler (sign-out also ends the
 │                 sessions-manager session, then OAuth2 Proxy / Basic)
 │
-├─5─ App has dev-mode enabled + valid preview session cookie for this origin?
+├─4─ App has dev-mode enabled + valid preview session cookie for this origin?
 │       └─ YES → forward to upstream (skips AuthRules; slides the cookie)
 │
-├─6─ App has dev-mode enabled + valid kai-preview session cookie?
-│       └─ YES → forward to upstream (skips AuthRules; slides the cookie)
+├─5─ Preview links enabled + frame ancestors set + app has dev-mode enabled
+│    + frame document load (no valid preview session)?
+│       └─ YES → session-required page (§7.1)
 │
-├─7─ App has dev-mode enabled + iframe document load, no session?
-│       └─ YES → serve kai-preview bootstrap shim
-│
-└─8─ AuthRules matching
+└─6─ AuthRules matching
         └─ matching rule found → apply configured auth, forward to upstream
            no match → 404
 ```
 
 Step 2 runs before any auth handler, `AuthRule` or upstream forwarding — see
 [§2](#2-endpoints), and clears the preview session cookie on sign-out
-regardless of whether the app has an auth handler. Step 4 is checked ahead of
-step 5, when the app does have an auth handler, so sign-out and the OIDC
+regardless of whether the app has an auth handler. Step 3 is checked ahead of
+step 4, when the app does have an auth handler, so sign-out and the OIDC
 callback always reach it rather than being shadowed by a live preview
-session; on a sign-out it additionally ends the sessions-manager session. See
-[kai-preview.md](kai-preview.md) for steps 3, 6 and 7.
+session; on a sign-out it additionally ends the sessions-manager session.
+
+### 7.1 Session-Required Page
+
+Step 5 answers a dev-mode app framed without a valid preview session — the
+session expired, was signed out, or was never started. The frame cannot fix
+this itself; its parent (kbc-ui) has to mint a new link and reframe it. The
+page tells it to.
+
+**When:** `preview.jwksURL` and `preview.allowedFrameAncestors` are set (with
+no ancestors no parent could get the message), the workload has dev mode
+enabled, the request has `Sec-Fetch-Dest: iframe` or `frame` and an `Accept` header
+containing `text/html` (`preview.IsFrameDocumentLoad`), and step 4 did not
+match. Any other request — a top-level load, a fetch from inside the frame, a
+non-dev-mode app — falls through to step 6. `Sec-Fetch-*` can be forged by a
+non-browser client; the page grants nothing, so it only picks which page is
+shown.
+
+**Response:** `200` with the text "The preview session ended. Reload the
+preview." and a nonce'd script that posts
+
+```js
+{ type: "app-preview-session-required" }
+```
+
+to `window.parent`, once for each origin in `preview.allowedFrameAncestors`
+(the browser drops it for every origin that is not the parent's). The message
+is posted on load and repeated with backoff for about 9 s, so a parent that
+attaches its listener late still gets it. Nothing else: no
+token, no exchange, no storage. Telling "expired" from "never started" is up
+to the parent (time since it framed the link).
+
+**Response headers:** `Cache-Control: no-store`, `Referrer-Policy:
+no-referrer`, and a `Content-Security-Policy` built by
+`preview.SessionRequiredCSP(nonce, frameAncestors)`:
+
+```
+default-src 'none'; script-src 'nonce-<nonce>'; form-action 'none'; base-uri 'none'; frame-ancestors <ancestors>
+```
+
+`<ancestors>` is `preview.allowedFrameAncestors` space-joined.
 
 ---
 
@@ -236,7 +270,7 @@ session; on a sign-out it additionally ends the sessions-manager session. See
 | `preview.jwksURL` | `APPS_PROXY_PREVIEW_JWKS_URL` | `""` (disabled — every `/_proxy/preview` request gets `404`) | In-cluster URL of the sandboxes-service JWKS. |
 | `preview.issuer` | `APPS_PROXY_PREVIEW_ISSUER` | `""` (required when `jwksURL` is set) | Expected `iss` claim of preview links, e.g. `https://apps.<suffix>`. |
 | `preview.sessionSigningKey` | `APPS_PROXY_PREVIEW_SESSION_SIGNING_KEY` | `""` (required when `jwksURL` is set, ≥ 32 chars) | HMAC key for the session cookie. Generate with `openssl rand -hex 32`. |
-| `preview.allowedFrameAncestors` | `APPS_PROXY_PREVIEW_ALLOWED_FRAME_ANCESTORS` | `""` → `frame-ancestors 'none'` | Comma-separated list of origins allowed to frame the landing page. |
+| `preview.allowedFrameAncestors` | `APPS_PROXY_PREVIEW_ALLOWED_FRAME_ANCESTORS` | `""` → `frame-ancestors 'none'` | Comma-separated list of origins allowed to frame the landing page and the session-required page ([§7.1](#71-session-required-page)); the latter posts its message to each of them and is not served when the list is empty. |
 
 ### 8.2 Code constants (not configurable)
 
@@ -271,18 +305,18 @@ request body.
 - **An open websocket is not closed when the session ends.** Nothing revokes
   an in-flight connection; it is only new requests that re-check the cookie.
 - **An expired or missing session is indistinguishable from one that was
-  never established.** `previewSessionValid` returns `false` in both cases,
-  and the request falls through to whatever the app's normal `AuthRules`
-  produce — its own login, a password prompt, or `404` — with nothing telling
-  the visitor their preview session lapsed. The generic `401` in
+  never established.** `previewSessionValid` returns `false` in both cases.
+  A frame document load gets the session-required page
+  ([§7.1](#71-session-required-page)) either way; any other request falls
+  through to whatever the app's normal `AuthRules` produce — its own login, a
+  password prompt, or `404`. The generic `401` in
   [§2](#2-endpoints) is a separate case: it is only returned when redeeming a
   link fails, never when an existing session expires.
 - **A link fails across a slug rename.** If the app's canonical host changes
   (proxy-config slug update) between minting and redeeming, `sub` no longer
   matches and the link is rejected with the generic `401`; the caller must
   mint a new link.
-- **A valid preview session skips all of the app's `AuthRules`,** the same as
-  a kai-preview session. A path that no `AuthRule` matches (`404` without a
+- **A valid preview session skips all of the app's `AuthRules`.** A path that no `AuthRule` matches (`404` without a
   session) is forwarded to the app instead.
 - **A preview link works for anyone who holds it, and any page can make a
   browser redeem it.** The landing page submits the link on its own, so a page

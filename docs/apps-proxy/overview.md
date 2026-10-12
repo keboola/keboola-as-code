@@ -17,6 +17,5 @@
 
 ## Further docs
 
-- [kai-preview.md](kai-preview.md) — dev-mode iframe-auth for the kbc-ui SPA.
-- [preview-link.md](preview-link.md) — dev-mode preview links minted by sandboxes-service.
+- [preview-link.md](preview-link.md) — dev-mode preview links minted by sandboxes-service, and the page a frame gets without a preview session.
 - [sessions.md](sessions.md) — end-user session tracking for data apps.

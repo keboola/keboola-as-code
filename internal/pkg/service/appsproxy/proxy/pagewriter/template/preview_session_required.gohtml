@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer">
+    <title>Preview session ended</title>
+</head>
+<body>
+<p>The preview session ended. Reload the preview.</p>
+<script nonce="{{ .Nonce }}">
+(function () {
+  "use strict";
+  var origins = {{ .ParentOrigins }};
+  var message = { type: {{ .MessageType }} };
+  if (window.parent === window) {
+    return;
+  }
+  function post() {
+    for (var i = 0; i < origins.length; i++) {
+      window.parent.postMessage(message, origins[i]);
+    }
+  }
+  // The parent may attach its listener after this frame loads, so the message is repeated with backoff.
+  [0, 100, 400, 1100, 2600, 4600, 6600, 8600].forEach(function (delay) { setTimeout(post, delay); });
+})();
+</script>
+</body>
+</html>

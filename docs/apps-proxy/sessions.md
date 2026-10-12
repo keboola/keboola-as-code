@@ -395,8 +395,8 @@ minted immediately after every login.
   Where an exact count matters, drop sessions whose only event is a
   `session_start` — a duplicate never gets a second event, because the browser
   keeps just one cookie and every later request carries it.
-- **Dev-mode previews are tracked too.** A data app opened through the
-  kai-preview iframe path in the Connection UI reaches the upstream like any
+- **Dev-mode previews are tracked too.** A data app opened through a
+  preview link in the Connection UI reaches the upstream like any
   other request, so it produces sessions in the same table with no marker to
   tell it apart. Nothing distinguishes an internal preview from a real visit.
 - **Activity excludes framework background polls.** `/_stcore/health` and

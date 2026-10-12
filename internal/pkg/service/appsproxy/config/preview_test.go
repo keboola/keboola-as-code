@@ -1,10 +1,8 @@
 package config_test
 
 import (
-	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,15 +19,6 @@ func requiredConfig(t *testing.T) config.Config {
 	cfg.CsrfTokenSalt = "x"
 	cfg.SandboxesAPI.URL = "https://example"
 	cfg.K8s = config.K8s{AppsNamespace: "ns"}
-	storageURL, err := url.Parse("https://connection.keboola.com")
-	require.NoError(t, err)
-	cfg.StorageAPIURL = storageURL
-	cfg.KaiPreview = config.KaiPreview{
-		HandshakeSigningKey: "k1",
-		SessionSigningKey:   "k2",
-		SessionTTL:          4 * time.Hour,
-		AllowedOrigins:      []string{"https://connection.keboola.com"},
-	}
 	return cfg
 }
 

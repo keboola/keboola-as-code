@@ -28,7 +28,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	proxyDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/kaipreview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/oauthproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
@@ -207,6 +206,23 @@ func previewCookie(resp *http.Response) *http.Cookie {
 	return nil
 }
 
+// frameLoad is the header set of a browser loading a document into an iframe.
+func frameLoad() map[string]string {
+	return map[string]string{"Sec-Fetch-Dest": "iframe", "Accept": "text/html,application/xhtml+xml"}
+}
+
+// requirePreviewPageHeaders checks the headers of a preview page and returns the nonce its CSP allows.
+func requirePreviewPageHeaders(t *testing.T, resp *http.Response, formAction string, frameAncestors string) string {
+	t.Helper()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "no-store", resp.Header.Get("Cache-Control"))
+	assert.Equal(t, "no-referrer", resp.Header.Get("Referrer-Policy"))
+	csp := resp.Header.Get("Content-Security-Policy")
+	m := regexp.MustCompile(`^default-src 'none'; script-src 'nonce-([A-Za-z0-9]{24})'; form-action ` + regexp.QuoteMeta(formAction) + `; base-uri 'none'; frame-ancestors ` + regexp.QuoteMeta(frameAncestors) + `$`).FindStringSubmatch(csp)
+	require.NotNil(t, m, csp)
+	return m[1]
+}
+
 func readBody(t *testing.T, resp *http.Response) string {
 	t.Helper()
 	b, err := io.ReadAll(resp.Body)
@@ -219,12 +235,8 @@ func TestPreviewLanding(t *testing.T) {
 	e := startPreviewEnv(t)
 
 	resp := e.get(authHost, preview.Path, nil, nil)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "no-store", resp.Header.Get("Cache-Control"))
-	assert.Equal(t, "no-referrer", resp.Header.Get("Referrer-Policy"))
-	m := regexp.MustCompile(`^default-src 'none'; script-src 'nonce-([A-Za-z0-9]{24})'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'$`).FindStringSubmatch(resp.Header.Get("Content-Security-Policy"))
-	require.NotNil(t, m, resp.Header.Get("Content-Security-Policy"))
-	assert.Contains(t, readBody(t, resp), `nonce="`+m[1]+`"`)
+	nonce := requirePreviewPageHeaders(t, resp, "'self'", "'none'")
+	assert.Contains(t, readBody(t, resp), `nonce="`+nonce+`"`)
 	assert.Nil(t, previewCookie(resp))
 }
 
@@ -493,16 +505,6 @@ func TestPreviewSession(t *testing.T) {
 		assert.Len(t, *e.appServer.Requests, before, "the OIDC callback never reaches the app")
 	})
 
-	t.Run("iframe-load-after-redeem-gets-the-app-not-the-kai-shim", func(t *testing.T) {
-		t.Parallel()
-		e := startPreviewEnv(t)
-		e.setDevMode("app-auth", authRef, true)
-		e.waitForKeys(authHost, authOrigin)
-		c := e.session(authHost, authOrigin)
-		resp := e.get(authHost, "/", c, map[string]string{"Sec-Fetch-Dest": "iframe", "Accept": "text/html"})
-		assert.Equal(t, "Hello, client", readBody(t, resp))
-	})
-
 	t.Run("invalid-or-missing-cookie-gets-normal-login", func(t *testing.T) {
 		t.Parallel()
 		e := startPreviewEnv(t)
@@ -605,81 +607,83 @@ func TestPreviewSession(t *testing.T) {
 		e.setDevMode("draft-auth", draftRef, false)
 		assert.Contains(t, readBody(t, e.get(draftHost, "/", draftCookie, nil)), `autocomplete="current-password"`, "gate applies to Sandbox hosts")
 	})
+}
 
-	// kai-preview-coexistence: the pre-existing kai-preview iframe-auth flow
-	// keeps working once the preview session gate is wired in, both on its own
-	// and side-by-side with a preview session on the same dev-mode app.
-	t.Run("kai-preview-coexistence", func(t *testing.T) {
-		t.Parallel()
-		e := startPreviewEnv(t)
-		e.setDevMode("app-auth", authRef, true)
-		e.waitForKeys(authHost, authOrigin)
-
-		sessionKey := e.mocked.TestConfig().KaiPreview.SessionSigningKey
-		kaiJWT, err := kaipreview.MintSessionJWT(sessionKey, e.clock, "auth", "123", 4*time.Hour)
-		require.NoError(t, err)
-		kaiCookie := &http.Cookie{Name: kaipreview.SessionCookieName, Value: kaiJWT}
-
-		// a. A valid kai cookie alone reaches the app, on a plain request and on
-		// an iframe document load (which would otherwise get the bootstrap shim).
-		resp := e.get(authHost, "/", kaiCookie, nil)
-		assert.Equal(t, "Hello, client", readBody(t, resp))
-		kaiOnlyRequests := *e.appServer.Requests
-		require.NotEmpty(t, kaiOnlyRequests)
-		kaiOnlyCookie, err := kaiOnlyRequests[len(kaiOnlyRequests)-1].Cookie(kaipreview.SessionCookieName)
-		require.NoError(t, err)
-
-		resp = e.get(authHost, "/", kaiCookie, map[string]string{"Sec-Fetch-Dest": "iframe", "Accept": "text/html"})
-		assert.Equal(t, "Hello, client", readBody(t, resp), "iframe load with a valid kai session reaches the app, not the bootstrap shim")
-
-		// b. A valid kai cookie plus a garbage preview cookie still reaches the
-		// app via the kai-preview path.
-		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, authOrigin+"/", nil)
-		require.NoError(t, err)
-		req.AddCookie(kaiCookie)
-		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: "garbage"})
-		assert.Equal(t, "Hello, client", readBody(t, e.do(req)))
-
-		// c. A valid preview cookie plus a valid kai cookie reaches the app via
-		// the preview session gate. The preview cookie is stripped; the kai
-		// cookie reaches the upstream exactly as it does on a kai-only request.
-		previewSessionCookie := e.session(authHost, authOrigin)
-		req, err = http.NewRequestWithContext(t.Context(), http.MethodGet, authOrigin+"/", nil)
-		require.NoError(t, err)
-		req.AddCookie(kaiCookie)
-		req.AddCookie(previewSessionCookie)
-		resp = e.do(req)
-		assert.Equal(t, "Hello, client", readBody(t, resp))
-		bothRequests := *e.appServer.Requests
-		require.NotEmpty(t, bothRequests)
-		last := bothRequests[len(bothRequests)-1]
-		_, err = last.Cookie(session.CookieName)
-		require.ErrorIs(t, err, http.ErrNoCookie)
-		bothKaiCookie, err := last.Cookie(kaipreview.SessionCookieName)
-		require.NoError(t, err)
-		assert.Equal(t, kaiOnlyCookie.Value, bothKaiCookie.Value, "kai cookie reaches upstream exactly as on a kai-only request")
-
-		// d. A /_proxy/kai-preview/* endpoint request is served by the kai
-		// handler the same way whether or not a preview cookie is present,
-		// and never reaches the app.
-		requestsBefore := len(*e.appServer.Requests)
-
-		without, err := http.NewRequestWithContext(t.Context(), http.MethodGet, authOrigin+"/_proxy/kai-preview/bootstrap", nil)
-		require.NoError(t, err)
-		respWithout := e.do(without)
-		bodyWithout := readBody(t, respWithout)
-		assert.NotEqual(t, "Hello, client", bodyWithout)
-		assert.Len(t, *e.appServer.Requests, requestsBefore)
-
-		with, err := http.NewRequestWithContext(t.Context(), http.MethodGet, authOrigin+"/_proxy/kai-preview/bootstrap", nil)
-		require.NoError(t, err)
-		with.AddCookie(previewSessionCookie)
-		respWith := e.do(with)
-		bodyWith := readBody(t, respWith)
-		assert.NotEqual(t, "Hello, client", bodyWith)
-		assert.Len(t, *e.appServer.Requests, requestsBefore)
-
-		assert.Equal(t, respWithout.StatusCode, respWith.StatusCode)
-		assert.Equal(t, bodyWithout, bodyWith)
+//nolint:paralleltest,tparallel // subtests share e (dev-mode state) and must run in sequence
+func TestPreviewSessionRequiredPage(t *testing.T) {
+	t.Parallel()
+	ancestors := []string{"https://connection.keboola.com", "https://connection.north-europe.azure.keboola.com"}
+	e := startPreviewEnv(t, func(cfg *config.Config, _ *previewtest.JWKSServer) {
+		cfg.Preview.AllowedFrameAncestors = ancestors
 	})
+	assertPage := func(t *testing.T, resp *http.Response) {
+		t.Helper()
+		nonce := requirePreviewPageHeaders(t, resp, "'none'", strings.Join(ancestors, " "))
+		body := readBody(t, resp)
+		assert.Contains(t, body, `nonce="`+nonce+`"`)
+		assert.Contains(t, body, "The preview session ended. Reload the preview.")
+		assert.Contains(t, body, `"`+preview.SessionRequiredMessageType+`"`)
+		for _, origin := range ancestors {
+			assert.Contains(t, body, `"`+origin+`"`)
+		}
+		assert.Nil(t, previewCookie(resp))
+	}
+
+	e.setDevMode("app-auth", authRef, true)
+	e.waitForKeys(authHost, authOrigin)
+
+	t.Run("frame-without-session", func(t *testing.T) {
+		before := len(*e.appServer.Requests)
+		assertPage(t, e.get(authHost, "/", nil, frameLoad()))
+		assertPage(t, e.get(authHost, "/some/page", nil, map[string]string{"Sec-Fetch-Dest": "frame", "Accept": "text/html"}))
+		assert.Len(t, *e.appServer.Requests, before, "the app is never reached")
+	})
+
+	t.Run("frame-with-invalid-session", func(t *testing.T) {
+		assertPage(t, e.get(authHost, "/", &http.Cookie{Name: session.CookieName, Value: "garbage"}, frameLoad()))
+	})
+
+	t.Run("frame-with-valid-session-gets-the-app", func(t *testing.T) {
+		c := e.session(authHost, authOrigin)
+		assert.Equal(t, "Hello, client", readBody(t, e.get(authHost, "/", c, frameLoad())))
+	})
+
+	t.Run("not-a-frame-document-load-gets-normal-login", func(t *testing.T) {
+		for name, headers := range map[string]map[string]string{
+			"top-level":     {"Sec-Fetch-Dest": "document", "Accept": "text/html"},
+			"no-fetch-dest": {"Accept": "text/html"},
+			"frame-xhr":     {"Sec-Fetch-Dest": "iframe", "Accept": "application/json"},
+		} {
+			assert.Contains(t, readBody(t, e.get(authHost, "/", nil, headers)), `autocomplete="current-password"`, name)
+		}
+	})
+
+	t.Run("internal-path-goes-to-auth-handler", func(t *testing.T) {
+		resp := e.get(authHost, "/_proxy/sign_out", nil, frameLoad())
+		assert.NotContains(t, readBody(t, resp), preview.SessionRequiredMessageType)
+	})
+
+	t.Run("not-in-dev-mode-gets-normal-login", func(t *testing.T) {
+		e.setDevMode("app-auth", authRef, false)
+		assert.Contains(t, readBody(t, e.get(authHost, "/", nil, frameLoad())), `autocomplete="current-password"`)
+		e.setDevMode("app-auth", authRef, true)
+	})
+}
+
+func TestPreviewSessionRequiredPage_PreviewDisabled(t *testing.T) {
+	t.Parallel()
+	e := startPreviewEnv(t, func(cfg *config.Config, _ *previewtest.JWKSServer) {
+		cfg.Preview.JWKSURL = ""
+	})
+	e.setDevMode("app-auth", authRef, true)
+	resp := e.get(authHost, "/", nil, frameLoad())
+	assert.Contains(t, readBody(t, resp), `autocomplete="current-password"`, "without preview links no session could exist, so nothing asks for one")
+}
+
+func TestPreviewSessionRequiredPage_NoFrameAncestors(t *testing.T) {
+	t.Parallel()
+	e := startPreviewEnv(t)
+	e.setDevMode("app-auth", authRef, true)
+	resp := e.get(authHost, "/", nil, frameLoad())
+	assert.Contains(t, readBody(t, resp), `autocomplete="current-password"`, "no parent could be told, so the frame gets the normal login")
 }

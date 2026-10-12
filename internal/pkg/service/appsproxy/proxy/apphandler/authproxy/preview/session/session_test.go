@@ -214,7 +214,7 @@ func TestSessions_RejectsForeignCookies(t *testing.T) {
 	assert.False(t, ok, "alg none")
 
 	other := unverifiedClaims(t, cookie.Value)
-	other.Purpose = "kai-preview-session"
+	other.Purpose = "other-purpose"
 	forged, err := jwt.NewWithClaims(jwt.SigningMethodHS256, other).SignedString([]byte(sessionKey))
 	require.NoError(t, err)
 	_, _, ok = sessions.Check(forged, testOrigin)
