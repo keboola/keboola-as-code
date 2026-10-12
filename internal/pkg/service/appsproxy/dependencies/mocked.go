@@ -109,6 +109,8 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	if len(cfg.KaiPreview.AllowedOrigins) == 0 {
 		cfg.KaiPreview.AllowedOrigins = []string{"https://connection.keboola.com"}
 	}
+	// Test identity providers listen on loopback over plain HTTP.
+	cfg.AuthProviders.AllowPrivateEndpoints = true
 	if cfg.K8s.AppsNamespace == "" {
 		cfg.K8s.AppsNamespace = "keboola"
 	}

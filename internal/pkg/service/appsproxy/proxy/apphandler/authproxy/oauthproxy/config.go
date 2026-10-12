@@ -37,6 +37,12 @@ func proxyConfig(
 		return nil, err
 	}
 
+	if !cfg.AuthProviders.AllowPrivateEndpoints {
+		if err := validateProviderEndpoints(proxyProvider); err != nil {
+			return nil, err
+		}
+	}
+
 	v := options.NewOptions()
 
 	// Connect to the app upstream
