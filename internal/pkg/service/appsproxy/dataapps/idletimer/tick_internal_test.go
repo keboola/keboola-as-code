@@ -15,6 +15,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -132,7 +133,7 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	tel := telemetry.NewForTest(t)
 
 	return &harness{
-		manager: newManager(clock, logger, c, source, newMetrics(tel.Meter()), suspendEnabled),
+		manager: newManager(t.Context(), clock, logger, c, source, newMetrics(tel.Meter()), suspendEnabled),
 		source:  source,
 		clock:   clock,
 		fake:    c.dyn.(*k8sfake.FakeDynamicClient),
@@ -667,4 +668,35 @@ func TestShutdown_StopsAdmittingWrites(t *testing.T) {
 	h.flush()
 
 	assert.Len(t, h.fake.Actions(), before, "a write admitted after Shutdown would race its Wait")
+}
+
+// A failure a retry cannot clear must cost a bounded number of attempts, not
+// one per request and one per websocket frame.
+func TestRecordActivity_APersistentFailureIsNotRetriedPerRequest(t *testing.T) {
+	t.Parallel()
+
+	logger := log.NewDebugLogger()
+	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1", threshold))
+	h.manager.tick(t.Context())
+
+	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, k8serrors.NewForbidden(schema.GroupResource{Resource: resource}, "member-1", errors.New("no patch rule"))
+	})
+
+	h.clock.Advance(time.Minute)
+	h.fake.ClearActions()
+	for range 50 {
+		h.manager.RecordActivity(t.Context(), appRef)
+		h.flush()
+	}
+
+	var patches int
+	for _, a := range h.fake.Actions() {
+		if a.GetVerb() == "patch" {
+			patches++
+		}
+	}
+	assert.LessOrEqual(t, patches, 5, "a standing failure must not be retried once per request")
+	assert.LessOrEqual(t, strings.Count(logger.AllMessages(), "failed to record activity"), 1,
+		"the request path must not log once per request")
 }

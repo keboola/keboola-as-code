@@ -24,6 +24,10 @@ const wakeWindow = time.Minute
 
 const writeTimeout = 5 * time.Second
 
+// writeRetryInterval holds off a write that failed for a reason a retry may
+// clear. Short, because the margin that covers a missed write is one heartbeat.
+const writeRetryInterval = time.Second
+
 // Rounds are serial, so a slow one delays the next rather than piling up. This
 // stops a wedged call from stopping the loop for good.
 const tickTimeout = 2 * tickInterval
@@ -43,12 +47,17 @@ type k8sWorkloads interface {
 }
 
 type Manager struct {
+	// wg counts marks that have been accepted but not yet handled, so a waiter
+	// covers the write a mark goes on to make.
 	wg sync.WaitGroup
 	// A websocket frame can arrive after Shutdown begins: hijacked connections
-	// are not drained by the HTTP server. Adding to the WaitGroup then would
-	// race its Wait, so admission closes under this lock first.
+	// are not drained by the HTTP server. Admission closes under this lock, so
+	// no nudge is ever accepted after Wait has started counting down.
 	closeLock sync.RWMutex
 	closed    bool
+	// stopping ends the writers, and is closed only once every accepted nudge
+	// has been handled.
+	stopping chan struct{}
 
 	suspendEnabled bool
 	clock          clockwork.Clock
@@ -64,10 +73,21 @@ type Manager struct {
 }
 
 type state struct {
+	// nudges wakes this workload's writer. It holds one: a second would tell
+	// the writer nothing the first does not.
+	nudges chan struct{}
+	// stop ends the writer when the workload leaves the cache.
+	stop chan struct{}
+
 	lock sync.Mutex
 
 	lastRequestAt time.Time
-	lastWriteAt   time.Time
+	// lastWriteAt is the last request time this replica successfully wrote.
+	lastWriteAt time.Time
+	// retryAfter holds off a write that just failed. A retry a mark later is
+	// what keeps a transient failure from costing a heartbeat of margin; one
+	// per request is what turned a standing failure into a storm.
+	retryAfter time.Time
 
 	sandboxName    string
 	threshold      time.Duration
@@ -92,6 +112,7 @@ type dependencies interface {
 
 func NewManager(ctx context.Context, d dependencies, k8sClient dynamic.Interface) *Manager {
 	m := newManager(
+		ctx,
 		d.Clock(),
 		d.Logger().WithComponent("idletimer"),
 		newClient(k8sClient, d.Config().K8s.AppsNamespace),
@@ -122,8 +143,9 @@ func NewManager(ctx context.Context, d dependencies, k8sClient dynamic.Interface
 	return m
 }
 
-func newManager(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, metrics *metrics, suspendEnabled bool) *Manager {
-	return &Manager{
+func newManager(ctx context.Context, clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, metrics *metrics, suspendEnabled bool) *Manager {
+	m := &Manager{
+		stopping:           make(chan struct{}),
 		suspendEnabled:     suspendEnabled,
 		clock:              clock,
 		logger:             logger,
@@ -131,10 +153,20 @@ func newManager(clock clockwork.Clock, logger log.Logger, c *client, workloads k
 		workloads:          workloads,
 		metrics:            metrics,
 		lastRecordErrorLog: map[metav1.StatusReason]time.Time{},
-		stateMap: syncmap.New[k8sapp.WorkloadRef, state](func(k8sapp.WorkloadRef) *state {
-			return &state{}
-		}),
 	}
+
+	// GetOrInit runs this once per workload, under the map lock, which is what
+	// makes starting the workload's writer here safe.
+	m.stateMap = syncmap.New[k8sapp.WorkloadRef, state](func(ref k8sapp.WorkloadRef) *state {
+		item := &state{
+			nudges: make(chan struct{}, 1),
+			stop:   make(chan struct{}),
+		}
+		go m.writeLoop(ctx, ref, item)
+		return item
+	})
+
+	return m
 }
 
 // Shutdown waits for the activity writes in flight. They are detached from
@@ -146,35 +178,31 @@ func (m *Manager) Shutdown(ctx context.Context) {
 
 	m.logger.Info(ctx, "waiting for pending idle timer writes")
 	m.wg.Wait()
+
+	close(m.stopping)
 }
 
 func (m *Manager) evictWorkload(ref k8sapp.WorkloadRef) {
-	m.stateMap.Delete(ref)
+	if item, found := m.stateMap.Delete(ref); found {
+		close(item.stop)
+	}
 }
 
-// RecordActivity marks a workload as in use. Every call updates the in-memory
-// mark; the shared record is written once per heartbeat interval.
-func (m *Manager) RecordActivity(ctx context.Context, ref k8sapp.WorkloadRef) {
+// RecordActivity marks a workload as in use. It runs in the GotConn callback
+// and, per frame, in the websocket observer, so it only takes the workload's
+// own lock and nudges its writer. Whether a write is owed, and what it carries,
+// is the writer's to decide.
+//
+// The mark is stored here rather than carried on the channel because a nudge
+// may be dropped. A dropped nudge is harmless: one is already queued, and the
+// writer reads the mark rather than the nudge.
+func (m *Manager) RecordActivity(_ context.Context, ref k8sapp.WorkloadRef) {
 	item := m.stateMap.GetOrInit(ref)
 
 	item.lock.Lock()
-	now := m.clock.Now()
-	item.lastRequestAt = now
-	due := writeDue(item, now)
-	name := item.sandboxName
-	previousWriteAt := item.lastWriteAt
-	if due {
-		// Claimed before the write so concurrent requests do not all fire one.
-		item.lastWriteAt = now
-	}
+	item.lastRequestAt = m.clock.Now()
 	item.lock.Unlock()
 
-	if !due {
-		return
-	}
-
-	// Detached: this runs in the GotConn callback and, per frame, in the
-	// websocket observer, neither of which may wait on the apiserver.
 	m.closeLock.RLock()
 	if m.closed {
 		m.closeLock.RUnlock()
@@ -183,34 +211,86 @@ func (m *Manager) RecordActivity(ctx context.Context, ref k8sapp.WorkloadRef) {
 	m.wg.Add(1)
 	m.closeLock.RUnlock()
 
-	go func() {
-		defer m.wg.Done()
-
-		writeCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), writeTimeout, errors.New("idle timer write timeout"))
-		defer cancel()
-
-		if err := m.client.cas(writeCtx, name, now); err != nil {
-			m.logger.Warnf(writeCtx, "failed to record activity for workload %q: %s", ref, err)
-			m.releaseWriteClaim(item, now, previousWriteAt)
-		}
-	}()
-}
-
-// releaseWriteClaim undoes the claim a failed write made, so the next request
-// writes instead of waiting out an interval. Holding the claim would let the
-// record fall two heartbeat intervals behind while the margin covers one, and
-// the other replica, which never saw this traffic, would suspend early.
-func (m *Manager) releaseWriteClaim(item *state, claimed, previous time.Time) {
-	item.lock.Lock()
-	defer item.lock.Unlock()
-
-	// Only if nothing newer has landed since.
-	if item.lastWriteAt.Equal(claimed) {
-		item.lastWriteAt = previous
+	select {
+	case item.nudges <- struct{}{}:
+	default:
+		m.wg.Done()
 	}
 }
 
-// writeDue reports whether this request owes a shared write. The caller holds
+// writeLoop owns the write side of one workload. Serial by construction, so a
+// workload never has two writes in flight, while workloads never wait on each
+// other.
+func (m *Manager) writeLoop(ctx context.Context, ref k8sapp.WorkloadRef, item *state) {
+	for {
+		select {
+		case <-item.nudges:
+			m.writeIfDue(ctx, ref, item)
+			m.wg.Done()
+		case <-item.stop:
+			// Eviction is the only exit that can strand nudges: Shutdown closes
+			// stopping only once every one of them has been handled.
+			m.drainNudges(item)
+			return
+		case <-m.stopping:
+			return
+		}
+	}
+}
+
+// drainNudges accounts for the nudges a stopped writer will not act on, so a
+// waiter does not hang on them.
+func (m *Manager) drainNudges(item *state) {
+	for {
+		select {
+		case <-item.nudges:
+			m.wg.Done()
+		default:
+			return
+		}
+	}
+}
+
+func (m *Manager) writeIfDue(ctx context.Context, ref k8sapp.WorkloadRef, item *state) {
+	item.lock.Lock()
+	at := item.lastRequestAt
+	name := item.sandboxName
+	due := writeDue(item, at, m.clock.Now())
+	item.lock.Unlock()
+
+	if !due {
+		return
+	}
+
+	writeCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), writeTimeout, errors.New("idle timer write timeout"))
+	defer cancel()
+
+	err := m.client.cas(writeCtx, name, at)
+
+	item.lock.Lock()
+	defer item.lock.Unlock()
+
+	if err == nil {
+		item.lastWriteAt = at
+		item.retryAfter = time.Time{}
+		return
+	}
+
+	item.retryAfter = m.clock.Now().Add(retryDelay(item, err))
+	m.logger.Warnf(writeCtx, "failed to record activity for workload %q: %s", ref, err)
+}
+
+// retryDelay holds a failed write off for one interval, and for a whole
+// heartbeat when retrying cannot fix it: an absent record is created by the
+// tick, and a denied one needs an RBAC change.
+func retryDelay(item *state, err error) time.Duration {
+	if k8serrors.IsNotFound(err) || k8serrors.IsForbidden(err) {
+		return heartbeatInterval(item.threshold)
+	}
+	return writeRetryInterval
+}
+
+// writeDue reports whether this workload owes a shared write. The caller holds
 // the lock.
 //
 // A workload the tick has not reached has no record name and writes nothing;
@@ -218,14 +298,17 @@ func (m *Manager) releaseWriteClaim(item *state, claimed, previous time.Time) {
 // full window. Until a threshold is known the cadence is the shortest one the
 // thresholds allow, because writing too rarely lets the other replica read a
 // stale value and suspend early.
-func writeDue(item *state, now time.Time) bool {
+func writeDue(item *state, at, now time.Time) bool {
 	if item.sandboxName == "" {
 		return false
 	}
 	if item.thresholdKnown && item.threshold == 0 {
 		return false
 	}
-	return now.Sub(item.lastWriteAt) > heartbeatInterval(item.threshold)
+	if now.Before(item.retryAfter) {
+		return false
+	}
+	return at.Sub(item.lastWriteAt) > heartbeatInterval(item.threshold)
 }
 
 // warnUnresolved reports each App once rather than once per tick: a standing
