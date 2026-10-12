@@ -395,7 +395,13 @@ func (m *Manager) observe(item *state, c k8sapp.SleepCandidate, now time.Time) (
 
 	item.threshold = c.Threshold
 	item.thresholdKnown = true
-	item.sandboxName = c.SandboxName
+	if item.sandboxName != c.SandboxName {
+		// The cadence belongs to the record, and a new member is a new record.
+		// Carrying it over leaves the new one unwritten while traffic flows.
+		item.sandboxName = c.SandboxName
+		item.lastWriteAt = time.Time{}
+		item.retryAfter = time.Time{}
+	}
 
 	restarted := c.LastStarted.After(item.suspendedAt)
 	if !item.suspendedAt.IsZero() {

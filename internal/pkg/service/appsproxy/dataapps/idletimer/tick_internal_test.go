@@ -670,6 +670,32 @@ func TestShutdown_StopsAdmittingWrites(t *testing.T) {
 	assert.Len(t, h.fake.Actions(), before, "a write admitted after Shutdown would race its Wait")
 }
 
+// A redeploy moves the App onto a new member Sandbox, and the record is named
+// after the member. The cadence is a property of the record, so carrying it
+// across the switch leaves the new record unwritten while traffic flows.
+func TestRecordActivity_AMemberSwitchWritesTheNewRecordAtOnce(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h.manager.tick(t.Context())
+
+	h.clock.Advance(time.Minute)
+	h.manager.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	h.source.candidates = []k8sapp.SleepCandidate{candidate(appRef, "member-2", threshold)}
+	h.manager.tick(t.Context())
+
+	// Well inside one heartbeat interval of the write to member-1.
+	h.clock.Advance(time.Second)
+	h.manager.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	rec, err := h.manager.client.get(t.Context(), "member-2")
+	require.NoError(t, err)
+	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want member-2 to carry %s, got %s", h.clock.Now(), rec.lastRequestAt)
+}
+
 // A failure a retry cannot clear must cost a bounded number of attempts, not
 // one per request and one per websocket frame.
 func TestRecordActivity_APersistentFailureIsNotRetriedPerRequest(t *testing.T) {
