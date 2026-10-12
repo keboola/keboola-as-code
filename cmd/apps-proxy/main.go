@@ -8,6 +8,8 @@ import (
 
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/DataDog/dd-trace-go/v2/profiler"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/requests"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/version"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/entrypoint"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -96,6 +99,11 @@ func run(ctx context.Context, cfg config.Config, _ []string) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	// OAuth2 Proxy sends all requests to authentication providers through this client.
+	if !cfg.AuthProviders.AllowPrivateEndpoints {
+		requests.DefaultHTTPClient = transport.NewPublicOnlyHTTPClient("oauth2-proxy/" + version.VERSION)
 	}
 
 	// Create dependencies

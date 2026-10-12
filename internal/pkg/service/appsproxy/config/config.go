@@ -33,6 +33,7 @@ type Config struct {
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`
 	Sessions         Sessions          `configKey:"sessions" configUsage:"End-user session tracking for data apps."`
+	AuthProviders    AuthProviders     `configKey:"authProviders"`
 
 	ConnectionServiceAccountTokenPath string `configKey:"connectionServiceAccountTokenPath" configUsage:"Path to the projected Kubernetes ServiceAccount token used to authenticate to the Keboola APIs. Read per request, so a rotated token needs no restart." validate:"required"`
 }
@@ -138,6 +139,10 @@ func isPlainOrigin(origin string) bool {
 type API struct {
 	Listen    string   `configKey:"listen" configUsage:"Listen address of the configuration HTTP API." validate:"required,hostname_port"`
 	PublicURL *url.URL `configKey:"publicUrl" configUsage:"Public URL of the configuration HTTP API for link generation." validate:"required"`
+}
+
+type AuthProviders struct {
+	AllowPrivateEndpoints bool `configKey:"allowPrivateEndpoints" configUsage:"Allow authentication provider endpoints on non-public addresses and over plain HTTP. For local development and tests only."`
 }
 
 type SandboxesAPI struct {
