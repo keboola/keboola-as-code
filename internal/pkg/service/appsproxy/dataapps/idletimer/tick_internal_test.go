@@ -3,186 +3,22 @@ package idletimer
 import (
 	"context"
 	"strings"
-	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
-	k8sfake "k8s.io/client-go/dynamic/fake"
 	k8stesting "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
-
-const threshold = 900 * time.Second
-
-var appRef = k8sapp.WorkloadRef{AppID: "123"} //nolint:gochecknoglobals // test fixture
-
-// fakeSource stands in for the K8s state watcher.
-type fakeSource struct {
-	synced     bool
-	unresolved []api.AppID
-	candidates []k8sapp.SleepCandidate
-	slept      []k8sapp.WorkloadRef
-	sleptOK    bool
-	sleepErr   error
-}
-
-func (f *fakeSource) HasSynced() bool { return f.synced }
-
-func (f *fakeSource) ScanForSleepCandidates() k8sapp.SleepScan {
-	return k8sapp.SleepScan{Candidates: f.candidates, Unresolved: f.unresolved}
-}
-
-func (f *fakeSource) Sleep(_ context.Context, ref k8sapp.WorkloadRef, _ string) (bool, error) {
-	if f.sleepErr != nil {
-		return false, f.sleepErr
-	}
-	f.slept = append(f.slept, ref)
-	return f.sleptOK, nil
-}
-
-type harness struct {
-	t       *testing.T
-	manager *Manager
-	source  *fakeSource
-	clock   *clockwork.FakeClock
-	fake    *k8sfake.FakeDynamicClient
-	tel     telemetry.ForTest
-	store   cache.Store
-	synced  *atomic.Bool
-}
-
-// cacheRecord puts a record in the watch cache without going near the
-// apiserver, so a test can say what the cache holds and what the apiserver
-// holds separately.
-func (h *harness) cacheRecord(name string, at time.Time) {
-	require.NoError(h.t, h.store.Add(&unstructured.Unstructured{
-		Object: map[string]any{
-			"apiVersion": k8sapp.Group + "/" + version,
-			"kind":       kind,
-			"metadata": map[string]any{
-				"name":            name,
-				"namespace":       testNamespace,
-				"resourceVersion": "1",
-			},
-			"spec": map[string]any{"lastRequestAt": formatTime(at)},
-		},
-	}))
-}
-
-// counterValue reads an emitted counter back, so the assertions are about what
-// a dashboard would show rather than about a field kept for the tests.
-// suspendCount reads one outcome of the suspends counter. Taking the first
-// data point would read whichever outcome happened to be recorded first.
-func (h *harness) suspendCount(t *testing.T, outcome string) int64 {
-	t.Helper()
-	for _, m := range h.tel.Metrics(t) {
-		if m.Name != "keboola.go.appsproxy.idletimer.suspends" {
-			continue
-		}
-		sum, ok := m.Data.(metricdata.Sum[int64])
-		if !ok {
-			return 0
-		}
-		for _, dp := range sum.DataPoints {
-			if v, found := dp.Attributes.Value(attribute.Key("outcome")); found && v.AsString() == outcome {
-				return dp.Value
-			}
-		}
-	}
-	return 0
-}
-
-// flush waits for the detached writes. Shutdown also waits, but it stops
-// admitting new ones, so a test that writes again afterwards cannot use it.
-func (h *harness) flush() {
-	h.manager.wg.Wait()
-}
-
-func (h *harness) counterValue(t *testing.T, name string) int64 {
-	t.Helper()
-	for _, m := range h.tel.Metrics(t) {
-		if m.Name != name {
-			continue
-		}
-		sum, ok := m.Data.(metricdata.Sum[int64])
-		if !ok || len(sum.DataPoints) == 0 {
-			return 0
-		}
-		return sum.DataPoints[0].Value
-	}
-	return 0
-}
-
-// newHarness builds a manager with the suspend action on, which is what the
-// loop's own behaviour has to be correct for once the gate is flipped.
-func newHarness(t *testing.T, candidates ...k8sapp.SleepCandidate) *harness {
-	t.Helper()
-	return buildHarness(t, log.NewNopLogger(), true, candidates)
-}
-
-func newGatedHarness(t *testing.T, candidates ...k8sapp.SleepCandidate) *harness {
-	t.Helper()
-	return buildHarness(t, log.NewNopLogger(), false, candidates)
-}
-
-func newGatedHarnessWithLogger(t *testing.T, logger log.Logger, candidates ...k8sapp.SleepCandidate) *harness {
-	t.Helper()
-	return buildHarness(t, logger, false, candidates)
-}
-
-func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidates []k8sapp.SleepCandidate) *harness {
-	t.Helper()
-
-	c := newTestClient()
-	source := &fakeSource{synced: true, candidates: candidates, sleptOK: true}
-	clock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
-	tel := telemetry.NewForTest(t)
-
-	m := newManager(t.Context(), clock, logger, c, source, newMetrics(tel.Meter()), suspendEnabled)
-
-	synced := &atomic.Bool{}
-	synced.Store(true)
-	store := cache.NewStore(cache.MetaNamespaceKeyFunc)
-	m.records = &recordCache{namespace: testNamespace, store: store, hasSynced: synced.Load}
-
-	return &harness{
-		t:       t,
-		manager: m,
-		source:  source,
-		clock:   clock,
-		fake:    c.dyn.(*k8sfake.FakeDynamicClient),
-		tel:     tel,
-		store:   store,
-		synced:  synced,
-	}
-}
-
-func candidate(ref k8sapp.WorkloadRef, sandbox string) k8sapp.SleepCandidate {
-	t := threshold
-	return k8sapp.SleepCandidate{Ref: ref, SandboxName: sandbox, Threshold: &t}
-}
-
-// optedOut is a workload whose Sandbox carries no threshold at all.
-func optedOut(ref k8sapp.WorkloadRef, sandbox string) k8sapp.SleepCandidate {
-	return k8sapp.SleepCandidate{Ref: ref, SandboxName: sandbox}
-}
 
 func TestTick_SkipsEverythingBeforeTheCacheHasSynced(t *testing.T) {
 	t.Parallel()
@@ -397,90 +233,6 @@ func TestTick_DoesNotCountAWakeLongAfterTheSuspend(t *testing.T) {
 	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.woke_soon_after_suspend"))
 }
 
-func TestRecordActivity_WritesTheSharedRecordAtTheHeartbeatCadence(t *testing.T) {
-	t.Parallel()
-
-	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
-
-	h.clock.Advance(time.Minute)
-	h.manager.RecordActivity(t.Context(), appRef)
-	h.flush()
-
-	rec, err := h.manager.client.get(t.Context(), "member-1")
-	require.NoError(t, err)
-	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want %s, got %s", h.clock.Now(), rec.lastRequestAt)
-}
-
-func TestRecordActivity_DoesNotWriteWithinOneHeartbeatInterval(t *testing.T) {
-	t.Parallel()
-
-	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
-
-	h.clock.Advance(time.Minute)
-	h.manager.RecordActivity(t.Context(), appRef)
-	h.flush()
-
-	before, err := h.manager.client.get(t.Context(), "member-1")
-	require.NoError(t, err)
-
-	h.clock.Advance(time.Second)
-	h.manager.RecordActivity(t.Context(), appRef)
-	h.flush()
-
-	after, err := h.manager.client.get(t.Context(), "member-1")
-	require.NoError(t, err)
-	assert.Equal(t, before.resourceVersion, after.resourceVersion, "a second request inside the interval must not cost a write")
-}
-
-// Activity for a workload that never auto-suspends has nothing to record.
-func TestRecordActivity_WritesNothingWhenTheWorkloadHasNoThreshold(t *testing.T) {
-	t.Parallel()
-
-	h := newHarness(t, optedOut(appRef, "member-1"))
-	h.manager.tick(t.Context())
-	h.fake.ClearActions()
-
-	h.clock.Advance(time.Hour)
-	h.manager.RecordActivity(t.Context(), appRef)
-	h.flush()
-
-	assert.Empty(t, h.fake.Actions())
-}
-
-// The request path must not wait for the apiserver: this runs in the GotConn
-// callback and, per websocket frame, in a callback the proxy documents as
-// non-blocking.
-func TestRecordActivity_DoesNotBlockTheRequestPath(t *testing.T) {
-	t.Parallel()
-
-	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
-
-	release := make(chan struct{})
-	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
-		<-release
-		return false, nil, nil
-	})
-
-	h.clock.Advance(time.Minute)
-	returned := make(chan struct{})
-	go func() {
-		h.manager.RecordActivity(t.Context(), appRef)
-		close(returned)
-	}()
-
-	select {
-	case <-returned:
-	case <-time.After(5 * time.Second):
-		t.Fatal("RecordActivity blocked on the K8s write")
-	}
-
-	close(release)
-	h.flush()
-}
-
 func TestTick_GateSuppressesOnlyTheSuspendAction(t *testing.T) {
 	t.Parallel()
 
@@ -609,40 +361,6 @@ func TestTick_WarnsOncePerUnresolvedApp(t *testing.T) {
 	assert.Equal(t, int64(1), h.manager.metrics.unresolved.Load())
 }
 
-// A write that failed did not refresh the shared record, so the next request
-// must try again rather than wait out a full interval. Waiting would let the
-// record fall two intervals behind while the margin covers one, and the other
-// replica, which has none of this traffic in memory, would suspend early.
-func TestRecordActivity_AFailedWriteDoesNotHoldOffTheNextOne(t *testing.T) {
-	t.Parallel()
-
-	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
-
-	var fail atomic.Bool
-	fail.Store(true)
-	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
-		if fail.Load() {
-			return true, nil, k8serrors.NewInternalError(errors.New("apiserver is unwell"))
-		}
-		return false, nil, nil
-	})
-
-	h.clock.Advance(time.Minute)
-	h.manager.RecordActivity(t.Context(), appRef)
-	h.flush()
-
-	// Well inside one heartbeat interval, so without the reset this writes nothing.
-	fail.Store(false)
-	h.clock.Advance(time.Second)
-	h.manager.RecordActivity(t.Context(), appRef)
-	h.flush()
-
-	rec, err := h.manager.client.get(t.Context(), "member-1")
-	require.NoError(t, err)
-	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want the retry to land %s, got %s", h.clock.Now(), rec.lastRequestAt)
-}
-
 // A missing RBAC rule or CRD fails for every workload on every tick. The PR
 // calls that a safe state, which it is not if it also buries the logs.
 func TestTick_RepeatedReadFailureIsLoggedOnce(t *testing.T) {
@@ -689,79 +407,4 @@ func TestTick_StopsWhenTheRoundRunsOutOfTime(t *testing.T) {
 	// Not "nothing was suspended": that holds even without the break, because
 	// the reactor fails every read. The round must not touch the apiserver.
 	assert.Empty(t, h.fake.Actions(), "a cancelled round must stop, not visit the rest")
-}
-
-// A websocket frame can arrive after Shutdown begins, because hijacked
-// connections are not drained by the HTTP server.
-func TestShutdown_StopsAdmittingWrites(t *testing.T) {
-	t.Parallel()
-
-	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
-	before := len(h.fake.Actions())
-
-	h.manager.Shutdown(t.Context())
-
-	h.clock.Advance(time.Minute)
-	h.manager.RecordActivity(t.Context(), appRef)
-	h.flush()
-
-	assert.Len(t, h.fake.Actions(), before, "a write admitted after Shutdown would race its Wait")
-}
-
-// A redeploy moves the App onto a new member Sandbox, and the record is named
-// after the member. The cadence is a property of the record, so carrying it
-// across the switch leaves the new record unwritten while traffic flows.
-func TestRecordActivity_AMemberSwitchWritesTheNewRecordAtOnce(t *testing.T) {
-	t.Parallel()
-
-	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
-
-	h.clock.Advance(time.Minute)
-	h.manager.RecordActivity(t.Context(), appRef)
-	h.flush()
-
-	h.source.candidates = []k8sapp.SleepCandidate{candidate(appRef, "member-2")}
-	h.manager.tick(t.Context())
-
-	// Well inside one heartbeat interval of the write to member-1.
-	h.clock.Advance(time.Second)
-	h.manager.RecordActivity(t.Context(), appRef)
-	h.flush()
-
-	rec, err := h.manager.client.get(t.Context(), "member-2")
-	require.NoError(t, err)
-	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want member-2 to carry %s, got %s", h.clock.Now(), rec.lastRequestAt)
-}
-
-// A failure a retry cannot clear must cost a bounded number of attempts, not
-// one per request and one per websocket frame.
-func TestRecordActivity_APersistentFailureIsNotRetriedPerRequest(t *testing.T) {
-	t.Parallel()
-
-	logger := log.NewDebugLogger()
-	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
-
-	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
-		return true, nil, k8serrors.NewForbidden(schema.GroupResource{Resource: resource}, "member-1", errors.New("no patch rule"))
-	})
-
-	h.clock.Advance(time.Minute)
-	h.fake.ClearActions()
-	for range 50 {
-		h.manager.RecordActivity(t.Context(), appRef)
-		h.flush()
-	}
-
-	var patches int
-	for _, a := range h.fake.Actions() {
-		if a.GetVerb() == "patch" {
-			patches++
-		}
-	}
-	assert.LessOrEqual(t, patches, 5, "a standing failure must not be retried once per request")
-	assert.LessOrEqual(t, strings.Count(logger.AllMessages(), "failed to record activity"), 1,
-		"the request path must not log once per request")
 }
