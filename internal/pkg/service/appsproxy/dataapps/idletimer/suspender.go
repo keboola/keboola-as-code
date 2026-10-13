@@ -17,6 +17,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const wakeWindow = time.Minute
+
+// Rounds are serial, so a slow one delays the next rather than piling up. This
+// stops a wedged call from stopping the loop for good.
+const roundTimeout = 2 * tickInterval
+
+// recordErrorLogInterval bounds how often one kind of record failure is logged.
+// A missing RBAC rule or CRD fails for every workload on every round, so logging
+// per workload buries the line that says what is wrong. Logging it only once
+// would be worse: this log is the only signal that the records are failing, so
+// it has to keep saying so until someone fixes it.
+const recordErrorLogInterval = time.Minute
+
 // k8sWorkloads is the part of the K8s state watcher this loop needs.
 type k8sWorkloads interface {
 	HasSynced() bool
@@ -118,19 +131,6 @@ func newSuspender(clock clockwork.Clock, logger log.Logger, c *client, workloads
 func (m *Suspender) evictWorkload(ref k8sapp.WorkloadRef) {
 	m.states.Delete(ref)
 }
-
-const wakeWindow = time.Minute
-
-// Rounds are serial, so a slow one delays the next rather than piling up. This
-// stops a wedged call from stopping the loop for good.
-const roundTimeout = 2 * tickInterval
-
-// recordErrorLogInterval bounds how often one kind of record failure is logged.
-// A missing RBAC rule or CRD fails for every workload on every round, so logging
-// per workload buries the line that says what is wrong. Logging it only once
-// would be worse: this log is the only signal that the records are failing, so
-// it has to keep saying so until someone fixes it.
-const recordErrorLogInterval = time.Minute
 
 // warnUnresolved reports each App once rather than once per round: a standing
 // misconfiguration would otherwise never stop logging.
