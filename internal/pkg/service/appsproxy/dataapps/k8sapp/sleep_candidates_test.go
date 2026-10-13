@@ -83,11 +83,33 @@ func TestScanForSleepCandidates_AppRouteCarriesItsMemberSandboxThreshold(t *test
 	require.Len(t, got, 1)
 	assert.Equal(t, k8sapp.WorkloadRef{AppID: "123"}, got[0].Ref)
 	assert.Equal(t, "app-123-dpl-aaa", got[0].SandboxName)
-	assert.Equal(t, 900*time.Second, got[0].Threshold)
+	require.NotNil(t, got[0].Threshold)
+	assert.Equal(t, 900*time.Second, *got[0].Threshold)
 	assert.Equal(t, lastStarted, got[0].LastStarted.UTC().Format(time.RFC3339))
 }
 
-func TestScanForSleepCandidates_AbsentThresholdIsReportedAsZero(t *testing.T) {
+// Zero was the legacy "use the default" marker in the sandboxes component and
+// sandboxes-service, where it fell back to an hour. There is no default here,
+// and clamping a zero up to the minimum would suspend after a minute what once
+// meant an hour.
+func TestScanForSleepCandidates_ALegacyZeroThresholdIsAbsent(t *testing.T) {
+	t.Parallel()
+
+	watcher := syncedWatcher(t, log.NewNopLogger(),
+		newMemberSandbox(k8sapp.AppActualStateRunning, int64(0)),
+		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, "app-123-dpl-aaa"),
+	)
+
+	var got []k8sapp.SleepCandidate
+	assert.Eventually(t, func() bool {
+		got = watcher.ScanForSleepCandidates().Candidates
+		return len(got) == 1
+	}, 5*time.Second, 50*time.Millisecond)
+
+	assert.Nil(t, got[0].Threshold, "zero is the legacy default marker, not a threshold")
+}
+
+func TestScanForSleepCandidates_AbsentThresholdIsReportedAsAbsent(t *testing.T) {
 	t.Parallel()
 
 	watcher := syncedWatcher(t, log.NewNopLogger(),
@@ -101,7 +123,7 @@ func TestScanForSleepCandidates_AbsentThresholdIsReportedAsZero(t *testing.T) {
 		return len(got) == 1
 	}, 5*time.Second, 50*time.Millisecond)
 
-	assert.Zero(t, got[0].Threshold, "an absent threshold must reach the caller as zero, not a default")
+	assert.Nil(t, got[0].Threshold, "an absent threshold must reach the caller as absent, not a default")
 }
 
 func TestScanForSleepCandidates_SkipsAWorkloadThatIsNotRunning(t *testing.T) {
@@ -164,7 +186,8 @@ func TestScanForSleepCandidates_DraftRouteIsItsOwnWorkload(t *testing.T) {
 
 	assert.Equal(t, k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"}, got[0].Ref)
 	assert.Equal(t, "draft-abc", got[0].SandboxName)
-	assert.Equal(t, 600*time.Second, got[0].Threshold)
+	require.NotNil(t, got[0].Threshold)
+	assert.Equal(t, 600*time.Second, *got[0].Threshold)
 }
 
 // A member Sandbox is reached through its App, so returning it as well would

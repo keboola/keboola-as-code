@@ -184,9 +184,9 @@ type SleepCandidate struct {
 	// SandboxUID is the owner the IdleTimer points at. Garbage collection
 	// matches on it, so a record created with the wrong one is collected at once.
 	SandboxUID types.UID
-	// Threshold is zero when the Sandbox carries none, which means never
-	// auto-suspend. The caller counts those; it is not a default.
-	Threshold   time.Duration
+	// Threshold is nil when the Sandbox carries none, which means never
+	// auto-suspend. The caller counts those; there is no default to fall back to.
+	Threshold   *time.Duration
 	LastStarted time.Time
 }
 

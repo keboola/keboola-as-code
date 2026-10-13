@@ -174,14 +174,20 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	}
 }
 
-func candidate(ref k8sapp.WorkloadRef, sandbox string, t time.Duration) k8sapp.SleepCandidate {
-	return k8sapp.SleepCandidate{Ref: ref, SandboxName: sandbox, Threshold: t}
+func candidate(ref k8sapp.WorkloadRef, sandbox string) k8sapp.SleepCandidate {
+	t := threshold
+	return k8sapp.SleepCandidate{Ref: ref, SandboxName: sandbox, Threshold: &t}
+}
+
+// optedOut is a workload whose Sandbox carries no threshold at all.
+func optedOut(ref k8sapp.WorkloadRef, sandbox string) k8sapp.SleepCandidate {
+	return k8sapp.SleepCandidate{Ref: ref, SandboxName: sandbox}
 }
 
 func TestTick_SkipsEverythingBeforeTheCacheHasSynced(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.source.synced = false
 
 	h.manager.tick(t.Context())
@@ -195,7 +201,7 @@ func TestTick_SkipsEverythingBeforeTheCacheHasSynced(t *testing.T) {
 func TestTick_AbsentThresholdIsSkippedAndCounted(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", 0))
+	h := newHarness(t, optedOut(appRef, "member-1"))
 
 	h.manager.tick(t.Context())
 
@@ -211,11 +217,11 @@ func TestTick_AbsentThresholdIsSkippedAndCounted(t *testing.T) {
 func TestTick_TheWorkloadsGaugeReportsTheCurrentRound(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", 0))
+	h := newHarness(t, optedOut(appRef, "member-1"))
 	h.manager.tick(t.Context())
 	require.Equal(t, int64(1), h.manager.metrics.noThreshold.Load())
 
-	h.source.candidates[0].Threshold = threshold
+	h.source.candidates[0] = candidate(appRef, "member-1")
 	h.manager.tick(t.Context())
 
 	assert.Zero(t, h.manager.metrics.noThreshold.Load())
@@ -239,7 +245,7 @@ func TestTick_UnresolvedWorkloadsAreReportedSeparately(t *testing.T) {
 func TestTick_AbsentRecordIsCreatedAtNowAndNotSuspended(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 
 	h.manager.tick(t.Context())
 
@@ -255,7 +261,7 @@ func TestTick_AbsentRecordIsCreatedAtNowAndNotSuspended(t *testing.T) {
 func TestTick_AReadErrorIsNotAbsence(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.fake.PrependReactor("get", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, k8serrors.NewInternalError(errors.New("apiserver is unwell"))
 	})
@@ -271,7 +277,7 @@ func TestTick_AReadErrorIsNotAbsence(t *testing.T) {
 func TestTick_SuspendsAWorkloadIdlePastTheMargin(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 
 	// First tick creates the record.
 	h.manager.tick(t.Context())
@@ -287,7 +293,7 @@ func TestTick_SuspendsAWorkloadIdlePastTheMargin(t *testing.T) {
 func TestTick_DoesNotSuspendBeforeTheThreshold(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 
 	h.clock.Advance(threshold)
@@ -301,7 +307,7 @@ func TestTick_DoesNotSuspendBeforeTheThreshold(t *testing.T) {
 func TestTick_InMemoryActivityHoldsAWorkloadAwake(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 
 	h.clock.Advance(threshold)
@@ -318,7 +324,7 @@ func TestTick_InMemoryActivityHoldsAWorkloadAwake(t *testing.T) {
 func TestTick_ARestartCountsAsActivity(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
@@ -332,7 +338,7 @@ func TestTick_SuspendsADraftThroughItsOwnWorkload(t *testing.T) {
 	t.Parallel()
 
 	draftRef := k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"}
-	h := newHarness(t, candidate(draftRef, "draft-abc", threshold))
+	h := newHarness(t, candidate(draftRef, "draft-abc"))
 
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
@@ -344,7 +350,7 @@ func TestTick_SuspendsADraftThroughItsOwnWorkload(t *testing.T) {
 func TestTick_CountsASuspendFollowedByAWakeWithinAMinute(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
@@ -364,7 +370,7 @@ func TestTick_CountsASuspendFollowedByAWakeWithinAMinute(t *testing.T) {
 func TestTick_DoesNotCountAnUnreconciledSuspendAsAWake(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
@@ -380,7 +386,7 @@ func TestTick_DoesNotCountAnUnreconciledSuspendAsAWake(t *testing.T) {
 func TestTick_DoesNotCountAWakeLongAfterTheSuspend(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
@@ -394,7 +400,7 @@ func TestTick_DoesNotCountAWakeLongAfterTheSuspend(t *testing.T) {
 func TestRecordActivity_WritesTheSharedRecordAtTheHeartbeatCadence(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 
 	h.clock.Advance(time.Minute)
@@ -409,7 +415,7 @@ func TestRecordActivity_WritesTheSharedRecordAtTheHeartbeatCadence(t *testing.T)
 func TestRecordActivity_DoesNotWriteWithinOneHeartbeatInterval(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 
 	h.clock.Advance(time.Minute)
@@ -432,7 +438,7 @@ func TestRecordActivity_DoesNotWriteWithinOneHeartbeatInterval(t *testing.T) {
 func TestRecordActivity_WritesNothingWhenTheWorkloadHasNoThreshold(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", 0))
+	h := newHarness(t, optedOut(appRef, "member-1"))
 	h.manager.tick(t.Context())
 	h.fake.ClearActions()
 
@@ -449,7 +455,7 @@ func TestRecordActivity_WritesNothingWhenTheWorkloadHasNoThreshold(t *testing.T)
 func TestRecordActivity_DoesNotBlockTheRequestPath(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 
 	release := make(chan struct{})
@@ -478,7 +484,7 @@ func TestRecordActivity_DoesNotBlockTheRequestPath(t *testing.T) {
 func TestTick_GateSuppressesOnlyTheSuspendAction(t *testing.T) {
 	t.Parallel()
 
-	h := newGatedHarness(t, candidate(appRef, "member-1", threshold))
+	h := newGatedHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
@@ -502,7 +508,7 @@ func TestTick_SuppressedSuspendIsReportedOncePerIdleEpisode(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1", threshold))
+	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 
@@ -520,7 +526,7 @@ func TestTick_SuppressedSuspendIsReportedOncePerIdleEpisode(t *testing.T) {
 func TestTick_ASecondIdleEpisodeIsReportedAgain(t *testing.T) {
 	t.Parallel()
 
-	h := newGatedHarness(t, candidate(appRef, "member-1", threshold))
+	h := newGatedHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
@@ -541,7 +547,7 @@ func TestTick_SuppressedSuspendNamesTheWorkloadAndHowLongItWasIdle(t *testing.T)
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1", threshold))
+	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
@@ -560,7 +566,7 @@ func TestTick_AlreadyExistsIsNotAnError(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	h := buildHarness(t, logger, true,
-		[]k8sapp.SleepCandidate{candidate(appRef, "member-1", threshold)})
+		[]k8sapp.SleepCandidate{candidate(appRef, "member-1")})
 	h.fake.PrependReactor("create", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, k8serrors.NewAlreadyExists(gvr().GroupResource(), "member-1")
 	})
@@ -574,7 +580,7 @@ func TestTick_AlreadyExistsIsNotAnError(t *testing.T) {
 func TestTick_PassesTheSandboxUIDToTheRecord(t *testing.T) {
 	t.Parallel()
 
-	c := candidate(appRef, "member-1", threshold)
+	c := candidate(appRef, "member-1")
 	c.SandboxUID = "member-uid-1"
 	h := newHarness(t, c)
 
@@ -610,7 +616,7 @@ func TestTick_WarnsOncePerUnresolvedApp(t *testing.T) {
 func TestRecordActivity_AFailedWriteDoesNotHoldOffTheNextOne(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 
 	var fail atomic.Bool
@@ -644,7 +650,7 @@ func TestTick_RepeatedReadFailureIsLoggedOnce(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	h := buildHarness(t, logger, true,
-		[]k8sapp.SleepCandidate{candidate(appRef, "member-1", threshold)})
+		[]k8sapp.SleepCandidate{candidate(appRef, "member-1")})
 	h.fake.PrependReactor("get", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, k8serrors.NewForbidden(gvr().GroupResource(), "member-1", errors.New("no rbac"))
 	})
@@ -669,8 +675,8 @@ func TestTick_StopsWhenTheRoundRunsOutOfTime(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t,
-		candidate(appRef, "member-1", threshold),
-		candidate(k8sapp.WorkloadRef{AppID: "456"}, "member-2", threshold),
+		candidate(appRef, "member-1"),
+		candidate(k8sapp.WorkloadRef{AppID: "456"}, "member-2"),
 	)
 	h.fake.PrependReactor("get", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, context.DeadlineExceeded
@@ -690,7 +696,7 @@ func TestTick_StopsWhenTheRoundRunsOutOfTime(t *testing.T) {
 func TestShutdown_StopsAdmittingWrites(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 	before := len(h.fake.Actions())
 
@@ -709,14 +715,14 @@ func TestShutdown_StopsAdmittingWrites(t *testing.T) {
 func TestRecordActivity_AMemberSwitchWritesTheNewRecordAtOnce(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 
 	h.clock.Advance(time.Minute)
 	h.manager.RecordActivity(t.Context(), appRef)
 	h.flush()
 
-	h.source.candidates = []k8sapp.SleepCandidate{candidate(appRef, "member-2", threshold)}
+	h.source.candidates = []k8sapp.SleepCandidate{candidate(appRef, "member-2")}
 	h.manager.tick(t.Context())
 
 	// Well inside one heartbeat interval of the write to member-1.
@@ -735,7 +741,7 @@ func TestRecordActivity_APersistentFailureIsNotRetriedPerRequest(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1", threshold))
+	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1"))
 	h.manager.tick(t.Context())
 
 	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {

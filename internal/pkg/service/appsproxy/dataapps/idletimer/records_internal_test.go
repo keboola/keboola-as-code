@@ -14,7 +14,7 @@ import (
 func TestTick_ServesTheRecordFromTheCache(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.cacheRecord("member-1", h.clock.Now())
 	h.fake.ClearActions()
 
@@ -28,7 +28,7 @@ func TestTick_ServesTheRecordFromTheCache(t *testing.T) {
 func TestTick_ConfirmsAStaleCachedIdleReadBeforeSuspending(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	require.NoError(t, h.manager.client.create(t.Context(), "member-1", "uid-1", h.clock.Now()))
 
 	// The cache still holds the value from before the last request.
@@ -43,7 +43,7 @@ func TestTick_ConfirmsAStaleCachedIdleReadBeforeSuspending(t *testing.T) {
 func TestTick_FallsBackToTheApiserverUntilTheCacheHasSynced(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	h.cacheRecord("member-1", h.clock.Now())
 	h.synced.Store(false)
 	h.fake.ClearActions()
@@ -58,7 +58,7 @@ func TestTick_FallsBackToTheApiserverUntilTheCacheHasSynced(t *testing.T) {
 func TestTick_SuspendsOnACachedReadTheApiserverAgreesWith(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1", threshold))
+	h := newHarness(t, candidate(appRef, "member-1"))
 	require.NoError(t, h.manager.client.create(t.Context(), "member-1", "uid-1", h.clock.Now()))
 	h.cacheRecord("member-1", h.clock.Now())
 
@@ -73,7 +73,7 @@ func TestTick_SuspendsOnACachedReadTheApiserverAgreesWith(t *testing.T) {
 func TestTick_ACachedRecordIsKeyedByItsMember(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-2", threshold))
+	h := newHarness(t, candidate(appRef, "member-2"))
 	h.cacheRecord("member-1", h.clock.Now())
 	h.fake.ClearActions()
 

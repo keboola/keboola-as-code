@@ -37,10 +37,10 @@ type entry struct {
 	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
 	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
 
-	uid               k8stypes.UID  // metadata.uid, required by any ownerReference naming this object
-	productionSandbox string        // App CRs only: the member Sandbox running the workload
-	autoSuspendAfter  time.Duration // Sandbox CRs only; zero means the CR carries no threshold
-	lastStarted       time.Time     // Sandbox CRs only
+	uid               k8stypes.UID   // metadata.uid, required by any ownerReference naming this object
+	productionSandbox string         // App CRs only: the member Sandbox running the workload
+	autoSuspendAfter  *time.Duration // Sandbox CRs only; nil means the CR carries no threshold
+	lastStarted       time.Time      // Sandbox CRs only
 }
 
 // StateWatcher watches App and Sandbox CRDs in Kubernetes and provides a local
@@ -384,9 +384,14 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 		}
 	}
 
-	var autoSuspendAfter time.Duration
-	if secs := appObj.Spec.AutoSuspendAfterSeconds; secs != nil {
-		autoSuspendAfter = time.Duration(*secs) * time.Second
+	// Zero was the legacy "use the default" marker in the sandboxes component and
+	// sandboxes-service, where it fell back to an hour. Nothing here defaults, and
+	// a zero raised to the minimum would suspend after a minute what once meant an
+	// hour, so it reads as no threshold at all.
+	var autoSuspendAfter *time.Duration
+	if secs := appObj.Spec.AutoSuspendAfterSeconds; secs != nil && *secs > 0 {
+		d := time.Duration(*secs) * time.Second
+		autoSuspendAfter = &d
 	}
 
 	var lastStarted time.Time

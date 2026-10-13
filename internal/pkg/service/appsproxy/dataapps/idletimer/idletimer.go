@@ -90,9 +90,8 @@ type state struct {
 	// per request is what turned a standing failure into a storm.
 	retryAfter time.Time
 
-	sandboxName    string
-	threshold      time.Duration
-	thresholdKnown bool
+	sandboxName string
+	threshold   *time.Duration
 
 	suspendedAt time.Time
 
@@ -287,8 +286,8 @@ func (m *Manager) writeIfDue(ctx context.Context, ref k8sapp.WorkloadRef, item *
 // heartbeat when retrying cannot fix it: an absent record is created by the
 // tick, and a denied one needs an RBAC change.
 func retryDelay(item *state, err error) time.Duration {
-	if k8serrors.IsNotFound(err) || k8serrors.IsForbidden(err) {
-		return heartbeatInterval(item.threshold)
+	if (k8serrors.IsNotFound(err) || k8serrors.IsForbidden(err)) && item.threshold != nil {
+		return heartbeatInterval(*item.threshold)
 	}
 	return writeRetryInterval
 }
@@ -298,20 +297,19 @@ func retryDelay(item *state, err error) time.Duration {
 //
 // A workload the tick has not reached has no record name and writes nothing;
 // the tick then creates its record at the moment it first sees it, starting a
-// full window. Until a threshold is known the cadence is the shortest one the
-// thresholds allow, because writing too rarely lets the other replica read a
-// stale value and suspend early.
+// full window. The name and the threshold are set together, so a known name
+// means the threshold is known too.
 func writeDue(item *state, at, now time.Time) bool {
 	if item.sandboxName == "" {
 		return false
 	}
-	if item.thresholdKnown && item.threshold == 0 {
+	if item.threshold == nil {
 		return false
 	}
 	if now.Before(item.retryAfter) {
 		return false
 	}
-	return at.Sub(item.lastWriteAt) > heartbeatInterval(item.threshold)
+	return at.Sub(item.lastWriteAt) > heartbeatInterval(*item.threshold)
 }
 
 // warnUnresolved reports each App once rather than once per tick: a standing
@@ -375,7 +373,7 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) (string, e
 		m.metrics.wokeSoonAfterSuspend.Add(ctx, 1)
 	}
 
-	if c.Threshold == 0 {
+	if c.Threshold == nil {
 		return stateNoThreshold, nil
 	}
 
@@ -385,7 +383,7 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) (string, e
 	}
 
 	idleFor := now.Sub(lastSeen(memory, rec.lastRequestAt, c.LastStarted))
-	if !shouldSuspend(idleFor, c.Threshold) {
+	if !shouldSuspend(idleFor, *c.Threshold) {
 		m.clearSuppressed(item)
 		return stateCandidate, nil
 	}
@@ -399,7 +397,7 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) (string, e
 			return stateCandidate, nil
 		}
 		idleFor = now.Sub(lastSeen(memory, live.lastRequestAt, c.LastStarted))
-		if !shouldSuspend(idleFor, c.Threshold) {
+		if !shouldSuspend(idleFor, *c.Threshold) {
 			m.clearSuppressed(item)
 			return stateCandidate, nil
 		}
@@ -417,7 +415,6 @@ func (m *Manager) observe(item *state, c k8sapp.SleepCandidate, now time.Time) (
 	defer item.lock.Unlock()
 
 	item.threshold = c.Threshold
-	item.thresholdKnown = true
 	if item.sandboxName != c.SandboxName {
 		// The cadence belongs to the record, and a new member is a new record.
 		// Carrying it over leaves the new one unwritten while traffic flows.
