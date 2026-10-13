@@ -108,13 +108,14 @@ func (r *Recorder) RecordActivity(_ context.Context, ref k8sapp.WorkloadRef) {
 	item.lastRequestAt = r.clock.Now()
 }
 
-// Track tells the Recorder which record a workload writes to and how often, and
-// reports what this replica has seen of it.
+// Observe folds this round's reading of a workload into the Recorder — which
+// record it writes to, and how often — and reports the last request this
+// replica has seen.
 //
 // A new member is a new record, so the cadence starts over. Carrying it across
 // would leave the new record unwritten while traffic flows, and the other
 // replica, reading a record that never advances, would suspend early.
-func (r *Recorder) Track(ref k8sapp.WorkloadRef, sandboxName string, threshold *time.Duration) time.Time {
+func (r *Recorder) Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold *time.Duration) time.Time {
 	item := r.workloads.GetOrInit(ref)
 
 	item.lock.Lock()

@@ -24,11 +24,11 @@ type k8sWorkloads interface {
 	Sleep(ctx context.Context, ref k8sapp.WorkloadRef, expectMember string) (bool, error)
 }
 
-// activityRecorder is the part of the Recorder this loop needs: it tells the
-// Recorder what each workload writes to, and reads back what this replica has
-// seen. Nothing here reaches into how the Recorder keeps that.
+// activityRecorder is the part of the Recorder this loop needs: it hands over
+// each round's reading of a workload and reads back what this replica has seen.
+// Nothing here reaches into how the Recorder keeps that.
 type activityRecorder interface {
-	Track(ref k8sapp.WorkloadRef, sandboxName string, threshold *time.Duration) time.Time
+	Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold *time.Duration) time.Time
 }
 
 // Suspender decides which running workloads have gone idle and suspends them.
@@ -177,7 +177,7 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string,
 	item := m.states.GetOrInit(c.Ref)
 	now := m.clock.Now()
 
-	memory := m.recorder.Track(c.Ref, c.SandboxName, c.Threshold)
+	memory := m.recorder.Observe(c.Ref, c.SandboxName, c.Threshold)
 	woke := m.observeRestart(item, c, now)
 
 	// The restart is the discriminator, not merely still being Running: a
