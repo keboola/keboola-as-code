@@ -25,10 +25,10 @@ func TestRecordActivity_WritesTheSharedRecordAtTheHeartbeatCadence(t *testing.T)
 	h.manager.tick(t.Context())
 
 	h.clock.Advance(time.Minute)
-	h.manager.RecordActivity(t.Context(), appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 
-	rec, err := h.manager.client.get(t.Context(), "member-1")
+	rec, err := h.recorder.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
 	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want %s, got %s", h.clock.Now(), rec.lastRequestAt)
 }
@@ -40,17 +40,17 @@ func TestRecordActivity_DoesNotWriteWithinOneHeartbeatInterval(t *testing.T) {
 	h.manager.tick(t.Context())
 
 	h.clock.Advance(time.Minute)
-	h.manager.RecordActivity(t.Context(), appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 
-	before, err := h.manager.client.get(t.Context(), "member-1")
+	before, err := h.recorder.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
 
 	h.clock.Advance(time.Second)
-	h.manager.RecordActivity(t.Context(), appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 
-	after, err := h.manager.client.get(t.Context(), "member-1")
+	after, err := h.recorder.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
 	assert.Equal(t, before.resourceVersion, after.resourceVersion, "a second request inside the interval must not cost a write")
 }
@@ -64,7 +64,7 @@ func TestRecordActivity_WritesNothingWhenTheWorkloadHasNoThreshold(t *testing.T)
 	h.fake.ClearActions()
 
 	h.clock.Advance(time.Hour)
-	h.manager.RecordActivity(t.Context(), appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 
 	assert.Empty(t, h.fake.Actions())
@@ -88,7 +88,7 @@ func TestRecordActivity_DoesNotBlockTheRequestPath(t *testing.T) {
 	h.clock.Advance(time.Minute)
 	returned := make(chan struct{})
 	go func() {
-		h.manager.RecordActivity(t.Context(), appRef)
+		h.recorder.RecordActivity(t.Context(), appRef)
 		close(returned)
 	}()
 
@@ -122,16 +122,16 @@ func TestRecordActivity_AFailedWriteDoesNotHoldOffTheNextOne(t *testing.T) {
 	})
 
 	h.clock.Advance(time.Minute)
-	h.manager.RecordActivity(t.Context(), appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 
 	// Well inside one heartbeat interval, so without the reset this writes nothing.
 	fail.Store(false)
 	h.clock.Advance(time.Second)
-	h.manager.RecordActivity(t.Context(), appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 
-	rec, err := h.manager.client.get(t.Context(), "member-1")
+	rec, err := h.recorder.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
 	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want the retry to land %s, got %s", h.clock.Now(), rec.lastRequestAt)
 }
@@ -145,10 +145,10 @@ func TestShutdown_StopsAdmittingWrites(t *testing.T) {
 	h.manager.tick(t.Context())
 	before := len(h.fake.Actions())
 
-	h.manager.Shutdown(t.Context())
+	h.recorder.Shutdown(t.Context())
 
 	h.clock.Advance(time.Minute)
-	h.manager.RecordActivity(t.Context(), appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 
 	assert.Len(t, h.fake.Actions(), before, "a write admitted after Shutdown would race its Wait")
@@ -164,7 +164,7 @@ func TestRecordActivity_AMemberSwitchWritesTheNewRecordAtOnce(t *testing.T) {
 	h.manager.tick(t.Context())
 
 	h.clock.Advance(time.Minute)
-	h.manager.RecordActivity(t.Context(), appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 
 	h.source.candidates = []k8sapp.SleepCandidate{candidate(appRef, "member-2")}
@@ -172,10 +172,10 @@ func TestRecordActivity_AMemberSwitchWritesTheNewRecordAtOnce(t *testing.T) {
 
 	// Well inside one heartbeat interval of the write to member-1.
 	h.clock.Advance(time.Second)
-	h.manager.RecordActivity(t.Context(), appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 
-	rec, err := h.manager.client.get(t.Context(), "member-2")
+	rec, err := h.recorder.client.get(t.Context(), "member-2")
 	require.NoError(t, err)
 	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want member-2 to carry %s, got %s", h.clock.Now(), rec.lastRequestAt)
 }
@@ -196,7 +196,7 @@ func TestRecordActivity_APersistentFailureIsNotRetriedPerRequest(t *testing.T) {
 	h.clock.Advance(time.Minute)
 	h.fake.ClearActions()
 	for range 50 {
-		h.manager.RecordActivity(t.Context(), appRef)
+		h.recorder.RecordActivity(t.Context(), appRef)
 		h.flush()
 	}
 

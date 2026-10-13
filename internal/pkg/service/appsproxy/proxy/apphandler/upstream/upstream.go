@@ -50,7 +50,7 @@ type Manager struct {
 	notify       *notify.Manager
 	wakeup       *wakeup.Manager
 	sessions     *sessions.Manager
-	idleTimer    *idletimer.Manager
+	idleTimer    *idletimer.Recorder
 	stateWatcher *k8sapp.StateWatcher
 	config       config.Config
 }
@@ -76,7 +76,7 @@ type dependencies interface {
 	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
 	SessionsManager() *sessions.Manager
-	IdleTimerManager() *idletimer.Manager
+	IdleTimerRecorder() *idletimer.Recorder
 	AppStateWatcher() *k8sapp.StateWatcher
 	Config() config.Config
 }
@@ -92,7 +92,7 @@ func NewManager(d dependencies) *Manager {
 		notify:       d.NotifyManager(),
 		wakeup:       d.WakeupManager(),
 		sessions:     d.SessionsManager(),
-		idleTimer:    d.IdleTimerManager(),
+		idleTimer:    d.IdleTimerRecorder(),
 		stateWatcher: d.AppStateWatcher(),
 		config:       d.Config(),
 	}

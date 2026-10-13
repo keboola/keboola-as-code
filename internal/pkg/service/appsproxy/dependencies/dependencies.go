@@ -111,6 +111,7 @@ type serviceScope struct {
 	appStateWatcher   *k8sapp.StateWatcher
 	sessionsManager   *sessions.Manager
 	idleTimerManager  *idletimer.Manager
+	idleTimerRecorder *idletimer.Recorder
 }
 
 type parentScopes interface {
@@ -221,7 +222,8 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.appStateWatcher = k8sapp.NewStateWatcher(d, k8sClient, cfg.K8s.AppsNamespace)
 
 	d.wakeupManager = wakeup.NewManager(d)
-	d.idleTimerManager = idletimer.NewManager(ctx, d, k8sClient)
+	d.idleTimerRecorder = idletimer.NewRecorder(ctx, d, k8sClient)
+	d.idleTimerManager = idletimer.NewManager(ctx, d, k8sClient, d.idleTimerRecorder)
 	d.sessionsManager = sessions.NewManager(ctx, d)
 	d.authProxyManager = authproxy.NewManager(d)
 	d.upstreamManager = upstream.NewManager(d)
@@ -276,6 +278,10 @@ func (v *serviceScope) AppStateWatcher() *k8sapp.StateWatcher {
 
 func (v *serviceScope) IdleTimerManager() *idletimer.Manager {
 	return v.idleTimerManager
+}
+
+func (v *serviceScope) IdleTimerRecorder() *idletimer.Recorder {
+	return v.idleTimerRecorder
 }
 
 func (v *serviceScope) SessionsManager() *sessions.Manager {

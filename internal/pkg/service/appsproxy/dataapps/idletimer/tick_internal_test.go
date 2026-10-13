@@ -87,7 +87,7 @@ func TestTick_AbsentRecordIsCreatedAtNowAndNotSuspended(t *testing.T) {
 
 	assert.Empty(t, h.source.slept, "a record created this tick gives a full grace window")
 
-	rec, err := h.manager.client.get(t.Context(), "member-1")
+	rec, err := h.recorder.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
 	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want %s, got %s", h.clock.Now(), rec.lastRequestAt)
 }
@@ -147,7 +147,7 @@ func TestTick_InMemoryActivityHoldsAWorkloadAwake(t *testing.T) {
 	h.manager.tick(t.Context())
 
 	h.clock.Advance(threshold)
-	h.manager.RecordActivity(t.Context(), appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 	h.clock.Advance(heartbeatInterval(threshold) + time.Second)
 	h.manager.tick(t.Context())
@@ -247,7 +247,7 @@ func TestTick_GateSuppressesOnlyTheSuspendAction(t *testing.T) {
 
 	// Everything leading up to the suspend still has to run: that is what the
 	// gated deploy exists to exercise against a real apiserver.
-	rec, err := h.manager.client.get(t.Context(), "member-1")
+	rec, err := h.recorder.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
 	assert.False(t, rec.lastRequestAt.IsZero(), "the record must still be created")
 	assert.Equal(t, int64(1), h.manager.metrics.candidates.Load())
@@ -285,7 +285,7 @@ func TestTick_ASecondIdleEpisodeIsReportedAgain(t *testing.T) {
 	require.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
 
 	// Someone used it again.
-	h.manager.RecordActivity(t.Context(), appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 	h.manager.tick(t.Context())
 

@@ -49,14 +49,15 @@ func (f *fakeSource) Sleep(_ context.Context, ref k8sapp.WorkloadRef, _ string) 
 }
 
 type harness struct {
-	t       *testing.T
-	manager *Manager
-	source  *fakeSource
-	clock   *clockwork.FakeClock
-	fake    *k8sfake.FakeDynamicClient
-	tel     telemetry.ForTest
-	store   cache.Store
-	synced  *atomic.Bool
+	t        *testing.T
+	manager  *Manager
+	source   *fakeSource
+	recorder *Recorder
+	clock    *clockwork.FakeClock
+	fake     *k8sfake.FakeDynamicClient
+	tel      telemetry.ForTest
+	store    cache.Store
+	synced   *atomic.Bool
 }
 
 // cacheRecord puts a record in the watch cache without going near the
@@ -103,7 +104,7 @@ func (h *harness) suspendCount(t *testing.T, outcome string) int64 {
 // flush waits for the detached writes. Shutdown also waits, but it stops
 // admitting new ones, so a test that writes again afterwards cannot use it.
 func (h *harness) flush() {
-	h.manager.wg.Wait()
+	h.recorder.wg.Wait()
 }
 
 func (h *harness) counterValue(t *testing.T, name string) int64 {
@@ -146,7 +147,8 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
 	tel := telemetry.NewForTest(t)
 
-	m := newManager(t.Context(), clock, logger, c, source, newMetrics(tel.Meter()), suspendEnabled)
+	recorder := newRecorder(t.Context(), clock, logger, c)
+	m := newManager(clock, logger, c, source, recorder, newMetrics(tel.Meter()), suspendEnabled)
 
 	synced := &atomic.Bool{}
 	synced.Store(true)
@@ -154,14 +156,15 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	m.records = &recordCache{namespace: testNamespace, store: store, hasSynced: synced.Load}
 
 	return &harness{
-		t:       t,
-		manager: m,
-		source:  source,
-		clock:   clock,
-		fake:    c.dyn.(*k8sfake.FakeDynamicClient),
-		tel:     tel,
-		store:   store,
-		synced:  synced,
+		t:        t,
+		manager:  m,
+		recorder: recorder,
+		source:   source,
+		clock:    clock,
+		fake:     c.dyn.(*k8sfake.FakeDynamicClient),
+		tel:      tel,
+		store:    store,
+		synced:   synced,
 	}
 }
 

@@ -74,10 +74,11 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) (string, e
 		return "", err
 	}
 
-	item := m.stateMap.GetOrInit(c.Ref)
+	item := m.states.GetOrInit(c.Ref)
 	now := m.clock.Now()
 
-	memory, woke := m.observe(item, c, now)
+	memory := m.recorder.Track(c.Ref, c.SandboxName, c.Threshold)
+	woke := m.observeRestart(item, c, now)
 
 	// The restart is the discriminator, not merely still being Running: a
 	// patched workload stays Running until the operator reconciles it.
@@ -119,21 +120,11 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) (string, e
 	return stateCandidate, nil
 }
 
-// observe folds this round's reading into the state under one lock, and reports
-// the in-memory last request plus whether the workload came back from a suspend
-// this replica issued.
-func (m *Manager) observe(item *state, c k8sapp.SleepCandidate, now time.Time) (memory time.Time, woke bool) {
+// observeRestart reports whether the workload came back from a suspend this
+// replica issued, and forgets the suspend once it has.
+func (m *Manager) observeRestart(item *suspendState, c k8sapp.SleepCandidate, now time.Time) (woke bool) {
 	item.lock.Lock()
 	defer item.lock.Unlock()
-
-	item.threshold = c.Threshold
-	if item.sandboxName != c.SandboxName {
-		// The cadence belongs to the record, and a new member is a new record.
-		// Carrying it over leaves the new one unwritten while traffic flows.
-		item.sandboxName = c.SandboxName
-		item.lastWriteAt = time.Time{}
-		item.retryAfter = time.Time{}
-	}
 
 	restarted := c.LastStarted.After(item.suspendedAt)
 	if !item.suspendedAt.IsZero() {
@@ -143,7 +134,7 @@ func (m *Manager) observe(item *state, c k8sapp.SleepCandidate, now time.Time) (
 		}
 	}
 
-	return item.lastRequestAt, woke
+	return woke
 }
 
 // readRecord returns the shared record, creating it only when it is genuinely
@@ -173,7 +164,7 @@ func (m *Manager) readRecord(ctx context.Context, c k8sapp.SleepCandidate) (reco
 	return record{}, false
 }
 
-func (m *Manager) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *state, idleFor time.Duration) {
+func (m *Manager) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *suspendState, idleFor time.Duration) {
 	if !m.suspendEnabled {
 		m.reportSuppressed(ctx, c, item, idleFor)
 		return
@@ -210,7 +201,7 @@ func (m *Manager) noteRecordError(ctx context.Context, verb string, c k8sapp.Sle
 }
 
 // reportSuppressed records one gated suspend per idle episode.
-func (m *Manager) reportSuppressed(ctx context.Context, c k8sapp.SleepCandidate, item *state, idleFor time.Duration) {
+func (m *Manager) reportSuppressed(ctx context.Context, c k8sapp.SleepCandidate, item *suspendState, idleFor time.Duration) {
 	item.lock.Lock()
 	first := item.suppressedAt.IsZero()
 	if first {
@@ -226,7 +217,7 @@ func (m *Manager) reportSuppressed(ctx context.Context, c k8sapp.SleepCandidate,
 	m.logger.Infof(ctx, "would suspend workload %q, idle for %s, but the suspend action is off", c.Ref, idleFor)
 }
 
-func (m *Manager) clearSuppressed(item *state) {
+func (m *Manager) clearSuppressed(item *suspendState) {
 	item.lock.Lock()
 	item.suppressedAt = time.Time{}
 	item.lock.Unlock()

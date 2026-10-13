@@ -29,7 +29,7 @@ func TestTick_ConfirmsAStaleCachedIdleReadBeforeSuspending(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, "member-1"))
-	require.NoError(t, h.manager.client.create(t.Context(), "member-1", "uid-1", h.clock.Now()))
+	require.NoError(t, h.recorder.client.create(t.Context(), "member-1", "uid-1", h.clock.Now()))
 
 	// The cache still holds the value from before the last request.
 	h.cacheRecord("member-1", h.clock.Now().Add(-2*threshold))
@@ -59,7 +59,7 @@ func TestTick_SuspendsOnACachedReadTheApiserverAgreesWith(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, "member-1"))
-	require.NoError(t, h.manager.client.create(t.Context(), "member-1", "uid-1", h.clock.Now()))
+	require.NoError(t, h.recorder.client.create(t.Context(), "member-1", "uid-1", h.clock.Now()))
 	h.cacheRecord("member-1", h.clock.Now())
 
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
