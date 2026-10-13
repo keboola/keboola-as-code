@@ -26,7 +26,7 @@ const recordErrorLogInterval = time.Minute
 
 // warnUnresolved reports each App once rather than once per round: a standing
 // misconfiguration would otherwise never stop logging.
-func (m *Manager) warnUnresolved(ctx context.Context, unresolved []api.AppID) {
+func (m *Suspender) warnUnresolved(ctx context.Context, unresolved []api.AppID) {
 	current := make(map[api.AppID]bool, len(unresolved))
 	for _, appID := range unresolved {
 		current[appID] = true
@@ -37,7 +37,7 @@ func (m *Manager) warnUnresolved(ctx context.Context, unresolved []api.AppID) {
 	m.warnedUnresolved = current
 }
 
-func (m *Manager) suspendIdleWorkloads(ctx context.Context) {
+func (m *Suspender) suspendIdleWorkloads(ctx context.Context) {
 	// Absence from a cache that is still filling is not absence of a workload.
 	if !m.workloads.HasSynced() {
 		return
@@ -69,7 +69,7 @@ func (m *Manager) suspendIdleWorkloads(ctx context.Context) {
 // visit reports the state to count this workload under, and an error when the
 // round is over: a round that ran out of time would otherwise turn one
 // cancelled context into one failure per remaining workload.
-func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) (string, error) {
+func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
@@ -125,7 +125,7 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) (string, e
 
 // observeRestart reports whether the workload came back from a suspend this
 // replica issued, and forgets the suspend once it has.
-func (m *Manager) observeRestart(item *suspendState, c k8sapp.SleepCandidate, now time.Time) (woke bool) {
+func (m *Suspender) observeRestart(item *suspendState, c k8sapp.SleepCandidate, now time.Time) (woke bool) {
 	item.lock.Lock()
 	defer item.lock.Unlock()
 
@@ -143,7 +143,7 @@ func (m *Manager) observeRestart(item *suspendState, c k8sapp.SleepCandidate, no
 // readRecord returns the shared record, creating it only when it is genuinely
 // absent. Any other error skips the round: treating an error as absence would
 // reset every record on an apiserver wobble.
-func (m *Manager) readRecord(ctx context.Context, c k8sapp.SleepCandidate) (record, bool) {
+func (m *Suspender) readRecord(ctx context.Context, c k8sapp.SleepCandidate) (record, bool) {
 	if rec, found := m.records.lookup(c.SandboxName); found {
 		return rec, true
 	}
@@ -167,7 +167,7 @@ func (m *Manager) readRecord(ctx context.Context, c k8sapp.SleepCandidate) (reco
 	return record{}, false
 }
 
-func (m *Manager) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *suspendState, idleFor time.Duration) {
+func (m *Suspender) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *suspendState, idleFor time.Duration) {
 	if !m.suspendEnabled {
 		m.reportSuppressed(ctx, c, item, idleFor)
 		return
@@ -193,7 +193,7 @@ func (m *Manager) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *su
 
 // noteRecordError logs each kind of failure at most once per
 // recordErrorLogInterval, however many workloads hit it.
-func (m *Manager) noteRecordError(ctx context.Context, verb string, c k8sapp.SleepCandidate, err error) {
+func (m *Suspender) noteRecordError(ctx context.Context, verb string, c k8sapp.SleepCandidate, err error) {
 	reason := k8serrors.ReasonForError(err)
 	now := m.clock.Now()
 	if last, logged := m.lastRecordErrorLog[reason]; logged && now.Sub(last) < recordErrorLogInterval {
@@ -204,7 +204,7 @@ func (m *Manager) noteRecordError(ctx context.Context, verb string, c k8sapp.Sle
 }
 
 // reportSuppressed records one gated suspend per idle episode.
-func (m *Manager) reportSuppressed(ctx context.Context, c k8sapp.SleepCandidate, item *suspendState, idleFor time.Duration) {
+func (m *Suspender) reportSuppressed(ctx context.Context, c k8sapp.SleepCandidate, item *suspendState, idleFor time.Duration) {
 	item.lock.Lock()
 	first := item.suppressedAt.IsZero()
 	if first {
@@ -220,14 +220,14 @@ func (m *Manager) reportSuppressed(ctx context.Context, c k8sapp.SleepCandidate,
 	m.logger.Infof(ctx, "would suspend workload %q, idle for %s, but the suspend action is off", c.Ref, idleFor)
 }
 
-func (m *Manager) suppressed(item *suspendState) bool {
+func (m *Suspender) suppressed(item *suspendState) bool {
 	item.lock.Lock()
 	defer item.lock.Unlock()
 
 	return !item.suppressedAt.IsZero()
 }
 
-func (m *Manager) clearSuppressed(item *suspendState) {
+func (m *Suspender) clearSuppressed(item *suspendState) {
 	item.lock.Lock()
 	item.suppressedAt = time.Time{}
 	item.lock.Unlock()

@@ -49,15 +49,15 @@ func (f *fakeSource) Sleep(_ context.Context, ref k8sapp.WorkloadRef, _ string) 
 }
 
 type harness struct {
-	t        *testing.T
-	manager  *Manager
-	source   *fakeSource
-	recorder *Recorder
-	clock    *clockwork.FakeClock
-	fake     *k8sfake.FakeDynamicClient
-	tel      telemetry.ForTest
-	store    cache.Store
-	synced   *atomic.Bool
+	t         *testing.T
+	suspender *Suspender
+	source    *fakeSource
+	recorder  *Recorder
+	clock     *clockwork.FakeClock
+	fake      *k8sfake.FakeDynamicClient
+	tel       telemetry.ForTest
+	store     cache.Store
+	synced    *atomic.Bool
 }
 
 // cacheRecord puts a record in the watch cache without going near the
@@ -154,7 +154,7 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	tel := telemetry.NewForTest(t)
 
 	recorder := newRecorder(clock, logger, c, newRecorderMetrics(tel.Meter()))
-	m := newManager(clock, logger, c, source, recorder, newMetrics(tel.Meter()), suspendEnabled)
+	m := newSuspender(clock, logger, c, source, recorder, newMetrics(tel.Meter()), suspendEnabled)
 
 	synced := &atomic.Bool{}
 	synced.Store(true)
@@ -162,15 +162,15 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	m.records = &recordCache{namespace: testNamespace, store: store, hasSynced: synced.Load}
 
 	return &harness{
-		t:        t,
-		manager:  m,
-		recorder: recorder,
-		source:   source,
-		clock:    clock,
-		fake:     c.dyn.(*k8sfake.FakeDynamicClient),
-		tel:      tel,
-		store:    store,
-		synced:   synced,
+		t:         t,
+		suspender: m,
+		recorder:  recorder,
+		source:    source,
+		clock:     clock,
+		fake:      c.dyn.(*k8sfake.FakeDynamicClient),
+		tel:       tel,
+		store:     store,
+		synced:    synced,
 	}
 }
 

@@ -86,7 +86,7 @@ type ServiceScope interface {
 	WakeupManager() *wakeup.Manager
 	AppStateWatcher() *k8sapp.StateWatcher
 	SessionsManager() *sessions.Manager
-	IdleTimerManager() *idletimer.Manager
+	IdleTimerRecorder() *idletimer.Recorder
 }
 
 type Mocked interface {
@@ -98,20 +98,20 @@ type Mocked interface {
 // serviceScope implements APIScope interface.
 type serviceScope struct {
 	parentScopes
-	config            config.Config
-	appsAPI           *api.API
-	appHandlers       *apphandler.Manager
-	upstreamTransport http.RoundTripper
-	upstreamManager   *upstream.Manager
-	authProxyManager  *authproxy.Manager
-	pageWriter        *pagewriter.Writer
-	appConfigLoader   appconfig.Loader
-	notifyManager     *notify.Manager
-	wakeupManager     *wakeup.Manager
-	appStateWatcher   *k8sapp.StateWatcher
-	sessionsManager   *sessions.Manager
-	idleTimerManager  *idletimer.Manager
-	idleTimerRecorder *idletimer.Recorder
+	config             config.Config
+	appsAPI            *api.API
+	appHandlers        *apphandler.Manager
+	upstreamTransport  http.RoundTripper
+	upstreamManager    *upstream.Manager
+	authProxyManager   *authproxy.Manager
+	pageWriter         *pagewriter.Writer
+	appConfigLoader    appconfig.Loader
+	notifyManager      *notify.Manager
+	wakeupManager      *wakeup.Manager
+	appStateWatcher    *k8sapp.StateWatcher
+	sessionsManager    *sessions.Manager
+	idleTimerSuspender *idletimer.Suspender
+	idleTimerRecorder  *idletimer.Recorder
 }
 
 type parentScopes interface {
@@ -223,7 +223,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 
 	d.wakeupManager = wakeup.NewManager(d)
 	d.idleTimerRecorder = idletimer.NewRecorder(ctx, d, k8sClient)
-	d.idleTimerManager = idletimer.NewManager(ctx, d, k8sClient, d.idleTimerRecorder)
+	d.idleTimerSuspender = idletimer.NewSuspender(ctx, d, k8sClient, d.idleTimerRecorder)
 	d.sessionsManager = sessions.NewManager(ctx, d)
 	d.authProxyManager = authproxy.NewManager(d)
 	d.upstreamManager = upstream.NewManager(d)
@@ -274,10 +274,6 @@ func (v *serviceScope) WakeupManager() *wakeup.Manager {
 
 func (v *serviceScope) AppStateWatcher() *k8sapp.StateWatcher {
 	return v.appStateWatcher
-}
-
-func (v *serviceScope) IdleTimerManager() *idletimer.Manager {
-	return v.idleTimerManager
 }
 
 func (v *serviceScope) IdleTimerRecorder() *idletimer.Recorder {

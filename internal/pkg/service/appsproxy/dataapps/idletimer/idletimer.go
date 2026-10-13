@@ -32,8 +32,8 @@ type activityRecorder interface {
 	Track(ref k8sapp.WorkloadRef, sandboxName string, threshold *time.Duration) time.Time
 }
 
-// Manager decides which running workloads have gone idle and suspends them.
-type Manager struct {
+// Suspender decides which running workloads have gone idle and suspends them.
+type Suspender struct {
 	suspendEnabled bool
 	clock          clockwork.Clock
 	logger         log.Logger
@@ -70,8 +70,8 @@ type dependencies interface {
 	AppStateWatcher() *k8sapp.StateWatcher
 }
 
-func NewManager(ctx context.Context, d dependencies, k8sClient dynamic.Interface, recorder *Recorder) *Manager {
-	m := newManager(
+func NewSuspender(ctx context.Context, d dependencies, k8sClient dynamic.Interface, recorder *Recorder) *Suspender {
+	m := newSuspender(
 		d.Clock(),
 		d.Logger().WithComponent("idletimer"),
 		newClient(k8sClient, d.Config().K8s.AppsNamespace),
@@ -101,8 +101,8 @@ func NewManager(ctx context.Context, d dependencies, k8sClient dynamic.Interface
 	return m
 }
 
-func newManager(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, recorder activityRecorder, metrics *metrics, suspendEnabled bool) *Manager {
-	return &Manager{
+func newSuspender(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, recorder activityRecorder, metrics *metrics, suspendEnabled bool) *Suspender {
+	return &Suspender{
 		suspendEnabled:     suspendEnabled,
 		clock:              clock,
 		logger:             logger,
@@ -117,6 +117,6 @@ func newManager(clock clockwork.Clock, logger log.Logger, c *client, workloads k
 	}
 }
 
-func (m *Manager) evictWorkload(ref k8sapp.WorkloadRef) {
+func (m *Suspender) evictWorkload(ref k8sapp.WorkloadRef) {
 	m.states.Delete(ref)
 }

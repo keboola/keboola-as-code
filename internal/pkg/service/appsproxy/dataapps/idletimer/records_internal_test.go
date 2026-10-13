@@ -18,7 +18,7 @@ func TestRound_ServesTheRecordFromTheCache(t *testing.T) {
 	h.cacheRecord("member-1", h.clock.Now())
 	h.fake.ClearActions()
 
-	h.manager.suspendIdleWorkloads(t.Context())
+	h.suspender.suspendIdleWorkloads(t.Context())
 
 	assert.Empty(t, h.fake.Actions(), "a cached record must not be read from the apiserver")
 }
@@ -35,7 +35,7 @@ func TestRound_ConfirmsAStaleCachedIdleReadBeforeSuspending(t *testing.T) {
 	h.cacheRecord("member-1", h.clock.Now().Add(-2*threshold))
 	h.clock.Advance(time.Second)
 
-	h.manager.suspendIdleWorkloads(t.Context())
+	h.suspender.suspendIdleWorkloads(t.Context())
 
 	assert.Empty(t, h.source.slept, "a stale cached read must not suspend a workload the apiserver says is active")
 }
@@ -48,7 +48,7 @@ func TestRound_FallsBackToTheApiserverUntilTheCacheHasSynced(t *testing.T) {
 	h.synced.Store(false)
 	h.fake.ClearActions()
 
-	h.manager.suspendIdleWorkloads(t.Context())
+	h.suspender.suspendIdleWorkloads(t.Context())
 
 	assert.NotEmpty(t, h.fake.Actions(), "before the cache has synced, absence from it is not absence")
 }
@@ -63,7 +63,7 @@ func TestRound_SuspendsOnACachedReadTheApiserverAgreesWith(t *testing.T) {
 	h.cacheRecord("member-1", h.clock.Now())
 
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.manager.suspendIdleWorkloads(t.Context())
+	h.suspender.suspendIdleWorkloads(t.Context())
 
 	assert.Equal(t, []k8sapp.WorkloadRef{appRef}, h.source.slept)
 }
@@ -77,7 +77,7 @@ func TestRound_ACachedRecordIsKeyedByItsMember(t *testing.T) {
 	h.cacheRecord("member-1", h.clock.Now())
 	h.fake.ClearActions()
 
-	h.manager.suspendIdleWorkloads(t.Context())
+	h.suspender.suspendIdleWorkloads(t.Context())
 
 	assert.NotEmpty(t, h.fake.Actions(), "another member's cached record must not answer for this one")
 
@@ -85,7 +85,7 @@ func TestRound_ACachedRecordIsKeyedByItsMember(t *testing.T) {
 	h.cacheRecord("member-2", h.clock.Now())
 	h.fake.ClearActions()
 
-	h.manager.suspendIdleWorkloads(t.Context())
+	h.suspender.suspendIdleWorkloads(t.Context())
 
 	assert.Empty(t, h.fake.Actions())
 }
