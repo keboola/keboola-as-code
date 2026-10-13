@@ -47,7 +47,9 @@ func newErrorHandler(cfg Config, logger log.Logger) func(c *fasthttp.RequestCtx,
 			err = svcErrors.NewBodyTooLargeError(
 				errors.Wrapf(err, `request body size is over the maximum %q`, cfg.MaxRequestBodySize.String()),
 			)
-			attrs = append(attrs, attribute.Int("http.request.body.size", c.Request.Header.ContentLength()))
+			if size := c.Request.Header.ContentLength(); size > 0 {
+				attrs = append(attrs, attribute.Int("http.request.body.size", size))
+			}
 		// EOF error, for example: client closed connection
 		case errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF):
 			err = svcErrors.NewIOError(
@@ -64,12 +66,24 @@ func newErrorHandler(cfg Config, logger log.Logger) func(c *fasthttp.RequestCtx,
 // sourceAttrs returns the project and source IDs of a /stream/... or /otlp/... request path, never the secret.
 func sourceAttrs(path string) []attribute.KeyValue {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
-	if len(parts) < 3 || (parts[0] != "stream" && parts[0] != "otlp") {
+	if !isSourceRoute(parts) {
 		return nil
 	}
 	return []attribute.KeyValue{
 		attribute.String("project.id", parts[1]),
 		attribute.String("source.id", parts[2]),
+	}
+}
+
+// isSourceRoute matches only the exact /stream and /otlp route shapes, so a malformed path never logs its secret as an ID.
+func isSourceRoute(parts []string) bool {
+	switch parts[0] {
+	case "stream":
+		return len(parts) == 4
+	case "otlp":
+		return (len(parts) == 6 && parts[4] == "v1") || (len(parts) == 5 && parts[3] == "v1")
+	default:
+		return false
 	}
 }
 
