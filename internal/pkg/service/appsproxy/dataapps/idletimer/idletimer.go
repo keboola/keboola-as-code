@@ -341,12 +341,11 @@ func (m *Manager) tick(ctx context.Context) {
 
 	var candidates, noThreshold int64
 	for _, c := range scan.Candidates {
-		// A round that ran out of time would otherwise turn one cancelled
-		// context into one failure per remaining workload.
-		if ctx.Err() != nil {
+		state, err := m.visit(ctx, c)
+		if err != nil {
 			break
 		}
-		if m.visit(ctx, c) == stateCandidate {
+		if state == stateCandidate {
 			candidates++
 		} else {
 			noThreshold++
@@ -357,8 +356,14 @@ func (m *Manager) tick(ctx context.Context) {
 	m.metrics.unresolved.Store(int64(len(scan.Unresolved)))
 }
 
-// visit reports the state to count this workload under.
-func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) string {
+// visit reports the state to count this workload under, and an error when the
+// round is over: a round that ran out of time would otherwise turn one
+// cancelled context into one failure per remaining workload.
+func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+
 	item := m.stateMap.GetOrInit(c.Ref)
 	now := m.clock.Now()
 
@@ -371,18 +376,18 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) string {
 	}
 
 	if c.Threshold == 0 {
-		return stateNoThreshold
+		return stateNoThreshold, nil
 	}
 
 	rec, found := m.readRecord(ctx, c)
 	if !found {
-		return stateCandidate
+		return stateCandidate, nil
 	}
 
 	idleFor := now.Sub(lastSeen(memory, rec.lastRequestAt, c.LastStarted))
 	if !shouldSuspend(idleFor, c.Threshold) {
 		m.clearSuppressed(item)
-		return stateCandidate
+		return stateCandidate, nil
 	}
 
 	// Only the action needs the confirmation, and the gate is what decides
@@ -391,17 +396,17 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) string {
 		live, err := m.client.get(ctx, c.SandboxName)
 		if err != nil {
 			m.noteRecordError(ctx, "confirm", c, err)
-			return stateCandidate
+			return stateCandidate, nil
 		}
 		idleFor = now.Sub(lastSeen(memory, live.lastRequestAt, c.LastStarted))
 		if !shouldSuspend(idleFor, c.Threshold) {
 			m.clearSuppressed(item)
-			return stateCandidate
+			return stateCandidate, nil
 		}
 	}
 
 	m.suspend(ctx, c, item, idleFor)
-	return stateCandidate
+	return stateCandidate, nil
 }
 
 // observe folds this round's reading into the state under one lock, and reports
