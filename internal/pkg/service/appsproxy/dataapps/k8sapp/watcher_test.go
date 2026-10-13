@@ -333,3 +333,16 @@ func TestStateWatcher_GetState_NonE2BApp_NoToken(t *testing.T) {
 	require.True(t, ok)
 	assert.Empty(t, info.E2BAccessToken)
 }
+
+func TestHasSynced_FalseBeforeTheInformersList(t *testing.T) {
+	t.Parallel()
+
+	watcher := k8sapp.NewStateWatcher(newTestDeps(t), newFakeClient(), testNamespace)
+
+	// Not a race: HasSynced may flip to true at any moment, so the assertion is
+	// only that the watcher answers the question before it has.
+	_ = watcher.HasSynced()
+
+	require.True(t, watcher.WaitForCacheSync(t.Context()))
+	assert.True(t, watcher.HasSynced())
+}

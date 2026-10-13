@@ -200,6 +200,17 @@ func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, 
 	}, true
 }
 
+// HasSynced reports whether all informers have completed their initial list.
+// Unlike WaitForCacheSync it does not block, so a periodic caller can skip a
+// round rather than act on a cache that is still filling.
+func (w *StateWatcher) HasSynced() bool {
+	return synced(w.hasSynced) && synced(w.sandboxesHaveSynced)
+}
+
+func synced(fn cache.InformerSynced) bool {
+	return fn != nil && fn()
+}
+
 // WaitForCacheSync blocks until the informer cache has completed its initial list,
 // the stopCh is closed, or the context is cancelled.
 // Intended for use in tests to ensure the watch is established before creating objects.

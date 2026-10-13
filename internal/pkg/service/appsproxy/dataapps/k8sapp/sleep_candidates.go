@@ -3,21 +3,8 @@ package k8sapp
 import (
 	"sort"
 
-	"k8s.io/client-go/tools/cache"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 )
-
-// HasSynced reports whether both informers have completed their initial list.
-// Unlike WaitForCacheSync it does not block, so a periodic caller can skip a
-// round rather than act on a cache that is still filling.
-func (w *StateWatcher) HasSynced() bool {
-	return synced(w.hasSynced) && synced(w.sandboxesHaveSynced)
-}
-
-func synced(fn cache.InformerSynced) bool {
-	return fn != nil && fn()
-}
 
 // ScanForSleepCandidates returns the Running workloads the idle-suspend loop
 // may act on, as the cache holds them at this moment. It walks and sorts, so a

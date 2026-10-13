@@ -188,19 +188,6 @@ func TestScanForSleepCandidates_MemberSandboxIsNotAWorkloadOfItsOwn(t *testing.T
 	assert.NotContains(t, refsOf(got), k8sapp.WorkloadRef{AppID: "123", SandboxName: "app-123-dpl-aaa"})
 }
 
-func TestHasSynced_FalseBeforeTheInformersList(t *testing.T) {
-	t.Parallel()
-
-	watcher := k8sapp.NewStateWatcher(newTestDeps(t), newFakeClient(), testNamespace)
-
-	// Not a race: HasSynced may flip to true at any moment, so the assertion is
-	// only that the watcher answers the question before it has.
-	_ = watcher.HasSynced()
-
-	require.True(t, watcher.WaitForCacheSync(t.Context()))
-	assert.True(t, watcher.HasSynced())
-}
-
 // The count is what a periodic caller watches; the warning is only emitted
 // once per App, so it cannot carry the signal on its own.
 func TestScanForSleepCandidates_CountsUnresolvedApps(t *testing.T) {
