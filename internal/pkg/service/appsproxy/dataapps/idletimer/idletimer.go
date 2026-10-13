@@ -44,7 +44,7 @@ type Manager struct {
 	metrics        *metrics
 	states         *syncmap.SyncMap[k8sapp.WorkloadRef, suspendState]
 
-	// These are touched only by the tick goroutine.
+	// These are touched only by the round.
 	warnedUnresolved   map[api.AppID]bool
 	lastRecordErrorLog map[metav1.StatusReason]time.Time
 }
@@ -57,7 +57,7 @@ type suspendState struct {
 
 	// A real suspend takes the workload out of the Running set and is edge
 	// triggered by that. A suppressed one leaves it there, so without this every
-	// later tick would count and log it again.
+	// later round would count and log it again.
 	suppressedAt time.Time
 }
 
@@ -93,7 +93,7 @@ func NewManager(ctx context.Context, d dependencies, k8sClient dynamic.Interface
 			case <-ctx.Done():
 				return
 			case <-ticker.Chan():
-				m.tick(ctx)
+				m.suspendIdleWorkloads(ctx)
 			}
 		}
 	}()

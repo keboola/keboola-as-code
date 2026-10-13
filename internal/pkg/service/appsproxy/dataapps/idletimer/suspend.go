@@ -15,16 +15,16 @@ const wakeWindow = time.Minute
 
 // Rounds are serial, so a slow one delays the next rather than piling up. This
 // stops a wedged call from stopping the loop for good.
-const tickTimeout = 2 * tickInterval
+const roundTimeout = 2 * tickInterval
 
 // recordErrorLogInterval bounds how often one kind of record failure is logged.
-// A missing RBAC rule or CRD fails for every workload on every tick, so logging
+// A missing RBAC rule or CRD fails for every workload on every round, so logging
 // per workload buries the line that says what is wrong. Logging it only once
 // would be worse: this log is the only signal that the records are failing, so
 // it has to keep saying so until someone fixes it.
 const recordErrorLogInterval = time.Minute
 
-// warnUnresolved reports each App once rather than once per tick: a standing
+// warnUnresolved reports each App once rather than once per round: a standing
 // misconfiguration would otherwise never stop logging.
 func (m *Manager) warnUnresolved(ctx context.Context, unresolved []api.AppID) {
 	current := make(map[api.AppID]bool, len(unresolved))
@@ -37,13 +37,13 @@ func (m *Manager) warnUnresolved(ctx context.Context, unresolved []api.AppID) {
 	m.warnedUnresolved = current
 }
 
-func (m *Manager) tick(ctx context.Context) {
+func (m *Manager) suspendIdleWorkloads(ctx context.Context) {
 	// Absence from a cache that is still filling is not absence of a workload.
 	if !m.workloads.HasSynced() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeoutCause(ctx, tickTimeout, errors.New("idle suspend tick timeout"))
+	ctx, cancel := context.WithTimeoutCause(ctx, roundTimeout, errors.New("idle suspend round timeout"))
 	defer cancel()
 
 	scan := m.workloads.ScanForSleepCandidates()
@@ -155,7 +155,7 @@ func (m *Manager) readRecord(ctx context.Context, c k8sapp.SleepCandidate) (reco
 		return record{}, false
 	}
 
-	// The tick, not only the request path, creates the record: a Running
+	// The round, not only the request path, creates the record: a Running
 	// workload nobody has ever requested would otherwise never get one.
 	// AlreadyExists means the other replica won the race, which is this outcome.
 	if err := m.client.create(ctx, c.SandboxName, c.SandboxUID, m.clock.Now()); err != nil && !k8serrors.IsAlreadyExists(err) {

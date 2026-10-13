@@ -22,7 +22,7 @@ func TestRecordActivity_WritesTheSharedRecordAtTheHeartbeatCadence(t *testing.T)
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
+	h.manager.suspendIdleWorkloads(t.Context())
 
 	h.clock.Advance(time.Minute)
 	h.recorder.RecordActivity(t.Context(), appRef)
@@ -37,7 +37,7 @@ func TestRecordActivity_DoesNotWriteWithinOneHeartbeatInterval(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
+	h.manager.suspendIdleWorkloads(t.Context())
 
 	h.clock.Advance(time.Minute)
 	h.recorder.RecordActivity(t.Context(), appRef)
@@ -60,7 +60,7 @@ func TestRecordActivity_WritesNothingWhenTheWorkloadHasNoThreshold(t *testing.T)
 	t.Parallel()
 
 	h := newHarness(t, optedOut(appRef, "member-1"))
-	h.manager.tick(t.Context())
+	h.manager.suspendIdleWorkloads(t.Context())
 	h.fake.ClearActions()
 
 	h.clock.Advance(time.Hour)
@@ -77,7 +77,7 @@ func TestRecordActivity_DoesNotBlockTheRequestPath(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
+	h.manager.suspendIdleWorkloads(t.Context())
 
 	release := make(chan struct{})
 	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
@@ -110,7 +110,7 @@ func TestRecordActivity_AFailedWriteDoesNotHoldOffTheNextOne(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
+	h.manager.suspendIdleWorkloads(t.Context())
 
 	var fail atomic.Bool
 	fail.Store(true)
@@ -142,7 +142,7 @@ func TestShutdown_StopsAdmittingWrites(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
+	h.manager.suspendIdleWorkloads(t.Context())
 	before := len(h.fake.Actions())
 
 	h.recorder.Shutdown(t.Context())
@@ -161,14 +161,14 @@ func TestRecordActivity_AMemberSwitchWritesTheNewRecordAtOnce(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
+	h.manager.suspendIdleWorkloads(t.Context())
 
 	h.clock.Advance(time.Minute)
 	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 
 	h.source.candidates = []k8sapp.SleepCandidate{candidate(appRef, "member-2")}
-	h.manager.tick(t.Context())
+	h.manager.suspendIdleWorkloads(t.Context())
 
 	// Well inside one heartbeat interval of the write to member-1.
 	h.clock.Advance(time.Second)
@@ -187,7 +187,7 @@ func TestRecordActivity_APersistentFailureIsNotRetriedPerRequest(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1"))
-	h.manager.tick(t.Context())
+	h.manager.suspendIdleWorkloads(t.Context())
 
 	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, k8serrors.NewForbidden(schema.GroupResource{Resource: resource}, "member-1", errors.New("no patch rule"))
