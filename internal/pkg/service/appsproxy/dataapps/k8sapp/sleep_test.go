@@ -211,3 +211,34 @@ func TestStateWatcher_Sleep_PatchesWhenTheMemberStillMatches(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, suspended)
 }
+
+// The operator reconciles a stopped workload some time after the patch, so
+// status.currentState stays Running in between. Both replicas decide
+// independently, and the second one would otherwise patch an already stopped
+// workload and report a suspend of its own.
+func TestStateWatcher_Sleep_SkipsAWorkloadAlreadyStopped(t *testing.T) {
+	t.Parallel()
+
+	fakeClient := newFakeClient()
+	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
+
+	obj := newAppObject("app-123", "123", k8sapp.AppActualStateRunning)
+	obj.Object["spec"].(map[string]any)["state"] = string(k8sapp.AppActualStateStopped)
+	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).
+		Create(t.Context(), obj, metav1.CreateOptions{})
+	require.NoError(t, err)
+	require.True(t, watcher.WaitForCacheSync(t.Context()))
+	assert.Eventually(t, func() bool {
+		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+		return ok
+	}, 5*time.Second, 50*time.Millisecond)
+
+	fakeClient.ClearActions()
+	suspended, err := watcher.Sleep(t.Context(), k8sapp.WorkloadRef{AppID: "123"}, "")
+	require.NoError(t, err)
+	assert.False(t, suspended, "the other replica already stopped it")
+
+	for _, action := range fakeClient.Actions() {
+		assert.NotEqual(t, "patch", action.GetVerb(), "an already stopped workload must not be patched again")
+	}
+}

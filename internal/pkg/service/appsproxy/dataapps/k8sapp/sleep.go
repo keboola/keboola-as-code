@@ -49,6 +49,18 @@ func (w *StateWatcher) Sleep(ctx context.Context, ref WorkloadRef, expectMember 
 		return false, nil
 	}
 
+	// The operator reconciles a stopped workload some time after the patch, so
+	// currentState stays Running in between. Both replicas decide on their own,
+	// and without this the second one patches again and counts a suspend of its
+	// own, which doubles the wake it is later measured against.
+	desired, _, err := unstructured.NestedString(obj.Object, "spec", "state")
+	if err != nil {
+		return false, err
+	}
+	if AppActualState(desired) == AppActualStateStopped {
+		return false, nil
+	}
+
 	if !ref.IsSandbox() && expectMember != "" {
 		member, _, err := unstructured.NestedString(obj.Object, "status", "productionSandbox")
 		if err != nil {
