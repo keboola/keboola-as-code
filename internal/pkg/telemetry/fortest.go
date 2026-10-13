@@ -447,17 +447,6 @@ func cleanAndSortMetrics(metrics *[]metricdata.Metrics, opts ...TestMeterOption)
 				point.Attributes = mapAttributes(point.Attributes)
 				point.Exemplars = nil
 			}
-		case metricdata.Gauge[float64]:
-			sort.SliceStable(record.DataPoints, func(i, j int) bool {
-				return dataPointKey(record.DataPoints[i].Attributes) < dataPointKey(record.DataPoints[j].Attributes)
-			})
-			for k := range record.DataPoints {
-				point := &record.DataPoints[k]
-				point.StartTime = time.Time{}
-				point.Time = time.Time{}
-				point.Attributes = mapAttributes(point.Attributes)
-				point.Exemplars = nil
-			}
 		case metricdata.Sum[int64]:
 			sort.SliceStable(record.DataPoints, func(i, j int) bool {
 				return dataPointKey(record.DataPoints[i].Attributes) < dataPointKey(record.DataPoints[j].Attributes)
