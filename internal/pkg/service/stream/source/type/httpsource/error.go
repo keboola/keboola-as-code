@@ -75,7 +75,7 @@ func sourceAttrs(path string) []attribute.KeyValue {
 	}
 }
 
-// isSourceRoute matches only the exact /stream and /otlp route shapes, so a malformed path never logs its secret as an ID.
+// isSourceRoute matches only the exact /stream and /otlp routes, so a malformed path never logs its secret.
 func isSourceRoute(parts []string) bool {
 	switch parts[0] {
 	case "stream":
