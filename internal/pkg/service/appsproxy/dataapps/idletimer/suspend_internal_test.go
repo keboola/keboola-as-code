@@ -408,3 +408,21 @@ func TestRound_StopsWhenTheRoundRunsOutOfTime(t *testing.T) {
 	// the reactor fails every read. The round must not touch the apiserver.
 	assert.Empty(t, h.fake.Actions(), "a cancelled round must stop, not visit the rest")
 }
+
+// Shadow mode exists to justify turning the gate on, so it has to count what
+// the enabled loop would do. A cached read that the apiserver disagrees with is
+// a suspend that would not have happened.
+func TestRound_AGatedDecisionIsConfirmedBeforeItIsCounted(t *testing.T) {
+	t.Parallel()
+
+	h := newGatedHarness(t, candidate(appRef, "member-1"))
+	require.NoError(t, h.recorder.client.create(t.Context(), "member-1", "uid-1", h.clock.Now()))
+
+	// The cache still holds a value from long before the last request.
+	h.cacheRecord("member-1", h.clock.Now().Add(-2*threshold))
+	h.clock.Advance(time.Second)
+
+	h.manager.suspendIdleWorkloads(t.Context())
+
+	assert.Zero(t, h.suspendCount(t, outcomeSuppressed), "a stale cached read must not be counted as a suspend that would have happened")
+}

@@ -101,9 +101,12 @@ func (m *Manager) visit(ctx context.Context, c k8sapp.SleepCandidate) (string, e
 		return stateCandidate, nil
 	}
 
-	// Only the action needs the confirmation, and the gate is what decides
-	// whether there is one.
-	if rec.cached && m.suspendEnabled {
+	// A cached read lags, and a lagging record reads as idle. With the gate on
+	// that would suspend a workload in use; with it off it would report a
+	// suspend the enabled loop would not have made, which is the number the
+	// rollout is judged on. Confirming once per episode covers the second case
+	// without a read per round.
+	if rec.cached && (m.suspendEnabled || !m.suppressed(item)) {
 		live, err := m.client.get(ctx, c.SandboxName)
 		if err != nil {
 			m.noteRecordError(ctx, "confirm", c, err)
@@ -215,6 +218,13 @@ func (m *Manager) reportSuppressed(ctx context.Context, c k8sapp.SleepCandidate,
 
 	m.metrics.suspends.Add(ctx, 1, withOutcome(outcomeSuppressed))
 	m.logger.Infof(ctx, "would suspend workload %q, idle for %s, but the suspend action is off", c.Ref, idleFor)
+}
+
+func (m *Manager) suppressed(item *suspendState) bool {
+	item.lock.Lock()
+	defer item.lock.Unlock()
+
+	return !item.suppressedAt.IsZero()
 }
 
 func (m *Manager) clearSuppressed(item *suspendState) {
