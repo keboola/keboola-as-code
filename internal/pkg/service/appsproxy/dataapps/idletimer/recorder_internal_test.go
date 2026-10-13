@@ -138,22 +138,6 @@ func TestRecordActivity_AFailedWriteDoesNotHoldOffTheNextOne(t *testing.T) {
 
 // A websocket frame can arrive after Shutdown begins, because hijacked
 // connections are not drained by the HTTP server.
-func TestShutdown_StopsAdmittingWrites(t *testing.T) {
-	t.Parallel()
-
-	h := newHarness(t, candidate(appRef, "member-1"))
-	h.manager.suspendIdleWorkloads(t.Context())
-	before := len(h.fake.Actions())
-
-	h.recorder.Shutdown(t.Context())
-
-	h.clock.Advance(time.Minute)
-	h.recorder.RecordActivity(t.Context(), appRef)
-	h.flush()
-
-	assert.Len(t, h.fake.Actions(), before, "a write admitted after Shutdown would race its Wait")
-}
-
 // A redeploy moves the App onto a new member Sandbox, and the record is named
 // after the member. The cadence is a property of the record, so carrying it
 // across the switch leaves the new record unwritten while traffic flows.
@@ -209,4 +193,110 @@ func TestRecordActivity_APersistentFailureIsNotRetriedPerRequest(t *testing.T) {
 	assert.LessOrEqual(t, patches, 5, "a standing failure must not be retried once per request")
 	assert.LessOrEqual(t, strings.Count(logger.AllMessages(), "failed to record activity"), 1,
 		"the request path must not log once per request")
+}
+
+// A mark taken just before the process goes down still belongs in the shared
+// record: the other replica reads it, and would otherwise see this workload as
+// idle for however long the mark was worth.
+func TestShutdown_RunsAFinalSweep(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1"))
+	h.manager.suspendIdleWorkloads(t.Context())
+	h.clock.Advance(time.Minute)
+	h.startSweeper()
+
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.recorder.Shutdown(t.Context())
+
+	rec, err := h.recorder.client.get(t.Context(), "member-1")
+	require.NoError(t, err)
+	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want the final sweep to write %s, got %s", h.clock.Now(), rec.lastRequestAt)
+}
+
+// A workload can leave the cache while a request for it is still in flight.
+func TestShutdown_IsNotHeldUpByAnEvictionRacingARequest(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1"))
+	h.manager.suspendIdleWorkloads(t.Context())
+	h.startSweeper()
+
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.recorder.Forget(appRef)
+	h.recorder.RecordActivity(t.Context(), appRef)
+
+	done := make(chan struct{})
+	go func() {
+		h.recorder.Shutdown(t.Context())
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Shutdown did not return")
+	}
+}
+
+func TestShutdown_IsSafeToCallTwice(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1"))
+	h.startSweeper()
+
+	h.recorder.Shutdown(t.Context())
+	assert.NotPanics(t, func() { h.recorder.Shutdown(t.Context()) })
+}
+
+// The write that matters most is the last one before a workload goes quiet, and
+// nothing will arrive to prompt a retry of it. Retrying only when traffic nudges
+// leaves the shared record frozen, and the other replica suspends on it.
+func TestSweep_RetriesAfterTheTrafficHasStopped(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1"))
+	h.manager.suspendIdleWorkloads(t.Context())
+
+	var fail atomic.Bool
+	fail.Store(true)
+	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		if fail.Load() {
+			return true, nil, k8serrors.NewInternalError(errors.New("apiserver is unwell"))
+		}
+		return false, nil, nil
+	})
+
+	h.clock.Advance(time.Minute)
+	at := h.clock.Now()
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	// Not one more request from here on.
+	fail.Store(false)
+	h.clock.Advance(writeRetryInterval + time.Second)
+	h.flush()
+
+	rec, err := h.recorder.client.get(t.Context(), "member-1")
+	require.NoError(t, err)
+	assert.True(t, at.Equal(rec.lastRequestAt), "want the retry to land %s, got %s", at, rec.lastRequestAt)
+}
+
+// A standing failure is the one thing that can suspend a workload in use, and
+// the logs alone do not put it on a dashboard.
+func TestSweep_CountsAFailedWriteByReason(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1"))
+	h.manager.suspendIdleWorkloads(t.Context())
+
+	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, k8serrors.NewForbidden(schema.GroupResource{Resource: resource}, "member-1", errors.New("no patch rule"))
+	})
+
+	h.clock.Advance(time.Minute)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.write_failures"))
 }

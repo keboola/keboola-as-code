@@ -101,10 +101,16 @@ func (h *harness) suspendCount(t *testing.T, outcome string) int64 {
 	return 0
 }
 
-// flush waits for the detached writes. Shutdown also waits, but it stops
-// admitting new ones, so a test that writes again afterwards cannot use it.
+// startSweeper runs the sweeper the way the service does. Tests that only need
+// a write to land call flush instead, which is deterministic.
+func (h *harness) startSweeper() {
+	go h.recorder.run(h.t.Context())
+}
+
+// flush runs one sweep, which is what the ticker does in production. It returns
+// once every write that sweep decided on has finished.
 func (h *harness) flush() {
-	h.recorder.wg.Wait()
+	h.recorder.sweep(h.t.Context())
 }
 
 func (h *harness) counterValue(t *testing.T, name string) int64 {
@@ -147,7 +153,7 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
 	tel := telemetry.NewForTest(t)
 
-	recorder := newRecorder(t.Context(), clock, logger, c)
+	recorder := newRecorder(clock, logger, c, newRecorderMetrics(tel.Meter()))
 	m := newManager(clock, logger, c, source, recorder, newMetrics(tel.Meter()), suspendEnabled)
 
 	synced := &atomic.Bool{}

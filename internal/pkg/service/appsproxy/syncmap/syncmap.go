@@ -35,6 +35,18 @@ func (m *SyncMap[K, V]) GetOrInit(key K) *V {
 	return item
 }
 
+// Range calls fn for every item. It holds the lock for the whole walk, so fn
+// must not touch the map or block: a caller that needs to work on the items
+// collects them here and does that work afterwards.
+func (m *SyncMap[K, V]) Range(fn func(K, *V)) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	for k, v := range m.kvs {
+		fn(k, v)
+	}
+}
+
 // Delete removes the key and returns the item it held, so the caller can
 // release whatever that item owns. Without it a map keyed by a short-lived
 // identity grows for the life of the process.

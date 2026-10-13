@@ -6,6 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -32,6 +33,22 @@ type metrics struct {
 
 	suspends             metric.Int64Counter
 	wokeSoonAfterSuspend metric.Int64Counter
+}
+
+// recorderMetrics is the Recorder's own instrument. It is built separately
+// because registering the gauge's callback twice would observe it twice.
+type recorderMetrics struct {
+	writeFailures metric.Int64Counter
+}
+
+func newRecorderMetrics(meter telemetry.Meter) *recorderMetrics {
+	return &recorderMetrics{
+		writeFailures: meter.IntCounter(
+			"keboola.go.appsproxy.idletimer.write_failures",
+			"Activity writes that did not land, by apiserver reason. While these fail the shared record stops advancing, and the replica that served no traffic of its own reads it as idle, so a workload in use can be suspended.",
+			"",
+		),
+	}
 }
 
 func newMetrics(meter telemetry.Meter) *metrics {
@@ -69,4 +86,8 @@ func withState(state string) metric.ObserveOption {
 
 func withOutcome(outcome string) metric.AddOption {
 	return metric.WithAttributes(attribute.String("outcome", outcome))
+}
+
+func withReason(reason metav1.StatusReason) metric.AddOption {
+	return metric.WithAttributes(attribute.String("reason", string(reason)))
 }
