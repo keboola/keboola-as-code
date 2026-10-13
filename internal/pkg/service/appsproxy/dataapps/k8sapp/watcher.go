@@ -82,7 +82,19 @@ func NewDynamicClient(kubeconfigPath string) (dynamic.Interface, error) {
 	if err != nil {
 		return nil, err
 	}
-	return dynamic.NewForConfig(cfg)
+	return dynamic.NewForConfig(withRateLimits(cfg))
+}
+
+// withRateLimits replaces client-go's 5 QPS and burst 10, which are sized for a
+// small controller. One client is shared by the informers, the wake path, the
+// suspend path and every activity write, and a write that queues past its
+// timeout leaves the shared idle record stale, which is how a load peak becomes
+// an early suspend. The apiserver's own priority and fairness, not this, is
+// what protects the cluster.
+func withRateLimits(cfg *rest.Config) *rest.Config {
+	cfg.QPS = 50
+	cfg.Burst = 100
+	return cfg
 }
 
 // NewStateWatcher creates and starts a StateWatcher that watches App and Sandbox CRDs in the given namespace.
