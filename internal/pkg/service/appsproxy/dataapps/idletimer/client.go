@@ -18,13 +18,12 @@ import (
 
 const (
 	kind     = "IdleTimer"
-	resource = "idletimers"
-	version  = "v1"
+	resource = k8sapp.IdleTimerResource
+	version  = k8sapp.IdleTimerVersion
 )
 
-// gvr is the IdleTimer CRD this package reads and writes.
 func gvr() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: k8sapp.Group, Version: version, Resource: resource}
+	return k8sapp.IdleTimerGVR()
 }
 
 type record struct {

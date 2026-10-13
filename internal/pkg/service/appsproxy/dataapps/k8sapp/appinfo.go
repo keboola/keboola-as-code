@@ -22,6 +22,9 @@ const (
 	SandboxVersion  = "v1"
 	SandboxResource = "sandboxes"
 
+	IdleTimerVersion  = "v1"
+	IdleTimerResource = "idletimers"
+
 	BackendTypeE2BSandbox = "e2bSandbox"
 )
 
@@ -33,6 +36,11 @@ func AppGVR() schema.GroupVersionResource {
 // SandboxGVR returns the GroupVersionResource for the Sandbox CRD.
 func SandboxGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: Group, Version: SandboxVersion, Resource: SandboxResource}
+}
+
+// IdleTimerGVR returns the GroupVersionResource for the IdleTimer CRD.
+func IdleTimerGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{Group: Group, Version: IdleTimerVersion, Resource: IdleTimerResource}
 }
 
 // gvrFor returns the CRD that owns the workload's route, which is the one a
