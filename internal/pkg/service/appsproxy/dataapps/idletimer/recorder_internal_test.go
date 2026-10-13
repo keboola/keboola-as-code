@@ -1,6 +1,7 @@
 package idletimer
 
 import (
+	"context"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -299,4 +300,46 @@ func TestSweep_CountsAFailedWriteByReason(t *testing.T) {
 	h.flush()
 
 	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.write_failures"))
+}
+
+// The loop has two ways to end and the record is shared, so a mark must reach
+// the apiserver whichever one fires. Which case a ready select takes is not
+// defined, so the ctx one has to sweep as well.
+func TestRun_SweepsWhateverEndsTheLoop(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name string
+		stop func(*harness, context.CancelCauseFunc)
+	}{
+		{"context cancelled", func(_ *harness, cancel context.CancelCauseFunc) { cancel(errors.New("stop")) }},
+		{"shutdown", func(h *harness, _ context.CancelCauseFunc) {
+			h.recorder.stopOnce.Do(func() { close(h.recorder.stopping) })
+		}},
+		{"both at once", func(h *harness, cancel context.CancelCauseFunc) {
+			cancel(errors.New("stop"))
+			h.recorder.stopOnce.Do(func() { close(h.recorder.stopping) })
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			h := newHarness(t, candidate(appRef, "member-1"))
+			h.suspender.suspendIdleWorkloads(t.Context())
+
+			ctx, cancel := context.WithCancelCause(context.Background())
+			defer cancel(errors.New("test done"))
+
+			h.clock.Advance(time.Minute)
+			h.recorder.RecordActivity(ctx, appRef)
+			want := h.clock.Now()
+
+			tc.stop(h, cancel)
+			h.recorder.run(ctx)
+
+			rec, err := h.recorder.client.get(t.Context(), "member-1")
+			require.NoError(t, err)
+			assert.True(t, want.Equal(rec.lastRequestAt), "want the final sweep to write %s, got %s", want, rec.lastRequestAt)
+		})
+	}
 }

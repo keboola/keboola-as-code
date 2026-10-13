@@ -60,7 +60,10 @@ type suspendState struct {
 	suppressedAt time.Time
 }
 
-func NewSuspender(ctx context.Context, d dependencies, k8sClient dynamic.Interface, recorder *Recorder) *Suspender {
+// NewSuspender starts the round loop and the record watch. The ctx the service
+// is built with is not cancelled until the process has already exited, so both
+// get one of their own that the shutdown callback cancels.
+func NewSuspender(d dependencies, k8sClient dynamic.Interface, recorder *Recorder) *Suspender {
 	m := newSuspender(
 		d.Clock(),
 		d.Logger().WithComponent("idletimer"),
@@ -70,6 +73,11 @@ func NewSuspender(ctx context.Context, d dependencies, k8sClient dynamic.Interfa
 		newMetrics(d.Telemetry().Meter()),
 		d.Config().IdleSuspend.Enabled,
 	)
+
+	ctx, cancel := context.WithCancelCause(context.Background())
+	d.Process().OnShutdown(func(context.Context) {
+		cancel(errors.New("shutdown"))
+	})
 
 	m.records = newRecordCache(ctx, k8sClient, d.Config().K8s.AppsNamespace)
 

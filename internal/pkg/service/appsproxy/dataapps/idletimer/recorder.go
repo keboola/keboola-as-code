@@ -63,7 +63,10 @@ type activity struct {
 	threshold   *time.Duration
 }
 
-func NewRecorder(ctx context.Context, d dependencies, k8sClient dynamic.Interface) *Recorder {
+// NewRecorder starts the sweeper. The ctx the service is built with is not
+// cancelled until the process has already exited, so the loop gets one of its
+// own, cancelled after the final sweep rather than before it.
+func NewRecorder(d dependencies, k8sClient dynamic.Interface) *Recorder {
 	r := newRecorder(
 		d.Clock(),
 		d.Logger().WithComponent("idletimer"),
@@ -73,8 +76,10 @@ func NewRecorder(ctx context.Context, d dependencies, k8sClient dynamic.Interfac
 
 	d.AppStateWatcher().OnWorkloadRemoved(r.Forget)
 
+	ctx, cancel := context.WithCancelCause(context.Background())
 	d.Process().OnShutdown(func(ctx context.Context) {
 		r.Shutdown(ctx)
+		cancel(errors.New("shutdown"))
 	})
 
 	go r.run(ctx)
@@ -159,6 +164,7 @@ func (r *Recorder) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			r.sweep(ctx)
 			return
 		case <-r.stopping:
 			r.sweep(ctx)

@@ -222,8 +222,8 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.appStateWatcher = k8sapp.NewStateWatcher(d, k8sClient, cfg.K8s.AppsNamespace)
 
 	d.wakeupManager = wakeup.NewManager(d)
-	d.idleTimerRecorder = idletimer.NewRecorder(ctx, d, k8sClient)
-	d.idleTimerSuspender = idletimer.NewSuspender(ctx, d, k8sClient, d.idleTimerRecorder)
+	d.idleTimerRecorder = idletimer.NewRecorder(d, k8sClient)
+	d.idleTimerSuspender = idletimer.NewSuspender(d, k8sClient, d.idleTimerRecorder)
 	d.sessionsManager = sessions.NewManager(ctx, d)
 	d.authProxyManager = authproxy.NewManager(d)
 	d.upstreamManager = upstream.NewManager(d)
