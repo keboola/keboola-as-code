@@ -88,27 +88,6 @@ func TestScanForSleepCandidates_AppRouteCarriesItsMemberSandboxThreshold(t *test
 	assert.Equal(t, lastStarted, got[0].LastStarted.UTC().Format(time.RFC3339))
 }
 
-// Zero was the legacy "use the default" marker in the sandboxes component and
-// sandboxes-service, where it fell back to an hour. There is no default here,
-// and clamping a zero up to the minimum would suspend after a minute what once
-// meant an hour.
-func TestScanForSleepCandidates_ALegacyZeroThresholdIsAbsent(t *testing.T) {
-	t.Parallel()
-
-	watcher := syncedWatcher(t, log.NewNopLogger(),
-		newMemberSandbox(k8sapp.AppActualStateRunning, int64(0)),
-		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, "app-123-dpl-aaa"),
-	)
-
-	var got []k8sapp.SleepCandidate
-	assert.Eventually(t, func() bool {
-		got = watcher.ScanForSleepCandidates().Candidates
-		return len(got) == 1
-	}, 5*time.Second, 50*time.Millisecond)
-
-	assert.Nil(t, got[0].Threshold, "zero is the legacy default marker, not a threshold")
-}
-
 func TestScanForSleepCandidates_AbsentThresholdIsReportedAsAbsent(t *testing.T) {
 	t.Parallel()
 

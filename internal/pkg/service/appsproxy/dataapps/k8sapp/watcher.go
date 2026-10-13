@@ -384,12 +384,8 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 		}
 	}
 
-	// Zero was the legacy "use the default" marker in the sandboxes component and
-	// sandboxes-service, where it fell back to an hour. Nothing here defaults, and
-	// a zero raised to the minimum would suspend after a minute what once meant an
-	// hour, so it reads as no threshold at all.
 	var autoSuspendAfter *time.Duration
-	if secs := appObj.Spec.AutoSuspendAfterSeconds; secs != nil && *secs > 0 {
+	if secs := appObj.Spec.AutoSuspendAfterSeconds; secs != nil {
 		d := time.Duration(*secs) * time.Second
 		autoSuspendAfter = &d
 	}
