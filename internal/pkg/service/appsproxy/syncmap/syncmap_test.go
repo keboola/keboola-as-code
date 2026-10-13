@@ -106,3 +106,29 @@ func TestSyncMap_RangeSkipsADeletedItem(t *testing.T) {
 
 	assert.Equal(t, []string{"b"}, keys)
 }
+
+// The idle timer sweeps this map once a second and the request path reads it on
+// every request, so the walk must not hold the lock while fn runs.
+func TestSyncMap_RangeDoesNotBlockGetOrInit(t *testing.T) {
+	t.Parallel()
+
+	m := syncmap.New[string, int](func(string) *int { return new(int) })
+	m.GetOrInit("a")
+
+	inRange := make(chan struct{})
+	release := make(chan struct{})
+	walked := make(chan struct{})
+	go func() {
+		defer close(walked)
+		m.Range(func(string, *int) {
+			close(inRange)
+			<-release
+		})
+	}()
+	<-inRange
+
+	m.GetOrInit("b")
+
+	close(release)
+	<-walked
+}
