@@ -3,10 +3,13 @@ package httpsource
 import (
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/valyala/fasthttp"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -30,6 +33,7 @@ func newErrorHandler(cfg Config, logger log.Logger) func(c *fasthttp.RequestCtx,
 	return func(c *fasthttp.RequestCtx, err error) {
 		c.Response.Header.Set("Server", ServerHeader)
 
+		attrs := sourceAttrs(string(c.Path()))
 		var smallBufferErr *fasthttp.ErrSmallBuffer
 
 		switch {
@@ -43,6 +47,7 @@ func newErrorHandler(cfg Config, logger log.Logger) func(c *fasthttp.RequestCtx,
 			err = svcErrors.NewBodyTooLargeError(
 				errors.Wrapf(err, `request body size is over the maximum %q`, cfg.MaxRequestBodySize.String()),
 			)
+			attrs = append(attrs, attribute.Int("http.request.body.size", c.Request.Header.ContentLength()))
 		// EOF error, for example: client closed connection
 		case errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF):
 			err = svcErrors.NewIOError(
@@ -51,8 +56,20 @@ func newErrorHandler(cfg Config, logger log.Logger) func(c *fasthttp.RequestCtx,
 		}
 
 		w := newResponseWriter(c)
-		errorWriter.WriteWithStatusCode(c, w, err)
+		errorWriter.WriteWithStatusCode(ctxattr.ContextWith(c, attrs...), w, err)
 		w.Finalize()
+	}
+}
+
+// sourceAttrs returns the project and source IDs of a /stream/... or /otlp/... request path, never the secret.
+func sourceAttrs(path string) []attribute.KeyValue {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) < 3 || (parts[0] != "stream" && parts[0] != "otlp") {
+		return nil
+	}
+	return []attribute.KeyValue{
+		attribute.String("project.id", parts[1]),
+		attribute.String("source.id", parts[2]),
 	}
 }
 
