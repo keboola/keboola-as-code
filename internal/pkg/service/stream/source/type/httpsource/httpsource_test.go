@@ -541,7 +541,7 @@ func testCases(t *testing.T, ts *testState) []TestCase {
 			Body:               strings.NewReader(strings.Repeat(".", ts.maxBodySize+1)),
 			ExpectedStatusCode: http.StatusRequestEntityTooLarge,
 			ExpectedHeaders:    map[string]string{"Server": httpsource.ServerHeader},
-			ExpectedLogs:       []string{`{"level":"info","message":"request body size is over the maximum \"8000B\"","error.type":"%s/errors.BodyTooLargeError"}`},
+			ExpectedLogs:       []string{`{"level":"info","message":"request body size is over the maximum \"8000B\"","error.type":"%s/errors.BodyTooLargeError","project.id":"123","source.id":"my-source","http.request.body.size":8001}`},
 			ExpectedBody: `
 {
   "statusCode": 413,
