@@ -34,7 +34,7 @@ type k8sWorkloads interface {
 // each round's reading of a workload and reads back what this replica has seen.
 // Nothing here reaches into how the Recorder keeps that.
 type activityRecorder interface {
-	Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold *time.Duration) time.Time
+	Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold *time.Duration) observation
 	Retain(running []k8sapp.WorkloadRef)
 }
 
@@ -195,7 +195,7 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string,
 	item := m.states.GetOrInit(c.Ref)
 	now := m.clock.Now()
 
-	memory := m.recorder.Observe(c.Ref, c.SandboxName, c.Threshold)
+	seen := m.recorder.Observe(c.Ref, c.SandboxName, c.Threshold)
 	woke := m.observeRestart(item, c, now)
 
 	// The restart is the discriminator, not merely still being Running: a
@@ -216,9 +216,9 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string,
 
 	margin, vouched := rec.margin(m.self, now)
 	if !vouched {
-		return stateUnvouched, nil
+		return unvouchedState(seen), nil
 	}
-	idleFor := now.Sub(lastSeen(memory, rec.lastRequestAt, c.LastStarted))
+	idleFor := now.Sub(lastSeen(seen.lastRequestAt, rec.lastRequestAt, c.LastStarted))
 	if !shouldSuspend(idleFor, *c.Threshold, margin) {
 		m.clearSuppressed(item)
 		return stateCandidate, nil
@@ -237,9 +237,9 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string,
 		}
 		margin, vouched = live.margin(m.self, now)
 		if !vouched {
-			return stateUnvouched, nil
+			return unvouchedState(seen), nil
 		}
-		idleFor = now.Sub(lastSeen(memory, live.lastRequestAt, c.LastStarted))
+		idleFor = now.Sub(lastSeen(seen.lastRequestAt, live.lastRequestAt, c.LastStarted))
 		if !shouldSuspend(idleFor, *c.Threshold, margin) {
 			m.clearSuppressed(item)
 			return stateCandidate, nil
@@ -248,6 +248,16 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string,
 
 	m.suspend(ctx, c, item, idleFor)
 	return stateCandidate, nil
+}
+
+// unvouchedState counts a workload this replica cannot vouch for as unvouched
+// only once it has tried to write: before that, the missing entry is only a
+// replica that has just started.
+func unvouchedState(seen observation) string {
+	if seen.attempted {
+		return stateUnvouched
+	}
+	return stateCandidate
 }
 
 // observeRestart reports whether the workload came back from a suspend this

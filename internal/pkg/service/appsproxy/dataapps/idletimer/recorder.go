@@ -69,6 +69,8 @@ type activity struct {
 	// declared means the record carries no entry for this replica yet.
 	aliveAt  time.Time
 	declared time.Duration
+	// attempted is set by the first write to the record, landed or not.
+	attempted bool
 	// running is whether the last round saw the workload Running. Only then is
 	// there anything for this replica's entry to vouch for.
 	running bool
@@ -131,14 +133,22 @@ func (r *Recorder) RecordActivity(_ context.Context, ref k8sapp.WorkloadRef) {
 	item.lastRequestAt = r.clock.Now()
 }
 
+// observation is what this replica knows about a workload as a round reads it.
+type observation struct {
+	lastRequestAt time.Time
+	// attempted reports whether this replica has tried to write the record yet.
+	// Until it has, a missing entry means only that it has not, not that its
+	// writes fail.
+	attempted bool
+}
+
 // Observe folds this round's reading of a workload into the Recorder — which
-// record it writes to, and how often — and reports the last request this
-// replica has seen.
+// record it writes to, and how often — and reports what this replica has seen.
 //
 // A new member is a new record, so the cadence starts over. Carrying it across
 // would leave the new record unwritten while traffic flows, and the other
 // replica, reading a record that never advances, would suspend early.
-func (r *Recorder) Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold *time.Duration) time.Time {
+func (r *Recorder) Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold *time.Duration) observation {
 	item := r.workloads.GetOrInit(ref)
 
 	item.lock.Lock()
@@ -152,9 +162,10 @@ func (r *Recorder) Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold
 		item.retryAfter = time.Time{}
 		item.aliveAt = time.Time{}
 		item.declared = 0
+		item.attempted = false
 	}
 
-	return item.lastRequestAt
+	return observation{lastRequestAt: item.lastRequestAt, attempted: item.attempted}
 }
 
 // Retain marks every workload a round did not see Running as no longer
@@ -313,6 +324,7 @@ func (r *Recorder) write(ctx context.Context, w pendingWrite) {
 	w.item.lock.Lock()
 	defer w.item.lock.Unlock()
 
+	w.item.attempted = true
 	if err != nil {
 		w.item.failures++
 		w.item.retryAfter = r.clock.Now().Add(retryDelay(w.item, err))

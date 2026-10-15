@@ -475,17 +475,35 @@ func TestRound_DoesNotSuspendWhileItsOwnWritesAreFailing(t *testing.T) {
 
 // A replica that cannot vouch for its own writes suspends nothing. That has to
 // show, or a rollout reading zero suspends cannot tell it from a stack with
-// nothing idle — the IdleTimer CRD deployed without observers looks exactly
-// like this.
+// nothing idle. A write that lands but leaves no entry is what an IdleTimer CRD
+// without observers looks like: the apiserver drops the field.
 func TestRound_TheWorkloadsGaugeCountsAWorkloadThisReplicaCannotVouchFor(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, testMember))
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, nil
+	})
 
-	// No sweep has run, so the record carries no entry for this replica.
+	h.round()
 	h.suspender.suspendIdleWorkloads(t.Context())
 
 	assert.Equal(t, int64(1), h.suspender.metrics.unvouched.Load())
 	assert.Zero(t, h.suspender.metrics.candidates.Load())
+}
+
+// A replica that has not written yet has nothing to vouch for, but nothing has
+// failed either. Its first round runs before its first sweep, on every start,
+// and counting that would make the gauge non-zero after every rollout.
+func TestRound_AReplicaThatHasNotWrittenYetIsNotUnvouched(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+	require.NoError(t, h.recorder.client.create(t.Context(), testMember, "uid-1", h.clock.Now()))
+
+	h.suspender.suspendIdleWorkloads(t.Context())
+
+	assert.Zero(t, h.suspender.metrics.unvouched.Load())
+	assert.Equal(t, int64(1), h.suspender.metrics.candidates.Load())
+	assert.Empty(t, h.source.slept)
 }
