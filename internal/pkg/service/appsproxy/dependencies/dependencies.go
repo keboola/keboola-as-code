@@ -98,20 +98,19 @@ type Mocked interface {
 // serviceScope implements APIScope interface.
 type serviceScope struct {
 	parentScopes
-	config             config.Config
-	appsAPI            *api.API
-	appHandlers        *apphandler.Manager
-	upstreamTransport  http.RoundTripper
-	upstreamManager    *upstream.Manager
-	authProxyManager   *authproxy.Manager
-	pageWriter         *pagewriter.Writer
-	appConfigLoader    appconfig.Loader
-	notifyManager      *notify.Manager
-	wakeupManager      *wakeup.Manager
-	appStateWatcher    *k8sapp.StateWatcher
-	sessionsManager    *sessions.Manager
-	idleTimerSuspender *idletimer.Suspender
-	idleTimerRecorder  *idletimer.Recorder
+	config            config.Config
+	appsAPI           *api.API
+	appHandlers       *apphandler.Manager
+	upstreamTransport http.RoundTripper
+	upstreamManager   *upstream.Manager
+	authProxyManager  *authproxy.Manager
+	pageWriter        *pagewriter.Writer
+	appConfigLoader   appconfig.Loader
+	notifyManager     *notify.Manager
+	wakeupManager     *wakeup.Manager
+	appStateWatcher   *k8sapp.StateWatcher
+	sessionsManager   *sessions.Manager
+	idleTimerRecorder *idletimer.Recorder
 }
 
 type parentScopes interface {
@@ -223,7 +222,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 
 	d.wakeupManager = wakeup.NewManager(d)
 	d.idleTimerRecorder = idletimer.NewRecorder(d, k8sClient)
-	d.idleTimerSuspender = idletimer.NewSuspender(d, k8sClient, d.idleTimerRecorder)
+	idletimer.NewSuspender(d, k8sClient, d.idleTimerRecorder)
 	d.sessionsManager = sessions.NewManager(ctx, d)
 	d.authProxyManager = authproxy.NewManager(d)
 	d.upstreamManager = upstream.NewManager(d)
