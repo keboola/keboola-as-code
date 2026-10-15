@@ -2,6 +2,7 @@ package idletimer
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -342,4 +344,95 @@ func TestRun_SweepsWhateverEndsTheLoop(t *testing.T) {
 			assert.True(t, want.Equal(rec.lastRequestAt), "want the final sweep to write %s, got %s", want, rec.lastRequestAt)
 		})
 	}
+}
+
+// A failure a retry may clear still has to stop costing a write and a log line
+// per workload per second: at the busiest stack that is 82 of each, per replica,
+// against an apiserver that is already struggling. A 429 is the sharpest case —
+// it is the apiserver asking for exactly the opposite.
+func TestSweep_BacksOffAndThrottlesAStandingFailure(t *testing.T) {
+	t.Parallel()
+
+	const (
+		workloads = 20
+		sweeps    = 10
+	)
+
+	logger := log.NewDebugLogger()
+
+	candidates := make([]k8sapp.SleepCandidate, 0, workloads)
+	refs := make([]k8sapp.WorkloadRef, 0, workloads)
+	for i := range workloads {
+		ref := k8sapp.WorkloadRef{AppID: api.AppID("app-" + strconv.Itoa(i))}
+		refs = append(refs, ref)
+		candidates = append(candidates, candidate(ref, "member-"+strconv.Itoa(i)))
+	}
+
+	h := newGatedHarnessWithLogger(t, logger, candidates...)
+	h.suspender.suspendIdleWorkloads(t.Context())
+
+	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, k8serrors.NewTooManyRequests("slow down", 1)
+	})
+
+	h.clock.Advance(time.Minute)
+	for _, ref := range refs {
+		h.recorder.RecordActivity(t.Context(), ref)
+	}
+	h.fake.ClearActions()
+
+	// Traffic has stopped, so only the sweeper runs.
+	for range sweeps {
+		h.flush()
+		h.clock.Advance(sweepInterval)
+	}
+
+	var patches int
+	for _, a := range h.fake.Actions() {
+		if a.GetVerb() == "patch" {
+			patches++
+		}
+	}
+
+	// Without backoff this is one per workload per sweep.
+	assert.Less(t, patches, workloads*sweeps/2, "a standing failure must not cost a write per workload per sweep")
+	assert.LessOrEqual(t, strings.Count(logger.AllMessages(), "failed to record activity"), 1,
+		"one standing failure must not be logged per workload per sweep")
+}
+
+// The backoff is per workload and must not outlive the failure: once a write
+// lands, the next one is due at the ordinary cadence again.
+func TestSweep_ForgetsTheBackoffAfterAWriteLands(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, "member-1"))
+	h.suspender.suspendIdleWorkloads(t.Context())
+
+	var fail atomic.Bool
+	fail.Store(true)
+	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		if fail.Load() {
+			return true, nil, k8serrors.NewInternalError(errors.New("apiserver is unwell"))
+		}
+		return false, nil, nil
+	})
+
+	h.clock.Advance(time.Minute)
+	h.recorder.RecordActivity(t.Context(), appRef)
+
+	// Fail enough times to grow the delay well past one interval.
+	for range 5 {
+		h.flush()
+		h.clock.Advance(writeRetryInterval * 32)
+	}
+
+	fail.Store(false)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	item := h.recorder.workloads.GetOrInit(appRef)
+	item.lock.Lock()
+	failures := item.failures
+	item.lock.Unlock()
+	assert.Zero(t, failures, "a successful write must clear the backoff")
 }
