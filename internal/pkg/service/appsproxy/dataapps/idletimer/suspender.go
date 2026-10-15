@@ -197,11 +197,12 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string,
 		m.metrics.wokeSoonAfterSuspend.Add(ctx, 1)
 	}
 
+	// Read, and so create, the record before looking at the threshold: a
+	// threshold can be set at any moment, and the record must be current then.
+	rec, found := m.readRecord(ctx, c)
 	if c.Threshold == nil {
 		return stateNoThreshold, nil
 	}
-
-	rec, found := m.readRecord(ctx, c)
 	if !found {
 		return stateCandidate, nil
 	}

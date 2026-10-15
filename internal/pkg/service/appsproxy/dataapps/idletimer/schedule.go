@@ -12,6 +12,10 @@ const (
 	// A threshold below this is raised, never treated as absent: absence means
 	// never auto-suspend, which is a different decision.
 	minThreshold = 60 * time.Second
+
+	// overdueAfter is how many of its own heartbeats an entry may go unwritten
+	// before it counts as a pod that is gone.
+	overdueAfter = 3
 )
 
 // lastSeen takes the latest of the three activity signals. A restart counts:
@@ -51,4 +55,8 @@ func effectiveThreshold(threshold time.Duration) time.Duration {
 		return minThreshold
 	}
 	return threshold
+}
+
+func (e entry) overdue(now time.Time) bool {
+	return now.Sub(e.aliveAt) > overdueAfter*e.heartbeat
 }

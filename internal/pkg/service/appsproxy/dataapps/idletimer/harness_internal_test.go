@@ -154,19 +154,19 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	t.Helper()
 
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
-	return buildReplica(t, logger, suspendEnabled, candidates, newTestClient(), clock)
+	return buildReplica(t, logger, suspendEnabled, candidates, newTestClient(), clock, testSelf)
 }
 
 // buildReplica is one apps-proxy replica. Two of them sharing a client and a
 // clock are two replicas of the same deployment: separate memory and separate
 // watch caches, one apiserver.
-func buildReplica(t *testing.T, logger log.Logger, suspendEnabled bool, candidates []k8sapp.SleepCandidate, c *client, clock *clockwork.FakeClock) *harness {
+func buildReplica(t *testing.T, logger log.Logger, suspendEnabled bool, candidates []k8sapp.SleepCandidate, c *client, clock *clockwork.FakeClock, self string) *harness {
 	t.Helper()
 
 	source := &fakeSource{synced: true, candidates: candidates, sleptOK: true}
 	tel := telemetry.NewForTest(t)
 
-	recorder := newRecorder(clock, logger, c, newRecorderMetrics(tel.Meter()), newErrorLog(clock, logger))
+	recorder := newRecorder(clock, logger, c, newRecorderMetrics(tel.Meter()), newErrorLog(clock, logger), self)
 	m := newSuspender(clock, logger, c, source, recorder, newMetrics(tel.Meter()), newErrorLog(clock, logger), suspendEnabled)
 
 	synced := &atomic.Bool{}
@@ -195,4 +195,10 @@ func candidate(ref k8sapp.WorkloadRef, sandbox string) k8sapp.SleepCandidate {
 // optedOut is a workload whose Sandbox carries no threshold at all.
 func optedOut(ref k8sapp.WorkloadRef) k8sapp.SleepCandidate {
 	return k8sapp.SleepCandidate{Ref: ref, SandboxName: testMember}
+}
+
+// withThreshold is candidate() for a test that needs a threshold other than
+// the package default.
+func withThreshold(ref k8sapp.WorkloadRef, d time.Duration) k8sapp.SleepCandidate {
+	return k8sapp.SleepCandidate{Ref: ref, SandboxName: testMember, Threshold: &d}
 }

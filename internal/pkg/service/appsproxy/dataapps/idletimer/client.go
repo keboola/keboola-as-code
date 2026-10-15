@@ -3,6 +3,7 @@ package idletimer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,11 +29,17 @@ func gvr() schema.GroupVersionResource {
 
 type record struct {
 	lastRequestAt   time.Time
+	entries         map[string]entry
 	resourceVersion string
 	// cached marks a record read from the watch rather than the apiserver. The
 	// watch lags, and a lagging record reads as idle, so a decision taken on
 	// one is confirmed before it is acted on.
 	cached bool
+}
+
+type entry struct {
+	aliveAt   time.Time
+	heartbeat time.Duration
 }
 
 type client struct {
@@ -73,7 +80,48 @@ func parseRecord(obj *unstructured.Unstructured) (record, error) {
 		return record{}, err
 	}
 
-	return record{lastRequestAt: at, resourceVersion: obj.GetResourceVersion()}, nil
+	entries, err := parseEntries(obj)
+	if err != nil {
+		return record{}, err
+	}
+
+	return record{lastRequestAt: at, entries: entries, resourceVersion: obj.GetResourceVersion()}, nil
+}
+
+// parseEntries fails on any entry it cannot read. Skipping one would hand the
+// reader a smaller margin than that replica declared.
+func parseEntries(obj *unstructured.Unstructured) (map[string]entry, error) {
+	raw, found, err := unstructured.NestedMap(obj.Object, "spec", "observers")
+	if err != nil || !found {
+		return nil, err
+	}
+
+	entries := make(map[string]entry, len(raw))
+	for self, value := range raw {
+		e, err := parseEntry(value)
+		if err != nil {
+			return nil, errors.PrefixErrorf(err, "idle timer %q carries an unreadable entry %q", obj.GetName(), self)
+		}
+		entries[self] = e
+	}
+	return entries, nil
+}
+
+func parseEntry(value any) (entry, error) {
+	fields, ok := value.(map[string]any)
+	if !ok {
+		return entry{}, errors.New("not an object")
+	}
+
+	aliveAt, err := time.Parse(time.RFC3339Nano, fmt.Sprint(fields["aliveAt"]))
+	if err != nil {
+		return entry{}, err
+	}
+	heartbeat, err := time.ParseDuration(fmt.Sprint(fields["heartbeat"]))
+	if err != nil {
+		return entry{}, err
+	}
+	return entry{aliveAt: aliveAt, heartbeat: heartbeat}, nil
 }
 
 // create points the record at the Sandbox it is named after, which is the only
@@ -109,23 +157,22 @@ func (c *client) create(ctx context.Context, name string, ownerUID types.UID, at
 	return err
 }
 
-// cas raises the stored timestamp, leaving it alone if it is already later.
-// Both replicas write the same record, so the maximum is maintained here.
+// write raises the stored timestamp to at if that is later, sets this
+// replica's own entry, and drops every other entry that is overdue. It writes
+// even when the timestamp has nothing new: the entry is how the other replica
+// knows this one is still writing.
 //
 // After a conflict the comparison is redone against the value the conflict
 // exposed: retrying the original decision is how a writer that lost the race
 // drags the timestamp backwards.
-func (c *client) cas(ctx context.Context, name string, at time.Time) error {
+func (c *client) write(ctx context.Context, name, self string, at time.Time, own entry) error {
 	var lastErr error
 	for attempt := range 2 {
 		rec, err := c.get(ctx, name)
 		if err != nil {
 			return err
 		}
-		if !at.After(rec.lastRequestAt) {
-			return nil
-		}
-		lastErr = c.update(ctx, name, rec.resourceVersion, at)
+		lastErr = c.patch(ctx, name, rec, self, at, own)
 		if lastErr == nil {
 			return nil
 		}
@@ -137,25 +184,34 @@ func (c *client) cas(ctx context.Context, name string, at time.Time) error {
 	return lastErr
 }
 
-// update patches the one field rather than putting the whole object back: a
-// full write carries only what this process built, dropping the ownerReference
-// and leaking the record. resourceVersion in the body is the precondition.
-func (c *client) update(ctx context.Context, name, resourceVersion string, at time.Time) error {
-	patch, err := json.Marshal(map[string]any{
-		"metadata": map[string]any{"resourceVersion": resourceVersion},
-		"spec":     map[string]any{"lastRequestAt": formatTime(at)},
+// patch sends only the fields it changes rather than putting the whole object
+// back: a full write carries only what this process built, dropping the
+// ownerReference and leaking the record. resourceVersion in the body is the
+// precondition.
+func (c *client) patch(ctx context.Context, name string, rec record, self string, at time.Time, own entry) error {
+	observers := map[string]any{
+		self: map[string]any{"aliveAt": formatTime(own.aliveAt), "heartbeat": own.heartbeat.String()},
+	}
+	for other, e := range rec.entries {
+		if other != self && e.overdue(own.aliveAt) {
+			observers[other] = nil
+		}
+	}
+
+	spec := map[string]any{"observers": observers}
+	if at.After(rec.lastRequestAt) {
+		spec["lastRequestAt"] = formatTime(at)
+	}
+
+	body, err := json.Marshal(map[string]any{
+		"metadata": map[string]any{"resourceVersion": rec.resourceVersion},
+		"spec":     spec,
 	})
 	if err != nil {
 		return err
 	}
 
-	_, err = c.dyn.Resource(gvr()).Namespace(c.namespace).Patch(
-		ctx,
-		name,
-		types.MergePatchType,
-		patch,
-		metav1.PatchOptions{},
-	)
+	_, err = c.dyn.Resource(gvr()).Namespace(c.namespace).Patch(ctx, name, types.MergePatchType, body, metav1.PatchOptions{})
 	return err
 }
 

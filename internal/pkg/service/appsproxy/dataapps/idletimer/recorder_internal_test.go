@@ -58,19 +58,122 @@ func TestRecordActivity_DoesNotWriteWithinOneHeartbeatInterval(t *testing.T) {
 	assert.Equal(t, before.resourceVersion, after.resourceVersion, "a second request inside the interval must not cost a write")
 }
 
-// Activity for a workload that never auto-suspends has nothing to record.
-func TestRecordActivity_WritesNothingWhenTheWorkloadHasNoThreshold(t *testing.T) {
+// A workload with no threshold can be given one at any moment, and the record
+// must already be current when it is.
+func TestSweep_AWorkloadWithNoThresholdWritesAtTheLongestCadence(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, optedOut(appRef))
 	h.suspender.suspendIdleWorkloads(t.Context())
-	h.fake.ClearActions()
-
-	h.clock.Advance(time.Hour)
 	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
 
-	assert.Empty(t, h.fake.Actions())
+	rec, err := h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err)
+	assert.Equal(t, maxHeartbeatInterval, rec.entries[testSelf].heartbeat)
+
+	h.clock.Advance(maxHeartbeatInterval - time.Second)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	mark := h.clock.Now()
+	h.fake.ClearActions()
+	h.flush()
+	assert.Empty(t, patchBodies(h), "nothing is due inside one heartbeat")
+
+	h.clock.Advance(time.Second)
+	h.flush()
+
+	rec, err = h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err)
+	assert.True(t, mark.Equal(rec.lastRequestAt), "want %s, got %s", mark, rec.lastRequestAt)
+}
+
+// The entry tells the other replica how far the record may trail this one.
+func TestSweep_WritesTheOwnEntry(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+	h.suspender.suspendIdleWorkloads(t.Context())
+	h.flush()
+
+	rec, err := h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err)
+	assert.Equal(t, entry{aliveAt: h.clock.Now(), heartbeat: heartbeatInterval(threshold)}, rec.entries[testSelf])
+}
+
+// A replica that has stopped writing and one with nothing to say look the same
+// unless the second keeps saying so.
+func TestSweep_WritesTheEntryAgainWithNothingNew(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+	h.suspender.suspendIdleWorkloads(t.Context())
+	created := h.clock.Now()
+	h.flush()
+
+	h.clock.Advance(heartbeatInterval(threshold))
+	h.flush()
+
+	rec, err := h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err)
+	assert.True(t, h.clock.Now().Equal(rec.entries[testSelf].aliveAt), "want %s, got %s", h.clock.Now(), rec.entries[testSelf].aliveAt)
+	assert.True(t, created.Equal(rec.lastRequestAt), "want %s untouched, got %s", created, rec.lastRequestAt)
+}
+
+// A lowered threshold makes the trail the old heartbeat allowed owed at once.
+// It has to land with the shorter heartbeat: a reader that saw the shorter one
+// on a record still trailing by the longer one would suspend early.
+func TestSweep_ALoweredHeartbeatIsDeclaredTogetherWithTheMarkItMakesDue(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, withThreshold(appRef, time.Hour))
+	h.suspender.suspendIdleWorkloads(t.Context())
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	h.clock.Advance(90 * time.Second)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	mark := h.clock.Now()
+	h.fake.ClearActions()
+	h.flush()
+	require.Empty(t, patchBodies(h), "the setup needs a mark the old heartbeat leaves unwritten")
+
+	h.source.candidates[0] = withThreshold(appRef, time.Minute)
+	h.suspender.suspendIdleWorkloads(t.Context())
+	h.fake.ClearActions()
+	h.flush()
+
+	bodies := patchBodies(h)
+	require.Len(t, bodies, 1)
+	assert.Contains(t, bodies[0], formatTime(mark))
+	assert.Contains(t, bodies[0], `"heartbeat":"`+heartbeatInterval(time.Minute).String()+`"`)
+}
+
+// A reader applies the heartbeat the entry declares, so a replica must not
+// stretch its cadence until the longer heartbeat is declared.
+func TestSweep_ARaisedHeartbeatIsDeclaredBeforeItIsUsed(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, withThreshold(appRef, time.Minute))
+	h.suspender.suspendIdleWorkloads(t.Context())
+	h.flush()
+
+	h.source.candidates[0] = withThreshold(appRef, time.Hour)
+	h.suspender.suspendIdleWorkloads(t.Context())
+	h.flush()
+
+	rec, err := h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err)
+	assert.Equal(t, heartbeatInterval(time.Hour), rec.entries[testSelf].heartbeat)
+}
+
+func patchBodies(h *harness) []string {
+	var bodies []string
+	for _, a := range h.fake.Actions() {
+		if p, ok := a.(k8stesting.PatchAction); ok {
+			bodies = append(bodies, string(p.GetPatch()))
+		}
+	}
+	return bodies
 }
 
 // The request path must not wait for the apiserver: this runs in the GotConn

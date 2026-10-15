@@ -42,7 +42,8 @@ func TestRound_AbsentThresholdIsSkippedAndCounted(t *testing.T) {
 	h.suspender.suspendIdleWorkloads(t.Context())
 
 	assert.Empty(t, h.source.slept)
-	assert.Empty(t, h.fake.Actions(), "a workload that never auto-suspends needs no record")
+	_, err := h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err, "a threshold can be set at any moment, so the record must already exist")
 	assert.Equal(t, int64(1), h.suspender.metrics.noThreshold.Load())
 	assert.Zero(t, h.suspender.metrics.candidates.Load())
 }

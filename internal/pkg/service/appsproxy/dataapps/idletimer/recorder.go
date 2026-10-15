@@ -2,6 +2,7 @@ package idletimer
 
 import (
 	"context"
+	"os"
 	"sync"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/dynamic"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
@@ -41,6 +43,7 @@ type Recorder struct {
 	logger  log.Logger
 	client  *client
 	metrics *recorderMetrics
+	self    string
 
 	workloads *syncmap.SyncMap[k8sapp.WorkloadRef, activity]
 	errorLog  *errorLog
@@ -62,6 +65,11 @@ type activity struct {
 	// failures counts writes that have failed since the last one that landed.
 	failures int
 
+	// aliveAt and declared are this replica's entry as it last landed. A zero
+	// declared means the record carries no entry for this replica yet.
+	aliveAt  time.Time
+	declared time.Duration
+
 	sandboxName string
 	threshold   *time.Duration
 }
@@ -76,6 +84,7 @@ func NewRecorder(d dependencies, k8sClient dynamic.Interface) *Recorder {
 		newClient(k8sClient, d.Config().K8s.AppsNamespace),
 		newRecorderMetrics(d.Telemetry().Meter()),
 		newErrorLog(d.Clock(), d.Logger().WithComponent("idletimer")),
+		instanceName(),
 	)
 
 	d.AppStateWatcher().OnWorkloadRemoved(r.Forget)
@@ -91,13 +100,14 @@ func NewRecorder(d dependencies, k8sClient dynamic.Interface) *Recorder {
 	return r
 }
 
-func newRecorder(clock clockwork.Clock, logger log.Logger, c *client, metrics *recorderMetrics, errorLog *errorLog) *Recorder {
+func newRecorder(clock clockwork.Clock, logger log.Logger, c *client, metrics *recorderMetrics, errorLog *errorLog, self string) *Recorder {
 	return &Recorder{
 		clock:    clock,
 		logger:   logger,
 		client:   c,
 		metrics:  metrics,
 		errorLog: errorLog,
+		self:     self,
 		workloads: syncmap.New[k8sapp.WorkloadRef, activity](func(k8sapp.WorkloadRef) *activity {
 			return &activity{}
 		}),
@@ -136,6 +146,8 @@ func (r *Recorder) Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold
 		item.sandboxName = sandboxName
 		item.lastWriteAt = time.Time{}
 		item.retryAfter = time.Time{}
+		item.aliveAt = time.Time{}
+		item.declared = 0
 	}
 
 	return item.lastRequestAt
@@ -187,12 +199,13 @@ type pendingWrite struct {
 	item *activity
 	name string
 	at   time.Time
+	own  entry
 }
 
 func (r *Recorder) sweep(ctx context.Context) {
 	now := r.clock.Now()
-	r.writeAll(ctx, r.collect(func(item *activity) bool {
-		return writeDue(item, item.lastRequestAt, now)
+	r.writeAll(ctx, r.collect(now, func(item *activity) bool {
+		return writeDue(item, now)
 	}))
 }
 
@@ -200,12 +213,14 @@ func (r *Recorder) sweep(ctx context.Context) {
 // the backoff both hold a mark for a later sweep, and after this one there is
 // none.
 func (r *Recorder) finalSweep(ctx context.Context) {
-	r.writeAll(ctx, r.collect(func(item *activity) bool {
+	r.writeAll(ctx, r.collect(r.clock.Now(), func(item *activity) bool {
 		return item.sandboxName != "" && item.lastRequestAt.After(item.lastWriteAt)
 	}))
 }
 
-func (r *Recorder) collect(owed func(item *activity) bool) []pendingWrite {
+// collect reads each workload's memory under its lock. That moment is the
+// entry's aliveAt: a mark taken after it is not in the write.
+func (r *Recorder) collect(now time.Time, owed func(item *activity) bool) []pendingWrite {
 	var pending []pendingWrite
 	r.workloads.Range(func(ref k8sapp.WorkloadRef, item *activity) {
 		item.lock.Lock()
@@ -214,7 +229,13 @@ func (r *Recorder) collect(owed func(item *activity) bool) []pendingWrite {
 		if !owed(item) {
 			return
 		}
-		pending = append(pending, pendingWrite{ref: ref, item: item, name: item.sandboxName, at: item.lastRequestAt})
+		pending = append(pending, pendingWrite{
+			ref:  ref,
+			item: item,
+			name: item.sandboxName,
+			at:   item.lastRequestAt,
+			own:  entry{aliveAt: now, heartbeat: item.heartbeat()},
+		})
 	})
 	return pending
 }
@@ -239,7 +260,7 @@ func (r *Recorder) write(ctx context.Context, w pendingWrite) {
 	writeCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), writeTimeout, errors.New("idle timer write timeout"))
 	defer cancel()
 
-	err := r.client.cas(writeCtx, w.name, w.at)
+	err := r.client.write(writeCtx, w.name, r.self, w.at, w.own)
 
 	w.item.lock.Lock()
 	defer w.item.lock.Unlock()
@@ -259,6 +280,8 @@ func (r *Recorder) write(ctx context.Context, w pendingWrite) {
 	}
 
 	w.item.lastWriteAt = w.at
+	w.item.aliveAt = w.own.aliveAt
+	w.item.declared = w.own.heartbeat
 	w.item.retryAfter = time.Time{}
 	w.item.failures = 0
 }
@@ -269,10 +292,7 @@ func (r *Recorder) write(ctx context.Context, w pendingWrite) {
 // the ceiling, because no retry clears them: an absent record is created by the
 // round, and a denied one needs an RBAC change.
 func retryDelay(item *activity, err error) time.Duration {
-	ceiling := writeRetryInterval
-	if item.threshold != nil {
-		ceiling = heartbeatInterval(*item.threshold)
-	}
+	ceiling := item.heartbeat()
 
 	if k8serrors.IsNotFound(err) || k8serrors.IsForbidden(err) {
 		return ceiling
@@ -293,17 +313,38 @@ func retryDelay(item *activity, err error) time.Duration {
 //
 // A workload nothing has tracked yet has no record name and writes nothing; the
 // round then creates its record at the moment it first sees it, starting a full
-// window. The name and the threshold are set together, so a known name means a
-// known threshold.
-func writeDue(item *activity, at, now time.Time) bool {
-	if item.sandboxName == "" {
+// window.
+//
+// A changed heartbeat is written at once. The reader applies the declared one,
+// so a longer heartbeat must be declared before this replica lets the record
+// trail by it, and a shorter one must land together with the trail the longer
+// one allowed.
+func writeDue(item *activity, now time.Time) bool {
+	if item.sandboxName == "" || now.Before(item.retryAfter) {
 		return false
 	}
-	if item.threshold == nil {
-		return false
+
+	heartbeat := item.heartbeat()
+	if item.declared != heartbeat {
+		return true
 	}
-	if now.Before(item.retryAfter) {
-		return false
+	return now.Sub(item.aliveAt) >= heartbeat || item.lastRequestAt.Sub(item.lastWriteAt) > heartbeat
+}
+
+// heartbeat is the cadence this replica writes a workload's record at. With no
+// threshold it still writes, at the longest cadence, so that the record is
+// current the moment a threshold is set.
+func (a *activity) heartbeat() time.Duration {
+	if a.threshold == nil {
+		return maxHeartbeatInterval
 	}
-	return at.Sub(item.lastWriteAt) > heartbeatInterval(*item.threshold)
+	return heartbeatInterval(*a.threshold)
+}
+
+// instanceName names this replica's entry. A pod's hostname is its name.
+func instanceName() string {
+	if name, err := os.Hostname(); err == nil && name != "" {
+		return name
+	}
+	return "apps-proxy-" + idgenerator.Random(8)
 }
