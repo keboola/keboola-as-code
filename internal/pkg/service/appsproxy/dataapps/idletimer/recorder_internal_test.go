@@ -139,8 +139,6 @@ func TestRecordActivity_AFailedWriteDoesNotHoldOffTheNextOne(t *testing.T) {
 	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want the retry to land %s, got %s", h.clock.Now(), rec.lastRequestAt)
 }
 
-// A websocket frame can arrive after Shutdown begins, because hijacked
-// connections are not drained by the HTTP server.
 // A redeploy moves the App onto a new member Sandbox, and the record is named
 // after the member. The cadence is a property of the record, so carrying it
 // across the switch leaves the new record unwritten while traffic flows.
@@ -215,6 +213,59 @@ func TestShutdown_RunsAFinalSweep(t *testing.T) {
 	rec, err := h.recorder.client.get(t.Context(), "member-1")
 	require.NoError(t, err)
 	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want the final sweep to write %s, got %s", h.clock.Now(), rec.lastRequestAt)
+}
+
+// The cadence lets the record trail this replica by up to one heartbeat. Once
+// the process is gone nothing will ever write that trail, so the final pass
+// must not leave it to the cadence.
+func TestShutdown_WritesAMarkTheCadenceHasNotMadeDue(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+	h.suspender.suspendIdleWorkloads(t.Context())
+
+	h.clock.Advance(time.Minute)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	h.clock.Advance(time.Second)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	want := h.clock.Now()
+
+	h.startSweeper()
+	h.recorder.Shutdown(t.Context())
+
+	rec, err := h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err)
+	assert.True(t, want.Equal(rec.lastRequestAt), "want the final pass to write %s, got %s", want, rec.lastRequestAt)
+}
+
+func TestShutdown_WritesAMarkHeldOffByABackoff(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+	h.suspender.suspendIdleWorkloads(t.Context())
+
+	var failed atomic.Bool
+	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		if failed.CompareAndSwap(false, true) {
+			return true, nil, k8serrors.NewServerTimeout(schema.GroupResource{Resource: resource}, "patch", 1)
+		}
+		return false, nil, nil
+	})
+
+	h.clock.Advance(time.Minute)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	want := h.clock.Now()
+	h.flush()
+	require.True(t, failed.Load(), "the setup must fail the first write")
+
+	h.startSweeper()
+	h.recorder.Shutdown(t.Context())
+
+	rec, err := h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err)
+	assert.True(t, want.Equal(rec.lastRequestAt), "want the final pass to write %s, got %s", want, rec.lastRequestAt)
 }
 
 // A workload can leave the cache while a request for it is still in flight.

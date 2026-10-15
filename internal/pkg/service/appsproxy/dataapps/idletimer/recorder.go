@@ -169,10 +169,10 @@ func (r *Recorder) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			r.sweep(ctx)
+			r.finalSweep(ctx)
 			return
 		case <-r.stopping:
-			r.sweep(ctx)
+			r.finalSweep(ctx)
 			return
 		case <-ticker.Chan():
 			r.sweep(ctx)
@@ -191,18 +191,35 @@ type pendingWrite struct {
 
 func (r *Recorder) sweep(ctx context.Context) {
 	now := r.clock.Now()
+	r.writeAll(ctx, r.collect(func(item *activity) bool {
+		return writeDue(item, item.lastRequestAt, now)
+	}))
+}
 
+// finalSweep writes every mark the record does not have yet. The cadence and
+// the backoff both hold a mark for a later sweep, and after this one there is
+// none.
+func (r *Recorder) finalSweep(ctx context.Context) {
+	r.writeAll(ctx, r.collect(func(item *activity) bool {
+		return item.sandboxName != "" && item.lastRequestAt.After(item.lastWriteAt)
+	}))
+}
+
+func (r *Recorder) collect(owed func(item *activity) bool) []pendingWrite {
 	var pending []pendingWrite
 	r.workloads.Range(func(ref k8sapp.WorkloadRef, item *activity) {
 		item.lock.Lock()
 		defer item.lock.Unlock()
 
-		if !writeDue(item, item.lastRequestAt, now) {
+		if !owed(item) {
 			return
 		}
 		pending = append(pending, pendingWrite{ref: ref, item: item, name: item.sandboxName, at: item.lastRequestAt})
 	})
+	return pending
+}
 
+func (r *Recorder) writeAll(ctx context.Context, pending []pendingWrite) {
 	if len(pending) == 0 {
 		return
 	}
