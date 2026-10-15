@@ -161,18 +161,54 @@ func (c *client) create(ctx context.Context, name string, ownerUID types.UID, at
 // replica's own entry, and drops every other entry that is overdue. It writes
 // even when the timestamp has nothing new: the entry is how the other replica
 // knows this one is still writing.
-//
-// After a conflict the comparison is redone against the value the conflict
+func (c *client) write(ctx context.Context, name, self string, at time.Time, own entry) error {
+	return c.update(ctx, name, func(rec record) map[string]any {
+		observers := map[string]any{
+			self: map[string]any{"aliveAt": formatTime(own.aliveAt), "heartbeat": own.heartbeat.String()},
+		}
+		for other, e := range rec.entries {
+			if other != self && e.overdue(own.aliveAt) {
+				observers[other] = nil
+			}
+		}
+		return raisedTo(rec, at, observers)
+	})
+}
+
+// leave raises the stored timestamp as write does and takes this replica's
+// entry out, in one patch: the entry is what tells a reader the record may
+// trail this replica, so it goes only together with the trail.
+func (c *client) leave(ctx context.Context, name, self string, at time.Time) error {
+	return c.update(ctx, name, func(rec record) map[string]any {
+		return raisedTo(rec, at, map[string]any{self: nil})
+	})
+}
+
+func raisedTo(rec record, at time.Time, observers map[string]any) map[string]any {
+	spec := map[string]any{"observers": observers}
+	if at.After(rec.lastRequestAt) {
+		spec["lastRequestAt"] = formatTime(at)
+	}
+	return spec
+}
+
+// update patches the spec the build function derives from the current record.
+// After a conflict the spec is derived again from the value the conflict
 // exposed: retrying the original decision is how a writer that lost the race
 // drags the timestamp backwards.
-func (c *client) write(ctx context.Context, name, self string, at time.Time, own entry) error {
+//
+// It patches only the fields it changes rather than putting the whole object
+// back: a full write carries only what this process built, dropping the
+// ownerReference and leaking the record. resourceVersion in the body is the
+// precondition.
+func (c *client) update(ctx context.Context, name string, build func(record) map[string]any) error {
 	var lastErr error
 	for attempt := range 2 {
 		rec, err := c.get(ctx, name)
 		if err != nil {
 			return err
 		}
-		lastErr = c.patch(ctx, name, rec, self, at, own)
+		lastErr = c.patch(ctx, name, rec.resourceVersion, build(rec))
 		if lastErr == nil {
 			return nil
 		}
@@ -184,27 +220,9 @@ func (c *client) write(ctx context.Context, name, self string, at time.Time, own
 	return lastErr
 }
 
-// patch sends only the fields it changes rather than putting the whole object
-// back: a full write carries only what this process built, dropping the
-// ownerReference and leaking the record. resourceVersion in the body is the
-// precondition.
-func (c *client) patch(ctx context.Context, name string, rec record, self string, at time.Time, own entry) error {
-	observers := map[string]any{
-		self: map[string]any{"aliveAt": formatTime(own.aliveAt), "heartbeat": own.heartbeat.String()},
-	}
-	for other, e := range rec.entries {
-		if other != self && e.overdue(own.aliveAt) {
-			observers[other] = nil
-		}
-	}
-
-	spec := map[string]any{"observers": observers}
-	if at.After(rec.lastRequestAt) {
-		spec["lastRequestAt"] = formatTime(at)
-	}
-
+func (c *client) patch(ctx context.Context, name, resourceVersion string, spec map[string]any) error {
 	body, err := json.Marshal(map[string]any{
-		"metadata": map[string]any{"resourceVersion": rec.resourceVersion},
+		"metadata": map[string]any{"resourceVersion": resourceVersion},
 		"spec":     spec,
 	})
 	if err != nil {

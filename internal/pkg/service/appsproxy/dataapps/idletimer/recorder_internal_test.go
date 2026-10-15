@@ -371,6 +371,70 @@ func TestShutdown_WritesAMarkHeldOffByABackoff(t *testing.T) {
 	assert.True(t, want.Equal(rec.lastRequestAt), "want the final pass to write %s, got %s", want, rec.lastRequestAt)
 }
 
+// A replica that is gone no longer bounds how far the record trails it. Left
+// in place, its entry would widen every reader's margin until it went overdue.
+func TestShutdown_TakesThisReplicasEntryOut(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+	h.round()
+
+	h.startSweeper()
+	h.recorder.Shutdown(t.Context())
+
+	rec, err := h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err)
+	assert.NotContains(t, rec.entries, testSelf)
+}
+
+// The entry is what tells a reader the record may trail this replica. Taking
+// it out before the trail is written would let a reader count the trail as
+// idleness.
+func TestShutdown_WritesTheTrailInThePatchThatTakesTheEntryOut(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+	h.round()
+
+	h.clock.Advance(time.Second)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	mark := h.clock.Now()
+	h.fake.ClearActions()
+
+	h.startSweeper()
+	h.recorder.Shutdown(t.Context())
+
+	bodies := patchBodies(h)
+	require.Len(t, bodies, 1)
+	assert.Contains(t, bodies[0], formatTime(mark))
+	assert.Contains(t, bodies[0], `"`+testSelf+`":null`)
+}
+
+// The shutdown has a deadline. A leftover entry only goes overdue; a lost mark
+// is lost, so the marks are written first.
+func TestShutdown_WritesTheMarksBeforeTakingTheOtherEntriesOut(t *testing.T) {
+	t.Parallel()
+
+	quiet := k8sapp.WorkloadRef{AppID: "quiet"}
+	h := newHarness(t, candidate(quiet, "member-quiet"), candidate(appRef, testMember))
+	h.round()
+
+	h.clock.Advance(time.Second)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.fake.ClearActions()
+
+	h.startSweeper()
+	h.recorder.Shutdown(t.Context())
+
+	var order []string
+	for _, a := range h.fake.Actions() {
+		if p, ok := a.(k8stesting.PatchAction); ok {
+			order = append(order, p.GetName())
+		}
+	}
+	assert.Equal(t, []string{testMember, "member-quiet"}, order)
+}
+
 // A workload can leave the cache while a request for it is still in flight.
 func TestShutdown_IsNotHeldUpByAnEvictionRacingARequest(t *testing.T) {
 	t.Parallel()

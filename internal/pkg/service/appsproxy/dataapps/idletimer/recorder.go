@@ -200,6 +200,8 @@ type pendingWrite struct {
 	name string
 	at   time.Time
 	own  entry
+	// leave takes this replica's entry out instead of writing it.
+	leave bool
 }
 
 func (r *Recorder) sweep(ctx context.Context) {
@@ -209,13 +211,31 @@ func (r *Recorder) sweep(ctx context.Context) {
 	}))
 }
 
-// finalSweep writes every mark the record does not have yet. The cadence and
-// the backoff both hold a mark for a later sweep, and after this one there is
-// none.
+// finalSweep writes every mark the record does not have yet, and takes this
+// replica's entry out of every record that carries one. The cadence and the
+// backoff both hold a mark for a later sweep, and after this one there is none.
+// Once this replica is gone its heartbeat bounds nothing, and left in place it
+// would widen every reader's margin until it went overdue.
+//
+// The marks go first. The shutdown has a deadline, and a leftover entry only
+// goes overdue, while a lost mark is lost.
 func (r *Recorder) finalSweep(ctx context.Context) {
-	r.writeAll(ctx, r.collect(r.clock.Now(), func(item *activity) bool {
+	now := r.clock.Now()
+	owed := r.collect(now, func(item *activity) bool {
 		return item.sandboxName != "" && item.lastRequestAt.After(item.lastWriteAt)
-	}))
+	})
+	rest := r.collect(now, func(item *activity) bool {
+		return item.sandboxName != "" && !item.lastRequestAt.After(item.lastWriteAt) && item.declared != 0
+	})
+	r.writeAll(ctx, leaving(owed))
+	r.writeAll(ctx, leaving(rest))
+}
+
+func leaving(pending []pendingWrite) []pendingWrite {
+	for i := range pending {
+		pending[i].leave = true
+	}
+	return pending
 }
 
 // collect reads each workload's memory under its lock. That moment is the
@@ -260,7 +280,12 @@ func (r *Recorder) write(ctx context.Context, w pendingWrite) {
 	writeCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), writeTimeout, errors.New("idle timer write timeout"))
 	defer cancel()
 
-	err := r.client.write(writeCtx, w.name, r.self, w.at, w.own)
+	var err error
+	if w.leave {
+		err = r.client.leave(writeCtx, w.name, r.self, w.at)
+	} else {
+		err = r.client.write(writeCtx, w.name, r.self, w.at, w.own)
+	}
 
 	w.item.lock.Lock()
 	defer w.item.lock.Unlock()
@@ -282,6 +307,10 @@ func (r *Recorder) write(ctx context.Context, w pendingWrite) {
 	w.item.lastWriteAt = w.at
 	w.item.aliveAt = w.own.aliveAt
 	w.item.declared = w.own.heartbeat
+	if w.leave {
+		w.item.aliveAt = time.Time{}
+		w.item.declared = 0
+	}
 	w.item.retryAfter = time.Time{}
 	w.item.failures = 0
 }
