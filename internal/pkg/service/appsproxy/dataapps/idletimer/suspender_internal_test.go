@@ -117,11 +117,11 @@ func TestRound_SuspendsAWorkloadIdlePastTheMargin(t *testing.T) {
 	h := newHarness(t, candidate(appRef, "member-1"))
 
 	// The first round creates the record.
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	require.Empty(t, h.source.slept)
 
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 
 	assert.Equal(t, []k8sapp.WorkloadRef{appRef}, h.source.slept)
 	assert.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
@@ -177,9 +177,9 @@ func TestRound_SuspendsADraftThroughItsOwnWorkload(t *testing.T) {
 	draftRef := k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"}
 	h := newHarness(t, candidate(draftRef, "draft-abc"))
 
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 
 	assert.Equal(t, []k8sapp.WorkloadRef{draftRef}, h.source.slept)
 }
@@ -188,15 +188,15 @@ func TestRound_CountsASuspendFollowedByAWakeWithinAMinute(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, "member-1"))
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	require.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
 
 	// Something woke it: the workload started again, which moves lastStartedTime.
 	h.clock.Advance(30 * time.Second)
 	h.source.candidates[0].LastStarted = h.clock.Now()
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 
 	assert.Equal(t, int64(1), h.counterValue(t, "keboola.go.appsproxy.idletimer.woke_soon_after_suspend"))
 }
@@ -208,14 +208,14 @@ func TestRound_DoesNotCountAnUnreconciledSuspendAsAWake(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, candidate(appRef, "member-1"))
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	require.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
 
 	// Still in the Running set a round later, but it never restarted.
 	h.clock.Advance(15 * time.Second)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 
 	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.woke_soon_after_suspend"))
 }
@@ -238,9 +238,9 @@ func TestRound_GateSuppressesOnlyTheSuspendAction(t *testing.T) {
 	t.Parallel()
 
 	h := newGatedHarness(t, candidate(appRef, "member-1"))
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 
 	assert.Empty(t, h.source.slept, "the gate must stop the patch")
 	assert.Zero(t, h.suspendCount(t, outcomePerformed))
@@ -262,11 +262,11 @@ func TestRound_SuppressedSuspendIsReportedOncePerIdleEpisode(t *testing.T) {
 
 	logger := log.NewDebugLogger()
 	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1"))
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 
 	for range 5 {
-		h.suspender.suspendIdleWorkloads(t.Context())
+		h.round()
 		h.clock.Advance(tickInterval)
 	}
 
@@ -280,18 +280,18 @@ func TestRound_ASecondIdleEpisodeIsReportedAgain(t *testing.T) {
 	t.Parallel()
 
 	h := newGatedHarness(t, candidate(appRef, "member-1"))
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	require.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
 
 	// Someone used it again.
 	h.recorder.RecordActivity(t.Context(), appRef)
 	h.flush()
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 
 	assert.Equal(t, int64(2), h.suspendCount(t, outcomeSuppressed))
 }
@@ -301,9 +301,9 @@ func TestRound_SuppressedSuspendNamesTheWorkloadAndHowLongItWasIdle(t *testing.T
 
 	logger := log.NewDebugLogger()
 	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1"))
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 
 	messages := logger.AllMessages()
 	assert.Contains(t, messages, "would suspend")
@@ -452,4 +452,23 @@ func TestRun_NamesEveryRecordBeforeTheFirstTick(t *testing.T) {
 	rec, err := h.recorder.client.get(t.Context(), testMember)
 	require.NoError(t, err)
 	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want %s, got %s", h.clock.Now(), rec.lastRequestAt)
+}
+
+// A replica whose own writes stop landing cannot tell idleness from a record
+// nobody can update. At the shortest threshold its entry goes overdue well
+// before a suspend could be due.
+func TestRound_DoesNotSuspendWhileItsOwnWritesAreFailing(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, withThreshold(appRef, minThreshold))
+	h.round()
+
+	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, k8serrors.NewForbidden(gvr().GroupResource(), testMember, errors.New("patch is denied"))
+	})
+
+	h.clock.Advance(minThreshold + heartbeatInterval(minThreshold) + time.Second)
+	h.round()
+
+	assert.Empty(t, h.source.slept)
 }

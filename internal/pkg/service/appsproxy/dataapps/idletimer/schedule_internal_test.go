@@ -75,7 +75,7 @@ func TestShouldSuspend(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.want, shouldSuspend(tc.idleFor, threshold))
+			assert.Equal(t, tc.want, shouldSuspend(tc.idleFor, threshold, 0))
 		})
 	}
 }
@@ -85,7 +85,47 @@ func TestShouldSuspend_ClampedThresholdWidensTheMargin(t *testing.T) {
 
 	// A sub-minimum threshold is raised to minThreshold, so a workload idle for
 	// its literal threshold must still not be suspended.
-	assert.False(t, shouldSuspend(30*time.Second, 30*time.Second))
-	assert.False(t, shouldSuspend(minThreshold, 30*time.Second))
-	assert.True(t, shouldSuspend(minThreshold+heartbeatInterval(minThreshold)+time.Nanosecond, 30*time.Second))
+	assert.False(t, shouldSuspend(30*time.Second, 30*time.Second, 0))
+	assert.False(t, shouldSuspend(minThreshold, 30*time.Second, 0))
+	assert.True(t, shouldSuspend(minThreshold+heartbeatInterval(minThreshold)+time.Nanosecond, 30*time.Second, 0))
+}
+
+// A replica still writing under a longer heartbeat may leave the record that
+// much behind, whatever the current threshold's own heartbeat is.
+func TestShouldSuspend_ALongerDeclaredHeartbeatWidensTheMargin(t *testing.T) {
+	t.Parallel()
+
+	const declared = 3 * time.Minute
+
+	assert.False(t, shouldSuspend(minThreshold+declared, minThreshold, declared))
+	assert.True(t, shouldSuspend(minThreshold+declared+time.Nanosecond, minThreshold, declared))
+}
+
+func TestMargin(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
+	fresh := func(heartbeat time.Duration) entry { return entry{aliveAt: now, heartbeat: heartbeat} }
+	overdue := func(heartbeat time.Duration) entry {
+		return entry{aliveAt: now.Add(-overdueAfter*heartbeat - time.Nanosecond), heartbeat: heartbeat}
+	}
+
+	for _, tc := range []struct {
+		name       string
+		entries    map[string]entry
+		wantMargin time.Duration
+		wantOK     bool
+	}{
+		{"no own entry", map[string]entry{"other": fresh(time.Minute)}, 0, false},
+		{"own entry overdue", map[string]entry{testSelf: overdue(time.Minute)}, 0, false},
+		{"the longest live heartbeat", map[string]entry{testSelf: fresh(time.Minute), "other": fresh(3 * time.Minute)}, 3 * time.Minute, true},
+		{"an overdue entry does not count", map[string]entry{testSelf: fresh(time.Minute), "gone": overdue(5 * time.Minute)}, time.Minute, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			margin, ok := record{entries: tc.entries}.margin(testSelf, now)
+			assert.Equal(t, tc.wantOK, ok)
+			assert.Equal(t, tc.wantMargin, margin)
+		})
+	}
 }

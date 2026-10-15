@@ -2,6 +2,7 @@ package idletimer
 
 import (
 	"context"
+	"slices"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/tools/cache"
@@ -83,6 +85,14 @@ func (h *harness) cacheRecord(name string, at time.Time) {
 	}))
 }
 
+// cacheLive puts what the apiserver holds into the watch cache, as the watch
+// would once it caught up.
+func (h *harness) cacheLive(name string) {
+	obj, err := h.fake.Resource(gvr()).Namespace(testNamespace).Get(h.t.Context(), name, metav1.GetOptions{})
+	require.NoError(h.t, err)
+	require.NoError(h.t, h.store.Add(obj))
+}
+
 // counterValue reads an emitted counter back, so the assertions are about what
 // a dashboard would show rather than about a field kept for the tests.
 // suspendCount reads one outcome of the suspends counter. Taking the first
@@ -116,6 +126,16 @@ func (h *harness) startSweeper() {
 // once every write that sweep decided on has finished.
 func (h *harness) flush() {
 	h.recorder.sweep(h.t.Context())
+}
+
+// round is one suspend round with the sweeper around it, as in production,
+// where the sweeper runs every second: the record carries this replica's entry
+// before the round reads it, and the workloads the round names are written
+// after.
+func (h *harness) round() {
+	h.flush()
+	h.suspender.suspendIdleWorkloads(h.t.Context())
+	h.flush()
 }
 
 func (h *harness) counterValue(t *testing.T, name string) int64 {
@@ -167,7 +187,7 @@ func buildReplica(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	tel := telemetry.NewForTest(t)
 
 	recorder := newRecorder(clock, logger, c, newRecorderMetrics(tel.Meter()), newErrorLog(clock, logger), self)
-	m := newSuspender(clock, logger, c, source, recorder, newMetrics(tel.Meter()), newErrorLog(clock, logger), suspendEnabled)
+	m := newSuspender(clock, logger, c, source, recorder, newMetrics(tel.Meter()), newErrorLog(clock, logger), suspendEnabled, self)
 
 	synced := &atomic.Bool{}
 	synced.Store(true)
@@ -195,6 +215,19 @@ func candidate(ref k8sapp.WorkloadRef, sandbox string) k8sapp.SleepCandidate {
 // optedOut is a workload whose Sandbox carries no threshold at all.
 func optedOut(ref k8sapp.WorkloadRef) k8sapp.SleepCandidate {
 	return k8sapp.SleepCandidate{Ref: ref, SandboxName: testMember}
+}
+
+// newReplicaPair builds the two replicas a production deployment runs. Each
+// gets its own copy of the candidates, so a test can change the threshold one
+// replica sees without changing the other's.
+func newReplicaPair(t *testing.T, candidates ...k8sapp.SleepCandidate) (a, b *harness) {
+	t.Helper()
+
+	c := newTestClient()
+	clock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
+
+	return buildReplica(t, log.NewNopLogger(), true, slices.Clone(candidates), c, clock, "apps-proxy-a"),
+		buildReplica(t, log.NewNopLogger(), true, slices.Clone(candidates), c, clock, "apps-proxy-b")
 }
 
 // withThreshold is candidate() for a test that needs a threshold other than

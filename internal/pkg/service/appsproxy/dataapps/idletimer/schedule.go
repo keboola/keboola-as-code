@@ -32,15 +32,16 @@ func lastSeen(memory, recorded, started time.Time) time.Time {
 	return latest
 }
 
-// shouldSuspend adds one heartbeat interval to the threshold. The shared record
-// trails the real last request by at most that interval, so the margin is what
-// makes suspending before the threshold impossible.
+// shouldSuspend adds a margin to the threshold: the longest a shared record may
+// trail the last request. That is the threshold's own heartbeat, or any longer
+// one a replica still writing declares — a record written under an old, longer
+// heartbeat trails by that one until the trail is written.
 //
 // Both terms use the clamped threshold. Clamping only one of them suspends a
 // sub-minimum workload early.
-func shouldSuspend(idleFor, threshold time.Duration) bool {
+func shouldSuspend(idleFor, threshold, declared time.Duration) bool {
 	effective := effectiveThreshold(threshold)
-	return idleFor > effective+heartbeatInterval(effective)
+	return idleFor > effective+max(heartbeatInterval(effective), declared)
 }
 
 func heartbeatInterval(threshold time.Duration) time.Duration {
@@ -59,4 +60,23 @@ func effectiveThreshold(threshold time.Duration) time.Duration {
 
 func (e entry) overdue(now time.Time) bool {
 	return now.Sub(e.aliveAt) > overdueAfter*e.heartbeat
+}
+
+// margin is the longest heartbeat declared by a replica still writing. It
+// reports false when this replica's own entry is missing or overdue: its own
+// writes are not landing, the other replica's may not be either, and the record
+// cannot be read as idleness.
+func (r record) margin(self string, now time.Time) (time.Duration, bool) {
+	own, found := r.entries[self]
+	if !found || own.overdue(now) {
+		return 0, false
+	}
+
+	var margin time.Duration
+	for _, e := range r.entries {
+		if !e.overdue(now) {
+			margin = max(margin, e.heartbeat)
+		}
+	}
+	return margin, true
 }

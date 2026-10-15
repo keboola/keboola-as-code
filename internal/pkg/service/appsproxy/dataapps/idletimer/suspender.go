@@ -40,6 +40,7 @@ type activityRecorder interface {
 // Suspender decides which running workloads have gone idle and suspends them.
 type Suspender struct {
 	suspendEnabled bool
+	self           string
 	clock          clockwork.Clock
 	logger         log.Logger
 	client         *client
@@ -79,6 +80,7 @@ func NewSuspender(d dependencies, k8sClient dynamic.Interface, recorder *Recorde
 		newMetrics(d.Telemetry().Meter()),
 		newErrorLog(d.Clock(), d.Logger().WithComponent("idletimer")),
 		d.Config().IdleSuspend.Enabled,
+		recorder.self,
 	)
 
 	ctx, cancel := context.WithCancelCause(context.Background())
@@ -115,9 +117,10 @@ func (m *Suspender) run(ctx context.Context) {
 	}
 }
 
-func newSuspender(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, recorder activityRecorder, metrics *metrics, errorLog *errorLog, suspendEnabled bool) *Suspender {
+func newSuspender(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, recorder activityRecorder, metrics *metrics, errorLog *errorLog, suspendEnabled bool, self string) *Suspender {
 	return &Suspender{
 		suspendEnabled: suspendEnabled,
+		self:           self,
 		clock:          clock,
 		logger:         logger,
 		client:         c,
@@ -207,8 +210,12 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string,
 		return stateCandidate, nil
 	}
 
+	margin, vouched := rec.margin(m.self, now)
+	if !vouched {
+		return stateCandidate, nil
+	}
 	idleFor := now.Sub(lastSeen(memory, rec.lastRequestAt, c.LastStarted))
-	if !shouldSuspend(idleFor, *c.Threshold) {
+	if !shouldSuspend(idleFor, *c.Threshold, margin) {
 		m.clearSuppressed(item)
 		return stateCandidate, nil
 	}
@@ -224,8 +231,12 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string,
 			m.noteRecordError(ctx, "confirm", c, err)
 			return stateCandidate, nil
 		}
+		margin, vouched = live.margin(m.self, now)
+		if !vouched {
+			return stateCandidate, nil
+		}
 		idleFor = now.Sub(lastSeen(memory, live.lastRequestAt, c.LastStarted))
-		if !shouldSuspend(idleFor, *c.Threshold) {
+		if !shouldSuspend(idleFor, *c.Threshold, margin) {
 			m.clearSuppressed(item)
 			return stateCandidate, nil
 		}

@@ -58,11 +58,12 @@ func TestRound_FallsBackToTheApiserverUntilTheCacheHasSynced(t *testing.T) {
 func TestRound_SuspendsOnACachedReadTheApiserverAgreesWith(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1"))
-	require.NoError(t, h.recorder.client.create(t.Context(), "member-1", "uid-1", h.clock.Now()))
-	h.cacheRecord("member-1", h.clock.Now())
+	h := newHarness(t, candidate(appRef, testMember))
+	h.round()
 
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
+	h.flush()
+	h.cacheLive(testMember)
 	h.suspender.suspendIdleWorkloads(t.Context())
 
 	assert.Equal(t, []k8sapp.WorkloadRef{appRef}, h.source.slept)
@@ -88,4 +89,24 @@ func TestRound_ACachedRecordIsKeyedByItsMember(t *testing.T) {
 	h.suspender.suspendIdleWorkloads(t.Context())
 
 	assert.Empty(t, h.fake.Actions())
+}
+
+// The cache lags, and a lagging copy can miss an entry declared since. The
+// confirm read decides on the live entries.
+func TestRound_TheConfirmReadAppliesTheLiveMargin(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+	h.round()
+
+	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
+	h.flush()
+	h.cacheLive(testMember)
+
+	// The other replica declares a longer heartbeat after the cache was filled.
+	require.NoError(t, h.recorder.client.write(t.Context(), testMember, "other", time.Time{}, entry{aliveAt: h.clock.Now(), heartbeat: maxHeartbeatInterval}))
+
+	h.suspender.suspendIdleWorkloads(t.Context())
+
+	assert.Empty(t, h.source.slept, "the live record says the other replica may be up to 5m behind")
 }
