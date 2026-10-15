@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,6 +68,12 @@ func TestAppProxyHandler(t *testing.T) {
 	d, mocked := proxyDependencies.NewMockedServiceScopeWithK8sObjects(t, ctx, cfg, makeDefaultK8sObjects(apps, appURL.String()), dependencies.WithRealHTTPClient())
 	registerDefaultK8sApps(t, d.AppStateWatcher())
 
+	// The idle-suspend loop runs a round as soon as the K8s cache has synced. The
+	// fixture's App names no productionSandbox, so that round reports it.
+	require.Eventually(t, func() bool {
+		return strings.Contains(mocked.DebugLogger().AllMessages(), "skipping idle-suspend")
+	}, 10*time.Second, 10*time.Millisecond)
+
 	// Create proxy handler
 	handler := proxy.NewHandler(ctx, d)
 
@@ -108,6 +115,7 @@ func TestAppProxyHandler(t *testing.T) {
 	assert.Equal(t, "OK\n", rec.Body.String())
 
 	mocked.DebugLogger().AssertJSONMessages(t, `
+{"level":"warn","message":"App \"123\" is Running but its status.productionSandbox matches no cached Sandbox, skipping idle-suspend","component":"idletimer"}
 {"level":"info","message":"req 404 https://hub.keboola.local/_proxy/assets/foo.bar","http.request_id":"%s","component":"http"}
 {"level":"warn","message":"badRequest: unexpected domain, missing application ID %A","http.request_id":"%s"}
 {"level":"info","message":"req 400 https://public-123.foo.bar.local/path","http.request_id":"%s","component":"http"}
@@ -141,7 +149,7 @@ func TestAppProxyHandler(t *testing.T) {
 			"Data": {"DataPoints": [
 				{"Attributes": [{"Key": "state", "Value": {"Type": "STRING", "Value": "candidate"}}], "Value": 0},
 				{"Attributes": [{"Key": "state", "Value": {"Type": "STRING", "Value": "no_threshold"}}], "Value": 0},
-				{"Attributes": [{"Key": "state", "Value": {"Type": "STRING", "Value": "unresolved"}}], "Value": 0}
+				{"Attributes": [{"Key": "state", "Value": {"Type": "STRING", "Value": "unresolved"}}], "Value": 1}
 			]}
 		},
 		{

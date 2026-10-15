@@ -25,6 +25,7 @@ const roundTimeout = 2 * tickInterval
 // k8sWorkloads is the part of the K8s state watcher this loop needs.
 type k8sWorkloads interface {
 	HasSynced() bool
+	WaitForCacheSync(ctx context.Context) bool
 	ScanForSleepCandidates() k8sapp.SleepScan
 	Sleep(ctx context.Context, ref k8sapp.WorkloadRef, expectMember string) (bool, error)
 }
@@ -89,20 +90,29 @@ func NewSuspender(d dependencies, k8sClient dynamic.Interface, recorder *Recorde
 
 	d.AppStateWatcher().OnWorkloadRemoved(m.evictWorkload)
 
-	ticker := m.clock.NewTicker(tickInterval)
-	go func() {
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.Chan():
-				m.suspendIdleWorkloads(ctx)
-			}
-		}
-	}()
+	go m.run(ctx)
 
 	return m
+}
+
+func (m *Suspender) run(ctx context.Context) {
+	ticker := m.clock.NewTicker(tickInterval)
+	defer ticker.Stop()
+
+	// A pod takes traffic before its first tick, and the Recorder writes a mark
+	// only once a round has named its record.
+	if m.workloads.WaitForCacheSync(ctx) {
+		m.suspendIdleWorkloads(ctx)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.Chan():
+			m.suspendIdleWorkloads(ctx)
+		}
+	}
 }
 
 func newSuspender(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, recorder activityRecorder, metrics *metrics, errorLog *errorLog, suspendEnabled bool) *Suspender {

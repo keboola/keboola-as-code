@@ -426,3 +426,29 @@ func TestRound_AGatedDecisionIsConfirmedBeforeItIsCounted(t *testing.T) {
 
 	assert.Zero(t, h.suspendCount(t, outcomeSuppressed), "a stale cached read must not be counted as a suspend that would have happened")
 }
+
+// A pod is Ready, and taking traffic, before its first tick. Its marks reach
+// the shared record only once a round has told the Recorder which record they
+// belong to, so until then the other replica cannot see them.
+func TestRun_NamesEveryRecordBeforeTheFirstTick(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+
+	ctx, cancel := context.WithCancelCause(t.Context())
+	defer cancel(errors.New("test done"))
+	go h.suspender.run(ctx)
+
+	require.Eventually(t, func() bool {
+		_, err := h.recorder.client.get(t.Context(), testMember)
+		return err == nil
+	}, 2*time.Second, 5*time.Millisecond, "no round ran before the first tick")
+
+	h.clock.Advance(time.Second)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	rec, err := h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err)
+	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want %s, got %s", h.clock.Now(), rec.lastRequestAt)
+}

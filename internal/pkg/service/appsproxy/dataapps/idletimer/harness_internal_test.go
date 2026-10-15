@@ -39,6 +39,8 @@ type fakeSource struct {
 
 func (f *fakeSource) HasSynced() bool { return f.synced }
 
+func (f *fakeSource) WaitForCacheSync(context.Context) bool { return f.synced }
+
 func (f *fakeSource) ScanForSleepCandidates() k8sapp.SleepScan {
 	return k8sapp.SleepScan{Candidates: f.candidates, Unresolved: f.unresolved}
 }
