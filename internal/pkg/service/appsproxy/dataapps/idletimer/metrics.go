@@ -15,6 +15,7 @@ const (
 	stateCandidate   = "candidate"
 	stateNoThreshold = "no_threshold"
 	stateUnresolved  = "unresolved"
+	stateUnvouched   = "unvouched"
 )
 
 const (
@@ -30,6 +31,7 @@ type metrics struct {
 	candidates  atomic.Int64
 	noThreshold atomic.Int64
 	unresolved  atomic.Int64
+	unvouched   atomic.Int64
 
 	suspends             metric.Int64Counter
 	wokeSoonAfterSuspend metric.Int64Counter
@@ -45,7 +47,7 @@ func newRecorderMetrics(meter telemetry.Meter) *recorderMetrics {
 	return &recorderMetrics{
 		writeFailures: meter.IntCounter(
 			"keboola.go.appsproxy.idletimer.write_failures",
-			"Activity writes that did not land, by apiserver reason. While these fail the shared record stops advancing, and the replica that served no traffic of its own reads it as idle, so a workload in use can be suspended.",
+			"Activity writes that did not land, by apiserver reason. While they fail this replica's entry goes overdue and it suspends nothing; a replica whose writes still land cannot see this one's traffic.",
 			"",
 		),
 	}
@@ -56,12 +58,13 @@ func newMetrics(meter telemetry.Meter) *metrics {
 
 	meter.IntObservableGauge(
 		"keboola.go.appsproxy.idletimer.workloads",
-		"Running workloads this pass saw, by what the loop can do with them: candidate, no_threshold (no autoSuspendAfterSeconds, so it opted out), unresolved (an App whose productionSandbox matched no cached Sandbox, which is a bug smell).",
+		"Running workloads this pass saw, by what the loop can do with them: candidate, no_threshold (no autoSuspendAfterSeconds, so it opted out), unresolved (an App whose productionSandbox matched no cached Sandbox, which is a bug smell), unvouched (the record carries no current entry for this replica: its writes are not landing, or the idle timer CRD has no observers field, so it suspends nothing).",
 		"",
 		func(_ context.Context, o metric.Int64Observer) error {
 			o.Observe(m.candidates.Load(), withState(stateCandidate))
 			o.Observe(m.noThreshold.Load(), withState(stateNoThreshold))
 			o.Observe(m.unresolved.Load(), withState(stateUnresolved))
+			o.Observe(m.unvouched.Load(), withState(stateUnvouched))
 			return nil
 		},
 	)

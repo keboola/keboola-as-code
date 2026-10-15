@@ -55,11 +55,11 @@ func TestRound_TheWorkloadsGaugeReportsTheCurrentRound(t *testing.T) {
 	t.Parallel()
 
 	h := newHarness(t, optedOut(appRef))
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 	require.Equal(t, int64(1), h.suspender.metrics.noThreshold.Load())
 
 	h.source.candidates[0] = candidate(appRef, "member-1")
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 
 	assert.Zero(t, h.suspender.metrics.noThreshold.Load())
 	assert.Equal(t, int64(1), h.suspender.metrics.candidates.Load())
@@ -471,4 +471,21 @@ func TestRound_DoesNotSuspendWhileItsOwnWritesAreFailing(t *testing.T) {
 	h.round()
 
 	assert.Empty(t, h.source.slept)
+}
+
+// A replica that cannot vouch for its own writes suspends nothing. That has to
+// show, or a rollout reading zero suspends cannot tell it from a stack with
+// nothing idle — the IdleTimer CRD deployed without observers looks exactly
+// like this.
+func TestRound_TheWorkloadsGaugeCountsAWorkloadThisReplicaCannotVouchFor(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+	h.suspender.suspendIdleWorkloads(t.Context())
+
+	// No sweep has run, so the record carries no entry for this replica.
+	h.suspender.suspendIdleWorkloads(t.Context())
+
+	assert.Equal(t, int64(1), h.suspender.metrics.unvouched.Load())
+	assert.Zero(t, h.suspender.metrics.candidates.Load())
 }

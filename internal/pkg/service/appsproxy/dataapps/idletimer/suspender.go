@@ -163,20 +163,17 @@ func (m *Suspender) suspendIdleWorkloads(ctx context.Context) {
 	scan := m.workloads.ScanForSleepCandidates()
 	m.warnUnresolved(ctx, scan.Unresolved)
 
-	var candidates, noThreshold int64
+	counts := map[string]int64{}
 	for _, c := range scan.Candidates {
 		state, err := m.visit(ctx, c)
 		if err != nil {
 			break
 		}
-		if state == stateCandidate {
-			candidates++
-		} else {
-			noThreshold++
-		}
+		counts[state]++
 	}
-	m.metrics.candidates.Store(candidates)
-	m.metrics.noThreshold.Store(noThreshold)
+	m.metrics.candidates.Store(counts[stateCandidate])
+	m.metrics.noThreshold.Store(counts[stateNoThreshold])
+	m.metrics.unvouched.Store(counts[stateUnvouched])
 	m.metrics.unresolved.Store(int64(len(scan.Unresolved)))
 }
 
@@ -212,7 +209,7 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string,
 
 	margin, vouched := rec.margin(m.self, now)
 	if !vouched {
-		return stateCandidate, nil
+		return stateUnvouched, nil
 	}
 	idleFor := now.Sub(lastSeen(memory, rec.lastRequestAt, c.LastStarted))
 	if !shouldSuspend(idleFor, *c.Threshold, margin) {
@@ -233,7 +230,7 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string,
 		}
 		margin, vouched = live.margin(m.self, now)
 		if !vouched {
-			return stateCandidate, nil
+			return stateUnvouched, nil
 		}
 		idleFor = now.Sub(lastSeen(memory, live.lastRequestAt, c.LastStarted))
 		if !shouldSuspend(idleFor, *c.Threshold, margin) {
