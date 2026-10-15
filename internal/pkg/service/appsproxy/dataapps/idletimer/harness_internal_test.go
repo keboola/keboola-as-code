@@ -20,7 +20,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
-const threshold = 900 * time.Second
+const (
+	threshold  = 900 * time.Second
+	testMember = "member-1"
+)
 
 var appRef = k8sapp.WorkloadRef{AppID: "123"} //nolint:gochecknoglobals // test fixture
 
@@ -148,9 +151,17 @@ func newGatedHarnessWithLogger(t *testing.T, logger log.Logger, candidates ...k8
 func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidates []k8sapp.SleepCandidate) *harness {
 	t.Helper()
 
-	c := newTestClient()
-	source := &fakeSource{synced: true, candidates: candidates, sleptOK: true}
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
+	return buildReplica(t, logger, suspendEnabled, candidates, newTestClient(), clock)
+}
+
+// buildReplica is one apps-proxy replica. Two of them sharing a client and a
+// clock are two replicas of the same deployment: separate memory and separate
+// watch caches, one apiserver.
+func buildReplica(t *testing.T, logger log.Logger, suspendEnabled bool, candidates []k8sapp.SleepCandidate, c *client, clock *clockwork.FakeClock) *harness {
+	t.Helper()
+
+	source := &fakeSource{synced: true, candidates: candidates, sleptOK: true}
 	tel := telemetry.NewForTest(t)
 
 	recorder := newRecorder(clock, logger, c, newRecorderMetrics(tel.Meter()), newErrorLog(clock, logger))
@@ -180,6 +191,6 @@ func candidate(ref k8sapp.WorkloadRef, sandbox string) k8sapp.SleepCandidate {
 }
 
 // optedOut is a workload whose Sandbox carries no threshold at all.
-func optedOut(ref k8sapp.WorkloadRef, sandbox string) k8sapp.SleepCandidate {
-	return k8sapp.SleepCandidate{Ref: ref, SandboxName: sandbox}
+func optedOut(ref k8sapp.WorkloadRef) k8sapp.SleepCandidate {
+	return k8sapp.SleepCandidate{Ref: ref, SandboxName: testMember}
 }

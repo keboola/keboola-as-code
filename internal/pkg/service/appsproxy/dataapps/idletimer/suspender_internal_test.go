@@ -37,7 +37,7 @@ func TestRound_SkipsEverythingBeforeTheCacheHasSynced(t *testing.T) {
 func TestRound_AbsentThresholdIsSkippedAndCounted(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, optedOut(appRef, "member-1"))
+	h := newHarness(t, optedOut(appRef))
 
 	h.suspender.suspendIdleWorkloads(t.Context())
 
@@ -53,7 +53,7 @@ func TestRound_AbsentThresholdIsSkippedAndCounted(t *testing.T) {
 func TestRound_TheWorkloadsGaugeReportsTheCurrentRound(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, optedOut(appRef, "member-1"))
+	h := newHarness(t, optedOut(appRef))
 	h.suspender.suspendIdleWorkloads(t.Context())
 	require.Equal(t, int64(1), h.suspender.metrics.noThreshold.Load())
 

@@ -62,7 +62,7 @@ func TestRecordActivity_DoesNotWriteWithinOneHeartbeatInterval(t *testing.T) {
 func TestRecordActivity_WritesNothingWhenTheWorkloadHasNoThreshold(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, optedOut(appRef, "member-1"))
+	h := newHarness(t, optedOut(appRef))
 	h.suspender.suspendIdleWorkloads(t.Context())
 	h.fake.ClearActions()
 
