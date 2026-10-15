@@ -69,6 +69,9 @@ type activity struct {
 	// declared means the record carries no entry for this replica yet.
 	aliveAt  time.Time
 	declared time.Duration
+	// running is whether the last round saw the workload Running. Only then is
+	// there anything for this replica's entry to vouch for.
+	running bool
 
 	sandboxName string
 	threshold   *time.Duration
@@ -142,6 +145,7 @@ func (r *Recorder) Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold
 	defer item.lock.Unlock()
 
 	item.threshold = threshold
+	item.running = true
 	if item.sandboxName != sandboxName {
 		item.sandboxName = sandboxName
 		item.lastWriteAt = time.Time{}
@@ -151,6 +155,25 @@ func (r *Recorder) Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold
 	}
 
 	return item.lastRequestAt
+}
+
+// Retain marks every workload a round did not see Running as no longer
+// running. A suspended or stopped workload stays in the cache, and writing its
+// entry every heartbeat would vouch for nothing.
+func (r *Recorder) Retain(running []k8sapp.WorkloadRef) {
+	keep := make(map[k8sapp.WorkloadRef]bool, len(running))
+	for _, ref := range running {
+		keep[ref] = true
+	}
+
+	r.workloads.Range(func(ref k8sapp.WorkloadRef, item *activity) {
+		if keep[ref] {
+			return
+		}
+		item.lock.Lock()
+		item.running = false
+		item.lock.Unlock()
+	})
 }
 
 // Forget drops a workload that has left the cache.
@@ -225,7 +248,7 @@ func (r *Recorder) finalSweep(ctx context.Context) {
 		return item.sandboxName != "" && item.lastRequestAt.After(item.lastWriteAt)
 	})
 	rest := r.collect(now, func(item *activity) bool {
-		return item.sandboxName != "" && !item.lastRequestAt.After(item.lastWriteAt) && item.declared != 0
+		return item.sandboxName != "" && !item.lastRequestAt.After(item.lastWriteAt) && item.declared != 0 && item.running
 	})
 	r.writeAll(ctx, leaving(owed))
 	r.writeAll(ctx, leaving(rest))
@@ -354,10 +377,13 @@ func writeDue(item *activity, now time.Time) bool {
 	}
 
 	heartbeat := item.heartbeat()
-	if item.declared != heartbeat {
+	if item.lastRequestAt.Sub(item.lastWriteAt) > heartbeat {
 		return true
 	}
-	return now.Sub(item.aliveAt) >= heartbeat || item.lastRequestAt.Sub(item.lastWriteAt) > heartbeat
+	if !item.running {
+		return false
+	}
+	return item.declared != heartbeat || now.Sub(item.aliveAt) >= heartbeat
 }
 
 // heartbeat is the cadence this replica writes a workload's record at. With no

@@ -35,6 +35,7 @@ type k8sWorkloads interface {
 // Nothing here reaches into how the Recorder keeps that.
 type activityRecorder interface {
 	Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold *time.Duration) time.Time
+	Retain(running []k8sapp.WorkloadRef)
 }
 
 // Suspender decides which running workloads have gone idle and suspends them.
@@ -162,6 +163,12 @@ func (m *Suspender) suspendIdleWorkloads(ctx context.Context) {
 
 	scan := m.workloads.ScanForSleepCandidates()
 	m.warnUnresolved(ctx, scan.Unresolved)
+
+	running := make([]k8sapp.WorkloadRef, 0, len(scan.Candidates))
+	for _, c := range scan.Candidates {
+		running = append(running, c.Ref)
+	}
+	m.recorder.Retain(running)
 
 	counts := map[string]int64{}
 	for _, c := range scan.Candidates {

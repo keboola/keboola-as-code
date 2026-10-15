@@ -166,6 +166,27 @@ func TestSweep_ARaisedHeartbeatIsDeclaredBeforeItIsUsed(t *testing.T) {
 	assert.Equal(t, heartbeatInterval(time.Hour), rec.entries[testSelf].heartbeat)
 }
 
+// A workload that has left the Running set — suspended, or stopped — gives
+// this replica nothing to vouch for. Writing its entry anyway would cost a write
+// per heartbeat for every workload the replica has ever seen.
+func TestSweep_StopsWritingTheEntryOnceTheWorkloadIsNoLongerRunning(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+	h.round()
+
+	h.source.candidates = nil
+	h.round()
+	h.fake.ClearActions()
+
+	for range 5 {
+		h.clock.Advance(heartbeatInterval(threshold))
+		h.flush()
+	}
+
+	assert.Empty(t, patchBodies(h))
+}
+
 func patchBodies(h *harness) []string {
 	var bodies []string
 	for _, a := range h.fake.Actions() {
