@@ -50,15 +50,22 @@ func (c *client) get(ctx context.Context, name string) (record, error) {
 		return record{}, err
 	}
 
-	// A record always carries the field: create writes it. An empty one is
-	// malformed, and must not read as the zero time — a caller that took it
-	// would measure idleness from 1970 and suspend on the spot.
+	return parseRecord(obj)
+}
+
+// parseRecord reads a record off the object, whether it came from the apiserver
+// or from the watch cache.
+//
+// A record always carries the field: create writes it. An empty one is
+// malformed, and must not read as the zero time — a caller that took it would
+// measure idleness from 1970 and suspend on the spot.
+func parseRecord(obj *unstructured.Unstructured) (record, error) {
 	raw, found, err := unstructured.NestedString(obj.Object, "spec", "lastRequestAt")
 	if err != nil {
 		return record{}, err
 	}
 	if !found || raw == "" {
-		return record{}, errors.Errorf("idle timer %q carries no lastRequestAt", name)
+		return record{}, errors.Errorf("idle timer %q carries no lastRequestAt", obj.GetName())
 	}
 
 	at, err := time.Parse(time.RFC3339Nano, raw)

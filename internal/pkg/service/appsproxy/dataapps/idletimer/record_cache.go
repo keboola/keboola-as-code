@@ -2,7 +2,6 @@ package idletimer
 
 import (
 	"context"
-	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
@@ -48,15 +47,11 @@ func (rc *recordCache) lookup(name string) (record, bool) {
 		return record{}, false
 	}
 
-	raw, found, err := unstructured.NestedString(obj.Object, "spec", "lastRequestAt")
-	if err != nil || !found || raw == "" {
-		return record{}, false
-	}
-
-	at, err := time.Parse(time.RFC3339Nano, raw)
+	rec, err := parseRecord(obj)
 	if err != nil {
 		return record{}, false
 	}
+	rec.cached = true
 
-	return record{lastRequestAt: at, resourceVersion: obj.GetResourceVersion(), cached: true}, true
+	return rec, true
 }
