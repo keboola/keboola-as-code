@@ -8,7 +8,6 @@ import (
 	"github.com/jonboulle/clockwork"
 	"golang.org/x/sync/errgroup"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -44,11 +43,7 @@ type Recorder struct {
 	metrics *recorderMetrics
 
 	workloads *syncmap.SyncMap[k8sapp.WorkloadRef, activity]
-
-	// Writes run sweepParallelism wide, so unlike the round's own throttle
-	// this one needs a lock.
-	errorLogLock sync.Mutex
-	lastErrorLog map[metav1.StatusReason]time.Time
+	errorLog  *errorLog
 
 	stopOnce sync.Once
 	stopping chan struct{}
@@ -80,6 +75,7 @@ func NewRecorder(d dependencies, k8sClient dynamic.Interface) *Recorder {
 		d.Logger().WithComponent("idletimer"),
 		newClient(k8sClient, d.Config().K8s.AppsNamespace),
 		newRecorderMetrics(d.Telemetry().Meter()),
+		newErrorLog(d.Clock(), d.Logger().WithComponent("idletimer")),
 	)
 
 	d.AppStateWatcher().OnWorkloadRemoved(r.Forget)
@@ -95,18 +91,18 @@ func NewRecorder(d dependencies, k8sClient dynamic.Interface) *Recorder {
 	return r
 }
 
-func newRecorder(clock clockwork.Clock, logger log.Logger, c *client, metrics *recorderMetrics) *Recorder {
+func newRecorder(clock clockwork.Clock, logger log.Logger, c *client, metrics *recorderMetrics, errorLog *errorLog) *Recorder {
 	return &Recorder{
-		clock:   clock,
-		logger:  logger,
-		client:  c,
-		metrics: metrics,
+		clock:    clock,
+		logger:   logger,
+		client:   c,
+		metrics:  metrics,
+		errorLog: errorLog,
 		workloads: syncmap.New[k8sapp.WorkloadRef, activity](func(k8sapp.WorkloadRef) *activity {
 			return &activity{}
 		}),
-		lastErrorLog: map[metav1.StatusReason]time.Time{},
-		stopping:     make(chan struct{}),
-		stopped:      make(chan struct{}),
+		stopping: make(chan struct{}),
+		stopped:  make(chan struct{}),
 	}
 }
 
@@ -235,7 +231,7 @@ func (r *Recorder) write(ctx context.Context, w pendingWrite) {
 		w.item.failures++
 		w.item.retryAfter = r.clock.Now().Add(retryDelay(w.item, err))
 		r.metrics.writeFailures.Add(writeCtx, 1, withReason(k8serrors.ReasonForError(err)))
-		r.logWriteFailure(writeCtx, w.ref, err)
+		r.errorLog.Warnf(writeCtx, err, "failed to record activity for workload %q: %s", w.ref, err)
 		return
 	}
 
@@ -248,26 +244,6 @@ func (r *Recorder) write(ctx context.Context, w pendingWrite) {
 	w.item.lastWriteAt = w.at
 	w.item.retryAfter = time.Time{}
 	w.item.failures = 0
-}
-
-// logWriteFailure bounds how often one kind of failure is logged. A standing
-// failure hits every workload on every sweep, so a line per workload buries the
-// one that says what is wrong, and logging it only once would be worse: this is
-// the signal that the shared records are going stale.
-func (r *Recorder) logWriteFailure(ctx context.Context, ref k8sapp.WorkloadRef, err error) {
-	reason := k8serrors.ReasonForError(err)
-	now := r.clock.Now()
-
-	r.errorLogLock.Lock()
-	last, logged := r.lastErrorLog[reason]
-	if logged && now.Sub(last) < recordErrorLogInterval {
-		r.errorLogLock.Unlock()
-		return
-	}
-	r.lastErrorLog[reason] = now
-	r.errorLogLock.Unlock()
-
-	r.logger.Warnf(ctx, "failed to record activity for workload %q: %s", ref, err)
 }
 
 // retryDelay holds a failed write off, doubling while it keeps failing. The

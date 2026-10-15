@@ -153,8 +153,8 @@ func buildHarness(t *testing.T, logger log.Logger, suspendEnabled bool, candidat
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
 	tel := telemetry.NewForTest(t)
 
-	recorder := newRecorder(clock, logger, c, newRecorderMetrics(tel.Meter()))
-	m := newSuspender(clock, logger, c, source, recorder, newMetrics(tel.Meter()), suspendEnabled)
+	recorder := newRecorder(clock, logger, c, newRecorderMetrics(tel.Meter()), newErrorLog(clock, logger))
+	m := newSuspender(clock, logger, c, source, recorder, newMetrics(tel.Meter()), newErrorLog(clock, logger), suspendEnabled)
 
 	synced := &atomic.Bool{}
 	synced.Store(true)

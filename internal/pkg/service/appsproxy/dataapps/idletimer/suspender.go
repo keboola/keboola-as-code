@@ -7,7 +7,6 @@ import (
 
 	"github.com/jonboulle/clockwork"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -22,13 +21,6 @@ const wakeWindow = time.Minute
 // Rounds are serial, so a slow one delays the next rather than piling up. This
 // stops a wedged call from stopping the loop for good.
 const roundTimeout = 2 * tickInterval
-
-// recordErrorLogInterval bounds how often one kind of record failure is logged.
-// A missing RBAC rule or CRD fails for every workload on every round, so logging
-// per workload buries the line that says what is wrong. Logging it only once
-// would be worse: this log is the only signal that the records are failing, so
-// it has to keep saying so until someone fixes it.
-const recordErrorLogInterval = time.Minute
 
 // k8sWorkloads is the part of the K8s state watcher this loop needs.
 type k8sWorkloads interface {
@@ -53,12 +45,12 @@ type Suspender struct {
 	workloads      k8sWorkloads
 	records        *recordCache
 	recorder       activityRecorder
+	errorLog       *errorLog
 	metrics        *metrics
 	states         *syncmap.SyncMap[k8sapp.WorkloadRef, suspendState]
 
-	// These are touched only by the round.
-	warnedUnresolved   map[api.AppID]bool
-	lastRecordErrorLog map[metav1.StatusReason]time.Time
+	// Touched only by the round.
+	warnedUnresolved map[api.AppID]bool
 }
 
 // suspendState is what this loop remembers about a workload between rounds.
@@ -84,6 +76,7 @@ func NewSuspender(d dependencies, k8sClient dynamic.Interface, recorder *Recorde
 		d.AppStateWatcher(),
 		recorder,
 		newMetrics(d.Telemetry().Meter()),
+		newErrorLog(d.Clock(), d.Logger().WithComponent("idletimer")),
 		d.Config().IdleSuspend.Enabled,
 	)
 
@@ -112,16 +105,16 @@ func NewSuspender(d dependencies, k8sClient dynamic.Interface, recorder *Recorde
 	return m
 }
 
-func newSuspender(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, recorder activityRecorder, metrics *metrics, suspendEnabled bool) *Suspender {
+func newSuspender(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, recorder activityRecorder, metrics *metrics, errorLog *errorLog, suspendEnabled bool) *Suspender {
 	return &Suspender{
-		suspendEnabled:     suspendEnabled,
-		clock:              clock,
-		logger:             logger,
-		client:             c,
-		workloads:          workloads,
-		recorder:           recorder,
-		metrics:            metrics,
-		lastRecordErrorLog: map[metav1.StatusReason]time.Time{},
+		suspendEnabled: suspendEnabled,
+		clock:          clock,
+		logger:         logger,
+		client:         c,
+		workloads:      workloads,
+		recorder:       recorder,
+		metrics:        metrics,
+		errorLog:       errorLog,
 		states: syncmap.New[k8sapp.WorkloadRef, suspendState](func(k8sapp.WorkloadRef) *suspendState {
 			return &suspendState{}
 		}),
@@ -299,16 +292,8 @@ func (m *Suspender) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *
 	item.lock.Unlock()
 }
 
-// noteRecordError logs each kind of failure at most once per
-// recordErrorLogInterval, however many workloads hit it.
 func (m *Suspender) noteRecordError(ctx context.Context, verb string, c k8sapp.SleepCandidate, err error) {
-	reason := k8serrors.ReasonForError(err)
-	now := m.clock.Now()
-	if last, logged := m.lastRecordErrorLog[reason]; logged && now.Sub(last) < recordErrorLogInterval {
-		return
-	}
-	m.lastRecordErrorLog[reason] = now
-	m.logger.Warnf(ctx, "failed to %s the idle timer of workload %q: %s", verb, c.Ref, err)
+	m.errorLog.Warnf(ctx, err, "failed to %s the idle timer of workload %q: %s", verb, c.Ref, err)
 }
 
 // reportSuppressed records one gated suspend per idle episode.
