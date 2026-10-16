@@ -31,14 +31,6 @@ type k8sWorkloads interface {
 	Sleep(ctx context.Context, ref k8sapp.WorkloadRef, expectMember string) (bool, error)
 }
 
-// activityRecorder is the part of the Recorder this loop needs: it hands over
-// each round's reading of a workload and reads back what this replica has seen.
-// Nothing here reaches into how the Recorder keeps that.
-type activityRecorder interface {
-	Observe(ref k8sapp.WorkloadRef, sandboxName string, threshold *time.Duration) observation
-	Retain(running []k8sapp.WorkloadRef)
-}
-
 // Suspender decides which running workloads have gone idle and suspends them.
 type Suspender struct {
 	suspendEnabled bool
@@ -48,7 +40,7 @@ type Suspender struct {
 	client         *client
 	workloads      k8sWorkloads
 	records        *recordCache
-	recorder       activityRecorder
+	recorder       *Recorder
 	errorLog       *errorLog
 	metrics        *metrics
 	states         *syncmap.SyncMap[k8sapp.WorkloadRef, suspendState]
@@ -119,7 +111,7 @@ func (m *Suspender) run(ctx context.Context) {
 	}
 }
 
-func newSuspender(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, recorder activityRecorder, metrics *metrics, errorLog *errorLog, suspendEnabled bool, self string) *Suspender {
+func newSuspender(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, recorder *Recorder, metrics *metrics, errorLog *errorLog, suspendEnabled bool, self string) *Suspender {
 	return &Suspender{
 		suspendEnabled: suspendEnabled,
 		self:           self,
