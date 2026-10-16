@@ -388,12 +388,16 @@ func writeDue(item *activity, now time.Time) bool {
 		return false
 	}
 
+	// No round renews the threshold of a workload it does not see Running, so
+	// the heartbeat this replica holds for it may be long out of date. Traffic
+	// it still serves is written at once instead.
+	if !item.running {
+		return item.lastRequestAt.After(item.lastWriteAt)
+	}
+
 	heartbeat := item.heartbeat()
 	if item.lastRequestAt.Sub(item.lastWriteAt) > heartbeat {
 		return true
-	}
-	if !item.running {
-		return false
 	}
 	return item.declared != heartbeat || now.Sub(item.aliveAt) >= heartbeat
 }

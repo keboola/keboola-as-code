@@ -187,6 +187,31 @@ func TestSweep_StopsWritingTheEntryOnceTheWorkloadIsNoLongerRunning(t *testing.T
 	assert.Empty(t, patchBodies(h))
 }
 
+// A replica can still serve a workload its own scan no longer lists. No round
+// renews that workload's threshold, so the heartbeat the replica holds for it
+// may be far longer than the one a reader applies now.
+func TestSweep_WritesEveryMarkAtOnceForAWorkloadNoRoundSeesRunning(t *testing.T) {
+	t.Parallel()
+
+	h := newHarness(t, candidate(appRef, testMember))
+	h.round()
+
+	h.source.candidates = nil
+	h.round()
+
+	h.clock.Advance(time.Second)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	h.clock.Advance(time.Second)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	rec, err := h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err)
+	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want %s, got %s", h.clock.Now(), rec.lastRequestAt)
+}
+
 func patchBodies(h *harness) []string {
 	var bodies []string
 	for _, a := range h.fake.Actions() {
