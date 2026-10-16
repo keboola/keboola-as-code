@@ -594,3 +594,35 @@ func TestRound_AnEntryWithAnUnreadableHeartbeatHoldsOnlyUntilNoHeartbeatCouldCov
 	}
 	assert.Contains(t, h.source.slept, appRef)
 }
+
+// A suspend that did not happen must not be counted as performed, and must not
+// arm the wake window: a later start would then read as a wake.
+func TestRound_ASuspendThatDidNotHappenIsNotCounted(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name     string
+		sleepErr error
+	}{
+		{"the patch failed", errors.New("apiserver is unwell")},
+		{"the workload changed since the decision", nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			h := newHarness(t, candidate(appRef, testMember))
+			h.source.sleepErr = tc.sleepErr
+			h.source.sleptOK = false
+			h.round()
+
+			h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
+			h.round()
+			assert.Zero(t, h.suspendCount(t, outcomePerformed))
+
+			h.clock.Advance(30 * time.Second)
+			h.source.candidates[0].LastStarted = h.clock.Now()
+			h.round()
+			assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.woke_soon_after_suspend"))
+		})
+	}
+}
