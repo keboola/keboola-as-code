@@ -144,7 +144,7 @@ func TestAppProxyHandler(t *testing.T) {
 	assert.JSONEq(t, `[
 		{
 			"Name": "keboola.go.appsproxy.idletimer.workloads",
-			"Description": "Running workloads this pass saw, by what the loop can do with them: candidate, no_threshold (no autoSuspendAfterSeconds, so it opted out), unresolved (an App whose productionSandbox matched no cached Sandbox, which is a bug smell), unvouched (the record carries no current entry for this replica: its writes are not landing, or the idle timer CRD has no observers field, so it suspends nothing).",
+			"Description": "Running workloads this pass saw, by what the loop can do with them: candidate, no_threshold (no autoSuspendAfterSeconds, so it opted out), unresolved (an App whose productionSandbox matched no cached Sandbox, which is a bug smell), unvouched (this replica cannot vouch for the record and suspends nothing: its own entry is missing or overdue, because its writes are not landing or the idle timer CRD has no observers field, or another entry carries a heartbeat it cannot read).",
 			"Unit": "",
 			"Data": {"DataPoints": [
 				{"Attributes": [{"Key": "state", "Value": {"Type": "STRING", "Value": "candidate"}}], "Value": 0},
