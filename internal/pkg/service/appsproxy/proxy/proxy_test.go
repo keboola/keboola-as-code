@@ -3666,8 +3666,22 @@ func TestIdleTimerRecordsProxiedActivity(t *testing.T) {
 			return false
 		}, 10*time.Second, 5*time.Millisecond, msg)
 	}
-	reaches(member, fakeClock.Now(), "the round never named the member's record")
-	reaches(draft, fakeClock.Now(), "the round never named the draft's record")
+
+	// A round names a record when it creates it. Both are created at the same
+	// fake moment, which may already be behind the clock by the time either is
+	// checked, so the wait is for the records to exist, not to be recent.
+	named := func(name, msg string) {
+		t.Helper()
+		require.Eventually(t, func() bool {
+			if !lastRequestAt(name).IsZero() {
+				return true
+			}
+			fakeClock.Advance(time.Second)
+			return false
+		}, 10*time.Second, 5*time.Millisecond, msg)
+	}
+	named(member, "the round never named the member's record")
+	named(draft, "the round never named the draft's record")
 
 	get := func(rawURL string) {
 		t.Helper()
