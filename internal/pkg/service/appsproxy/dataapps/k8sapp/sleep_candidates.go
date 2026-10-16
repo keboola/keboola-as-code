@@ -40,12 +40,18 @@ func (w *StateWatcher) collectCandidates() (candidates []SleepCandidate, unresol
 			unresolved = append(unresolved, appID)
 			continue
 		}
+		// The operator stamps the App when its route moves to another member,
+		// which may have started long before and kept an idle timer from then.
+		lastStarted := member.lastStarted
+		if e.lastStarted.After(lastStarted) {
+			lastStarted = e.lastStarted
+		}
 		candidates = append(candidates, SleepCandidate{
 			Ref:         WorkloadRef{AppID: appID},
 			SandboxName: e.productionSandbox,
 			SandboxUID:  member.uid,
 			Threshold:   member.autoSuspendAfter,
-			LastStarted: member.lastStarted,
+			LastStarted: lastStarted,
 		})
 	}
 

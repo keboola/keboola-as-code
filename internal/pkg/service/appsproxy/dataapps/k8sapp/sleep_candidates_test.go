@@ -229,3 +229,26 @@ func TestScanForSleepCandidates_CarriesTheSandboxUID(t *testing.T) {
 
 	assert.Equal(t, k8stypes.UID("member-uid-1"), got[0].SandboxUID)
 }
+
+// The operator stamps the App's lastStartedTime when its route moves to
+// another member. The member itself may have started long before, and its
+// idle timer may hold a timestamp from an earlier stint, so only the App's
+// stamp says when this workload started serving.
+func TestScanForSleepCandidates_AppRouteCountsTheLaterOfTheAppAndMemberStart(t *testing.T) {
+	t.Parallel()
+
+	const routeMoved = "2026-10-08T13:30:00Z"
+	app := newAppWithProductionSandbox(k8sapp.AppActualStateRunning, memberName)
+	app.Object["status"].(map[string]any)["lastStartedTime"] = routeMoved
+
+	watcher := syncedWatcher(t, log.NewNopLogger(), newMemberSandbox(k8sapp.AppActualStateRunning, int64(900)), app)
+
+	var got []k8sapp.SleepCandidate
+	assert.Eventually(t, func() bool {
+		got = watcher.ScanForSleepCandidates().Candidates
+		return len(got) == 1
+	}, 5*time.Second, 50*time.Millisecond)
+
+	require.Len(t, got, 1)
+	assert.Equal(t, routeMoved, got[0].LastStarted.UTC().Format(time.RFC3339))
+}

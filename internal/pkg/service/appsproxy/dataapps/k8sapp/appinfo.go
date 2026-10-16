@@ -159,7 +159,9 @@ type appStatus struct {
 	// ProductionSandbox is set on App CRs only: the member Sandbox that runs
 	// the workload the App routes to.
 	ProductionSandbox string `json:"productionSandbox,omitempty"`
-	// LastStartedTime is set on Sandbox CRs only.
+	// LastStartedTime is when the workload started serving: on a Sandbox when it
+	// started, on an App when it entered Running or its route moved to another
+	// member.
 	LastStartedTime *metav1.Time `json:"lastStartedTime,omitempty"`
 }
 

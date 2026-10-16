@@ -40,7 +40,7 @@ type entry struct {
 	uid               k8stypes.UID   // metadata.uid, required by any ownerReference naming this object
 	productionSandbox string         // App CRs only: the member Sandbox running the workload
 	autoSuspendAfter  *time.Duration // Sandbox CRs only; nil means the CR carries no threshold
-	lastStarted       time.Time      // Sandbox CRs only
+	lastStarted       time.Time      // Sandbox: when it started; App: when it entered Running or its route moved
 }
 
 // StateWatcher watches App and Sandbox CRDs in Kubernetes and provides a local
