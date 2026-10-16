@@ -63,7 +63,7 @@ func TestRound_SuspendsOnACachedReadTheApiserverAgreesWith(t *testing.T) {
 
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.flush()
-	h.cacheLive(testMember)
+	h.cacheLive()
 	h.suspender.suspendIdleWorkloads(t.Context())
 
 	assert.Equal(t, []k8sapp.WorkloadRef{appRef}, h.source.slept)
@@ -101,7 +101,7 @@ func TestRound_TheConfirmReadAppliesTheLiveMargin(t *testing.T) {
 
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.flush()
-	h.cacheLive(testMember)
+	h.cacheLive()
 
 	// The other replica declares a longer heartbeat after the cache was filled.
 	require.NoError(t, h.recorder.client.write(t.Context(), testMember, "other", time.Time{}, entry{aliveAt: h.clock.Now(), heartbeat: maxHeartbeatInterval}))

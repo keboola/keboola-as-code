@@ -130,12 +130,15 @@ func TestRound_SuspendsAWorkloadIdlePastTheMargin(t *testing.T) {
 func TestRound_DoesNotSuspendBeforeTheThreshold(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1"))
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h := newHarness(t, candidate(appRef, testMember))
+	h.round()
 
-	h.clock.Advance(threshold)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	// Exactly the margin: the earliest moment the record could still trail the
+	// last request.
+	h.clock.Advance(threshold + heartbeatInterval(threshold))
+	h.round()
 
+	require.Equal(t, int64(1), h.suspender.metrics.candidates.Load(), "the round must have judged the workload, not skipped it")
 	assert.Empty(t, h.source.slept, "a workload must never be suspended before its threshold")
 }
 
@@ -161,13 +164,14 @@ func TestRound_InMemoryActivityHoldsAWorkloadAwake(t *testing.T) {
 func TestRound_ARestartCountsAsActivity(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1"))
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h := newHarness(t, candidate(appRef, testMember))
+	h.round()
 
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.source.candidates[0].LastStarted = h.clock.Now()
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
 
+	require.Equal(t, int64(1), h.suspender.metrics.candidates.Load(), "the round must have judged the workload, not skipped it")
 	assert.Empty(t, h.source.slept)
 }
 
@@ -223,13 +227,16 @@ func TestRound_DoesNotCountAnUnreconciledSuspendAsAWake(t *testing.T) {
 func TestRound_DoesNotCountAWakeLongAfterTheSuspend(t *testing.T) {
 	t.Parallel()
 
-	h := newHarness(t, candidate(appRef, "member-1"))
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h := newHarness(t, candidate(appRef, testMember))
+	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.round()
+	require.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
 
+	// It starts again, but well after the window.
 	h.clock.Advance(2 * time.Minute)
-	h.suspender.suspendIdleWorkloads(t.Context())
+	h.source.candidates[0].LastStarted = h.clock.Now()
+	h.round()
 
 	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.woke_soon_after_suspend"))
 }
@@ -416,16 +423,41 @@ func TestRound_StopsWhenTheRoundRunsOutOfTime(t *testing.T) {
 func TestRound_AGatedDecisionIsConfirmedBeforeItIsCounted(t *testing.T) {
 	t.Parallel()
 
-	h := newGatedHarness(t, candidate(appRef, "member-1"))
-	require.NoError(t, h.recorder.client.create(t.Context(), "member-1", "uid-1", h.clock.Now()))
+	h := newGatedHarness(t, candidate(appRef, testMember))
+	h.round()
 
-	// The cache still holds a value from long before the last request.
-	h.cacheRecord("member-1", h.clock.Now().Add(-2*threshold))
-	h.clock.Advance(time.Second)
+	// The cache holds the record as it was before the other replica's last
+	// request reached it.
+	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
+	h.flush()
+	h.cacheLive()
+	require.NoError(t, h.recorder.client.write(t.Context(), testMember, "other", h.clock.Now(), entry{aliveAt: h.clock.Now(), heartbeat: heartbeatInterval(threshold)}))
 
 	h.suspender.suspendIdleWorkloads(t.Context())
 
+	require.Equal(t, int64(1), h.suspender.metrics.candidates.Load(), "the round must have judged the workload, not skipped it")
 	assert.Zero(t, h.suspendCount(t, outcomeSuppressed), "a stale cached read must not be counted as a suspend that would have happened")
+}
+
+// Once an idle episode has been counted the confirm is skipped: it would cost
+// a live read every round for a decision that no longer counts. A stale cached
+// read then still must not count the episode twice.
+func TestRound_AGatedEpisodeAlreadyCountedIsNotCountedAgain(t *testing.T) {
+	t.Parallel()
+
+	h := newGatedHarness(t, candidate(appRef, testMember))
+	h.round()
+
+	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
+	h.round()
+	require.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
+
+	h.flush()
+	h.cacheLive()
+	require.NoError(t, h.recorder.client.write(t.Context(), testMember, "other", h.clock.Now(), entry{aliveAt: h.clock.Now(), heartbeat: heartbeatInterval(threshold)}))
+	h.suspender.suspendIdleWorkloads(t.Context())
+
+	assert.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
 }
 
 // A pod is Ready, and taking traffic, before its first tick. Its marks reach

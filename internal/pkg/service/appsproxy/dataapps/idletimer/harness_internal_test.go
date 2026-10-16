@@ -85,10 +85,10 @@ func (h *harness) cacheRecord(name string, at time.Time) {
 	}))
 }
 
-// cacheLive puts what the apiserver holds into the watch cache, as the watch
-// would once it caught up.
-func (h *harness) cacheLive(name string) {
-	obj, err := h.fake.Resource(gvr()).Namespace(testNamespace).Get(h.t.Context(), name, metav1.GetOptions{})
+// cacheLive puts what the apiserver holds for the test member into the watch
+// cache, as the watch would once it caught up.
+func (h *harness) cacheLive() {
+	obj, err := h.fake.Resource(gvr()).Namespace(testNamespace).Get(h.t.Context(), testMember, metav1.GetOptions{})
 	require.NoError(h.t, err)
 	require.NoError(h.t, h.store.Add(obj))
 }
