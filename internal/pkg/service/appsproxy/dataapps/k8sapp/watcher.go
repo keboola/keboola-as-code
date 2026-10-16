@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"sync"
+	"time"
 
 	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,6 +36,11 @@ type entry struct {
 	upstreamTarget     *url.URL // pre-parsed; nil when appsProxy.upstreamUrl absent/invalid
 	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
 	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
+
+	uid               k8stypes.UID   // metadata.uid, required by any ownerReference naming this object
+	productionSandbox string         // App CRs only: the member Sandbox running the workload
+	autoSuspendAfter  *time.Duration // Sandbox CRs only; nil means the CR carries no threshold
+	lastStarted       time.Time      // Sandbox: when it started; App: when it entered Running or its route moved
 }
 
 // StateWatcher watches App and Sandbox CRDs in Kubernetes and provides a local
@@ -45,11 +51,12 @@ type StateWatcher struct {
 	logger              log.Logger
 	hasSynced           cache.InformerSynced
 	sandboxesHaveSynced cache.InformerSynced
-	apps                map[api.AppID]entry // guarded by routeLock, like the Sandbox caches
+	apps                map[api.AppID]entry // guarded by routeLock
 	tokenLoadGroup      singleflight.Group  // coalesces concurrent lazy-load K8s API calls per secret
 
-	// routeLock guards the Sandbox cache and serialises writes to the App cache,
-	// which are read-modify-write on the lazy E2B token path.
+	// routeLock guards all three caches, for reads as well as writes. A write
+	// takes the write lock even when it changes one field, because the lazy E2B
+	// token path makes it read-modify-write.
 	routeLock    sync.RWMutex
 	sandboxes    map[string]entry  // Sandbox K8s object name → entry
 	sandboxHosts map[string]string // exact hostname → Sandbox K8s object name
@@ -75,7 +82,19 @@ func NewDynamicClient(kubeconfigPath string) (dynamic.Interface, error) {
 	if err != nil {
 		return nil, err
 	}
-	return dynamic.NewForConfig(cfg)
+	return dynamic.NewForConfig(withRateLimits(cfg))
+}
+
+// withRateLimits replaces client-go's 5 QPS and burst 10, which are sized for a
+// small controller. One client is shared by the informers, the wake path, the
+// suspend path and every activity write, and a write that queues past its
+// timeout leaves the shared idle record stale, which is how a load peak becomes
+// an early suspend. The apiserver's own priority and fairness, not this, is
+// what protects the cluster.
+func withRateLimits(cfg *rest.Config) *rest.Config {
+	cfg.QPS = 50
+	cfg.Burst = 100
+	return cfg
 }
 
 // NewStateWatcher creates and starts a StateWatcher that watches App and Sandbox CRDs in the given namespace.
@@ -86,8 +105,8 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 		cancel(nil)
 	})
 
-	appInformer := newCRDInformer(client, AppGVR(), namespace)
-	sandboxInformer := newCRDInformer(client, SandboxGVR(), namespace)
+	appInformer := NewCRDInformer(client, AppGVR(), namespace)
+	sandboxInformer := NewCRDInformer(client, SandboxGVR(), namespace)
 
 	w := &StateWatcher{
 		client:              client,
@@ -109,7 +128,8 @@ func NewStateWatcher(d dependencies, client dynamic.Interface, namespace string)
 	return w
 }
 
-func newCRDInformer(client dynamic.Interface, gvr schema.GroupVersionResource, namespace string) cache.SharedIndexInformer {
+// NewCRDInformer builds a watch-backed cache of one CRD kind in one namespace.
+func NewCRDInformer(client dynamic.Interface, gvr schema.GroupVersionResource, namespace string) cache.SharedIndexInformer {
 	lw := &cache.ListWatch{
 		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			return client.Resource(gvr).Namespace(namespace).List(ctx, opts)
@@ -180,6 +200,17 @@ func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, 
 	}, true
 }
 
+// HasSynced reports whether all informers have completed their initial list.
+// Unlike WaitForCacheSync it does not block, so a periodic caller can skip a
+// round rather than act on a cache that is still filling.
+func (w *StateWatcher) HasSynced() bool {
+	return synced(w.hasSynced) && synced(w.sandboxesHaveSynced)
+}
+
+func synced(fn cache.InformerSynced) bool {
+	return fn != nil && fn()
+}
+
 // WaitForCacheSync blocks until the informer cache has completed its initial list,
 // the stopCh is closed, or the context is cancelled.
 // Intended for use in tests to ensure the watch is established before creating objects.
@@ -197,11 +228,6 @@ func (w *StateWatcher) Wakeup(ctx context.Context, ref WorkloadRef) error {
 		return errors.Errorf("workload %q is not in the cache, nothing was woken", ref)
 	}
 
-	gvr := AppGVR()
-	if ref.IsSandbox() {
-		gvr = SandboxGVR()
-	}
-
 	patch, err := json.Marshal(map[string]any{
 		"spec": map[string]any{
 			"state": AppActualStateRunning,
@@ -211,7 +237,7 @@ func (w *StateWatcher) Wakeup(ctx context.Context, ref WorkloadRef) error {
 		return err
 	}
 
-	_, err = w.client.Resource(gvr).Namespace(w.namespace).Patch(
+	_, err = w.client.Resource(gvrFor(ref)).Namespace(w.namespace).Patch(
 		ctx,
 		e.k8sName,
 		k8stypes.MergePatchType,
@@ -369,10 +395,25 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 		}
 	}
 
+	var autoSuspendAfter *time.Duration
+	if secs := appObj.Spec.AutoSuspendAfterSeconds; secs != nil {
+		d := time.Duration(*secs) * time.Second
+		autoSuspendAfter = &d
+	}
+
+	var lastStarted time.Time
+	if t := appObj.Status.LastStartedTime; t != nil {
+		lastStarted = t.Time
+	}
+
 	return parsedObject{
 		appID: appObj.Spec.AppID,
 		entry: entry{
 			k8sName:            k8sName,
+			uid:                u.GetUID(),
+			productionSandbox:  appObj.Status.ProductionSandbox,
+			autoSuspendAfter:   autoSuspendAfter,
+			lastStarted:        lastStarted,
 			appID:              api.AppID(appObj.Spec.AppID),
 			host:               host,
 			state:              appObj.Status.CurrentState,

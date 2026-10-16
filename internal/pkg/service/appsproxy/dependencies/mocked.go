@@ -107,6 +107,8 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 		k8sapp.AppGVR():     "AppList",
 		k8sapp.SandboxGVR(): "SandboxList",
 		k8sapp.SecretGVR():  "SecretList",
+		// The idle timer loop lists this kind; without it the reflector panics.
+		k8sapp.IdleTimerGVR(): "IdleTimerList",
 	}, initialK8sObjects...)
 
 	// Validate config

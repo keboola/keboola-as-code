@@ -11,6 +11,11 @@ type SyncMap[K comparable, V any] struct {
 	kvs  map[K]*V
 }
 
+type entry[K comparable, V any] struct {
+	key  K
+	item *V
+}
+
 func New[K comparable, V any](init func(K) *V) *SyncMap[K, V] {
 	return &SyncMap[K, V]{
 		init: init,
@@ -33,6 +38,22 @@ func (m *SyncMap[K, V]) GetOrInit(key K) *V {
 	}
 
 	return item
+}
+
+// Range calls fn for every item present when the walk starts. The lock covers
+// only the snapshot, so a slow fn does not hold up GetOrInit on the request
+// path. An item removed while the walk runs is still passed to fn.
+func (m *SyncMap[K, V]) Range(fn func(K, *V)) {
+	m.lock.Lock()
+	snapshot := make([]entry[K, V], 0, len(m.kvs))
+	for k, v := range m.kvs {
+		snapshot = append(snapshot, entry[K, V]{key: k, item: v})
+	}
+	m.lock.Unlock()
+
+	for _, e := range snapshot {
+		fn(e.key, e.item)
+	}
 }
 
 // Delete removes the key and returns the item it held, so the caller can

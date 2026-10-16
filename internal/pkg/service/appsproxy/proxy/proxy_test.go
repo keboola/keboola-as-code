@@ -3562,6 +3562,159 @@ func TestWebsocketActivityTracking(t *testing.T) {
 	assert.Empty(t, mocked.DebugLogger().ErrorMessages())
 }
 
+// The proxy is the only way traffic reaches a workload's idle timer. A request
+// and a websocket data frame each have to move the shared record, on an App's
+// route and on a draft's own route, or a workload in use reads as idle and is
+// suspended once the gate is on.
+func TestIdleTimerRecordsProxiedActivity(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+
+	fakeClock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
+
+	pm := osAssignedPorts{}
+	appsAPI := testutil.StartDataAppsAPI(t, pm)
+	t.Cleanup(func() { appsAPI.Close() })
+	appServer := testutil.StartAppServer(t, pm)
+	t.Cleanup(func() { appServer.Close() })
+
+	providers := testAuthProviders(t, pm)
+	appURL := testutil.AppServerURL(t, appServer)
+	apps := testDataApps(appURL, providers)
+	appsAPI.Register(apps)
+
+	secret := make([]byte, 32)
+	_, err := rand.Read(secret)
+	require.NoError(t, err)
+	csrfSecret := make([]byte, 32)
+	_, err = rand.Read(csrfSecret)
+	require.NoError(t, err)
+
+	cfg := config.New()
+	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
+	cfg.CookieSecretSalt = string(secret)
+	cfg.CsrfTokenSalt = string(csrfSecret)
+	cfg.SandboxesAPI.URL = appsAPI.URL
+
+	d, mocked := proxyDependencies.NewMockedServiceScopeWithK8sObjects(
+		t, ctx, cfg,
+		makeDefaultK8sObjects(apps, appURL.String()),
+		dependencies.WithRealHTTPClient(),
+		dependencies.WithClock(fakeClock),
+	)
+	defer func() {
+		d.Process().Shutdown(ctx, errors.New("bye bye"))
+		d.Process().WaitForShutdown()
+	}()
+
+	var lc net.ListenConfig
+	l, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	proxySrv := &httptest.Server{
+		Listener: l,
+		Config:   &http.Server{Handler: createProxyHandler(ctx, d), ReadHeaderTimeout: 5 * time.Second, ErrorLog: log.NewStdErrorLogger(d.Logger())},
+	}
+	proxySrv.StartTLS()
+	t.Cleanup(func() { proxySrv.Close() })
+
+	proxyURL, err := url.Parse(proxySrv.URL)
+	require.NoError(t, err)
+	client := createHTTPClient(t, proxyURL)
+	registerDefaultK8sApps(t, d.AppStateWatcher())
+
+	// The App is served by a member Sandbox, and a draft has a route of its
+	// own. Both carry a threshold, so the loop names their records.
+	const (
+		member = "app-123-dpl-aaa"
+		draft  = "draft-abc"
+	)
+	fake := mocked.TestFakeK8sClient()
+	setupDraftSandbox("123", "https://public-123.hub.keboola.local", draft, "https://draft-abc.hub.keboola.local")(t, fake, d.AppStateWatcher())
+	_, err = fake.Resource(k8sapp.SandboxGVR()).Namespace("keboola").Create(ctx, &unstructured.Unstructured{Object: map[string]any{
+		"apiVersion": k8sapp.Group + "/" + k8sapp.SandboxVersion,
+		"kind":       "Sandbox",
+		"metadata":   map[string]any{"name": member, "namespace": "keboola"},
+		"spec":       map[string]any{"appId": "123", "autoSuspendAfterSeconds": int64(60)},
+		"status": map[string]any{
+			"currentState": string(k8sapp.AppActualStateRunning),
+			"appsProxy":    map[string]any{"upstreamUrl": appURL.String()},
+		},
+	}}, metav1.CreateOptions{})
+	require.NoError(t, err)
+	_, err = fake.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(ctx, "app-123", k8stypes.MergePatchType, []byte(`{"status":{"productionSandbox":"`+member+`"}}`), metav1.PatchOptions{})
+	require.NoError(t, err)
+	_, err = fake.Resource(k8sapp.SandboxGVR()).Namespace("keboola").Patch(ctx, draft, k8stypes.MergePatchType, []byte(`{"spec":{"autoSuspendAfterSeconds":60}}`), metav1.PatchOptions{})
+	require.NoError(t, err)
+
+	// The sweeper and the round tick on the fake clock, a second at a time.
+	lastRequestAt := func(name string) time.Time {
+		obj, err := fake.Resource(k8sapp.IdleTimerGVR()).Namespace("keboola").Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return time.Time{}
+		}
+		raw, _, _ := unstructured.NestedString(obj.Object, "spec", "lastRequestAt")
+		at, _ := time.Parse(time.RFC3339Nano, raw)
+		return at
+	}
+	reaches := func(name string, mark time.Time, msg string) {
+		t.Helper()
+		require.Eventually(t, func() bool {
+			if !lastRequestAt(name).Before(mark) {
+				return true
+			}
+			fakeClock.Advance(time.Second)
+			return false
+		}, 10*time.Second, 5*time.Millisecond, msg)
+	}
+
+	// A round names a record when it creates it. Both are created at the same
+	// fake moment, which may already be behind the clock by the time either is
+	// checked, so the wait is for the records to exist, not to be recent.
+	named := func(name, msg string) {
+		t.Helper()
+		require.Eventually(t, func() bool {
+			if !lastRequestAt(name).IsZero() {
+				return true
+			}
+			fakeClock.Advance(time.Second)
+			return false
+		}, 10*time.Second, 5*time.Millisecond, msg)
+	}
+	named(member, "the round never named the member's record")
+	named(draft, "the round never named the draft's record")
+
+	get := func(rawURL string) {
+		t.Helper()
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+		require.NoError(t, err)
+		response, err := client.Do(request)
+		require.NoError(t, err)
+		require.NoError(t, response.Body.Close())
+		require.Equal(t, http.StatusOK, response.StatusCode)
+	}
+
+	fakeClock.Advance(10 * time.Second)
+	mark := fakeClock.Now()
+	get("https://public-123.hub.keboola.local/")
+	reaches(member, mark, "a request on the App's route did not reach its record")
+
+	fakeClock.Advance(10 * time.Second)
+	mark = fakeClock.Now()
+	get("https://draft-abc.hub.keboola.local/")
+	reaches(draft, mark, "a request on the draft's route did not reach its record")
+
+	wsCtx, wsCancel := context.WithTimeout(ctx, time.Minute)
+	defer wsCancel()
+	c, _, err := websocket.Dial(wsCtx, "wss://public-123.hub.keboola.local/ws-idle", &websocket.DialOptions{HTTPClient: client})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = c.Close(websocket.StatusNormalClosure, "") })
+
+	fakeClock.Advance(10 * time.Second)
+	mark = fakeClock.Now()
+	require.NoError(t, c.Write(wsCtx, websocket.MessageText, []byte("hello data")))
+	reaches(member, mark, "a websocket data frame did not reach the record")
+}
+
 // makeDefaultK8sObjects converts a slice of app configs into K8s unstructured App CRD objects
 // with Running state and the given upstream URL. Pass the result to NewMockedServiceScopeWithK8sObjects
 // so the fake client is pre-populated before the informer starts.
