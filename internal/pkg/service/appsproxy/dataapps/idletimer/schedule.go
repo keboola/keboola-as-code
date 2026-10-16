@@ -2,7 +2,10 @@
 // requests, mirroring the wakeup the proxy already performs for a stopped one.
 package idletimer
 
-import "time"
+import (
+	"slices"
+	"time"
+)
 
 const (
 	tickInterval         = 15 * time.Second
@@ -58,8 +61,14 @@ func effectiveThreshold(threshold time.Duration) time.Duration {
 	return threshold
 }
 
+// overdue reports whether the entry's writer is gone. An entry whose heartbeat
+// cannot be read is judged by the longest heartbeat any writer uses.
 func (e entry) overdue(now time.Time) bool {
-	return now.Sub(e.aliveAt) > overdueAfter*e.heartbeat
+	heartbeat := maxHeartbeatInterval
+	if e.known() {
+		heartbeat = e.heartbeat
+	}
+	return now.Sub(e.aliveAt) > overdueAfter*heartbeat
 }
 
 // margin is the longest heartbeat declared by a replica still writing. It
@@ -74,9 +83,31 @@ func (r record) margin(self string, now time.Time) (time.Duration, bool) {
 
 	var margin time.Duration
 	for _, e := range r.entries {
-		if !e.overdue(now) {
-			margin = max(margin, e.heartbeat)
+		if e.overdue(now) {
+			continue
 		}
+		if !e.known() {
+			return 0, false
+		}
+		margin = max(margin, e.heartbeat)
 	}
 	return margin, true
+}
+
+// unreadable names the entries still in force whose heartbeat cannot be read.
+func (r record) unreadable(now time.Time) []string {
+	var names []string
+	for name, e := range r.entries {
+		if !e.known() && !e.overdue(now) {
+			names = append(names, name)
+		}
+	}
+	slices.Sort(names)
+	return names
+}
+
+// known reports whether this replica could read the entry's heartbeat. Every
+// heartbeat it writes itself is positive.
+func (e entry) known() bool {
+	return e.heartbeat > 0
 }

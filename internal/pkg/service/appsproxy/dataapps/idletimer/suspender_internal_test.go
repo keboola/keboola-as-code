@@ -531,3 +531,34 @@ func TestRound_ARoundCutShortStillNamesEveryRecord(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want %s, got %s", h.clock.Now(), rec.lastRequestAt)
 }
+
+// An entry whose heartbeat this replica cannot read may belong to a replica
+// still writing, at a cadence nobody here knows, so it holds every suspend and
+// shows as unvouched. Once it is older than any heartbeat could make it, its
+// writer is gone, and it must not hold the workload for good.
+func TestRound_AnEntryWithAnUnreadableHeartbeatHoldsOnlyUntilNoHeartbeatCouldCoverIt(t *testing.T) {
+	t.Parallel()
+
+	logger := log.NewDebugLogger()
+	h := buildHarness(t, logger, true, []k8sapp.SleepCandidate{withThreshold(appRef, time.Minute)})
+	h.round()
+
+	_, err := h.fake.Resource(gvr()).Namespace(testNamespace).Patch(t.Context(), testMember, k8stypes.MergePatchType,
+		[]byte(`{"spec":{"observers":{"apps-proxy-other":{"aliveAt":"`+formatTime(h.clock.Now())+`","heartbeat":"PT3S"}}}}`),
+		metav1.PatchOptions{})
+	require.NoError(t, err)
+
+	for range 4 * 5 { // five minutes
+		h.clock.Advance(15 * time.Second)
+		h.round()
+	}
+	require.Empty(t, h.source.slept)
+	assert.Equal(t, int64(1), h.suspender.metrics.unvouched.Load())
+	assert.Contains(t, logger.AllMessages(), "apps-proxy-other")
+
+	for range 4 * 15 { // fifteen more
+		h.clock.Advance(15 * time.Second)
+		h.round()
+	}
+	assert.Contains(t, h.source.slept, appRef)
+}

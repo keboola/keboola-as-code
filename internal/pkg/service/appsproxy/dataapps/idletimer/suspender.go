@@ -2,6 +2,7 @@ package idletimer
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -221,6 +222,7 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate, seen obs
 
 	margin, vouched := rec.margin(m.self, now)
 	if !vouched {
+		m.warnUnreadable(ctx, c, rec, now)
 		return unvouchedState(seen), nil
 	}
 	idleFor := now.Sub(lastSeen(seen.lastRequestAt, rec.lastRequestAt, c.LastStarted))
@@ -253,6 +255,15 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate, seen obs
 
 	m.suspend(ctx, c, item, idleFor)
 	return stateCandidate, nil
+}
+
+// warnUnreadable names the entries that hold a workload because their heartbeat
+// cannot be read. Nothing else would point at them.
+func (m *Suspender) warnUnreadable(ctx context.Context, c k8sapp.SleepCandidate, rec record, now time.Time) {
+	if names := rec.unreadable(now); len(names) > 0 {
+		err := errors.Errorf("unreadable heartbeat in entries %s", strings.Join(names, ", "))
+		m.errorLog.Warnf(ctx, err, "the idle timer of workload %q cannot be judged: %s", c.Ref, err)
+	}
 }
 
 // unvouchedState counts a workload this replica cannot vouch for as unvouched

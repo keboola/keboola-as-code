@@ -191,15 +191,35 @@ func TestClient_Get_ReadsEveryEntry(t *testing.T) {
 	assert.Equal(t, want, rec.entries)
 }
 
-// A reader that skipped an entry it could not parse would take a smaller
-// margin than the writer declared.
-func TestClient_Get_AnUnreadableEntryIsAnError(t *testing.T) {
+// The CRD checks aliveAt as a date-time but takes any string as a heartbeat, so
+// another apps-proxy version, or a hand edit, can leave a heartbeat this one
+// cannot read. Failing the whole record on it would stop every replica from
+// writing, and so from ever dropping that entry.
+func TestClient_Get_KeepsAnEntryWhoseHeartbeatItCannotRead(t *testing.T) {
+	t.Parallel()
+
+	c := newTestClient()
+	at := time.Date(2026, 10, 8, 14, 0, 0, 0, time.UTC)
+	obj := timerObject(at, nil)
+	require.NoError(t, unstructured.SetNestedField(obj.Object, map[string]any{
+		"a": map[string]any{"aliveAt": formatTime(at), "heartbeat": "PT3S"},
+	}, "spec", "observers"))
+	require.NoError(t, c.dyn.(*k8sfake.FakeDynamicClient).Tracker().Create(gvr(), obj, testNamespace))
+
+	rec, err := c.get(t.Context(), "w")
+	require.NoError(t, err)
+	require.Contains(t, rec.entries, "a")
+	assert.True(t, at.Equal(rec.entries["a"].aliveAt))
+	assert.False(t, rec.entries["a"].known())
+}
+
+func TestClient_Get_AnEntryWithoutAReadableAliveAtIsAnError(t *testing.T) {
 	t.Parallel()
 
 	c := newTestClient()
 	obj := timerObject(time.Now(), nil)
 	require.NoError(t, unstructured.SetNestedField(obj.Object, map[string]any{
-		"a": map[string]any{"aliveAt": formatTime(time.Now()), "heartbeat": "soon"},
+		"a": map[string]any{"aliveAt": "soon", "heartbeat": "3s"},
 	}, "spec", "observers"))
 	require.NoError(t, c.dyn.(*k8sfake.FakeDynamicClient).Tracker().Create(gvr(), obj, testNamespace))
 

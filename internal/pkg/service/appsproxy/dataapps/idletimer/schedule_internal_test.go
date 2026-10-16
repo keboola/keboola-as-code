@@ -120,6 +120,8 @@ func TestMargin(t *testing.T) {
 		{"own entry overdue", map[string]entry{testSelf: overdue(time.Minute)}, 0, false},
 		{"the longest live heartbeat", map[string]entry{testSelf: fresh(time.Minute), "other": fresh(3 * time.Minute)}, 3 * time.Minute, true},
 		{"an overdue entry does not count", map[string]entry{testSelf: fresh(time.Minute), "gone": overdue(5 * time.Minute)}, time.Minute, true},
+		{"an unreadable heartbeat cannot be vouched for", map[string]entry{testSelf: fresh(time.Minute), "other": {aliveAt: now}}, 0, false},
+		{"an unreadable heartbeat past every possible one is gone", map[string]entry{testSelf: fresh(time.Minute), "other": {aliveAt: now.Add(-overdueAfter*maxHeartbeatInterval - time.Nanosecond)}}, time.Minute, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()

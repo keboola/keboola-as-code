@@ -88,8 +88,10 @@ func parseRecord(obj *unstructured.Unstructured) (record, error) {
 	return record{lastRequestAt: at, entries: entries, resourceVersion: obj.GetResourceVersion()}, nil
 }
 
-// parseEntries fails on any entry it cannot read. Skipping one would hand the
-// reader a smaller margin than that replica declared.
+// parseEntries fails on an entry with no readable aliveAt, which the CRD rules
+// out. A heartbeat it cannot read is kept as unknown rather than skipped:
+// skipping it would hand the reader a smaller margin than that replica
+// declared, and failing the record would stop every replica from writing it.
 func parseEntries(obj *unstructured.Unstructured) (map[string]entry, error) {
 	raw, found, err := unstructured.NestedMap(obj.Object, "spec", "observers")
 	if err != nil || !found {
@@ -117,11 +119,11 @@ func parseEntry(value any) (entry, error) {
 	if err != nil {
 		return entry{}, err
 	}
-	heartbeat, err := time.ParseDuration(fmt.Sprint(fields["heartbeat"]))
-	if err != nil {
-		return entry{}, err
+	e := entry{aliveAt: aliveAt}
+	if heartbeat, err := time.ParseDuration(fmt.Sprint(fields["heartbeat"])); err == nil && heartbeat > 0 {
+		e.heartbeat = heartbeat
 	}
-	return entry{aliveAt: aliveAt, heartbeat: heartbeat}, nil
+	return e, nil
 }
 
 // create points the record at the Sandbox it is named after, which is the only
