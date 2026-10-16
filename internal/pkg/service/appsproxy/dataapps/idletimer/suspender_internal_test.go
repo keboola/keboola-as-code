@@ -507,3 +507,27 @@ func TestRound_AReplicaThatHasNotWrittenYetIsNotUnvouched(t *testing.T) {
 	assert.Equal(t, int64(1), h.suspender.metrics.candidates.Load())
 	assert.Empty(t, h.source.slept)
 }
+
+// A round that runs out of time stops at the same workload every time. The
+// workloads after it still have to be named, or this replica's traffic for them
+// never reaches their records, and nothing fails to say so.
+func TestRound_ARoundCutShortStillNamesEveryRecord(t *testing.T) {
+	t.Parallel()
+
+	head := k8sapp.WorkloadRef{AppID: "head"}
+	h := newHarness(t, candidate(head, "member-head"), candidate(appRef, testMember))
+	require.NoError(t, h.recorder.client.create(t.Context(), "member-head", "uid-head", h.clock.Now()))
+	require.NoError(t, h.recorder.client.create(t.Context(), testMember, "uid-1", h.clock.Now()))
+
+	ctx, cancel := context.WithCancelCause(t.Context())
+	cancel(errors.New("the round has run out of time"))
+	h.suspender.suspendIdleWorkloads(ctx)
+
+	h.clock.Advance(time.Second)
+	h.recorder.RecordActivity(t.Context(), appRef)
+	h.flush()
+
+	rec, err := h.recorder.client.get(t.Context(), testMember)
+	require.NoError(t, err)
+	assert.True(t, h.clock.Now().Equal(rec.lastRequestAt), "want %s, got %s", h.clock.Now(), rec.lastRequestAt)
+}

@@ -164,16 +164,22 @@ func (m *Suspender) suspendIdleWorkloads(ctx context.Context) {
 	scan := m.workloads.ScanForSleepCandidates()
 	m.warnUnresolved(ctx, scan.Unresolved)
 
+	// Every record is named before any of them is read. A round that runs out
+	// of time stops at the same workload every time, and a workload this
+	// replica never names is one whose traffic it never writes.
 	running := make([]k8sapp.WorkloadRef, 0, len(scan.Candidates))
+	seen := make(map[k8sapp.WorkloadRef]observation, len(scan.Candidates))
 	for _, c := range scan.Candidates {
 		running = append(running, c.Ref)
+		seen[c.Ref] = m.recorder.Observe(c.Ref, c.SandboxName, c.Threshold)
 	}
 	m.recorder.Retain(running)
 
 	counts := map[string]int64{}
-	for _, c := range scan.Candidates {
-		state, err := m.visit(ctx, c)
+	for i, c := range scan.Candidates {
+		state, err := m.visit(ctx, c, seen[c.Ref])
 		if err != nil {
+			m.errorLog.Warnf(ctx, err, "idle suspend round stopped after %d of %d workloads: %s", i, len(scan.Candidates), err)
 			break
 		}
 		counts[state]++
@@ -187,7 +193,7 @@ func (m *Suspender) suspendIdleWorkloads(ctx context.Context) {
 // visit reports the state to count this workload under, and an error when the
 // round is over: a round that ran out of time would otherwise turn one
 // cancelled context into one failure per remaining workload.
-func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string, error) {
+func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate, seen observation) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
@@ -195,7 +201,6 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate) (string,
 	item := m.states.GetOrInit(c.Ref)
 	now := m.clock.Now()
 
-	seen := m.recorder.Observe(c.Ref, c.SandboxName, c.Threshold)
 	woke := m.observeRestart(item, c, now)
 
 	// The restart is the discriminator, not merely still being Running: a
