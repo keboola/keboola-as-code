@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy"
@@ -38,6 +39,7 @@ type Manager struct {
 	pageWriter       *pagewriter.Writer
 	handlers         *syncmap.SyncMap[k8sapp.WorkloadRef, appHandlerWrapper]
 	sessionsManager  *sessions.Manager
+	appTokenMinter   *apptoken.Minter
 	preview          *preview.Service
 }
 
@@ -68,6 +70,7 @@ type dependencies interface {
 	AuthProxyManager() *authproxy.Manager
 	AppConfigLoader() appconfig.Loader
 	SessionsManager() *sessions.Manager
+	AppTokenMinter() *apptoken.Minter
 	AppStateWatcher() *k8sapp.StateWatcher
 	Process() *servicectx.Process
 }
@@ -86,6 +89,7 @@ func NewManager(d dependencies) *Manager {
 			return &appHandlerWrapper{lock: &sync.Mutex{}}
 		}),
 		sessionsManager: d.SessionsManager(),
+		appTokenMinter:  d.AppTokenMinter(),
 	}
 
 	if cfg.Preview.Enabled() {
@@ -165,7 +169,13 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig, workload k8
 	// Track the end-user session. Sits between authentication and the upstream:
 	// the X-Kbc-User-* headers are already injected at this point, while paths
 	// that require no authentication still get an anonymous session.
-	trackedUpstream := chain.New(appUpstream).Prepend(m.sessionsManager.Middleware(app, workload))
+	// The app user token middlewares wrap it: Capture reads X-Kbc-User-Id before
+	// sessions removes it, Inject needs the session id it sets.
+	trackedUpstream := chain.New(appUpstream).Prepend(
+		m.appTokenMinter.Capture(),
+		m.sessionsManager.Middleware(app, workload),
+		m.appTokenMinter.Inject(app, workload),
+	)
 
 	// Create authentication handlers
 	authHandlers := m.authProxyManager.NewHandlers(app, trackedUpstream)
