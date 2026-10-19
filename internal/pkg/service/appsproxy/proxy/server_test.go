@@ -123,7 +123,8 @@ func TestAppProxyHandler(t *testing.T) {
 `)
 
 	// HTTP server metrics are disabled via noop MeterProvider (they duplicate Datadog APM functionality).
-	// The one metric left is the sessions "enabled" gauge, always registered regardless of whether
+	// The app user token is off in this config, so the one proxied request counts as skipped/disabled.
+	// The other metric left is the sessions "enabled" gauge, always registered regardless of whether
 	// tracking is configured, precisely so a stack going dark is visible as this reading 0 rather
 	// than as an absence of metrics indistinguishable from an ordinary quiet period; this test's
 	// config sets no sessions.streamUrl, so it reads 0 here.
@@ -142,6 +143,16 @@ func TestAppProxyHandler(t *testing.T) {
 		}),
 	)
 	assert.JSONEq(t, `[
+		{
+			"Name": "keboola.go.appsproxy.app_user_token.skipped",
+			"Description": "Upstream requests that got no app user token, by reason.",
+			"Unit": "",
+			"Data": {
+				"DataPoints": [{"Attributes": [{"Key": "reason", "Value": {"Type": "STRING", "Value": "disabled"}}], "Value": 1}],
+				"IsMonotonic": true,
+				"Temporality": "CumulativeTemporality"
+			}
+		},
 		{
 			"Name": "keboola.go.appsproxy.idletimer.workloads",
 			"Description": "Running workloads this pass saw, by what the loop can do with them: candidate, no_threshold (no autoSuspendAfterSeconds, so it opted out), unresolved (an App whose productionSandbox matched no cached Sandbox, which is a bug smell), unvouched (this replica cannot vouch for the record and suspends nothing: its own entry is missing or overdue, because its writes are not landing or the idle timer CRD has no observers field, or another entry carries a heartbeat it cannot read).",
