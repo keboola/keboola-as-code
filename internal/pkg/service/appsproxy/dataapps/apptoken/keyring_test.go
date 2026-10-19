@@ -139,6 +139,7 @@ func TestNewKeyring_Invalid(t *testing.T) {
 		{name: "JSON object instead of list", keys: `{"kid":"k1","pem":` + mustJSON(t, k1) + `}`, activeKid: "k1", secret: k1, wantErr: "not a JSON list"},
 		{name: "trailing bracket after the list", keys: keysJSON(t, testKey{Kid: "k1", Pem: k1}) + "]", activeKid: "k1", secret: k1, wantErr: "not a JSON list"},
 		{name: "second list after the list", keys: keysJSON(t, testKey{Kid: "k1", Pem: k1}) + "[]", activeKid: "k1", secret: k1, wantErr: "not a JSON list"},
+		{name: "two keys in one pem", keys: keysJSON(t, testKey{Kid: "k1", Pem: k1 + k2}), activeKid: "k1", secret: k2, wantErr: `signingKeys[0] (kid "k1"): more than one PEM block`},
 		{name: "entry without pem", keys: `[{"kid":"k1"}]`, activeKid: "k1", wantErr: "signingKeys[0]: pem is empty"},
 		{name: "entry with unknown field", keys: `[{"kid":"k1","pem":` + mustJSON(t, k1) + `,"foo":1}]`, activeKid: "k1", secret: k1, wantErr: "not a JSON list"},
 		{name: "invalid kid", keys: keysJSON(t, testKey{Kid: "bad kid!", Pem: k1}), activeKid: "k1", secret: k1, wantErr: "signingKeys[0]: invalid kid"},
@@ -175,6 +176,18 @@ func mustJSON(t *testing.T, v any) string {
 	out, err := json.Marshal(v)
 	require.NoError(t, err)
 	return string(out)
+}
+
+// TestNewKeyring_ECParametersBlock covers the output of "openssl ecparam -name prime256v1 -genkey" without -noout.
+func TestNewKeyring_ECParametersBlock(t *testing.T) {
+	t.Parallel()
+
+	prime256v1OID := []byte{0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07}
+	params := string(pem.EncodeToMemory(&pem.Block{Type: "EC PARAMETERS", Bytes: prime256v1OID}))
+	key := newTestKey(t)
+	k, err := apptoken.NewKeyring(keysJSON(t, testKey{Kid: "k1", Pem: params + ecPEM(t, key)}), "k1")
+	require.NoError(t, err)
+	assert.True(t, k.ActiveKey().Equal(key))
 }
 
 func TestNewKeyring_PKCS8(t *testing.T) {

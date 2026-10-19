@@ -18,6 +18,7 @@ const (
 	signingAlgorithm = "ES256"
 	kidPattern       = `^[A-Za-z0-9._-]{1,64}$`
 	maxKidLength     = 64
+	ecParametersType = "EC PARAMETERS"
 )
 
 type Keyring struct {
@@ -112,11 +113,11 @@ func parseSigningKey(i int, entry signingKey, seen map[string]*ecdsa.PrivateKey)
 	if entry.Pem == "" {
 		return nil, errors.Errorf("app user token: signingKeys[%d]: pem is empty", i)
 	}
-	block, _ := pem.Decode([]byte(entry.Pem))
-	if block == nil {
-		return nil, errors.Errorf(`app user token: signingKeys[%d] (kid "%s"): no PEM block found`, i, entry.Kid)
+	der, err := keyBlock(entry.Pem)
+	if err != nil {
+		return nil, errors.Errorf(`app user token: signingKeys[%d] (kid "%s"): %s`, i, entry.Kid, err.Error())
 	}
-	key, err := parsePrivateKey(block.Bytes)
+	key, err := parsePrivateKey(der)
 	if err != nil {
 		return nil, errors.Errorf(`app user token: signingKeys[%d] (kid "%s"): not a parsable private key`, i, entry.Kid)
 	}
@@ -125,6 +126,24 @@ func parseSigningKey(i int, entry signingKey, seen map[string]*ecdsa.PrivateKey)
 		return nil, errors.Errorf(`app user token: signingKeys[%d] (kid "%s"): not an EC P-256 key`, i, entry.Kid)
 	}
 	return ecKey, nil
+}
+
+// keyBlock skips the EC PARAMETERS block that "openssl ecparam -genkey" writes without -noout.
+func keyBlock(pemData string) ([]byte, error) {
+	var keys []*pem.Block
+	for block, rest := pem.Decode([]byte(pemData)); block != nil; block, rest = pem.Decode(rest) {
+		if block.Type != ecParametersType {
+			keys = append(keys, block)
+		}
+	}
+	switch len(keys) {
+	case 0:
+		return nil, errors.New("no PEM block found")
+	case 1:
+		return keys[0].Bytes, nil
+	default:
+		return nil, errors.New("more than one PEM block")
+	}
 }
 
 // Errors never quote a pem, nor a kid that fails validKid: either may be a misplaced private key.
