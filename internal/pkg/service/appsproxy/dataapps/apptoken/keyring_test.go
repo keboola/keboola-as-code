@@ -9,14 +9,20 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/jwks"
 )
 
 type testKey struct {
@@ -250,5 +256,28 @@ func TestKeyring_JWKSVerifiesEveryKey(t *testing.T) {
 		}, jwt.WithValidMethods([]string{"ES256"}))
 		require.NoError(t, err, kid)
 		assert.True(t, parsed.Valid, kid)
+	}
+}
+
+// TestKeyring_JWKSAcceptedByStrictConsumer feeds the JWKS to the preview link
+// key set, which accepts only the sandboxes-service key shape.
+func TestKeyring_JWKSAcceptedByStrictConsumer(t *testing.T) {
+	t.Parallel()
+
+	keys := map[string]*ecdsa.PrivateKey{"k1": newTestKey(t), "k2": newTestKey(t)}
+	k, err := apptoken.NewKeyring(keysJSON(t, testKey{Kid: "k1", Pem: ecPEM(t, keys["k1"])}, testKey{Kid: "k2", Pem: ecPEM(t, keys["k2"])}), "k1")
+	require.NoError(t, err)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write(k.JWKS())
+	}))
+	t.Cleanup(srv.Close)
+
+	set := jwks.New(jwks.Config{URL: srv.URL, RefreshInterval: time.Minute, MaxStaleness: time.Hour}, clockwork.NewFakeClock(), log.NewNopLogger())
+	require.NoError(t, set.Refresh(t.Context()))
+	for kid, priv := range keys {
+		pub, err := set.Key(t.Context(), kid)
+		require.NoError(t, err, kid)
+		assert.True(t, pub.Equal(&priv.PublicKey), kid)
 	}
 }
