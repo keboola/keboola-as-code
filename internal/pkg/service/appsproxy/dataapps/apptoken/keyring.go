@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"io"
+	"regexp"
 
 	"github.com/go-jose/go-jose/v4"
 
@@ -17,7 +18,6 @@ import (
 const (
 	signingAlgorithm = "ES256"
 	kidPattern       = `^[A-Za-z0-9._-]{1,64}$`
-	maxKidLength     = 64
 	ecParametersType = "EC PARAMETERS"
 )
 
@@ -148,19 +148,7 @@ func keyBlock(pemData string) ([]byte, error) {
 
 // Errors never quote a pem, nor a kid that fails validKid: either may be a misplaced private key.
 func validKid(kid string) bool {
-	if kid == "" || len(kid) > maxKidLength {
-		return false
-	}
-	for _, c := range kid {
-		if !isKidChar(c) {
-			return false
-		}
-	}
-	return true
-}
-
-func isKidChar(c rune) bool {
-	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.' || c == '_' || c == '-'
+	return regexp.MustCompile(kidPattern).MatchString(kid)
 }
 
 func parsePrivateKey(der []byte) (any, error) {
