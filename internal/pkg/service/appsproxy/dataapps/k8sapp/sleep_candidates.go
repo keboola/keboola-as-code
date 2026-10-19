@@ -35,8 +35,8 @@ func (w *StateWatcher) collectCandidates() (candidates []SleepCandidate, unresol
 		if e.state != AppActualStateRunning {
 			continue
 		}
-		member, ok := w.sandboxes[e.productionSandbox]
-		if e.productionSandbox == "" || !ok {
+		member, ok := w.productionMemberLocked(e)
+		if !ok {
 			unresolved = append(unresolved, appID)
 			continue
 		}

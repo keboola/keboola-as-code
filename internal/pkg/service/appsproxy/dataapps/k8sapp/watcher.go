@@ -290,6 +290,16 @@ func (w *StateWatcher) entryFor(ref WorkloadRef) (entry, bool) {
 	return e, ok
 }
 
+// productionMemberLocked returns the cached Sandbox the App names in
+// status.productionSandbox. The caller must hold routeLock.
+func (w *StateWatcher) productionMemberLocked(app entry) (entry, bool) {
+	if app.productionSandbox == "" {
+		return entry{}, false
+	}
+	member, ok := w.sandboxes[app.productionSandbox]
+	return member, ok
+}
+
 // storeLoadedToken writes only the token, onto the entry the cache holds now:
 // writing back the whole entry the caller read would lose a CRD event that
 // landed while the token was being fetched.
