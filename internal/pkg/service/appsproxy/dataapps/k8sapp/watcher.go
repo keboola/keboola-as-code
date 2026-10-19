@@ -36,6 +36,7 @@ type entry struct {
 	upstreamTarget     *url.URL // pre-parsed; nil when appsProxy.upstreamUrl absent/invalid
 	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
 	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
+	workspaceID        string   // read on Sandbox entries only; an App resolves it through productionSandbox
 
 	uid               k8stypes.UID   // metadata.uid, required by any ownerReference naming this object
 	productionSandbox string         // App CRs only: the member Sandbox running the workload
@@ -169,7 +170,7 @@ func (w *StateWatcher) addEventHandler(ctx context.Context, informer cache.Share
 // GetState returns the cached AppInfo for the workload. Returns (AppInfo{}, false) if not yet cached.
 // If the E2B access token is missing but a secret name is known, it attempts to load the token lazily.
 func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, bool) {
-	e, ok := w.entryFor(ref)
+	e, workspaceID, ok := w.entryWithWorkspace(ref)
 	if !ok {
 		return AppInfo{}, false
 	}
@@ -197,6 +198,7 @@ func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, 
 		DevMode:            e.devMode,
 		UpstreamTarget:     e.upstreamTarget,
 		E2BAccessToken:     e.e2bAccessToken,
+		WorkspaceID:        workspaceID,
 	}, true
 }
 
@@ -281,7 +283,31 @@ func (w *StateWatcher) ResolveWorkloadForHost(host string) (WorkloadRef, bool) {
 func (w *StateWatcher) entryFor(ref WorkloadRef) (entry, bool) {
 	w.routeLock.RLock()
 	defer w.routeLock.RUnlock()
+	return w.entryForLocked(ref)
+}
 
+// entryWithWorkspace returns the entry and the workspace of the Sandbox that
+// runs it, read under one lock so both describe the same moment.
+func (w *StateWatcher) entryWithWorkspace(ref WorkloadRef) (entry, string, bool) {
+	w.routeLock.RLock()
+	defer w.routeLock.RUnlock()
+
+	e, ok := w.entryForLocked(ref)
+	if !ok {
+		return entry{}, "", false
+	}
+	if ref.IsSandbox() {
+		return e, e.workspaceID, true
+	}
+	member, ok := w.productionMemberLocked(e)
+	if !ok {
+		return e, "", true
+	}
+	return e, member.workspaceID, true
+}
+
+// entryForLocked requires the caller to hold routeLock.
+func (w *StateWatcher) entryForLocked(ref WorkloadRef) (entry, bool) {
 	if ref.IsSandbox() {
 		e, ok := w.sandboxes[ref.SandboxName]
 		return e, ok
@@ -432,6 +458,7 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 			upstreamTarget:     upstreamTarget,
 			e2bAccessToken:     e2bAccessToken,
 			e2bSecretName:      e2bSecretName,
+			workspaceID:        appObj.Status.Workspace.ID,
 		},
 	}, true
 }
