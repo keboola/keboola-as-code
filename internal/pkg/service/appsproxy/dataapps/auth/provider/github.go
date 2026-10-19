@@ -1,6 +1,12 @@
 package provider
 
-import proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+import (
+	"strings"
+
+	proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+)
+
+const gitHubURL = "https://github.com"
 
 type GitHub struct {
 	Base
@@ -44,4 +50,17 @@ func (v GitHub) ProxyProviderOptions() (proxyOptions.Provider, error) {
 	}
 
 	return p, nil
+}
+
+func (v GitHub) IdentityProviderURL() string {
+	if v.URL == "" {
+		return gitHubURL
+	}
+	return strings.TrimRight(v.URL, "/")
+}
+
+// EmailVerifiedByProvider is true: the oauth2-proxy GitHub provider takes
+// only the primary verified email.
+func (v GitHub) EmailVerifiedByProvider() bool {
+	return true
 }

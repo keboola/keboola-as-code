@@ -37,6 +37,10 @@ type Provider interface {
 type OAuthProvider interface {
 	Provider
 	ProxyProviderOptions() (proxyOptions.Provider, error)
+	IdentityProviderURL() string
+	// EmailVerifiedByProvider reports whether oauth2-proxy admits only verified
+	// emails for this provider, so no email_verified claim is needed.
+	EmailVerifiedByProvider() bool
 }
 
 func (v ID) String() string {
