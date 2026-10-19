@@ -53,6 +53,8 @@ func TestAppUserTokenConfig_Validate(t *testing.T) {
 		wantErr string
 	}{
 		{name: "ttl over 5 minutes", mutate: func(c *config.AppUserToken) { c.TTL = 6 * time.Minute }, wantErr: "appUserToken.ttl"},
+		{name: "ttl negative", mutate: func(c *config.AppUserToken) { c.TTL = -time.Minute }, wantErr: "appUserToken.ttl"},
+		{name: "ttl under 1 second", mutate: func(c *config.AppUserToken) { c.TTL = time.Millisecond }, wantErr: "appUserToken.ttl"},
 		{name: "ttl zero", mutate: func(c *config.AppUserToken) { c.TTL = 0 }, wantErr: "appUserToken.ttl"},
 		{name: "keys without active kid", mutate: func(c *config.AppUserToken) { c.SigningKeys = "[]" }, wantErr: "appUserToken.signingKeys and appUserToken.activeKid must be set together"},
 		{name: "active kid without keys", mutate: func(c *config.AppUserToken) { c.ActiveKid = "k1" }, wantErr: "appUserToken.signingKeys and appUserToken.activeKid must be set together"},
