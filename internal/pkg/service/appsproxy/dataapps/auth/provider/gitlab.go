@@ -30,3 +30,9 @@ func (v GitLab) ProxyProviderOptions() (proxyOptions.Provider, error) {
 
 	return p, nil
 }
+
+// EmailVerifiedByProvider is true: the oauth2-proxy GitLab provider refuses
+// an unverified email.
+func (v GitLab) EmailVerifiedByProvider() bool {
+	return true
+}
