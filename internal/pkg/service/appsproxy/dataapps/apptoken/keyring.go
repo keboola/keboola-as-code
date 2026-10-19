@@ -47,9 +47,6 @@ func NewKeyring(keysJSON, activeKid string) (*Keyring, error) {
 	if activeKid == "" {
 		return nil, errors.New("app user token: activeKid is empty but signingKeys are set")
 	}
-	if !validKid(activeKid) {
-		return nil, errors.Errorf("app user token: activeKid is invalid, it must match %s", kidPattern)
-	}
 
 	kids := make([]string, 0, len(entries))
 	keys := make(map[string]*ecdsa.PrivateKey, len(entries))
@@ -105,7 +102,7 @@ func parseSigningKeys(keysJSON string) ([]signingKey, error) {
 
 func parseSigningKey(i int, entry signingKey, seen map[string]*ecdsa.PrivateKey) (*ecdsa.PrivateKey, error) {
 	if !validKid(entry.Kid) {
-		return nil, errors.Errorf("app user token: signingKeys[%d]: invalid kid, it must match %s", i, kidPattern)
+		return nil, errors.Errorf(`app user token: signingKeys[%d]: invalid kid "%s", it must match %s`, i, entry.Kid, kidPattern)
 	}
 	if _, ok := seen[entry.Kid]; ok {
 		return nil, errors.Errorf(`app user token: signingKeys[%d]: duplicate kid "%s"`, i, entry.Kid)
@@ -146,7 +143,6 @@ func keyBlock(pemData string) ([]byte, error) {
 	}
 }
 
-// Errors never quote a pem, nor a kid that fails validKid: either may be a misplaced private key.
 func validKid(kid string) bool {
 	return regexp.MustCompile(kidPattern).MatchString(kid)
 }
