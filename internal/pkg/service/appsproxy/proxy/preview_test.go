@@ -17,6 +17,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/jonboulle/clockwork"
+	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -58,6 +59,7 @@ type previewEnv struct {
 	jwks      *previewtest.JWKSServer
 	client    *http.Client
 	appServer *testutil.AppServer
+	providers []*mockoidc.MockOIDC
 	d         proxyDependencies.ServiceScope
 	mocked    proxyDependencies.Mocked
 }
@@ -120,7 +122,7 @@ func startPreviewEnv(t *testing.T, mutate ...func(cfg *config.Config, jwks *prev
 	client.Jar = nil
 
 	registerDefaultK8sApps(t, d.AppStateWatcher())
-	return &previewEnv{t: t, clock: clock, signer: signer, jwks: jwks, client: client, appServer: appServer, d: d, mocked: mocked}
+	return &previewEnv{t: t, clock: clock, signer: signer, jwks: jwks, client: client, appServer: appServer, providers: providers, d: d, mocked: mocked}
 }
 
 func (e *previewEnv) setDevMode(k8sName string, ref k8sapp.WorkloadRef, enabled bool) {
