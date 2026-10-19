@@ -70,6 +70,7 @@ func TestAppUserToken_JWKSEndpoint(t *testing.T) {
 		resp := env.get("hub.keboola.local", jwksPath, nil, nil)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, "application/jwk-set+json", resp.Header.Get("Content-Type"))
+		assert.Equal(t, "public, max-age=300", resp.Header.Get("Cache-Control"))
 		assert.JSONEq(t, `{"keys":[]}`, readBody(t, resp))
 	})
 
