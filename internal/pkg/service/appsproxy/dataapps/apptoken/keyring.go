@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"io"
 
 	"github.com/go-jose/go-jose/v4"
 
@@ -91,7 +92,11 @@ func parseSigningKeys(keysJSON string) ([]signingKey, error) {
 	decoder.DisallowUnknownFields()
 	var entries []signingKey
 	// The decoder error is dropped: it can quote a fragment of the value.
-	if err := decoder.Decode(&entries); err != nil || decoder.More() {
+	err := decoder.Decode(&entries)
+	if err == nil {
+		_, err = decoder.Token()
+	}
+	if !errors.Is(err, io.EOF) {
 		return nil, errors.New(`app user token: signingKeys is not a JSON list of {"kid": "...", "pem": "..."} objects`)
 	}
 	return entries, nil

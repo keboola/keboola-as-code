@@ -137,6 +137,8 @@ func TestNewKeyring_Invalid(t *testing.T) {
 	}{
 		{name: "raw PEM instead of JSON", keys: k1, activeKid: "k1", secret: k1, wantErr: "not a JSON list"},
 		{name: "JSON object instead of list", keys: `{"kid":"k1","pem":` + mustJSON(t, k1) + `}`, activeKid: "k1", secret: k1, wantErr: "not a JSON list"},
+		{name: "trailing bracket after the list", keys: keysJSON(t, testKey{Kid: "k1", Pem: k1}) + "]", activeKid: "k1", secret: k1, wantErr: "not a JSON list"},
+		{name: "second list after the list", keys: keysJSON(t, testKey{Kid: "k1", Pem: k1}) + "[]", activeKid: "k1", secret: k1, wantErr: "not a JSON list"},
 		{name: "entry without pem", keys: `[{"kid":"k1"}]`, activeKid: "k1", wantErr: "signingKeys[0]: pem is empty"},
 		{name: "entry with unknown field", keys: `[{"kid":"k1","pem":` + mustJSON(t, k1) + `,"foo":1}]`, activeKid: "k1", secret: k1, wantErr: "not a JSON list"},
 		{name: "invalid kid", keys: keysJSON(t, testKey{Kid: "bad kid!", Pem: k1}), activeKid: "k1", secret: k1, wantErr: "signingKeys[0]: invalid kid"},
