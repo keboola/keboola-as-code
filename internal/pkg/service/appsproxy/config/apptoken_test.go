@@ -80,3 +80,13 @@ func TestAppUserTokenConfig_ValidateAllowsBoth(t *testing.T) {
 	cfg.AppUserToken.TTL = 5 * time.Minute
 	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
 }
+
+func TestAppUserTokenConfig_TTLBounds(t *testing.T) {
+	t.Parallel()
+
+	for _, ttl := range []time.Duration{time.Second, 5 * time.Minute} {
+		cfg := requiredConfig(t)
+		cfg.AppUserToken.TTL = ttl
+		assert.NoError(t, configmap.ValidateAndNormalize(&cfg), ttl)
+	}
+}
