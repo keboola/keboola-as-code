@@ -28,6 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/idletimer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
@@ -85,6 +86,7 @@ type ServiceScope interface {
 	WakeupManager() *wakeup.Manager
 	AppStateWatcher() *k8sapp.StateWatcher
 	SessionsManager() *sessions.Manager
+	IdleTimerRecorder() *idletimer.Recorder
 }
 
 type Mocked interface {
@@ -108,6 +110,7 @@ type serviceScope struct {
 	wakeupManager     *wakeup.Manager
 	appStateWatcher   *k8sapp.StateWatcher
 	sessionsManager   *sessions.Manager
+	idleTimerRecorder *idletimer.Recorder
 }
 
 type parentScopes interface {
@@ -218,6 +221,8 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.appStateWatcher = k8sapp.NewStateWatcher(d, k8sClient, cfg.K8s.AppsNamespace)
 
 	d.wakeupManager = wakeup.NewManager(d)
+	d.idleTimerRecorder = idletimer.NewRecorder(d, k8sClient)
+	idletimer.NewSuspender(d, k8sClient, d.idleTimerRecorder)
 	d.sessionsManager = sessions.NewManager(ctx, d)
 	d.authProxyManager = authproxy.NewManager(d)
 	d.upstreamManager = upstream.NewManager(d)
@@ -268,6 +273,10 @@ func (v *serviceScope) WakeupManager() *wakeup.Manager {
 
 func (v *serviceScope) AppStateWatcher() *k8sapp.StateWatcher {
 	return v.appStateWatcher
+}
+
+func (v *serviceScope) IdleTimerRecorder() *idletimer.Recorder {
+	return v.idleTimerRecorder
 }
 
 func (v *serviceScope) SessionsManager() *sessions.Manager {
