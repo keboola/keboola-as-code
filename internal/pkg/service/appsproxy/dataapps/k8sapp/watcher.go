@@ -300,7 +300,7 @@ func (w *StateWatcher) entryWithWorkspace(ref WorkloadRef) (entry, string, bool)
 		return e, e.workspaceID, true
 	}
 	member, ok := w.productionMemberLocked(e)
-	if !ok {
+	if !ok || member.appID != e.appID {
 		return e, "", true
 	}
 	return e, member.workspaceID, true

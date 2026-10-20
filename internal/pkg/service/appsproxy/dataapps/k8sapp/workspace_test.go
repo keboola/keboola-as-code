@@ -112,6 +112,14 @@ func TestGetState_WorkspaceID_EmptyWithoutLogWhenUnresolved(t *testing.T) {
 			ref: productionRef(),
 		},
 		{
+			name: "production sandbox of another app",
+			objects: []*unstructured.Unstructured{
+				withWorkspaceID(newSandboxObject(memberName, "456", k8sapp.AppActualStateRunning, "", prodUpstreamURL), "91011"),
+				newAppWithProductionSandbox(k8sapp.AppActualStateRunning, memberName),
+			},
+			ref: productionRef(),
+		},
+		{
 			name:    "draft without workspace",
 			objects: []*unstructured.Unstructured{newDraftSandbox("")},
 			ref:     draftRef(),
