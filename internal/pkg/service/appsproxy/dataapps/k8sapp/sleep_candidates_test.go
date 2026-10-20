@@ -52,12 +52,14 @@ func syncedWatcher(t *testing.T, logger log.Logger, objects ...*unstructured.Uns
 func syncedWatcherWithClient(t *testing.T, logger log.Logger, objects ...*unstructured.Unstructured) (*k8sapp.StateWatcher, *k8sfake.FakeDynamicClient) {
 	t.Helper()
 	fakeClient := newFakeClient()
-	watcher := k8sapp.NewStateWatcher(newTestDepsWithLogger(t, logger), fakeClient, testNamespace)
-
+	// The objects exist before the informers list them, so once WaitForCacheSync
+	// returns every one of them is cached, not just the ones that won the race.
 	for _, obj := range objects {
 		_, err := fakeClient.Resource(gvrOf(obj)).Namespace(testNamespace).Create(t.Context(), obj, metav1.CreateOptions{})
 		require.NoError(t, err)
 	}
+
+	watcher := k8sapp.NewStateWatcher(newTestDepsWithLogger(t, logger), fakeClient, testNamespace)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 	return watcher, fakeClient
 }
