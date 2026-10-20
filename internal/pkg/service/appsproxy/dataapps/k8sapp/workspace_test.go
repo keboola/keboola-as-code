@@ -67,7 +67,7 @@ func TestGetState_WorkspaceID_ProductionComesFromTheProductionSandbox(t *testing
 
 	watcher, _ := syncedWatcherWithClient(t, log.NewNopLogger(),
 		newNamedMemberSandbox(memberName, "91011"),
-		newAppWithProductionSandbox(k8sapp.AppActualStateRunning, memberName),
+		withWorkspaceID(newAppWithProductionSandbox(k8sapp.AppActualStateRunning, memberName), "999"),
 	)
 
 	assertWorkspaceEventually(t, watcher, productionRef(), "91011")
