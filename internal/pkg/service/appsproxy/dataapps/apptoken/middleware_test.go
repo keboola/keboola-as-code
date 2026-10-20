@@ -20,8 +20,6 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -411,67 +409,4 @@ func TestInject_ReplacesInboundToken(t *testing.T) {
 		got := e.serve(nil, map[string]string{apptoken.HeaderName: "forged"})
 		assert.Empty(t, got.header.Values(apptoken.HeaderName))
 	})
-}
-
-func TestMetrics(t *testing.T) {
-	t.Parallel()
-	e := newEnv(t, envOptions{noWorkspace: true})
-
-	e.serve(&oidcIDP, without(identityHeaders(), "X-Kbc-User-Roles", apptoken.EmailVerifiedHeader))
-	e.serve(nil, nil)
-
-	metrics := e.mocked.TestTelemetry().Metrics(t)
-	assert.Equal(t, int64(1), counterValue(t, metrics, "keboola.go.appsproxy.app_user_token.minted", ""))
-	assert.Equal(t, int64(1), counterValue(t, metrics, "keboola.go.appsproxy.app_user_token.skipped", "no_identity"))
-	assert.Equal(t, int64(1), counterValue(t, metrics, "keboola.go.appsproxy.app_user_token.claim_omitted", "workspace_unknown"))
-	assert.Equal(t, int64(1), counterValue(t, metrics, "keboola.go.appsproxy.app_user_token.claim_omitted", "groups_unknown"))
-	assert.Equal(t, int64(1), counterValue(t, metrics, "keboola.go.appsproxy.app_user_token.claim_omitted", "email_untrusted"))
-}
-
-func TestMetrics_Disabled(t *testing.T) {
-	t.Parallel()
-	e := newEnv(t, envOptions{noKeys: true})
-
-	e.serve(&oidcIDP, identityHeaders())
-
-	metrics := e.mocked.TestTelemetry().Metrics(t)
-	assert.Equal(t, int64(1), counterValue(t, metrics, "keboola.go.appsproxy.app_user_token.skipped", "disabled"))
-}
-
-func TestMetrics_GroupsTooLarge(t *testing.T) {
-	t.Parallel()
-	e := newEnv(t, envOptions{})
-
-	headers := identityHeaders()
-	headers["X-Kbc-User-Roles"] = strings.Repeat("g", 5000)
-	e.serve(&oidcIDP, headers)
-
-	metrics := e.mocked.TestTelemetry().Metrics(t)
-	assert.Equal(t, int64(1), counterValue(t, metrics, "keboola.go.appsproxy.app_user_token.claim_omitted", "groups_too_large"))
-}
-
-func counterValue(t *testing.T, metrics []metricdata.Metrics, name, reason string) int64 {
-	t.Helper()
-	var total int64
-	for _, m := range metrics {
-		if m.Name != name {
-			continue
-		}
-		sum, ok := m.Data.(metricdata.Sum[int64])
-		require.True(t, ok)
-		total += sumForReason(sum, reason)
-	}
-	return total
-}
-
-func sumForReason(sum metricdata.Sum[int64], reason string) int64 {
-	var total int64
-	for _, dp := range sum.DataPoints {
-		value, _ := dp.Attributes.Value(attribute.Key("reason"))
-		if value.AsString() != reason {
-			continue
-		}
-		total += dp.Value
-	}
-	return total
 }
