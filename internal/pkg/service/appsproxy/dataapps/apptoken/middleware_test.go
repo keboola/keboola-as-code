@@ -288,13 +288,13 @@ func TestInject_EmailOmittedWhenNotVerified(t *testing.T) {
 	}
 }
 
-func TestInject_EmailTrustedByProvider(t *testing.T) {
+func TestInject_EmailNeedsTheClaimForEveryProvider(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
 
-	idp := apptoken.IdentityProvider{URL: "https://github.com", EmailVerifiedByProvider: true}
+	idp := apptoken.IdentityProvider{URL: "https://github.com"}
 	tok := e.parse(e.serve(&idp, without(identityHeaders(), apptoken.EmailVerifiedHeader)).header.Get(apptoken.HeaderName))
-	assert.Equal(t, "jane@example.com", tok.payload["email"])
+	assert.NotContains(t, tok.payload, "email")
 	assert.Equal(t, "https://github.com", tok.payload["idp"])
 }
 

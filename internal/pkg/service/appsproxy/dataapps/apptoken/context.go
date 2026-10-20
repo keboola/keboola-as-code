@@ -10,8 +10,7 @@ import (
 const EmailVerifiedHeader = "X-Kbc-User-Email-Verified"
 
 type IdentityProvider struct {
-	URL                     string
-	EmailVerifiedByProvider bool
+	URL string
 }
 
 type identityProviderCtxKey struct{}

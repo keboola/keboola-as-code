@@ -60,7 +60,7 @@ func captureIdentity(req *http.Request, emailVerified string) (identity, bool) {
 
 	id := identity{subject: subject, idp: idp.URL}
 	if email := req.Header.Get(userEmailHeader); email != "" {
-		if idp.EmailVerifiedByProvider || emailVerified == "true" {
+		if emailVerified == "true" {
 			id.email = email
 		} else {
 			id.omitted = append(id.omitted, omitEmailUntrusted)

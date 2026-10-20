@@ -54,7 +54,7 @@ func (m *Manager) NewHandlers(app api.AppConfig, upstream chain.Handler) map[pro
 		providerUpstream := sessions.WithAuthProvider(upstream, auth.ID(), auth.Type())
 		switch p := auth.(type) {
 		case provider.OAuthProvider:
-			idp := apptoken.IdentityProvider{URL: p.IdentityProviderURL(), EmailVerifiedByProvider: p.EmailVerifiedByProvider()}
+			idp := apptoken.IdentityProvider{URL: p.IdentityProviderURL()}
 			authHandlers[auth.ID()] = oauthproxy.NewHandler(m.logger, m.config, m.providerSelector, m.pageWriter, app, p, apptoken.WithIdentityProvider(providerUpstream, idp))
 		case provider.Basic:
 			authHandlers[auth.ID()] = basicauth.NewHandler(m.logger, m.config, m.clock, m.pageWriter, app, p, providerUpstream)

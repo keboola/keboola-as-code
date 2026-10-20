@@ -11,10 +11,9 @@ func TestOAuthProvider_IdentityProvider(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name             string
-		provider         OAuthProvider
-		expectedURL      string
-		expectedVerified bool
+		name        string
+		provider    OAuthProvider
+		expectedURL string
 	}{
 		{
 			name:        "oidc",
@@ -32,22 +31,19 @@ func TestOAuthProvider_IdentityProvider(t *testing.T) {
 			expectedURL: "https://oauth.id.jumpcloud.com",
 		},
 		{
-			name:             "gitlab",
-			provider:         GitLab{OIDC: OIDC{IssuerURL: "https://gitlab.com/"}},
-			expectedURL:      "https://gitlab.com",
-			expectedVerified: true,
+			name:        "gitlab",
+			provider:    GitLab{OIDC: OIDC{IssuerURL: "https://gitlab.com/"}},
+			expectedURL: "https://gitlab.com",
 		},
 		{
-			name:             "github",
-			provider:         GitHub{},
-			expectedURL:      "https://github.com",
-			expectedVerified: true,
+			name:        "github",
+			provider:    GitHub{},
+			expectedURL: "https://github.com",
 		},
 		{
-			name:             "github enterprise",
-			provider:         GitHub{URL: "https://github.example.com/"},
-			expectedURL:      "https://github.example.com",
-			expectedVerified: true,
+			name:        "github enterprise",
+			provider:    GitHub{URL: "https://github.example.com/"},
+			expectedURL: "https://github.example.com",
 		},
 	}
 
@@ -55,7 +51,6 @@ func TestOAuthProvider_IdentityProvider(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			assert.Equal(t, tc.expectedURL, tc.provider.IdentityProviderURL())
-			assert.Equal(t, tc.expectedVerified, tc.provider.EmailVerifiedByProvider())
 		})
 	}
 }
