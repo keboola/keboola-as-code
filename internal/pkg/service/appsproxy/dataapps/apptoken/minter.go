@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type Minter struct {
@@ -19,7 +18,6 @@ type Minter struct {
 	clock   clockwork.Clock
 	logger  log.Logger
 	apps    appStates
-	metrics *metrics
 }
 
 type appStates interface {
@@ -30,7 +28,6 @@ type dependencies interface {
 	Clock() clockwork.Clock
 	Logger() log.Logger
 	Config() config.Config
-	Telemetry() telemetry.Telemetry
 	AppStateWatcher() *k8sapp.StateWatcher
 }
 
@@ -47,7 +44,6 @@ func NewMinter(d dependencies) (*Minter, error) {
 		clock:   d.Clock(),
 		logger:  d.Logger().WithComponent("app-user-token"),
 		apps:    d.AppStateWatcher(),
-		metrics: newMetrics(d.Telemetry().Meter()),
 	}, nil
 }
 

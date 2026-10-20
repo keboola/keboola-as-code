@@ -129,13 +129,12 @@ The full runbook is in `kbc-stacks/apps/apps-proxy/README.md`. In short:
 Never remove the active key. For a leaked key, do all three steps in one change;
 verifiers refetch the JWKS on an unknown `kid`.
 
-## 8. Metrics
+## 8. Monitoring
 
-| Metric | Attributes |
-|---|---|
-| `keboola.go.appsproxy.app_user_token.minted` | — |
-| `keboola.go.appsproxy.app_user_token.skipped` | `reason`: `disabled`, `no_identity` |
-| `keboola.go.appsproxy.app_user_token.claim_omitted` | `reason`: `groups_unknown`, `groups_too_large`, `workspace_unknown`, `email_untrusted` |
+There are no metrics. Missing claims are valid states, not errors. The only
+runtime error is a failed signing: apps-proxy logs `cannot sign the app user
+token, the request continues without it` at error level and passes the request
+on without a token. A bad key config stops apps-proxy at startup.
 
 The token, the claims and the keys are never logged.
 

@@ -28,7 +28,6 @@ type identity struct {
 	idp     string
 	email   string
 	groups  []string
-	omitted []string
 }
 
 type identityCtxKey struct{}
@@ -59,38 +58,26 @@ func captureIdentity(req *http.Request, emailVerified string) (identity, bool) {
 	}
 
 	id := identity{subject: subject, idp: idp.URL}
-	if email := req.Header.Get(userEmailHeader); email != "" {
-		if emailVerified == "true" {
-			id.email = email
-		} else {
-			id.omitted = append(id.omitted, omitEmailUntrusted)
-		}
+	if emailVerified == "true" {
+		id.email = req.Header.Get(userEmailHeader)
 	}
-
-	groups, reason := parseGroups(req.Header.Values(userRolesHeader))
-	id.groups = groups
-	if reason != "" {
-		id.omitted = append(id.omitted, reason)
-	}
+	id.groups = parseGroups(req.Header.Values(userRolesHeader))
 	return id, true
 }
 
 // parseGroups splits the comma-joined header. A group name containing a comma
 // is split too; accepted, the header format cannot carry it.
-func parseGroups(values []string) ([]string, string) {
+func parseGroups(values []string) []string {
 	var groups []string
 	size := 0
 	for _, value := range values {
 		size += len(value)
 		groups = appendNonEmpty(groups, strings.Split(value, ","))
 	}
-	if len(groups) == 0 {
-		return nil, omitGroupsUnknown
-	}
 	if size > maxGroupsBytes {
-		return nil, omitGroupsTooLarge
+		return nil
 	}
-	return groups, ""
+	return groups
 }
 
 func appendNonEmpty(dst, items []string) []string {
@@ -108,13 +95,8 @@ func (m *Minter) Inject(app api.AppConfig, workload k8sapp.WorkloadRef) chain.Mi
 		return chain.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) error {
 			req.Header.Del(HeaderName)
 			ctx := req.Context()
-			if !m.keyring.Configured() {
-				m.metrics.skip(ctx, skipDisabled)
-				return next.ServeHTTPOrError(rw, req)
-			}
 			id, ok := ctx.Value(identityCtxKey{}).(identity)
-			if !ok {
-				m.metrics.skip(ctx, skipNoIdentity)
+			if !ok || !m.keyring.Configured() {
 				return next.ServeHTTPOrError(rw, req)
 			}
 
@@ -124,7 +106,6 @@ func (m *Minter) Inject(app api.AppConfig, workload k8sapp.WorkloadRef) chain.Mi
 				return next.ServeHTTPOrError(rw, req)
 			}
 			req.Header.Set(HeaderName, token)
-			m.metrics.minted.Add(ctx, 1)
 			return next.ServeHTTPOrError(rw, req)
 		})
 	}
@@ -156,18 +137,7 @@ func (m *Minter) mint(ctx context.Context, app api.AppConfig, workload k8sapp.Wo
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
 	token.Header["kid"] = m.keyring.ActiveKid()
 	token.Header["typ"] = tokenType
-	signed, err := token.SignedString(m.keyring.ActiveKey())
-	if err != nil {
-		return "", err
-	}
-
-	for _, reason := range id.omitted {
-		m.metrics.omit(ctx, reason)
-	}
-	if claims.Kbc.WorkspaceID == "" {
-		m.metrics.omit(ctx, omitWorkspace)
-	}
-	return signed, nil
+	return token.SignedString(m.keyring.ActiveKey())
 }
 
 // workspaceID is read per request: a promotion moves the App to another
