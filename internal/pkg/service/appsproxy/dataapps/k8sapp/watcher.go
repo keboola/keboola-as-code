@@ -170,7 +170,7 @@ func (w *StateWatcher) addEventHandler(ctx context.Context, informer cache.Share
 // GetState returns the cached AppInfo for the workload. Returns (AppInfo{}, false) if not yet cached.
 // If the E2B access token is missing but a secret name is known, it attempts to load the token lazily.
 func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, bool) {
-	e, workspaceID, ok := w.entryWithWorkspace(ref)
+	e, ok := w.entryFor(ref)
 	if !ok {
 		return AppInfo{}, false
 	}
@@ -198,7 +198,7 @@ func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, 
 		DevMode:            e.devMode,
 		UpstreamTarget:     e.upstreamTarget,
 		E2BAccessToken:     e.e2bAccessToken,
-		WorkspaceID:        workspaceID,
+		WorkspaceID:        w.workspaceFor(ref, e),
 	}, true
 }
 
@@ -283,37 +283,30 @@ func (w *StateWatcher) ResolveWorkloadForHost(host string) (WorkloadRef, bool) {
 func (w *StateWatcher) entryFor(ref WorkloadRef) (entry, bool) {
 	w.routeLock.RLock()
 	defer w.routeLock.RUnlock()
-	return w.entryForLocked(ref)
-}
 
-// entryWithWorkspace returns the entry and the workspace of the Sandbox that
-// runs it, read under one lock so both describe the same moment.
-func (w *StateWatcher) entryWithWorkspace(ref WorkloadRef) (entry, string, bool) {
-	w.routeLock.RLock()
-	defer w.routeLock.RUnlock()
-
-	e, ok := w.entryForLocked(ref)
-	if !ok {
-		return entry{}, "", false
-	}
-	if ref.IsSandbox() {
-		return e, e.workspaceID, true
-	}
-	member, ok := w.productionMemberLocked(e)
-	if !ok || member.appID != e.appID {
-		return e, "", true
-	}
-	return e, member.workspaceID, true
-}
-
-// entryForLocked requires the caller to hold routeLock.
-func (w *StateWatcher) entryForLocked(ref WorkloadRef) (entry, bool) {
 	if ref.IsSandbox() {
 		e, ok := w.sandboxes[ref.SandboxName]
 		return e, ok
 	}
 	e, ok := w.apps[ref.AppID]
 	return e, ok
+}
+
+// workspaceFor returns the workspace of the Sandbox that runs the workload: a
+// draft's own, or the one the App names in status.productionSandbox.
+func (w *StateWatcher) workspaceFor(ref WorkloadRef, e entry) string {
+	if ref.IsSandbox() {
+		return e.workspaceID
+	}
+
+	w.routeLock.RLock()
+	defer w.routeLock.RUnlock()
+
+	member, ok := w.productionMemberLocked(e)
+	if !ok || member.appID != e.appID {
+		return ""
+	}
+	return member.workspaceID
 }
 
 // productionMemberLocked returns the cached Sandbox the App names in
