@@ -53,8 +53,8 @@ func (v GitHub) ProxyProviderOptions() (proxyOptions.Provider, error) {
 }
 
 func (v GitHub) IdentityProviderURL() string {
-	if v.URL == "" {
+	if v.URL == "" { // public github.com
 		return gitHubURL
 	}
-	return strings.TrimRight(v.URL, "/")
+	return strings.TrimRight(v.URL, "/") // GitHub Enterprise
 }
