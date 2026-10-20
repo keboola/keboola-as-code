@@ -67,7 +67,3 @@ func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 func (v OIDC) IdentityProviderURL() string {
 	return strings.TrimRight(v.IssuerURL, "/")
 }
-
-func (v OIDC) EmailVerifiedByProvider() bool {
-	return false
-}

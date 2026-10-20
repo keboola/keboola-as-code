@@ -64,17 +64,14 @@ verifier decides. For `groups` and `kbc.workspace_id`, "missing" means
 "unknown", and the verifier must fail closed. An empty `groups` claim would
 wrongly mean "known, no groups", so it is never sent.
 
-- **`email`** is in the token only when it is verified:
-
-  | Provider type | `email` in the token when |
-  |---|---|
-  | `oidc`, `jumpcloud` | the ID token has `email_verified: true`. Missing or `false`: omitted. |
-  | `gitlab` | always (oauth2-proxy refuses unverified GitLab emails) |
-  | `github` | always (oauth2-proxy takes only the primary verified email) |
+- **`email`** is best effort. It is in the token only when the IdP's ID token
+  has `email_verified: true`, for every provider type. Missing or `false`:
+  omitted.
 
   oauth2-proxy treats a **missing** `email_verified` as verified, and Entra ID
-  usually omits it. So Entra ID users get a token without `email`. Rules that
-  name one person by email do not match them; `groups` rules and `*` do.
+  usually omits it. So Entra ID users get a token without `email`. GitHub
+  issues no ID token, so GitHub users never get `email`. Rules that name one
+  person by email do not match these users; `groups` rules and `*` do.
 
 - **`groups`** is omitted when the IdP sends no groups, or when the groups
   joined with `,` are longer than 4096 bytes (large Entra group lists). The

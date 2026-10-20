@@ -14,7 +14,7 @@ import (
 func TestWithIdentityProvider(t *testing.T) {
 	t.Parallel()
 
-	idp := IdentityProvider{URL: "https://idp.example.com", EmailVerifiedByProvider: true}
+	idp := IdentityProvider{URL: "https://idp.example.com"}
 	var got IdentityProvider
 	var found bool
 	next := chain.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) error {

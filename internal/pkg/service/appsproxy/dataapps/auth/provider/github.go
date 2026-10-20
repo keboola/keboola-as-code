@@ -58,9 +58,3 @@ func (v GitHub) IdentityProviderURL() string {
 	}
 	return strings.TrimRight(v.URL, "/")
 }
-
-// EmailVerifiedByProvider is true: the oauth2-proxy GitHub provider takes
-// only the primary verified email.
-func (v GitHub) EmailVerifiedByProvider() bool {
-	return true
-}
