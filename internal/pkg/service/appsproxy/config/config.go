@@ -32,6 +32,7 @@ type Config struct {
 	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`
 	Sessions         Sessions          `configKey:"sessions" configUsage:"End-user session tracking for data apps."`
 	IdleSuspend      IdleSuspend       `configKey:"idleSuspend" configUsage:"Suspending data apps that have gone idle."`
+	AppUserToken     AppUserToken      `configKey:"appUserToken" configUsage:"Signed X-Kbc-App-User-Token passed to data apps."`
 
 	ConnectionServiceAccountTokenPath string `configKey:"connectionServiceAccountTokenPath" configUsage:"Path to the projected Kubernetes ServiceAccount token used to authenticate to the Keboola APIs. Read per request, so a rotated token needs no restart." validate:"required"`
 }
@@ -88,6 +89,19 @@ type IdleSuspend struct {
 	// own suspend cron: both would stop apps, and neither would be accountable
 	// for a given suspend.
 	Enabled bool `configKey:"enabled" configUsage:"Suspend data apps that have gone idle. While off, the proxy only reports what it would have suspended. Turn the sandboxes-service suspend cron off on this stack before enabling."`
+}
+
+type AppUserToken struct {
+	SigningKeys string        `configKey:"signingKeys" configUsage:"JSON list of {\"kid\": \"...\", \"pem\": \"...\"} EC P-256 private keys. All are published in the JWKS. Empty together with activeKid disables the token." sensitive:"true"`
+	ActiveKid   string        `configKey:"activeKid" configUsage:"Kid of the signing key that signs new tokens."`
+	TTL         time.Duration `configKey:"ttl" configUsage:"Lifetime of one token, from 1s to 5m." validate:"required,minDuration=1s,maxDuration=5m"`
+}
+
+func (c *AppUserToken) Validate() error {
+	if (c.SigningKeys == "") != (c.ActiveKid == "") {
+		return errors.New("appUserToken.signingKeys and appUserToken.activeKid must be set together")
+	}
+	return nil
 }
 
 type Preview struct {
@@ -191,6 +205,9 @@ func New() Config {
 			QueueSize:         4096,
 			Workers:           4,
 			SendTimeout:       5 * time.Second,
+		},
+		AppUserToken: AppUserToken{
+			TTL: 5 * time.Minute,
 		},
 		ConnectionServiceAccountTokenPath: management.DefaultServiceAccountTokenPath,
 	}
