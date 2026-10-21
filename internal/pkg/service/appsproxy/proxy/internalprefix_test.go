@@ -120,3 +120,17 @@ func TestInternalPrefix_LookalikePathForwarded(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "/_proxyfoo", env.lastAppRequest().URL.Path)
 }
+
+func TestInternalPrefix_MuxPathsNotForwarded(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+
+	for _, path := range []string{
+		"/_proxy/api/unknown",
+		"/_proxy/api/v1/unknown",
+		"/_proxy/api/v1/webhook/e2b",
+		"/_proxy/assets/unknown",
+	} {
+		env.assertInternalNotFound(env.client, publicOrigin+path)
+	}
+}
