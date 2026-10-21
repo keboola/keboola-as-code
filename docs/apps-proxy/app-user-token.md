@@ -61,6 +61,15 @@ on a GitHub `(idp, sub)`: after a rename the user loses them, and the next owner
 of the login inherits them. GitHub's numeric user id is stable, but oauth2-proxy
 does not pass it on today.
 
+**Trust in `idp`.** `idp` is the issuer that the app's owner configured. The
+apps-proxy signature proves which IdP authenticated the user, not that the IdP
+is honest. Anyone who can edit an app's auth providers can point it at an IdP
+they control, and that IdP can assert any `sub`, any `email` with
+`email_verified: true`, and any `groups`. A verifier must therefore allowlist
+`idp`, or bind it to the project (`kbc.project_id`), before it honors `sub`,
+`email` or `groups`. Otherwise a rule that names someone's email can be met
+through a self-hosted IdP.
+
 App data comes only from the Sandboxes proxy config and the Kubernetes CRs,
 never from the request.
 
