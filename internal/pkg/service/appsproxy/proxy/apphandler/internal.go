@@ -2,7 +2,6 @@ package apphandler
 
 import (
 	"net/http"
-	"path"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -53,13 +52,6 @@ func (h *appHandler) serveInternal(w http.ResponseWriter, req *http.Request) err
 	return internalPathNotFound(path)
 }
 
-// isInternalPath cleans the path first: an encoded "/" or ".." survives the ServeMux cleaning,
-// and an app that decodes and cleans its path would serve it as an internal path.
-func isInternalPath(p string) bool {
-	p = path.Clean(p)
-	return p == config.InternalPrefix || strings.HasPrefix(p, config.InternalPrefix+"/")
-}
-
 func internalPathNotFound(path string) error {
 	return svcErrors.NewResourceNotFoundError("route for", path, "application")
 }
@@ -67,7 +59,7 @@ func internalPathNotFound(path string) error {
 // rejectInternalPaths stops every internal path before the upstream, whichever auth handler let it through.
 func rejectInternalPaths(next chain.Handler) chain.Handler {
 	return chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
-		if isInternalPath(req.URL.Path) {
+		if config.IsInternalPath(req.URL.Path) {
 			return internalPathNotFound(req.URL.Path)
 		}
 		return next.ServeHTTPOrError(w, req)

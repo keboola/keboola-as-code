@@ -158,7 +158,7 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Internal paths are routed before any preview session and app rule.
-	if isInternalPath(req.URL.Path) {
+	if config.IsInternalPath(req.URL.Path) {
 		return h.serveInternal(w, req)
 	}
 
