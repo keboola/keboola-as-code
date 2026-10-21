@@ -49,6 +49,7 @@ type envOptions struct {
 	noKeys      bool
 	sessions    bool
 	noWorkspace bool
+	ttl         time.Duration
 }
 
 type testEnv struct {
@@ -75,6 +76,9 @@ func newEnv(t *testing.T, opts envOptions) *testEnv {
 	if !opts.noKeys {
 		cfg.AppUserToken.SigningKeys = signingKeysJSON(t, "k1", "k2")
 		cfg.AppUserToken.ActiveKid = "k2"
+	}
+	if opts.ttl != 0 {
+		cfg.AppUserToken.TTL = opts.ttl
 	}
 	if opts.sessions {
 		stream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
@@ -302,6 +306,14 @@ func TestInject_FullClaims(t *testing.T) {
 		"kbc":    map[string]any{"project_id": "123", "app_id": testAppID, "workspace_id": testWorkspaceID},
 		"sid":    got.session.ID,
 	}, tok.payload)
+}
+
+func TestInject_TTLFromConfig(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, envOptions{ttl: time.Minute})
+
+	tok := e.parse(e.serve(&oidcIDP, identityHeaders()).header.Get(apptoken.HeaderName))
+	assert.Equal(t, time.Minute, tok.claims.ExpiresAt.Sub(tok.claims.IssuedAt.Time))
 }
 
 func TestInject_EmailOmittedWhenNotVerified(t *testing.T) {
