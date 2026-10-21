@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
-	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 
@@ -14,80 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 )
-
-const (
-	userIDHeader    = "X-Kbc-User-Id"
-	userEmailHeader = "X-Kbc-User-Email"
-	userRolesHeader = "X-Kbc-User-Roles"
-
-	maxGroupsBytes = 4096
-)
-
-type identity struct {
-	subject string
-	idp     string
-	email   string
-	groups  []string
-}
-
-type identityCtxKey struct{}
-
-// Capture reads the identity headers before sessions.Middleware removes
-// X-Kbc-User-Id. It must run before that middleware.
-func (m *Minter) Capture() chain.Middleware {
-	return func(next chain.Handler) chain.Handler {
-		return chain.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) error {
-			emailVerified := req.Header.Get(EmailVerifiedHeader)
-			req.Header.Del(EmailVerifiedHeader)
-			if id, ok := captureIdentity(req, emailVerified); ok {
-				req = req.WithContext(context.WithValue(req.Context(), identityCtxKey{}, id))
-			}
-			return next.ServeHTTPOrError(rw, req)
-		})
-	}
-}
-
-func captureIdentity(req *http.Request, emailVerified string) (identity, bool) {
-	idp, ok := identityProviderFromContext(req.Context())
-	if !ok {
-		return identity{}, false
-	}
-	subject := req.Header.Get(userIDHeader)
-	if subject == "" {
-		return identity{}, false
-	}
-
-	id := identity{subject: subject, idp: idp.URL}
-	if emailVerified == "true" {
-		id.email = req.Header.Get(userEmailHeader)
-	}
-	id.groups = parseGroups(req.Header.Values(userRolesHeader))
-	return id, true
-}
-
-// parseGroups splits the comma-joined header. A group name containing a comma
-// is split too; accepted, the header format cannot carry it.
-func parseGroups(values []string) []string {
-	var groups []string
-	size := 0
-	for _, value := range values {
-		size += len(value)
-		groups = appendNonEmpty(groups, strings.Split(value, ","))
-	}
-	if size > maxGroupsBytes {
-		return nil
-	}
-	return groups
-}
-
-func appendNonEmpty(dst, items []string) []string {
-	for _, item := range items {
-		if item != "" {
-			dst = append(dst, item)
-		}
-	}
-	return dst
-}
 
 // Inject must run after sessions.Middleware, which puts the session into the context.
 func (m *Minter) Inject(app api.AppConfig, workload k8sapp.WorkloadRef) chain.Middleware {

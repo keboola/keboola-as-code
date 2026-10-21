@@ -43,8 +43,6 @@ const (
 	testIDP         = "https://idp.example.com"
 )
 
-var oidcIDP = apptoken.IdentityProvider{URL: testIDP} //nolint:gochecknoglobals // test fixture
-
 type envOptions struct {
 	noKeys      bool
 	sessions    bool
@@ -182,8 +180,8 @@ func signingKeysJSON(t *testing.T, kids ...string) string {
 }
 
 // serve runs one request through the chain the app handler builds.
-// A nil idp means the request was not admitted by an OAuth provider.
-func (e *testEnv) serve(idp *apptoken.IdentityProvider, headers map[string]string) upstreamRequest {
+// An empty idp means the request was not admitted by an OAuth provider.
+func (e *testEnv) serve(idp string, headers map[string]string) upstreamRequest {
 	e.t.Helper()
 	return e.newHandler(idp).serve(headers)
 }
@@ -196,7 +194,7 @@ type testHandler struct {
 	got     *upstreamRequest
 }
 
-func (e *testEnv) newHandler(idp *apptoken.IdentityProvider) *testHandler {
+func (e *testEnv) newHandler(idp string) *testHandler {
 	got := &upstreamRequest{}
 	upstream := chain.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) error {
 		got.header = req.Header.Clone()
@@ -204,9 +202,9 @@ func (e *testEnv) newHandler(idp *apptoken.IdentityProvider) *testHandler {
 		return nil
 	})
 	m := e.d.AppTokenMinter()
-	var handler chain.Handler = chain.New(upstream).Prepend(m.Capture(), e.d.SessionsManager().Middleware(e.app, e.ref), m.Inject(e.app, e.ref))
-	if idp != nil {
-		handler = apptoken.WithIdentityProvider(handler, *idp)
+	var handler chain.Handler = chain.New(upstream).Prepend(e.d.SessionsManager().Middleware(e.app, e.ref), m.Inject(e.app, e.ref))
+	if idp != "" {
+		handler = apptoken.WithIdentity(handler, idp)
 	}
 	return &testHandler{e: e, handler: handler, got: got}
 }
@@ -280,7 +278,7 @@ func TestInject_FullClaims(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{sessions: true})
 
-	got := e.serve(&oidcIDP, identityHeaders())
+	got := e.serve(testIDP, identityHeaders())
 	require.NotNil(t, got.session)
 	tok := e.parse(got.header.Get(apptoken.HeaderName))
 
@@ -312,7 +310,7 @@ func TestInject_TTLFromConfig(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{ttl: time.Minute})
 
-	tok := e.parse(e.serve(&oidcIDP, identityHeaders()).header.Get(apptoken.HeaderName))
+	tok := e.parse(e.serve(testIDP, identityHeaders()).header.Get(apptoken.HeaderName))
 	assert.Equal(t, time.Minute, tok.claims.ExpiresAt.Sub(tok.claims.IssuedAt.Time))
 }
 
@@ -328,7 +326,7 @@ func TestInject_EmailOmittedWhenNotVerified(t *testing.T) {
 			if verified == "" {
 				delete(headers, apptoken.EmailVerifiedHeader)
 			}
-			tok := e.parse(e.serve(&oidcIDP, headers).header.Get(apptoken.HeaderName))
+			tok := e.parse(e.serve(testIDP, headers).header.Get(apptoken.HeaderName))
 			assert.NotContains(t, tok.payload, "email")
 			assert.Equal(t, "sub-1", tok.claims.Subject)
 		})
@@ -339,8 +337,7 @@ func TestInject_EmailNeedsTheClaimForEveryProvider(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
 
-	idp := apptoken.IdentityProvider{URL: "https://github.com"}
-	tok := e.parse(e.serve(&idp, without(identityHeaders(), apptoken.EmailVerifiedHeader)).header.Get(apptoken.HeaderName))
+	tok := e.parse(e.serve("https://github.com", without(identityHeaders(), apptoken.EmailVerifiedHeader)).header.Get(apptoken.HeaderName))
 	assert.NotContains(t, tok.payload, "email")
 	assert.Equal(t, "https://github.com", tok.payload["idp"])
 }
@@ -349,7 +346,7 @@ func TestInject_GroupsUnknownOmitted(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
 
-	tok := e.parse(e.serve(&oidcIDP, without(identityHeaders(), "X-Kbc-User-Roles")).header.Get(apptoken.HeaderName))
+	tok := e.parse(e.serve(testIDP, without(identityHeaders(), "X-Kbc-User-Roles")).header.Get(apptoken.HeaderName))
 	assert.NotContains(t, tok.payload, "groups")
 }
 
@@ -360,7 +357,7 @@ func TestInject_GroupsTooLargeOmitted(t *testing.T) {
 	headers := identityHeaders()
 	headers["X-Kbc-User-Roles"] = strings.TrimSuffix(strings.Repeat("group-0123456789,", 300), ",")
 	require.Greater(t, len(headers["X-Kbc-User-Roles"]), 4096)
-	tok := e.parse(e.serve(&oidcIDP, headers).header.Get(apptoken.HeaderName))
+	tok := e.parse(e.serve(testIDP, headers).header.Get(apptoken.HeaderName))
 	assert.NotContains(t, tok.payload, "groups")
 	assert.Equal(t, "sub-1", tok.claims.Subject)
 }
@@ -371,7 +368,7 @@ func TestInject_GroupsSplitAcrossHeaderValues(t *testing.T) {
 
 	headers := identityHeaders()
 	headers["X-Kbc-User-Roles"] = "a,,b,"
-	tok := e.parse(e.serve(&oidcIDP, headers).header.Get(apptoken.HeaderName))
+	tok := e.parse(e.serve(testIDP, headers).header.Get(apptoken.HeaderName))
 	assert.Equal(t, []any{"a", "b"}, tok.payload["groups"])
 }
 
@@ -379,14 +376,14 @@ func TestInject_WorkspaceUnknownOmitted(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{noWorkspace: true})
 
-	tok := e.parse(e.serve(&oidcIDP, identityHeaders()).header.Get(apptoken.HeaderName))
+	tok := e.parse(e.serve(testIDP, identityHeaders()).header.Get(apptoken.HeaderName))
 	assert.Equal(t, map[string]any{"project_id": "123", "app_id": testAppID}, tok.payload["kbc"])
 }
 
 func TestInject_WorkspaceFollowsPromotion(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
-	handler := e.newHandler(&oidcIDP)
+	handler := e.newHandler(testIDP)
 
 	before := e.parse(handler.serve(identityHeaders()).header.Get(apptoken.HeaderName))
 	assert.Equal(t, testWorkspaceID, before.claims.Kbc.WorkspaceID)
@@ -401,7 +398,7 @@ func TestInject_NoSessionNoSID(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
 
-	got := e.serve(&oidcIDP, identityHeaders())
+	got := e.serve(testIDP, identityHeaders())
 	assert.Nil(t, got.session)
 	tok := e.parse(got.header.Get(apptoken.HeaderName))
 	assert.NotContains(t, tok.payload, "sid")
@@ -411,7 +408,7 @@ func TestInject_SkipsWithoutIdentityProvider(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
 
-	got := e.serve(nil, identityHeaders())
+	got := e.serve("", identityHeaders())
 	assert.Empty(t, got.header.Values(apptoken.HeaderName))
 }
 
@@ -419,7 +416,7 @@ func TestInject_SkipsWithoutUserID(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
 
-	got := e.serve(&oidcIDP, without(identityHeaders(), "X-Kbc-User-Id"))
+	got := e.serve(testIDP, without(identityHeaders(), "X-Kbc-User-Id"))
 	assert.Empty(t, got.header.Values(apptoken.HeaderName))
 }
 
@@ -427,7 +424,7 @@ func TestInject_SkipsWhenDisabled(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{noKeys: true})
 
-	got := e.serve(&oidcIDP, identityHeaders())
+	got := e.serve(testIDP, identityHeaders())
 	assert.Empty(t, got.header.Values(apptoken.HeaderName))
 }
 
@@ -435,22 +432,17 @@ func TestInject_JTIUnique(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
 
-	first := e.parse(e.serve(&oidcIDP, identityHeaders()).header.Get(apptoken.HeaderName))
-	second := e.parse(e.serve(&oidcIDP, identityHeaders()).header.Get(apptoken.HeaderName))
+	first := e.parse(e.serve(testIDP, identityHeaders()).header.Get(apptoken.HeaderName))
+	second := e.parse(e.serve(testIDP, identityHeaders()).header.Get(apptoken.HeaderName))
 	assert.NotEqual(t, first.claims.ID, second.claims.ID)
 }
 
-func TestCapture_StripsEmailVerifiedHeader(t *testing.T) {
+func TestWithIdentity_StripsEmailVerifiedHeader(t *testing.T) {
 	t.Parallel()
+	e := newEnv(t, envOptions{})
 
-	for name, idp := range map[string]*apptoken.IdentityProvider{"oauth": &oidcIDP, "no oauth": nil} {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			e := newEnv(t, envOptions{})
-			got := e.serve(idp, identityHeaders())
-			assert.Empty(t, got.header.Values(apptoken.EmailVerifiedHeader))
-		})
-	}
+	got := e.serve(testIDP, identityHeaders())
+	assert.Empty(t, got.header.Values(apptoken.EmailVerifiedHeader))
 }
 
 func TestInject_ReplacesInboundToken(t *testing.T) {
@@ -461,7 +453,7 @@ func TestInject_ReplacesInboundToken(t *testing.T) {
 		e := newEnv(t, envOptions{})
 		headers := identityHeaders()
 		headers[apptoken.HeaderName] = "forged"
-		got := e.serve(&oidcIDP, headers)
+		got := e.serve(testIDP, headers)
 		require.Len(t, got.header.Values(apptoken.HeaderName), 1)
 		e.parse(got.header.Get(apptoken.HeaderName))
 	})
@@ -469,7 +461,7 @@ func TestInject_ReplacesInboundToken(t *testing.T) {
 	t.Run("skipped", func(t *testing.T) {
 		t.Parallel()
 		e := newEnv(t, envOptions{})
-		got := e.serve(nil, map[string]string{apptoken.HeaderName: "forged"})
+		got := e.serve("", map[string]string{apptoken.HeaderName: "forged"})
 		assert.Empty(t, got.header.Values(apptoken.HeaderName))
 	})
 
@@ -478,7 +470,7 @@ func TestInject_ReplacesInboundToken(t *testing.T) {
 		e := newEnv(t, envOptions{noKeys: true})
 		headers := identityHeaders()
 		headers[apptoken.HeaderName] = "forged"
-		got := e.serve(&oidcIDP, headers)
+		got := e.serve(testIDP, headers)
 		assert.Empty(t, got.header.Values(apptoken.HeaderName))
 	})
 }
