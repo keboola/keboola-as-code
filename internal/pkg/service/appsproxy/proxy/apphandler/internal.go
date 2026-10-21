@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/basicauth"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/session"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
@@ -12,8 +13,8 @@ import (
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 )
 
-// serveInternal routes the internal paths. The auth paths are the provider selector,
-// the basic auth form and the oauth2-proxy routes. A new auth endpoint must be added here.
+// serveInternal routes the internal paths. The oauth2-proxy routes are spelled out because
+// the fork does not export them. A new auth endpoint must be added here.
 func (h *appHandler) serveInternal(w http.ResponseWriter, req *http.Request) error {
 	path := req.URL.Path
 	if path == preview.Path {
@@ -35,9 +36,9 @@ func (h *appHandler) serveInternal(w http.ResponseWriter, req *http.Request) err
 		// the upstream, so this cannot be handled by the sessions middleware.
 		h.manager.sessionsManager.SignOut(w, req, h.app)
 		return h.allAuthHandlers.ServeHTTPOrError(w, req)
-	case config.InternalPrefix + "/selection",
-		config.InternalPrefix + "/callback",
-		config.InternalPrefix + "/form",
+	case selector.SelectionPagePath,
+		selector.CallbackPath,
+		basicauth.FormPagePath,
 		config.InternalPrefix + "/sign_in",
 		config.InternalPrefix + "/start",
 		config.InternalPrefix + "/userinfo",
