@@ -54,6 +54,13 @@ must check `typ`, so that it never takes this token for a different kind of JWT.
 
 `sub` is unique only per issuer, so the pair `(idp, sub)` is the primary user key.
 
+**GitHub caveat.** GitHub issues no ID token, so for GitHub `sub` is the
+account login, not a stable subject. Its owner can rename it, and once it is
+released another account can take it. A verifier must not key durable grants
+on a GitHub `(idp, sub)`: after a rename the user loses them, and the next owner
+of the login inherits them. GitHub's numeric user id is stable, but oauth2-proxy
+does not pass it on today.
+
 App data comes only from the Sandboxes proxy config and the Kubernetes CRs,
 never from the request.
 
