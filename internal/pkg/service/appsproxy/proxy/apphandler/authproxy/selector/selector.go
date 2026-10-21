@@ -276,5 +276,5 @@ func (s *Selector) cookie(req *http.Request, value string, expires time.Duration
 }
 
 func isAcceptedCallbackURL(callback string) bool {
-	return callback != "" && callback != "/" && !strings.HasPrefix(callback, config.InternalPrefix)
+	return callback != "" && callback != "/" && !config.IsInternalPath(callback)
 }
