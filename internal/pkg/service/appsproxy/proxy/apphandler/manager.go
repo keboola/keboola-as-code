@@ -169,10 +169,8 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig, workload k8
 	// Track the end-user session. Sits between authentication and the upstream:
 	// the X-Kbc-User-* headers are already injected at this point, while paths
 	// that require no authentication still get an anonymous session.
-	// The app user token middlewares wrap it: Capture reads X-Kbc-User-Id before
-	// sessions removes it, Inject needs the session id it sets.
+	// The app user token is injected after it, because the token carries the session id.
 	trackedUpstream := chain.New(appUpstream).Prepend(
-		m.appTokenMinter.Capture(),
 		m.sessionsManager.Middleware(app, workload),
 		m.appTokenMinter.Inject(app, workload),
 	)
