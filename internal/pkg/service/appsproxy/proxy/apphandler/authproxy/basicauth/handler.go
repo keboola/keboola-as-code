@@ -25,7 +25,7 @@ import (
 const (
 	basicAuthCookie    = "proxyBasicAuth"
 	callbackQueryParam = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
-	formPagePath       = config.InternalPrefix + "/form"
+	FormPagePath       = config.InternalPrefix + "/form"
 	csrfTokenKey       = "_csrf"
 	csrfTokenMaxAge    = 15 * time.Minute
 )
@@ -67,7 +67,7 @@ func (h *Handler) Name() string {
 }
 
 func (h *Handler) SignInPath() string {
-	return formPagePath
+	return FormPagePath
 }
 
 func (h *Handler) CookieExpiration() time.Duration {
