@@ -362,6 +362,34 @@ func TestInject_GroupsTooLargeOmitted(t *testing.T) {
 	assert.Equal(t, "sub-1", tok.claims.Subject)
 }
 
+func TestInject_GroupsSizeBoundary(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		roles  string
+		groups []any
+	}{
+		{name: "4096 bytes kept", roles: strings.Repeat("g", 4094) + ",h", groups: []any{strings.Repeat("g", 4094), "h"}},
+		{name: "4097 bytes omitted", roles: strings.Repeat("g", 4095) + ",h"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			e := newEnv(t, envOptions{})
+			headers := identityHeaders()
+			headers["X-Kbc-User-Roles"] = tc.roles
+			tok := e.parse(e.serve(testIDP, headers).header.Get(apptoken.HeaderName))
+			if tc.groups == nil {
+				assert.NotContains(t, tok.payload, "groups")
+				return
+			}
+			assert.Equal(t, tc.groups, tok.payload["groups"])
+		})
+	}
+}
+
 func TestInject_GroupsSplitAcrossHeaderValues(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
