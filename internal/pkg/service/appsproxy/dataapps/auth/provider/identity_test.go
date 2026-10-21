@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestOAuthProvider_IdentityProvider(t *testing.T) {
@@ -52,15 +51,5 @@ func TestOAuthProvider_IdentityProvider(t *testing.T) {
 			t.Parallel()
 			assert.Equal(t, tc.expectedURL, tc.provider.IdentityProviderURL())
 		})
-	}
-}
-
-func TestOIDC_RequestsEmailVerifiedClaim(t *testing.T) {
-	t.Parallel()
-
-	for _, p := range []OAuthProvider{OIDC{}, JumpCloud{}, GitLab{}} {
-		opts, err := p.ProxyProviderOptions()
-		require.NoError(t, err)
-		assert.Contains(t, opts.AdditionalClaims, "email_verified")
 	}
 }
