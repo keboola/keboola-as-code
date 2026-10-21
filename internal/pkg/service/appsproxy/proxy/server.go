@@ -73,7 +73,7 @@ func (t *tracerWrapper) Start(ctx context.Context, spanName string, opts ...trac
 }
 
 func (w *spanWrapper) End(options ...trace.SpanEndOption) {
-	if !strings.HasPrefix(w.req.URL.Path, config.InternalPrefix) {
+	if !config.IsInternalPath(w.req.URL.Path) {
 		// Proxied requests of Data App are always OK, regardless of the status code
 		w.SetStatus(codes.Ok, "proxied request")
 	}
