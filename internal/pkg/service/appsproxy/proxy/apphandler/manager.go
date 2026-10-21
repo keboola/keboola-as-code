@@ -171,6 +171,7 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig, workload k8
 	// that require no authentication still get an anonymous session.
 	// The app user token is injected after it, because the token carries the session id.
 	trackedUpstream := chain.New(appUpstream).Prepend(
+		rejectInternalPaths,
 		m.sessionsManager.Middleware(app, workload),
 		m.appTokenMinter.Inject(app, workload),
 	)
