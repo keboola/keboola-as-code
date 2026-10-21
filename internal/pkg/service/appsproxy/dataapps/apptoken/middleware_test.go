@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
@@ -103,11 +104,31 @@ func newEnv(t *testing.T, opts envOptions) *testEnv {
 // objects of kind Sandbox under a guessed resource name the informer never lists.
 func (e *testEnv) createSandbox() {
 	e.t.Helper()
-	_, err := e.mocked.TestFakeK8sClient().Resource(k8sapp.SandboxGVR()).Namespace("keboola").Create(e.t.Context(), sandboxObject(), metav1.CreateOptions{})
+	e.createSandboxObject(testSandbox, testWorkspaceID)
+	e.waitForWorkspace(testWorkspaceID)
+}
+
+func (e *testEnv) createSandboxObject(name, workspaceID string) {
+	e.t.Helper()
+	_, err := e.mocked.TestFakeK8sClient().Resource(k8sapp.SandboxGVR()).Namespace("keboola").Create(e.t.Context(), sandboxObject(name, workspaceID), metav1.CreateOptions{})
 	require.NoError(e.t, err)
+}
+
+// promote points the App's status.productionSandbox at another Sandbox.
+func (e *testEnv) promote(name, workspaceID string) {
+	e.t.Helper()
+	e.createSandboxObject(name, workspaceID)
+	patch := []byte(`{"status":{"productionSandbox":"` + name + `"}}`)
+	_, err := e.mocked.TestFakeK8sClient().Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(e.t.Context(), "app-"+testAppID, k8stypes.MergePatchType, patch, metav1.PatchOptions{})
+	require.NoError(e.t, err)
+	e.waitForWorkspace(workspaceID)
+}
+
+func (e *testEnv) waitForWorkspace(workspaceID string) {
+	e.t.Helper()
 	require.Eventually(e.t, func() bool {
 		info, ok := e.d.AppStateWatcher().GetState(e.t.Context(), e.ref)
-		return ok && info.WorkspaceID == testWorkspaceID
+		return ok && info.WorkspaceID == workspaceID
 	}, 5*time.Second, 10*time.Millisecond)
 }
 
@@ -124,15 +145,15 @@ func appObject() *unstructured.Unstructured {
 	}}
 }
 
-func sandboxObject() *unstructured.Unstructured {
+func sandboxObject(name, workspaceID string) *unstructured.Unstructured {
 	return &unstructured.Unstructured{Object: map[string]any{
 		"apiVersion": k8sapp.Group + "/" + k8sapp.SandboxVersion,
 		"kind":       "Sandbox",
-		"metadata":   map[string]any{"name": testSandbox, "namespace": "keboola"},
+		"metadata":   map[string]any{"name": name, "namespace": "keboola"},
 		"spec":       map[string]any{"appId": testAppID},
 		"status": map[string]any{
 			"currentState": string(k8sapp.AppActualStateRunning),
-			"workspace":    map[string]any{"id": testWorkspaceID, "name": "Workspace"},
+			"workspace":    map[string]any{"id": workspaceID, "name": "Workspace"},
 		},
 	}}
 }
@@ -160,8 +181,19 @@ func signingKeysJSON(t *testing.T, kids ...string) string {
 // A nil idp means the request was not admitted by an OAuth provider.
 func (e *testEnv) serve(idp *apptoken.IdentityProvider, headers map[string]string) upstreamRequest {
 	e.t.Helper()
+	return e.newHandler(idp).serve(headers)
+}
 
-	var got upstreamRequest
+// testHandler is one chain, built once like the app handler builds it, so a
+// test can send several requests through the same instance.
+type testHandler struct {
+	e       *testEnv
+	handler chain.Handler
+	got     *upstreamRequest
+}
+
+func (e *testEnv) newHandler(idp *apptoken.IdentityProvider) *testHandler {
+	got := &upstreamRequest{}
 	upstream := chain.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) error {
 		got.header = req.Header.Clone()
 		got.session, _ = sessions.FromContext(req.Context())
@@ -172,14 +204,19 @@ func (e *testEnv) serve(idp *apptoken.IdentityProvider, headers map[string]strin
 	if idp != nil {
 		handler = apptoken.WithIdentityProvider(handler, *idp)
 	}
+	return &testHandler{e: e, handler: handler, got: got}
+}
 
-	req := httptest.NewRequestWithContext(e.t.Context(), http.MethodGet, "https://app-1.hub.keboola.local/", nil)
+func (h *testHandler) serve(headers map[string]string) upstreamRequest {
+	h.e.t.Helper()
+	*h.got = upstreamRequest{}
+	req := httptest.NewRequestWithContext(h.e.t.Context(), http.MethodGet, "https://app-1.hub.keboola.local/", nil)
 	req.Header.Set("Accept", "text/html")
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	require.NoError(e.t, handler.ServeHTTPOrError(httptest.NewRecorder(), req))
-	return got
+	require.NoError(h.e.t, h.handler.ServeHTTPOrError(httptest.NewRecorder(), req))
+	return *h.got
 }
 
 type parsedToken struct {
@@ -334,6 +371,20 @@ func TestInject_WorkspaceUnknownOmitted(t *testing.T) {
 	assert.Equal(t, map[string]any{"project_id": "123", "app_id": testAppID}, tok.payload["kbc"])
 }
 
+func TestInject_WorkspaceFollowsPromotion(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, envOptions{})
+	handler := e.newHandler(&oidcIDP)
+
+	before := e.parse(handler.serve(identityHeaders()).header.Get(apptoken.HeaderName))
+	assert.Equal(t, testWorkspaceID, before.claims.Kbc.WorkspaceID)
+
+	e.promote("app-1-sbx-next", "91012")
+
+	after := e.parse(handler.serve(identityHeaders()).header.Get(apptoken.HeaderName))
+	assert.Equal(t, "91012", after.claims.Kbc.WorkspaceID)
+}
+
 func TestInject_NoSessionNoSID(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
@@ -407,6 +458,15 @@ func TestInject_ReplacesInboundToken(t *testing.T) {
 		t.Parallel()
 		e := newEnv(t, envOptions{})
 		got := e.serve(nil, map[string]string{apptoken.HeaderName: "forged"})
+		assert.Empty(t, got.header.Values(apptoken.HeaderName))
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		t.Parallel()
+		e := newEnv(t, envOptions{noKeys: true})
+		headers := identityHeaders()
+		headers[apptoken.HeaderName] = "forged"
+		got := e.serve(&oidcIDP, headers)
 		assert.Empty(t, got.header.Values(apptoken.HeaderName))
 	})
 }

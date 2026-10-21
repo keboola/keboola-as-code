@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -239,6 +240,24 @@ func TestAppUserToken_OIDCRequest(t *testing.T) {
 	assert.Equal(t, "admin@keboola.com", tok.payload["email"])
 	assert.Equal(t, []any{"admin"}, tok.payload["groups"])
 	assert.Equal(t, map[string]any{"project_id": "123", "app_id": "oidc", "workspace_id": oidcWorkspaceID}, tok.payload["kbc"])
+}
+
+// TestAppUserToken_SessionID runs the production chain with session tracking
+// on: Inject must come after sessions.Middleware to see the session.
+func TestAppUserToken_SessionID(t *testing.T) {
+	t.Parallel()
+	stream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
+	t.Cleanup(stream.Close)
+	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"), func(cfg *config.Config, _ *previewtest.JWKSServer) {
+		cfg.Sessions.StreamURL = stream.URL
+	})
+	env.syncClock()
+	client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-6", Email: "a@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
+
+	require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/", "Accept", "text/html").StatusCode)
+
+	tok := env.verify(env.lastAppRequest().Header.Get(apptoken.HeaderName))
+	assert.NotEmpty(t, tok.payload["sid"])
 }
 
 func TestAppUserToken_EntraLikeUser(t *testing.T) {
