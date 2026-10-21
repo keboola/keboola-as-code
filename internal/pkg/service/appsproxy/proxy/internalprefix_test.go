@@ -59,6 +59,12 @@ func TestInternalPrefix_UnknownPathNotForwarded(t *testing.T) {
 		env.assertInternalNotFound(client, oidcOrigin+"/_proxy/anything", wsUpgrade...)
 	})
 
+	t.Run("OAuth app, anonymous", func(t *testing.T) {
+		t.Parallel()
+		env := startPreviewEnv(t)
+		env.assertInternalNotFound(env.client, oidcOrigin+"/_proxy/anything")
+	})
+
 	t.Run("basic-auth app, logged in", func(t *testing.T) {
 		t.Parallel()
 		env := startPreviewEnv(t)
@@ -68,6 +74,12 @@ func TestInternalPrefix_UnknownPathNotForwarded(t *testing.T) {
 		env.assertInternalNotFound(client, authOrigin+"/_proxy/anything")
 		env.assertInternalNotFound(client, authOrigin+"/_proxy/sign_in")
 		env.assertInternalNotFound(client, authOrigin+"/_proxy/callback?continue_auth=true")
+	})
+
+	t.Run("basic-auth app, anonymous", func(t *testing.T) {
+		t.Parallel()
+		env := startPreviewEnv(t)
+		env.assertInternalNotFound(env.client, authOrigin+"/_proxy/anything")
 	})
 
 	t.Run("app without providers", func(t *testing.T) {
