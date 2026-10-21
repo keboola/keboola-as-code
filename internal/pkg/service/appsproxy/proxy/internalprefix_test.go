@@ -57,6 +57,8 @@ func TestInternalPrefix_UnknownPathNotForwarded(t *testing.T) {
 		env.assertInternalNotFound(client, oidcOrigin+"/_proxy/anything")
 		env.assertInternalNotFound(client, oidcOrigin+"/_proxy/form")
 		env.assertInternalNotFound(client, oidcOrigin+"/_proxy/anything", wsUpgrade...)
+		env.assertInternalNotFound(client, oidcOrigin+"/a/%2E%2E/_proxy/anything")
+		env.assertInternalNotFound(client, oidcOrigin+"/%2F_proxy/anything")
 	})
 
 	t.Run("OAuth app, anonymous", func(t *testing.T) {
