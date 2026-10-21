@@ -190,6 +190,7 @@ func NewHandler(ctx context.Context, d dependencies.ServiceScope) http.Handler {
 	middlewareCfg := middleware.NewConfig()
 	return middleware.Wrap(
 		mux,
+		stripInternalHeaders(),
 		// Mandatory middleware when used in combination with newTracerProviderWrapper
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
@@ -201,4 +202,18 @@ func NewHandler(ctx context.Context, d dependencies.ServiceScope) http.Handler {
 			middlewareCfg,
 		),
 	)
+}
+
+// stripInternalHeaders deletes inbound X-Kbc-* headers: apps-proxy sets them itself, a client copy must never pass.
+func stripInternalHeaders() middleware.Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			for name := range req.Header {
+				if strings.HasPrefix(strings.ToLower(name), "x-kbc-") {
+					req.Header.Del(name)
+				}
+			}
+			next.ServeHTTP(w, req)
+		})
+	}
 }

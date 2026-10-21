@@ -61,6 +61,8 @@ func TestForwardE2bWebhook(t *testing.T) {
 	req.Header.Set("e2b-webhook-id", "wh-456")
 	req.Header.Set("e2b-delivery-id", "del-789")
 	req.Header.Set("e2b-signature-version", "v1")
+	req.Header.Set("x-kbc-Test", "something")
+	req.Header.Set("X-Kbc-User-Email", "forged@example.com")
 
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
@@ -79,6 +81,10 @@ func TestForwardE2bWebhook(t *testing.T) {
 	assert.Equal(t, "del-789", receivedHeaders.Get("e2b-delivery-id"))
 	assert.Equal(t, "v1", receivedHeaders.Get("e2b-signature-version"))
 	assert.Equal(t, "application/json", receivedHeaders.Get("Content-Type"))
+
+	for name := range receivedHeaders {
+		assert.NotContains(t, strings.ToLower(name), "x-kbc-", name)
+	}
 }
 
 func TestForwardE2bWebhookUpstreamError(t *testing.T) {
