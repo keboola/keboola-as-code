@@ -171,7 +171,10 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Internal paths are routed before any preview session, so sign-out and the OIDC callback never reach the app.
-	if strings.HasPrefix(req.URL.Path, config.InternalPrefix) && h.allAuthHandlers != nil {
+	if isInternalPath(req.URL.Path) {
+		if h.allAuthHandlers == nil || !isKnownAuthPath(req.URL.Path) {
+			return internalPathNotFound(req.URL.Path)
+		}
 		// A sign-out ends the session explicitly. Internal paths never reach
 		// the upstream, so this cannot be handled by the sessions middleware.
 		if req.URL.Path == selector.SignOutPath {
