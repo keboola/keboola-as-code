@@ -51,8 +51,8 @@ func TestContextAttributes(t *testing.T) {
 	// Context attributes match the span details
 	spans := mockTracer.FinishedSpans()
 	assert.Len(t, spans, 1)
-	assert.Equal(t, fmt.Sprint(spans[0].TraceID()), traceID.Emit())
-	assert.Equal(t, fmt.Sprint(spans[0].SpanID()), spanID.Emit())
+	assert.Equal(t, fmt.Sprint(spans[0].TraceID()), traceID.String())
+	assert.Equal(t, fmt.Sprint(spans[0].SpanID()), spanID.String())
 
 	// Span contains common attribute from the context
 	assert.Equal(t, "bar", fmt.Sprint(spans[0].Tag("foo")))
@@ -61,7 +61,7 @@ func TestContextAttributes(t *testing.T) {
 	logger.Info(ctx, "test")
 	logger.AssertJSONMessages(t, fmt.Sprintf(
 		`{"level":"info","message":"test","foo":"bar","dd.trace_id":"%s","dd.span_id":"%s"}`,
-		traceID.Emit(),
-		spanID.Emit(),
+		traceID.String(),
+		spanID.String(),
 	))
 }
