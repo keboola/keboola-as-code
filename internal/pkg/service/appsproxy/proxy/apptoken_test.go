@@ -101,11 +101,10 @@ func TestAppUserToken_JWKSEndpoint(t *testing.T) {
 }
 
 const (
-	oidcOrigin       = "https://" + oidcHost
-	prefixHost       = "prefix.hub.keboola.local"
-	oidcSandbox      = "app-oidc-sbx"
-	oidcWorkspaceID  = "91011"
-	emailVerifiedHdr = "X-Kbc-User-Email-Verified"
+	oidcOrigin      = "https://" + oidcHost
+	prefixHost      = "prefix.hub.keboola.local"
+	oidcSandbox     = "app-oidc-sbx"
+	oidcWorkspaceID = "91011"
 )
 
 var oidcRef = k8sapp.WorkloadRef{AppID: "oidc"} //nolint:gochecknoglobals // test fixture
@@ -230,7 +229,7 @@ func TestAppUserToken_OIDCRequest(t *testing.T) {
 	require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/some/path").StatusCode)
 
 	upstream := env.lastAppRequest()
-	assert.Empty(t, upstream.Header.Values(emailVerifiedHdr))
+	assert.Empty(t, upstream.Header.Values(apptoken.EmailVerifiedHeader))
 	assert.Empty(t, upstream.Header.Values("X-Kbc-User-Id"))
 	tok := env.verify(upstream.Header.Get(apptoken.HeaderName))
 	assert.Equal(t, "kbc-app-user+jwt", tok.header["typ"])
@@ -280,11 +279,11 @@ func TestAppUserToken_ForgedHeadersRemoved(t *testing.T) {
 	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
 	client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-3", Email: "victim@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
 
-	resp := env.send(client, oidcOrigin+"/", apptoken.HeaderName, "forged", emailVerifiedHdr, "true")
+	resp := env.send(client, oidcOrigin+"/", apptoken.HeaderName, "forged", apptoken.EmailVerifiedHeader, "true")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	upstream := env.lastAppRequest()
-	assert.Empty(t, upstream.Header.Values(emailVerifiedHdr))
+	assert.Empty(t, upstream.Header.Values(apptoken.EmailVerifiedHeader))
 	require.Len(t, upstream.Header.Values(apptoken.HeaderName), 1)
 	tok := env.verify(upstream.Header.Get(apptoken.HeaderName))
 	assert.Equal(t, "sub-3", tok.payload["sub"])
@@ -294,7 +293,7 @@ func TestAppUserToken_ForgedHeadersRemoved(t *testing.T) {
 func TestAppUserToken_NoTokenWithoutOAuth(t *testing.T) {
 	t.Parallel()
 
-	forged := []string{apptoken.HeaderName, "forged", "X-Kbc-User-Id", "sub-1", emailVerifiedHdr, "true"}
+	forged := []string{apptoken.HeaderName, "forged", "X-Kbc-User-Id", "sub-1", apptoken.EmailVerifiedHeader, "true"}
 
 	t.Run("basic auth", func(t *testing.T) {
 		t.Parallel()
@@ -337,7 +336,7 @@ func TestAppUserToken_NoTokenWithoutOAuth(t *testing.T) {
 		env.waitForKeys(authHost, authOrigin)
 		cookie := env.session(authHost, authOrigin)
 
-		require.Equal(t, http.StatusOK, env.get(authHost, "/", cookie, map[string]string{apptoken.HeaderName: "forged", emailVerifiedHdr: "true"}).StatusCode)
+		require.Equal(t, http.StatusOK, env.get(authHost, "/", cookie, map[string]string{apptoken.HeaderName: "forged", apptoken.EmailVerifiedHeader: "true"}).StatusCode)
 		assertNoToken(t, env.lastAppRequest())
 	})
 
@@ -353,7 +352,7 @@ func TestAppUserToken_NoTokenWithoutOAuth(t *testing.T) {
 func assertNoToken(t *testing.T, upstream *http.Request) {
 	t.Helper()
 	assert.Empty(t, upstream.Header.Values(apptoken.HeaderName))
-	assert.Empty(t, upstream.Header.Values(emailVerifiedHdr))
+	assert.Empty(t, upstream.Header.Values(apptoken.EmailVerifiedHeader))
 }
 
 func TestAppUserToken_Rotation(t *testing.T) {

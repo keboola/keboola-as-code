@@ -58,23 +58,14 @@ func captureIdentity(req *http.Request, idpURL, emailVerified string) (identity,
 // parseGroups splits the comma-joined header. A group name containing a comma
 // is split too; accepted, the header format cannot carry it.
 func parseGroups(values []string) []string {
-	var groups []string
+	groups := make([]string, 0, len(values))
 	size := 0
 	for _, value := range values {
 		size += len(value)
-		groups = appendNonEmpty(groups, strings.Split(value, ","))
+		groups = append(groups, strings.FieldsFunc(value, func(r rune) bool { return r == ',' })...)
 	}
 	if size > maxGroupsBytes {
 		return nil
 	}
 	return groups
-}
-
-func appendNonEmpty(dst, items []string) []string {
-	for _, item := range items {
-		if item != "" {
-			dst = append(dst, item)
-		}
-	}
-	return dst
 }

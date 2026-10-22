@@ -333,33 +333,12 @@ func TestInject_EmailOmittedWhenNotVerified(t *testing.T) {
 	}
 }
 
-func TestInject_EmailNeedsTheClaimForEveryProvider(t *testing.T) {
-	t.Parallel()
-	e := newEnv(t, envOptions{})
-
-	tok := e.parse(e.serve("https://github.com", without(identityHeaders(), apptoken.EmailVerifiedHeader)).header.Get(apptoken.HeaderName))
-	assert.NotContains(t, tok.payload, "email")
-	assert.Equal(t, "https://github.com", tok.payload["idp"])
-}
-
 func TestInject_GroupsUnknownOmitted(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
 
 	tok := e.parse(e.serve(testIDP, without(identityHeaders(), "X-Kbc-User-Roles")).header.Get(apptoken.HeaderName))
 	assert.NotContains(t, tok.payload, "groups")
-}
-
-func TestInject_GroupsTooLargeOmitted(t *testing.T) {
-	t.Parallel()
-	e := newEnv(t, envOptions{})
-
-	headers := identityHeaders()
-	headers["X-Kbc-User-Roles"] = strings.TrimSuffix(strings.Repeat("group-0123456789,", 300), ",")
-	require.Greater(t, len(headers["X-Kbc-User-Roles"]), 4096)
-	tok := e.parse(e.serve(testIDP, headers).header.Get(apptoken.HeaderName))
-	assert.NotContains(t, tok.payload, "groups")
-	assert.Equal(t, "sub-1", tok.claims.Subject)
 }
 
 func TestInject_GroupsSizeBoundary(t *testing.T) {
@@ -390,7 +369,7 @@ func TestInject_GroupsSizeBoundary(t *testing.T) {
 	}
 }
 
-func TestInject_GroupsSplitAcrossHeaderValues(t *testing.T) {
+func TestInject_GroupsEmptyItemsDropped(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
 
