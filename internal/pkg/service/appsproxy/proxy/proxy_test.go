@@ -3010,6 +3010,33 @@ func TestAppProxyRouter(t *testing.T) {
 			expectedNotifications: map[string]int{},
 		},
 		testCase{
+			name: "stopped-draft-of-unpublished-app-is-woken",
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				t.Helper()
+				setupDraftSandboxInState("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local", k8sapp.AppActualStateStopped)(t, fakeClient, watcher)
+				patchStoppedApp("123", unpublishedAppPatch(2))(t, fakeClient, watcher)
+			},
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				appPatchesBefore := appPatchCount(fakeClient, "123")
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-abc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "<title>Starting</title>")
+
+				require.Eventually(t, func() bool {
+					return patchCount(fakeClient, k8sapp.SandboxResource, "draft-abc") > 0
+				}, 5*time.Second, 50*time.Millisecond, "expected a wake patch of the draft Sandbox CR")
+				assert.Equal(t, appPatchesBefore, appPatchCount(fakeClient, "123"), "the App must not be woken in place of the draft")
+			},
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
 			name: "draft-of-unpublished-app-is-served",
 			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				t.Helper()
@@ -3901,10 +3928,14 @@ func patchStoppedApp(appID, patch string) func(t *testing.T, fakeClient *k8sfake
 // appPatchCount counts patches of the App CR, including ones that change
 // nothing, which is what a wake of an already-Running spec.state is.
 func appPatchCount(fakeClient *k8sfake.FakeDynamicClient, appID string) int {
+	return patchCount(fakeClient, k8sapp.Resource, "app-"+appID)
+}
+
+func patchCount(fakeClient *k8sfake.FakeDynamicClient, resource, name string) int {
 	n := 0
 	for _, action := range fakeClient.Actions() {
 		patch, ok := action.(k8stesting.PatchAction)
-		if ok && patch.GetResource().Resource == k8sapp.Resource && patch.GetName() == "app-"+appID {
+		if ok && patch.GetResource().Resource == resource && patch.GetName() == name {
 			n++
 		}
 	}

@@ -154,8 +154,6 @@ type AppInfo struct {
 	// Sandbox itself, or the App's status.productionSandbox. Empty when that
 	// Sandbox has none or is not cached; both are valid states and not logged.
 	WorkspaceID string
-	// NotDeployed is true for an App the operator reports as having no
-	// production member, which is the state an unpublish leaves.
 	NotDeployed bool
 }
 
