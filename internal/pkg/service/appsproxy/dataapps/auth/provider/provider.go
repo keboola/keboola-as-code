@@ -37,6 +37,7 @@ type Provider interface {
 type OAuthProvider interface {
 	Provider
 	ProxyProviderOptions() (proxyOptions.Provider, error)
+	IdentityProviderURL() string
 }
 
 func (v ID) String() string {

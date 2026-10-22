@@ -11,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
@@ -76,6 +77,8 @@ func proxyConfig(
 		headerFromClaim("X-Kbc-User-Name", "name"),
 		headerFromClaim("X-Kbc-User-Email", options.OIDCEmailClaim),
 		headerFromClaim("X-Kbc-User-Roles", options.OIDCGroupsClaim),
+		// Internal: read by the app user token minter, stripped before the app.
+		headerFromClaim(apptoken.EmailVerifiedHeader, "email_verified"),
 	}
 
 	// Cannot separate errors from info because when ErrToInfo is false (default),

@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"strings"
+
 	proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/providers"
 
@@ -37,7 +39,9 @@ func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 		// stable across e-mail and display-name changes, which the email claim
 		// used as the user id is not. Only reachable when the provider issues
 		// an ID token, so GitHub — which does not — yields nothing.
-		AdditionalClaims: []string{"sub"},
+		// email_verified feeds the app user token: oauth2-proxy admits a login
+		// whose ID token omits it, so only an explicit true makes the email trusted.
+		AdditionalClaims: []string{"sub", "email_verified"},
 		OIDCConfig: proxyOptions.OIDCOptions{
 			IssuerURL:      v.IssuerURL,
 			EmailClaim:     proxyOptions.OIDCEmailClaim,
@@ -58,4 +62,8 @@ func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 	}
 
 	return p, nil
+}
+
+func (v OIDC) IdentityProviderURL() string {
+	return strings.TrimRight(v.IssuerURL, "/")
 }
