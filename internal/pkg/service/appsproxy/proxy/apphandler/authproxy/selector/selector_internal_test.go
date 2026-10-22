@@ -19,6 +19,9 @@ func TestIsAcceptedCallbackURL(t *testing.T) {
 		"/_PROXY/sign_in": false,
 		"/a/../_proxy/x":  false,
 		"/_proxy;x":       false,
+		"/_proxy?x=1":     false,
+		"/_proxy#x":       false,
+		"/some/path?x=1":  true,
 	}
 	for callback, accepted := range cases {
 		assert.Equal(t, accepted, isAcceptedCallbackURL(callback), callback)
