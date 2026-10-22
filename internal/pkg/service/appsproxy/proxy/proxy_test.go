@@ -2410,11 +2410,18 @@ func TestAppProxyRouter(t *testing.T) {
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, location, nil)
 				require.NoError(t, err)
 				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: cookies[0].Value})
+				request.Header.Set("x-kbc-Test", "something")
+				request.Header.Set("X-Kbc-User-Email", "admin@keboola.com")
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				body, err = io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Hello, client")
+
+				require.Len(t, *appServer.Requests, 1)
+				for name := range (*appServer.Requests)[0].Header {
+					assert.NotContains(t, strings.ToLower(name), "x-kbc-", name)
+				}
 			},
 			expectedNotifications: map[string]int{
 				"auth": 1,

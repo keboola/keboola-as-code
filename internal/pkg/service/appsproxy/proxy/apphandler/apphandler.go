@@ -133,13 +133,6 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 
 	req = req.WithContext(ctx)
 
-	// Delete all X-KBC-* headers as they're used for internal information.
-	for name := range req.Header {
-		if strings.HasPrefix(strings.ToLower(name), "x-kbc-") {
-			req.Header.Del(name)
-		}
-	}
-
 	// Add request ID header, for OAuth2Proxy internals and app itself
 	if id := middleware.RequestIDFromContext(req.Context()); id != "" { //nolint:contextcheck // false positive
 		req.Header.Set(config.RequestIDHeader, id)
