@@ -70,6 +70,10 @@ func otelOptions(cfg Config, tp trace.TracerProvider, _ metric.MeterProvider) []
 		otelhttp.WithFilter(func(req *http.Request) bool {
 			return !isTelemetryDisabled(req)
 		}),
+		// otelhttp names server spans after the HTTP method by default; keep SpanName.
+		otelhttp.WithSpanNameFormatter(func(operation string, _ *http.Request) string {
+			return operation
+		}),
 	}
 	if cfg.propagators != nil {
 		out = append(out, otelhttp.WithPropagators(cfg.propagators))
