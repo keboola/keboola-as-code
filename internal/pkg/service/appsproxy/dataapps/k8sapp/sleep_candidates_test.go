@@ -8,7 +8,9 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
+	k8sfake "k8s.io/client-go/dynamic/fake"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
@@ -43,19 +45,30 @@ func newAppWithProductionSandbox(state k8sapp.AppActualState, member string) *un
 
 func syncedWatcher(t *testing.T, logger log.Logger, objects ...*unstructured.Unstructured) *k8sapp.StateWatcher {
 	t.Helper()
-	fakeClient := newFakeClient()
-	watcher := k8sapp.NewStateWatcher(newTestDepsWithLogger(t, logger), fakeClient, testNamespace)
+	watcher, _ := syncedWatcherWithClient(t, logger, objects...)
+	return watcher
+}
 
+func syncedWatcherWithClient(t *testing.T, logger log.Logger, objects ...*unstructured.Unstructured) (*k8sapp.StateWatcher, *k8sfake.FakeDynamicClient) {
+	t.Helper()
+	fakeClient := newFakeClient()
+	// The objects exist before the informers list them, so once WaitForCacheSync
+	// returns every one of them is cached, not just the ones that won the race.
 	for _, obj := range objects {
-		gvr := k8sapp.AppGVR()
-		if obj.GetKind() == "Sandbox" {
-			gvr = k8sapp.SandboxGVR()
-		}
-		_, err := fakeClient.Resource(gvr).Namespace(testNamespace).Create(t.Context(), obj, metav1.CreateOptions{})
+		_, err := fakeClient.Resource(gvrOf(obj)).Namespace(testNamespace).Create(t.Context(), obj, metav1.CreateOptions{})
 		require.NoError(t, err)
 	}
+
+	watcher := k8sapp.NewStateWatcher(newTestDepsWithLogger(t, logger), fakeClient, testNamespace)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
-	return watcher
+	return watcher, fakeClient
+}
+
+func gvrOf(obj *unstructured.Unstructured) schema.GroupVersionResource {
+	if obj.GetKind() == "Sandbox" {
+		return k8sapp.SandboxGVR()
+	}
+	return k8sapp.AppGVR()
 }
 
 func refsOf(candidates []k8sapp.SleepCandidate) []k8sapp.WorkloadRef {

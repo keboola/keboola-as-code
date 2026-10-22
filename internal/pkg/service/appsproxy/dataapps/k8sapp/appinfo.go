@@ -150,6 +150,10 @@ type AppInfo struct {
 	// referenced by .status.e2bSandbox.accessTokenSecretName.
 	// Empty when the app is not an E2B sandbox or the secret is unavailable.
 	E2BAccessToken string
+	// WorkspaceID comes from the Sandbox that runs the workload: the draft
+	// Sandbox itself, or the App's status.productionSandbox. Empty when that
+	// Sandbox has none or is not cached; both are valid states and not logged.
+	WorkspaceID string
 }
 
 type appStatus struct {
@@ -163,6 +167,12 @@ type appStatus struct {
 	// started, on an App when it entered Running or its route moved to another
 	// member.
 	LastStartedTime *metav1.Time `json:"lastStartedTime,omitempty"`
+	// Workspace is set on Sandbox CRs only.
+	Workspace appWorkspace `json:"workspace"`
+}
+
+type appWorkspace struct {
+	ID string `json:"id,omitempty"`
 }
 
 type e2bSandbox struct {
