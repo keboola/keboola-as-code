@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strings"
 	"time"
 
 	oautproxylogger "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
@@ -73,7 +72,7 @@ func (t *tracerWrapper) Start(ctx context.Context, spanName string, opts ...trac
 }
 
 func (w *spanWrapper) End(options ...trace.SpanEndOption) {
-	if !strings.HasPrefix(w.req.URL.Path, config.InternalPrefix) {
+	if !config.IsInternalPath(w.req.URL.Path) {
 		// Proxied requests of Data App are always OK, regardless of the status code
 		w.SetStatus(codes.Ok, "proxied request")
 	}

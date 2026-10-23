@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/session"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
@@ -151,27 +150,13 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 		return nil
 	}
 
-	if req.URL.Path == preview.Path {
-		return h.servePreviewEndpoint(w, req)
+	// Internal paths are routed before any preview session and app rule.
+	if config.IsInternalPath(req.URL.Path) {
+		return h.serveInternal(w, req)
 	}
 
 	// Removed from every request, so no upstream path ever sees it.
 	previewCookie := session.TakeCookie(req)
-
-	if req.URL.Path == selector.SignOutPath {
-		h.clearPreviewSession(w, previewCookie)
-		previewCookie = ""
-	}
-
-	// Internal paths are routed before any preview session, so sign-out and the OIDC callback never reach the app.
-	if strings.HasPrefix(req.URL.Path, config.InternalPrefix) && h.allAuthHandlers != nil {
-		// A sign-out ends the session explicitly. Internal paths never reach
-		// the upstream, so this cannot be handled by the sessions middleware.
-		if req.URL.Path == selector.SignOutPath {
-			h.manager.sessionsManager.SignOut(w, req, h.app)
-		}
-		return h.allAuthHandlers.ServeHTTPOrError(w, req)
-	}
 
 	if h.previewSessionValid(w, req, previewCookie) {
 		return h.upstream.ServeHTTPOrError(w, req)
