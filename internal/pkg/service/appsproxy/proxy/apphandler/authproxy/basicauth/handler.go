@@ -1,13 +1,11 @@
 package basicauth
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
-	"io"
-	"mime"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/jonboulle/clockwork"
@@ -31,7 +29,6 @@ const (
 	formPagePath       = config.InternalPrefix + "/form"
 	csrfTokenKey       = "_csrf"
 	csrfTokenMaxAge    = 15 * time.Minute
-	maxFormBodySize    = 1 << 20 // 1MB
 )
 
 type Handler struct {
@@ -93,8 +90,8 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	}
 
 	requestCookie, _ := req.Cookie(basicAuthCookie)
-	// Pass request to upstream when cookie have been set, except the submit of our login form
-	if requestCookie != nil && req.URL.Path != selector.SignOutPath && h.isCookieAuthorized(requestCookie) == nil && !h.isLoginFormSubmit(req) {
+	// Pass request to upstream when cookie have been set, the login form is always handled here
+	if requestCookie != nil && req.URL.Path != selector.SignOutPath && req.URL.Path != formPagePath && h.isCookieAuthorized(requestCookie) == nil {
 		h.setCookie(w, host, h.CookieExpiration(), requestCookie)
 		return h.upstream.ServeHTTPOrError(w, req)
 	}
@@ -106,7 +103,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	}
 
 	// Limit request body size to prevent memory exhaustion attacks
-	req.Body = http.MaxBytesReader(w, req.Body, maxFormBodySize)
+	req.Body = http.MaxBytesReader(w, req.Body, 1<<20) // 1MB limit
 	if err := req.ParseForm(); err != nil {
 		var maxBytesErr *http.MaxBytesError
 		if errors.As(err, &maxBytesErr) {
@@ -128,9 +125,14 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	// Login page first access
 	csrfToken := xsrftoken.Generate(csrfTokenKey, h.csrfTokenSalt, "/")
 	fragment := fmt.Sprintf(`<input type="hidden" name="%s" value="%s">`, template.HTMLEscapeString(csrfTokenKey), template.HTMLEscapeString(csrfToken))
+	callback := callbackPath(req)
+	formAction := &url.URL{Path: formPagePath}
+	if callback != "/" {
+		formAction.RawQuery = url.Values{callbackQueryParam: {callback}}.Encode()
+	}
 	// This represents `GET` request for `form`
 	if !req.Form.Has("password") && requestCookie == nil {
-		h.pageWriter.WriteLoginPage(w, req, &h.app, template.HTML(fragment), nil) // #nosec G203 The used method does not auto-escape HTML. This can potentially lead to 'Cross-site Scripting' vulnerabilities
+		h.pageWriter.WriteLoginPage(w, req, &h.app, formAction.String(), template.HTML(fragment), nil) // #nosec G203 The used method does not auto-escape HTML. This can potentially lead to 'Cross-site Scripting' vulnerabilities
 		return nil
 	}
 
@@ -138,20 +140,15 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	p := req.Form.Get("password")
 	if err := h.isAuthorized(p, requestCookie); err != nil {
 		h.logger.Warn(req.Context(), err.Error())
-		h.pageWriter.WriteLoginPage(w, req, &h.app, template.HTML(fragment), err) // #nosec G203 The used method does not auto-escape HTML. This can potentially lead to 'Cross-site Scripting' vulnerabilities
+		h.pageWriter.WriteLoginPage(w, req, &h.app, formAction.String(), template.HTML(fragment), err) // #nosec G203 The used method does not auto-escape HTML. This can potentially lead to 'Cross-site Scripting' vulnerabilities
 		return nil
 	}
 
 	// Redirect to page that user comes from
-	path := req.Header.Get(callbackQueryParam)
-	if path == "" {
-		path = "/"
-	}
-
 	redirectURL := &url.URL{
 		Scheme: h.publicURL.Scheme,
 		Host:   req.Host,
-		Path:   path,
+		Path:   callback,
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(p+string(h.app.ID)), bcrypt.DefaultCost)
 	if err != nil {
@@ -168,38 +165,18 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	return nil
 }
 
-// isLoginFormSubmit reports whether the request submits the login form this handler rendered.
+// callbackPath returns the app path to redirect to after login.
 //
-// - The browser omits the SameSite=Strict cookie on a cross-site navigation, so the login page can show despite a valid cookie.
-// - Its form POST then carries the cookie, and must not reach the upstream, which may not accept POST.
-// - The CSRF token proves the form is ours, not an app form with the same fields.
-// - The body is restored, so the upstream still reads it.
-func (h *Handler) isLoginFormSubmit(req *http.Request) bool {
-	if req.Method != http.MethodPost || req.Body == nil {
-		return false
+// - The selector sets the header to the requested app path.
+// - The login form posts to formPagePath and carries the path in the query.
+// - Other values fall back to "/".
+func callbackPath(req *http.Request) string {
+	for _, path := range []string{req.Header.Get(callbackQueryParam), req.URL.Query().Get(callbackQueryParam)} {
+		if strings.HasPrefix(path, "/") && !strings.HasPrefix(path, config.InternalPrefix) {
+			return path
+		}
 	}
-
-	if mediaType, _, _ := mime.ParseMediaType(req.Header.Get("Content-Type")); mediaType != "application/x-www-form-urlencoded" {
-		return false
-	}
-
-	body, err := io.ReadAll(io.LimitReader(req.Body, maxFormBodySize))
-	req.Body = struct {
-		io.Reader
-		io.Closer
-	}{io.MultiReader(bytes.NewReader(body), req.Body), req.Body}
-	if err != nil {
-		h.logger.Warnf(req.Context(), "cannot read request body: %s", err.Error())
-		return false
-	}
-
-	form, err := url.ParseQuery(string(body))
-	if err != nil {
-		return false
-	}
-
-	token := form.Get(csrfTokenKey)
-	return form.Has("password") && token != "" && xsrftoken.ValidFor(token, csrfTokenKey, h.csrfTokenSalt, "/", csrfTokenMaxAge)
+	return "/"
 }
 
 func (h *Handler) isAuthorized(password string, cookie *http.Cookie) error {
