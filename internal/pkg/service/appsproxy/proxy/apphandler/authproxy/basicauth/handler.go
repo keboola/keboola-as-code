@@ -1,8 +1,11 @@
 package basicauth
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
+	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"time"
@@ -28,6 +31,7 @@ const (
 	formPagePath       = config.InternalPrefix + "/form"
 	csrfTokenKey       = "_csrf"
 	csrfTokenMaxAge    = 15 * time.Minute
+	maxFormBodySize    = 1 << 20 // 1MB
 )
 
 type Handler struct {
@@ -89,8 +93,8 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	}
 
 	requestCookie, _ := req.Cookie(basicAuthCookie)
-	// Pass request to upstream when cookie have been set
-	if requestCookie != nil && req.URL.Path != selector.SignOutPath && h.isCookieAuthorized(requestCookie) == nil {
+	// Pass request to upstream when cookie have been set, except the submit of our login form
+	if requestCookie != nil && req.URL.Path != selector.SignOutPath && h.isCookieAuthorized(requestCookie) == nil && !h.isLoginFormSubmit(req) {
 		h.setCookie(w, host, h.CookieExpiration(), requestCookie)
 		return h.upstream.ServeHTTPOrError(w, req)
 	}
@@ -102,7 +106,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	}
 
 	// Limit request body size to prevent memory exhaustion attacks
-	req.Body = http.MaxBytesReader(w, req.Body, 1<<20) // 1MB limit
+	req.Body = http.MaxBytesReader(w, req.Body, maxFormBodySize)
 	if err := req.ParseForm(); err != nil {
 		var maxBytesErr *http.MaxBytesError
 		if errors.As(err, &maxBytesErr) {
@@ -162,6 +166,40 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	w.Header().Set("Location", redirectURL.String())
 	w.WriteHeader(http.StatusMovedPermanently)
 	return nil
+}
+
+// isLoginFormSubmit reports whether the request submits the login form this handler rendered.
+//
+// - The browser omits the SameSite=Strict cookie on a cross-site navigation, so the login page can show despite a valid cookie.
+// - Its form POST then carries the cookie, and must not reach the upstream, which may not accept POST.
+// - The CSRF token proves the form is ours, not an app form with the same fields.
+// - The body is restored, so the upstream still reads it.
+func (h *Handler) isLoginFormSubmit(req *http.Request) bool {
+	if req.Method != http.MethodPost || req.Body == nil {
+		return false
+	}
+
+	if mediaType, _, _ := mime.ParseMediaType(req.Header.Get("Content-Type")); mediaType != "application/x-www-form-urlencoded" {
+		return false
+	}
+
+	body, err := io.ReadAll(io.LimitReader(req.Body, maxFormBodySize))
+	req.Body = struct {
+		io.Reader
+		io.Closer
+	}{io.MultiReader(bytes.NewReader(body), req.Body), req.Body}
+	if err != nil {
+		h.logger.Warnf(req.Context(), "cannot read request body: %s", err.Error())
+		return false
+	}
+
+	form, err := url.ParseQuery(string(body))
+	if err != nil {
+		return false
+	}
+
+	token := form.Get(csrfTokenKey)
+	return form.Has("password") && token != "" && xsrftoken.ValidFor(token, csrfTokenKey, h.csrfTokenSalt, "/", csrfTokenMaxAge)
 }
 
 func (h *Handler) isAuthorized(password string, cookie *http.Cookie) error {
