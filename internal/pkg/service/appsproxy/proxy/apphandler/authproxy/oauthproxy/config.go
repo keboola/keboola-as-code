@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
@@ -50,7 +49,7 @@ func proxyConfig(
 	// Render the selector page, if login is needed, it is not an internal URL
 	v.OnNeedsLogin = func(rw http.ResponseWriter, req *http.Request) (stop bool) {
 		// Bypass internal paths
-		if strings.HasPrefix(req.URL.Path, v.ProxyPrefix) {
+		if config.IsInternalPath(req.URL.Path) {
 			return false
 		}
 

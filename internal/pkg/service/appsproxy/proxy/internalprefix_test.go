@@ -140,3 +140,17 @@ func TestInternalPrefix_MuxPathsNotForwarded(t *testing.T) {
 		env.assertInternalNotFound(env.client, publicOrigin+path)
 	}
 }
+
+func TestInternalPrefix_LookalikePathGetsSelector(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+
+	for _, path := range []string{"/some/path", "/_proxyfoo"} {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://multi.hub.keboola.local"+path, nil)
+		require.NoError(t, err)
+		req.AddCookie(&http.Cookie{Name: "_oauth2_provider", Value: "oidc1"})
+		resp := env.do(req)
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode, path)
+		assert.Contains(t, readBody(t, resp), "_proxy/selection?provider=oidc0", path)
+	}
+}
