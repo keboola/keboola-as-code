@@ -2335,6 +2335,7 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "<title>Login</title>")
+				assert.Contains(t, string(body), `<form method="POST" action="/_proxy/form?rd=%2Fapp%2Furl">`)
 
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/app/url", bytes.NewBuffer([]byte("password=abc")))
 				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -2365,6 +2366,15 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err = io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Hello, client")
+
+				// The form action keeps the app path for the redirect after login
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/_proxy/form?rd=%2Fapp%2Furl", bytes.NewBuffer([]byte("password=abc")))
+				require.NoError(t, err)
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusMovedPermanently, response.StatusCode)
+				assert.Equal(t, "https://basic-auth.hub.keboola.local/app/url", response.Header.Get("Location"))
 			},
 			expectedNotifications: map[string]int{
 				"auth": 1,
@@ -2457,6 +2467,85 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Hello, client")
 				require.Len(t, response.Cookies(), 2)
+			},
+			expectedNotifications: map[string]int{
+				"auth": 1,
+			},
+		},
+		{
+			name: "public-basic-auth-login-form-with-valid-cookie",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				// A cross-site navigation omits the SameSite=Strict cookie, so the login page is shown
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://basic-auth.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "<title>Login</title>")
+				assert.Contains(t, string(body), `<form method="POST" action="/_proxy/form">`)
+				csrfMatch := regexpcache.MustCompile(`name="_csrf" value="([^"]+)"`).FindStringSubmatch(string(body))
+				require.Len(t, csrfMatch, 2)
+
+				// The same-origin form submit carries the still valid cookie
+				form := url.Values{"password": {"abc"}, "_csrf": {html.UnescapeString(csrfMatch[1])}}
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/_proxy/form", strings.NewReader(form.Encode()))
+				require.NoError(t, err)
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "$2a$10$65mF6LI2F0Nm9PkQk8DlJu.C5jD.fseeXWn9CCGmDxLPomikYWtte"})
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusMovedPermanently, response.StatusCode)
+				assert.Contains(t, response.Header.Get("Location"), "https://basic-auth.hub.keboola.local/")
+				cookies := response.Cookies()
+				if assert.Len(t, cookies, 1) {
+					assert.Equal(t, "proxyBasicAuth", cookies[0].Name)
+					assert.Contains(t, cookies[0].Value, "$2a$10$")
+				}
+
+				// The login POST must not reach the upstream
+				assert.Empty(t, *appServer.Requests)
+			},
+			expectedNotifications: map[string]int{},
+		},
+		{
+			name: "public-basic-auth-login-form-expired-csrf-with-valid-cookie",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				// The proxy password must not reach the upstream, even with an expired CSRF token
+				form := url.Values{"password": {"abc"}, "_csrf": {"expired"}}
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/_proxy/form", strings.NewReader(form.Encode()))
+				require.NoError(t, err)
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "$2a$10$65mF6LI2F0Nm9PkQk8DlJu.C5jD.fseeXWn9CCGmDxLPomikYWtte"})
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "Session expired, reload page")
+				assert.Empty(t, *appServer.Requests)
+			},
+			expectedNotifications: map[string]int{},
+		},
+		{
+			name: "public-basic-auth-cookie-app-form-post",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				// A form of the app itself, without a valid proxy CSRF token, is passed to the upstream unchanged
+				form := url.Values{"password": {"xyz"}, "_csrf": {"app-token"}}.Encode()
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/echo", strings.NewReader(form))
+				require.NoError(t, err)
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "$2a$10$65mF6LI2F0Nm9PkQk8DlJu.C5jD.fseeXWn9CCGmDxLPomikYWtte"})
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Equal(t, form, string(body))
+
+				require.Len(t, *appServer.Requests, 1)
+				assert.Equal(t, http.MethodPost, (*appServer.Requests)[0].Method)
 			},
 			expectedNotifications: map[string]int{
 				"auth": 1,

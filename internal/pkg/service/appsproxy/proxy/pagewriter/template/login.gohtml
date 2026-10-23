@@ -21,7 +21,7 @@
       <p>{{ .Error }}</p>
     </div>
     {{ end }}
-    <form method="POST">
+    <form method="POST" action="{{ .FormAction }}">
       <label for="password">Password</label>
       <div class="field">
         <input type="password" id="password" name="password" placeholder="Enter password"

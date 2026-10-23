@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/jonboulle/clockwork"
@@ -89,8 +90,8 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	}
 
 	requestCookie, _ := req.Cookie(basicAuthCookie)
-	// Pass request to upstream when cookie have been set
-	if requestCookie != nil && req.URL.Path != selector.SignOutPath && h.isCookieAuthorized(requestCookie) == nil {
+	// Pass request to upstream when cookie have been set, the login form is always handled here
+	if requestCookie != nil && req.URL.Path != selector.SignOutPath && req.URL.Path != formPagePath && h.isCookieAuthorized(requestCookie) == nil {
 		h.setCookie(w, host, h.CookieExpiration(), requestCookie)
 		return h.upstream.ServeHTTPOrError(w, req)
 	}
@@ -124,9 +125,14 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	// Login page first access
 	csrfToken := xsrftoken.Generate(csrfTokenKey, h.csrfTokenSalt, "/")
 	fragment := fmt.Sprintf(`<input type="hidden" name="%s" value="%s">`, template.HTMLEscapeString(csrfTokenKey), template.HTMLEscapeString(csrfToken))
+	callback := callbackPath(req)
+	formAction := &url.URL{Path: formPagePath}
+	if callback != "/" {
+		formAction.RawQuery = url.Values{callbackQueryParam: {callback}}.Encode()
+	}
 	// This represents `GET` request for `form`
 	if !req.Form.Has("password") && requestCookie == nil {
-		h.pageWriter.WriteLoginPage(w, req, &h.app, template.HTML(fragment), nil) // #nosec G203 The used method does not auto-escape HTML. This can potentially lead to 'Cross-site Scripting' vulnerabilities
+		h.pageWriter.WriteLoginPage(w, req, &h.app, formAction.String(), template.HTML(fragment), nil) // #nosec G203 The used method does not auto-escape HTML. This can potentially lead to 'Cross-site Scripting' vulnerabilities
 		return nil
 	}
 
@@ -134,20 +140,15 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	p := req.Form.Get("password")
 	if err := h.isAuthorized(p, requestCookie); err != nil {
 		h.logger.Warn(req.Context(), err.Error())
-		h.pageWriter.WriteLoginPage(w, req, &h.app, template.HTML(fragment), err) // #nosec G203 The used method does not auto-escape HTML. This can potentially lead to 'Cross-site Scripting' vulnerabilities
+		h.pageWriter.WriteLoginPage(w, req, &h.app, formAction.String(), template.HTML(fragment), err) // #nosec G203 The used method does not auto-escape HTML. This can potentially lead to 'Cross-site Scripting' vulnerabilities
 		return nil
 	}
 
 	// Redirect to page that user comes from
-	path := req.Header.Get(callbackQueryParam)
-	if path == "" {
-		path = "/"
-	}
-
 	redirectURL := &url.URL{
 		Scheme: h.publicURL.Scheme,
 		Host:   req.Host,
-		Path:   path,
+		Path:   callback,
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(p+string(h.app.ID)), bcrypt.DefaultCost)
 	if err != nil {
@@ -162,6 +163,20 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	w.Header().Set("Location", redirectURL.String())
 	w.WriteHeader(http.StatusMovedPermanently)
 	return nil
+}
+
+// callbackPath returns the app path to redirect to after login.
+//
+// - The selector sets the header to the requested app path.
+// - The login form posts to formPagePath and carries the path in the query.
+// - Other values fall back to "/".
+func callbackPath(req *http.Request) string {
+	for _, path := range []string{req.Header.Get(callbackQueryParam), req.URL.Query().Get(callbackQueryParam)} {
+		if strings.HasPrefix(path, "/") && !strings.HasPrefix(path, config.InternalPrefix) {
+			return path
+		}
+	}
+	return "/"
 }
 
 func (h *Handler) isAuthorized(password string, cookie *http.Cookie) error {
