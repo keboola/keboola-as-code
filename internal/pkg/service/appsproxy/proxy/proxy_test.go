@@ -39,6 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	k8sfake "k8s.io/client-go/dynamic/fake"
+	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -3026,6 +3027,127 @@ func TestAppProxyRouter(t *testing.T) {
 		privateAppTestCaseFactory(http.MethodDelete),
 	)
 
+	testCases = append(testCases,
+		testCase{
+			name:     "unpublished-app-is-not-found-and-not-woken",
+			setupK8s: patchStoppedApp("123", unpublishedAppPatch(2)),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				patchesBefore := appPatchCount(fakeClient, "123")
+				for range 3 {
+					request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
+					require.NoError(t, err)
+					response, err := client.Do(request)
+					require.NoError(t, err)
+					require.Equal(t, http.StatusNotFound, response.StatusCode)
+					body, err := io.ReadAll(response.Body)
+					require.NoError(t, err)
+					assert.Contains(t, string(body), html.EscapeString(`Application "123" not found in the stack.`))
+					assert.NotContains(t, string(body), "<title>Starting</title>")
+				}
+
+				require.Never(t, func() bool {
+					return appPatchCount(fakeClient, "123") > patchesBefore
+				}, time.Second, 50*time.Millisecond, "an unpublished app must not be woken")
+			},
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
+			name:     "unpublished-private-app-is-not-found-before-login",
+			setupK8s: patchStoppedApp("auth", unpublishedAppPatch(2)),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://basic-auth.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusNotFound, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), html.EscapeString(`Application "auth" not found in the stack.`))
+			},
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
+			// Republishing bumps the generation before the operator rewrites the
+			// condition, so the NotDeployed verdict is stale and must not 404.
+			name:                  "republished-app-with-stale-not-deployed-is-woken",
+			setupK8s:              patchStoppedApp("123", unpublishedAppPatch(3)),
+			run:                   expectWoken("123", "https://public-123.hub.keboola.local/"),
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
+			name: "suspended-product-app-is-woken",
+			setupK8s: patchStoppedApp("123", `{
+				"metadata": {"generation": 2},
+				"spec": {"state": "Stopped", "autoRestartEnabled": true, "productionSandboxRef": "member-1"},
+				"status": {
+					"currentState": "Stopped",
+					"productionSandbox": "member-1",
+					"conditions": [{"type": "Ready", "status": "True", "reason": "Serving", "message": "", "observedGeneration": 2, "lastTransitionTime": "2026-10-22T15:00:00Z"}]
+				}
+			}`),
+			run:                   expectWoken("123", "https://public-123.hub.keboola.local/"),
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
+			name:                  "legacy-app-without-production-ref-is-woken",
+			setupK8s:              patchStoppedApp("123", `{"spec": {"state": "Stopped", "autoRestartEnabled": true}, "status": {"currentState": "Stopped"}}`),
+			run:                   expectWoken("123", "https://public-123.hub.keboola.local/"),
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
+			name: "stopped-draft-of-unpublished-app-is-woken",
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				t.Helper()
+				setupDraftSandboxInState("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local", k8sapp.AppActualStateStopped)(t, fakeClient, watcher)
+				patchStoppedApp("123", unpublishedAppPatch(2))(t, fakeClient, watcher)
+			},
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				appPatchesBefore := appPatchCount(fakeClient, "123")
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-abc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "<title>Starting</title>")
+
+				require.Eventually(t, func() bool {
+					return patchCount(fakeClient, k8sapp.SandboxResource, "draft-abc") > 0
+				}, 5*time.Second, 50*time.Millisecond, "expected a wake patch of the draft Sandbox CR")
+				assert.Equal(t, appPatchesBefore, appPatchCount(fakeClient, "123"), "the App must not be woken in place of the draft")
+			},
+			expectedNotifications: map[string]int{},
+		},
+		testCase{
+			name: "draft-of-unpublished-app-is-served",
+			setupK8s: func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				t.Helper()
+				setupDraftSandbox("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local")(t, fakeClient, watcher)
+				patchStoppedApp("123", unpublishedAppPatch(2))(t, fakeClient, watcher)
+			},
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://draft-abc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Equal(t, `Hello, client`, string(body))
+			},
+			expectedNotifications: map[string]int{},
+		},
+	)
+
 	pm := osAssignedPorts{}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -3859,6 +3981,73 @@ func setupDraftSandboxInState(appID, appPublicURL, draftName, draftPublicURL str
 			ref, ok := watcher.ResolveWorkloadForHost(host)
 			return ok && ref.SandboxName == draftName
 		}, 5*time.Second, 50*time.Millisecond)
+	}
+}
+
+// unpublishedAppPatch is the App CR as the operator leaves it after an
+// unpublish at generation 2: spec.state stays Running, so a wake patch changes
+// nothing. A later generation makes the NotDeployed condition stale.
+func unpublishedAppPatch(generation int) string {
+	return fmt.Sprintf(`{
+		"metadata": {"generation": %d},
+		"spec": {"state": "Running", "autoRestartEnabled": true},
+		"status": {
+			"currentState": "Stopped",
+			"appsProxy": null,
+			"conditions": [{"type": "Ready", "status": "True", "reason": "NotDeployed", "message": "no production member is desired", "observedGeneration": 2, "lastTransitionTime": "2026-10-22T15:00:00Z"}]
+		}
+	}`, generation)
+}
+
+func patchStoppedApp(appID, patch string) func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+	return func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+		t.Helper()
+
+		_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+			t.Context(), "app-"+appID, k8stypes.MergePatchType, []byte(patch), metav1.PatchOptions{},
+		)
+		require.NoError(t, err)
+		require.Eventually(t, func() bool {
+			info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: api.AppID(appID)})
+			return ok && info.ActualState == k8sapp.AppActualStateStopped
+		}, 5*time.Second, 50*time.Millisecond)
+	}
+}
+
+// appPatchCount counts patches of the App CR, including ones that change
+// nothing, which is what a wake of an already-Running spec.state is.
+func appPatchCount(fakeClient *k8sfake.FakeDynamicClient, appID string) int {
+	return patchCount(fakeClient, k8sapp.Resource, "app-"+appID)
+}
+
+func patchCount(fakeClient *k8sfake.FakeDynamicClient, resource, name string) int {
+	n := 0
+	for _, action := range fakeClient.Actions() {
+		patch, ok := action.(k8stesting.PatchAction)
+		if ok && patch.GetResource().Resource == resource && patch.GetName() == name {
+			n++
+		}
+	}
+	return n
+}
+
+func expectWoken(appID, appURL string) func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+	return func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+		t.Helper()
+
+		patchesBefore := appPatchCount(fakeClient, appID)
+		request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, appURL, nil)
+		require.NoError(t, err)
+		response, err := client.Do(request)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+		body, err := io.ReadAll(response.Body)
+		require.NoError(t, err)
+		assert.Contains(t, string(body), "<title>Starting</title>")
+
+		require.Eventually(t, func() bool {
+			return appPatchCount(fakeClient, appID) > patchesBefore
+		}, 5*time.Second, 50*time.Millisecond, "expected a wake patch of the App CR")
 	}
 }
 

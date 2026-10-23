@@ -37,6 +37,7 @@ type entry struct {
 	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
 	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
 	workspaceID        string   // read on Sandbox entries only; an App resolves it through productionSandbox
+	notDeployed        bool
 
 	uid               k8stypes.UID   // metadata.uid, required by any ownerReference naming this object
 	productionSandbox string         // App CRs only: the member Sandbox running the workload
@@ -199,6 +200,7 @@ func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, 
 		UpstreamTarget:     e.upstreamTarget,
 		E2BAccessToken:     e.e2bAccessToken,
 		WorkspaceID:        w.workspaceFor(ref, e),
+		NotDeployed:        e.notDeployed,
 	}, true
 }
 
@@ -452,6 +454,7 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 			e2bAccessToken:     e2bAccessToken,
 			e2bSecretName:      e2bSecretName,
 			workspaceID:        appObj.Status.Workspace.ID,
+			notDeployed:        isNotDeployed(appObj.Status.Conditions, u.GetGeneration()),
 		},
 	}, true
 }

@@ -143,9 +143,14 @@ func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResu
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, result.Err)
 	}
 
+	info, cached := m.upstreamManager.AppInfo(ctx, result.Workload)
+	if cached && info.NotDeployed {
+		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, svcErrors.NewResourceNotFoundError("application", result.Workload.AppID.String(), "stack"))
+	}
+
 	// Create a new handler when the config changed (ETag), upstream URL changed, or E2B token changed.
 	// Only a hash is stored so raw secrets don't linger in the wrapper.
-	currentHash := handlerHash(m.upstreamManager.AppInfo(ctx, result.Workload))
+	currentHash := handlerHash(info, cached)
 	configETag := result.AppConfig.ETag()
 	if wrapper.needsRebuild(configETag, currentHash) {
 		if wrapper.cancel != nil {

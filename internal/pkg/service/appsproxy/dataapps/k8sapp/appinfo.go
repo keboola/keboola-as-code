@@ -154,6 +154,7 @@ type AppInfo struct {
 	// Sandbox itself, or the App's status.productionSandbox. Empty when that
 	// Sandbox has none or is not cached; both are valid states and not logged.
 	WorkspaceID string
+	NotDeployed bool
 }
 
 type appStatus struct {
@@ -168,7 +169,26 @@ type appStatus struct {
 	// member.
 	LastStartedTime *metav1.Time `json:"lastStartedTime,omitempty"`
 	// Workspace is set on Sandbox CRs only.
-	Workspace appWorkspace `json:"workspace"`
+	Workspace  appWorkspace   `json:"workspace"`
+	Conditions []appCondition `json:"conditions,omitempty"`
+}
+
+type appCondition struct {
+	Type               string `json:"type"`
+	Reason             string `json:"reason"`
+	ObservedGeneration int64  `json:"observedGeneration,omitempty"`
+}
+
+// isNotDeployed trusts the Ready condition only when it was written for the
+// object's current generation: a republish changes the spec before the
+// operator replaces the NotDeployed verdict.
+func isNotDeployed(conditions []appCondition, generation int64) bool {
+	for _, c := range conditions {
+		if c.Type == "Ready" {
+			return c.Reason == "NotDeployed" && c.ObservedGeneration == generation
+		}
+	}
+	return false
 }
 
 type appWorkspace struct {
