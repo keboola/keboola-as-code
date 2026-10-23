@@ -2503,7 +2503,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				// A form of the app itself, without a valid proxy CSRF token, is passed to the upstream unchanged
 				form := url.Values{"password": {"xyz"}, "_csrf": {"app-token"}}.Encode()
-				request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/", strings.NewReader(form))
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "https://basic-auth.hub.keboola.local/echo", strings.NewReader(form))
 				require.NoError(t, err)
 				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 				request.AddCookie(&http.Cookie{Name: "proxyBasicAuth", Value: "$2a$10$65mF6LI2F0Nm9PkQk8DlJu.C5jD.fseeXWn9CCGmDxLPomikYWtte"})
@@ -2512,11 +2512,10 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), "Hello, client")
+				assert.Equal(t, form, string(body))
 
 				require.Len(t, *appServer.Requests, 1)
 				assert.Equal(t, http.MethodPost, (*appServer.Requests)[0].Method)
-				assert.Equal(t, int64(len(form)), (*appServer.Requests)[0].ContentLength)
 			},
 			expectedNotifications: map[string]int{
 				"auth": 1,

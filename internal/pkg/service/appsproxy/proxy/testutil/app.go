@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -106,6 +107,19 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 
 		w.Header().Set("Location", "http://"+r.Host+r.URL.Path+"/")
 		w.WriteHeader(http.StatusMovedPermanently)
+	})
+
+	// /echo writes the request body back, so tests can check the body reached the upstream unchanged.
+	mux.HandleFunc("/echo", func(w http.ResponseWriter, r *http.Request) {
+		lock.Lock()
+		defer lock.Unlock()
+		requests = append(requests, r)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		_, _ = w.Write(body)
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
