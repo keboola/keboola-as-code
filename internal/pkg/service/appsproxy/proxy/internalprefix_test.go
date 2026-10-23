@@ -115,7 +115,39 @@ func TestInternalPrefix_UnknownPathNotForwarded(t *testing.T) {
 		resp = env.get(devmodeHost, "/_proxy/sign_out", cookie, nil)
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 		assert.Len(t, *env.appServer.Requests, before, "sign-out never reaches the app")
+		cleared := previewCookie(resp)
+		require.NotNil(t, cleared, "sign-out clears the preview cookie")
+		assert.Negative(t, cleared.MaxAge)
 	})
+}
+
+func TestInternalPrefix_KnownAuthPathsServed(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+
+	for origin, paths := range map[string][]string{
+		oidcOrigin: {
+			"/_proxy/selection",
+			"/_proxy/callback",
+			"/_proxy/sign_in",
+			"/_proxy/start",
+			"/_proxy/userinfo",
+			"/_proxy/auth",
+			"/_proxy/sign_out",
+			"/_proxy/static/css/bulma.min.css",
+		},
+		authOrigin: {
+			"/_proxy/form",
+			"/_proxy/sign_out",
+		},
+	} {
+		for _, path := range paths {
+			before := len(*env.appServer.Requests)
+			resp := env.send(env.client, origin+path)
+			assert.NotEqual(t, http.StatusNotFound, resp.StatusCode, origin+path)
+			assert.Len(t, *env.appServer.Requests, before, "%s must not reach the app", origin+path)
+		}
+	}
 }
 
 func TestInternalPrefix_LookalikePathForwarded(t *testing.T) {
