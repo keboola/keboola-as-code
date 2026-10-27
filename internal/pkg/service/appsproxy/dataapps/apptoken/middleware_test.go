@@ -18,6 +18,7 @@ import (
 	"github.com/go-jose/go-jose/v4"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jonboulle/clockwork"
+	sdk "github.com/keboola/keboola-sdk-go/v2/pkg/apptoken"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -224,7 +225,7 @@ func (h *testHandler) serve(headers map[string]string) upstreamRequest {
 type parsedToken struct {
 	header  map[string]any
 	payload map[string]any
-	claims  apptoken.Claims
+	claims  sdk.Claims
 }
 
 // parse verifies the token against the public keys of the JWKS only.
@@ -234,7 +235,7 @@ func (e *testEnv) parse(token string) parsedToken {
 	var set jose.JSONWebKeySet
 	require.NoError(e.t, json.Unmarshal(e.d.AppTokenMinter().JWKS(), &set))
 
-	var claims apptoken.Claims
+	var claims sdk.Claims
 	parsed, err := jwt.ParseWithClaims(token, &claims, func(tok *jwt.Token) (any, error) {
 		kid, _ := tok.Header["kid"].(string)
 		keys := set.Key(kid)

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
+	sdk "github.com/keboola/keboola-sdk-go/v2/pkg/apptoken"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
@@ -43,14 +44,14 @@ func (m *Minter) mint(ctx context.Context, app api.AppConfig, workload k8sapp.Wo
 	}
 
 	now := m.clock.Now()
-	claims := Claims{
+	claims := sdk.Claims{
 		Issuer:    m.issuer,
-		Audience:  audience,
+		Audience:  sdk.Audience,
 		Subject:   id.subject,
 		IDP:       id.idp,
 		Email:     id.email,
 		Groups:    id.groups,
-		Kbc:       KbcClaims{ProjectID: app.ProjectID, AppID: app.ID.String(), WorkspaceID: m.workspaceID(ctx, workload)},
+		Kbc:       sdk.KbcClaims{ProjectID: app.ProjectID, AppID: app.ID.String(), WorkspaceID: m.workspaceID(ctx, workload)},
 		ID:        jti,
 		IssuedAt:  jwt.NewNumericDate(now),
 		ExpiresAt: jwt.NewNumericDate(now.Add(m.ttl)),
@@ -61,7 +62,7 @@ func (m *Minter) mint(ctx context.Context, app api.AppConfig, workload k8sapp.Wo
 
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
 	token.Header["kid"] = m.keyring.ActiveKid()
-	token.Header["typ"] = tokenType
+	token.Header["typ"] = sdk.TokenType
 	return token.SignedString(m.keyring.ActiveKey())
 }
 
