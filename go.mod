@@ -46,7 +46,7 @@ require (
 	github.com/keboola/go-utils v1.5.0
 	github.com/keboola/keboola-sdk-go/v2 v2.23.0
 	github.com/keboola/keboola-sdk-go/v2/transfer v1.1.0
-	github.com/klauspost/compress v1.19.1
+	github.com/klauspost/compress v1.20.3
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kylelemons/godebug v1.1.0
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
