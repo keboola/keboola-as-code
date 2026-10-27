@@ -26,6 +26,7 @@ const (
 	IdleTimerResource = "idletimers"
 
 	BackendTypeE2BSandbox = "e2bSandbox"
+	BackendTypeStatic     = "static"
 )
 
 // AppGVR returns the GroupVersionResource for the App CRD.
@@ -155,6 +156,9 @@ type AppInfo struct {
 	// Sandbox has none or is not cached; both are valid states and not logged.
 	WorkspaceID string
 	NotDeployed bool
+	// Static is true for an App with the static backend: the static server serves it,
+	// so it is never woken or idle-suspended.
+	Static bool
 }
 
 type appStatus struct {
