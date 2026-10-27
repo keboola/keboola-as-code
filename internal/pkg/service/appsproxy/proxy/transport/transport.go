@@ -43,7 +43,7 @@ func New(d dependencies, responseHeaderTimeout time.Duration, maxConnsPerHost in
 		DisableKeepAlives:     false,
 		TLSHandshakeTimeout:   TLSHandshakeTimeout,
 		ResponseHeaderTimeout: responseHeaderTimeout,
-		MaxIdleConns:          MaxIdleConnections,
+		MaxIdleConns:          max(MaxIdleConnections, maxConnsPerHost),
 		MaxConnsPerHost:       maxConnsPerHost,
 		MaxIdleConnsPerHost:   maxConnsPerHost,
 		HTTP2: &http.HTTP2Config{
