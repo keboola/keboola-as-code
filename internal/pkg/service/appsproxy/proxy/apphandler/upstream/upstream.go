@@ -27,6 +27,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream/wsactivity"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/ctxattr"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -41,24 +42,29 @@ const (
 )
 
 type Manager struct {
-	wg           *sync.WaitGroup
-	logger       log.Logger
-	telemetry    telemetry.Telemetry
-	transport    http.RoundTripper
-	pageWriter   *pagewriter.Writer
-	configLoader appconfig.Loader
-	notify       *notify.Manager
-	wakeup       *wakeup.Manager
-	sessions     *sessions.Manager
-	idleTimer    *idletimer.Recorder
-	stateWatcher *k8sapp.StateWatcher
-	config       config.Config
+	wg              *sync.WaitGroup
+	logger          log.Logger
+	telemetry       telemetry.Telemetry
+	transport       http.RoundTripper
+	staticTransport http.RoundTripper
+	// staticRequests is keyed by app, not by upstream: a promote replaces the upstream,
+	// and the requests still running on the old one count against the same limit.
+	staticRequests *syncmap.SyncMap[api.AppID, requestLimit]
+	pageWriter     *pagewriter.Writer
+	configLoader   appconfig.Loader
+	notify         *notify.Manager
+	wakeup         *wakeup.Manager
+	sessions       *sessions.Manager
+	idleTimer      *idletimer.Recorder
+	stateWatcher   *k8sapp.StateWatcher
+	config         config.Config
 }
 
 type AppUpstream struct {
 	manager   *Manager
 	app       api.AppConfig
 	workload  k8sapp.WorkloadRef
+	static    bool
 	target    *url.URL // parsed from appsProxy.upstreamUrl at creation; nil when absent
 	baseURL   *url.URL // public URL of the app, resolved at creation; see rewriteRedirectLocation
 	handler   *chain.Chain
@@ -71,6 +77,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	UpstreamTransport() http.RoundTripper
+	StaticUpstreamTransport() http.RoundTripper
 	PageWriter() *pagewriter.Writer
 	AppConfigLoader() appconfig.Loader
 	NotifyManager() *notify.Manager
@@ -82,11 +89,16 @@ type dependencies interface {
 }
 
 func NewManager(d dependencies) *Manager {
+	maxStaticRequests := d.Config().Upstream.StaticMaxRequestsPerApp
 	m := &Manager{
-		wg:           &sync.WaitGroup{},
-		logger:       d.Logger().WithComponent("upstream"),
-		telemetry:    d.Telemetry(),
-		transport:    d.UpstreamTransport(),
+		wg:              &sync.WaitGroup{},
+		logger:          d.Logger().WithComponent("upstream"),
+		telemetry:       d.Telemetry(),
+		transport:       d.UpstreamTransport(),
+		staticTransport: d.StaticUpstreamTransport(),
+		staticRequests: syncmap.New(func(api.AppID) *requestLimit {
+			return &requestLimit{slots: make(chan struct{}, maxStaticRequests)}
+		}),
 		pageWriter:   d.PageWriter(),
 		configLoader: d.AppConfigLoader(),
 		notify:       d.NotifyManager(),
@@ -99,6 +111,12 @@ func NewManager(d dependencies) *Manager {
 
 	d.Process().OnShutdown(func(ctx context.Context) {
 		m.Shutdown(ctx)
+	})
+
+	m.stateWatcher.OnWorkloadRemoved(func(ref k8sapp.WorkloadRef) {
+		if !ref.IsSandbox() {
+			m.staticRequests.Delete(ref.AppID)
+		}
 	})
 
 	return m
@@ -122,9 +140,11 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig, workload k
 	// Resolve target URL at creation time; immutable after this point.
 	var target *url.URL
 	var publicHost string
+	var static bool
 	if info, ok := m.stateWatcher.GetState(ctx, workload); ok {
 		target = info.UpstreamTarget // pre-parsed by watcher on CRD event; may be nil
 		publicHost = info.PublicHost
+		static = info.Static
 	}
 
 	// A Sandbox is reached only at the hostname it published, so that is the
@@ -140,6 +160,7 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig, workload k
 		manager:  m,
 		app:      app,
 		workload: workload,
+		static:   static,
 		target:   target,
 		baseURL:  baseURL,
 	}
@@ -154,6 +175,10 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig, workload k
 }
 
 func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request) error {
+	if u.static {
+		return u.serveStatic(rw, req)
+	}
+
 	ctx := req.Context()
 
 	// K8s state pre-check: if we know the app is not running, handle it synchronously
@@ -209,15 +234,11 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 			// Restore incoming X-Forwarded-For so SetXForwarded can append
 			// this hop's IP to the existing chain (it only appends to For).
 			r.Out.Header["X-Forwarded-For"] = r.In.Header["X-Forwarded-For"]
-			r.SetXForwarded()
 
-			// SetXForwarded overwrites Host and Proto with values derived
-			// from r.In (this hop). If an upstream proxy (e.g. a
-			// TLS-terminating LB) already set them, restore those values
-			// since they reflect the original client request more accurately.
-			if h := r.In.Header["X-Forwarded-Host"]; len(h) > 0 {
-				r.Out.Header["X-Forwarded-Host"] = h
-			}
+			// SetXForwarded sets X-Forwarded-Host to r.In.Host, the host this request was
+			// routed by. An incoming X-Forwarded-Host is never kept: a client can set it,
+			// and the static server binds an app to this header.
+			r.SetXForwarded()
 			// Some ingress controllers (e.g. Nginx Ingress on GKE) set
 			// X-Forwarded-Scheme instead of X-Forwarded-Proto. Fall back to
 			// it so the upstream sees the correct original scheme.
@@ -235,7 +256,7 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 				r.Out.Header.Set("e2b-traffic-access-token", info.E2BAccessToken)
 			}
 		},
-		Transport:    u.manager.transport,
+		Transport:    u.transport(),
 		ErrorHandler: u.manager.pageWriter.ProxyErrorHandlerFor(u.app),
 	}
 }
@@ -283,7 +304,12 @@ func (u *AppUpstream) rewriteRedirectLocation(res *http.Response) error {
 
 func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 	proxy := u.newReverseProxy()
-	proxy.ModifyResponse = u.rewriteRedirectLocation
+	proxy.ModifyResponse = func(res *http.Response) error {
+		if u.static {
+			stripCORSHeaders(res)
+		}
+		return u.rewriteRedirectLocation(res)
+	}
 
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
@@ -430,6 +456,9 @@ func (u *AppUpstream) trace() chain.Middleware {
 // Unlike notify this is not gated on the route kind: a draft's timer belongs to
 // the draft, so draft traffic has to reach it.
 func (u *AppUpstream) recordActivity(ctx context.Context) {
+	if u.static {
+		return
+	}
 	u.manager.idleTimer.RecordActivity(ctx, u.workload)
 }
 

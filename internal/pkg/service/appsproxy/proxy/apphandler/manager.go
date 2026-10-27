@@ -210,6 +210,10 @@ func handlerHash(info k8sapp.AppInfo, ok bool) string {
 	h.Write([]byte(info.PublicHost))
 	h.Write([]byte{0})
 	h.Write([]byte(info.E2BAccessToken))
+	h.Write([]byte{0})
+	if info.Static {
+		h.Write([]byte{1})
+	}
 	return hex.EncodeToString(h.Sum(nil))
 }
 

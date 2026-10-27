@@ -33,7 +33,7 @@ type dependencies interface {
 }
 
 // New creates new http transport intended to be used with NewSingleHostReverseProxy.
-func New(d dependencies, responseHeaderTimeout time.Duration) (http.RoundTripper, error) {
+func New(d dependencies, responseHeaderTimeout time.Duration, maxConnsPerHost int) (http.RoundTripper, error) {
 	dialer := newDialer()
 
 	httpTransport := &http.Transport{
@@ -43,9 +43,9 @@ func New(d dependencies, responseHeaderTimeout time.Duration) (http.RoundTripper
 		DisableKeepAlives:     false,
 		TLSHandshakeTimeout:   TLSHandshakeTimeout,
 		ResponseHeaderTimeout: responseHeaderTimeout,
-		MaxIdleConns:          MaxIdleConnections,
-		MaxConnsPerHost:       MaxConnectionsPerHost,
-		MaxIdleConnsPerHost:   MaxConnectionsPerHost,
+		MaxIdleConns:          max(MaxIdleConnections, maxConnsPerHost),
+		MaxConnsPerHost:       maxConnsPerHost,
+		MaxIdleConnsPerHost:   maxConnsPerHost,
 		HTTP2: &http.HTTP2Config{
 			SendPingTimeout:  HTTP2ReadIdleTimeout,
 			PingTimeout:      HTTP2PingTimeout,
