@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	sdk "github.com/keboola/keboola-sdk-go/v2/pkg/apptoken"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
@@ -12,8 +14,6 @@ import (
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
-
-const jwksPath = "/.well-known/jwks.json"
 
 type Router struct {
 	config         config.Config
@@ -53,7 +53,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if req.URL.Path == jwksPath {
+	if req.URL.Path == sdk.JWKSPath {
 		w.Header().Set("Content-Type", "application/jwk-set+json")
 		w.Header().Set("Cache-Control", "public, max-age=300")
 		_, _ = w.Write(r.appTokenMinter.JWKS()) //nolint:gosec // G705: a JSON body built from the configured public keys, not from the request
