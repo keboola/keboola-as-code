@@ -109,7 +109,6 @@ func StartNetworkFileServer(d serverDependencies, nodeID, hostname string, cfg l
 
 func (s *NetworkFileServer) serve(listener net.Listener) error {
 	srv := grpc.NewServer(
-		grpc.SharedWriteBuffer(true),
 		grpc.StatsHandler(
 			otelgrpc.NewClientHandler(
 				otelgrpc.WithMeterProvider(s.telemetry.MeterProvider()),

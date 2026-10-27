@@ -118,7 +118,6 @@ func OpenNetworkFile(
 	// Create gRPC client
 	clientConn, err := grpc.NewClient(
 		"127.0.0.1",
-		grpc.WithSharedWriteBuffer(true),
 		grpc.WithContextDialer(dialer),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultServiceConfig(serviceConfig),
