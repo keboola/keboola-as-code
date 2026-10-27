@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"golang.org/x/net/http2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -47,17 +46,12 @@ func New(d dependencies, responseHeaderTimeout time.Duration) (http.RoundTripper
 		MaxIdleConns:          MaxIdleConnections,
 		MaxConnsPerHost:       MaxConnectionsPerHost,
 		MaxIdleConnsPerHost:   MaxConnectionsPerHost,
+		HTTP2: &http.HTTP2Config{
+			SendPingTimeout:  HTTP2ReadIdleTimeout,
+			PingTimeout:      HTTP2PingTimeout,
+			WriteByteTimeout: HTTP2WriteByteTimeout,
+		},
 	}
-
-	// Configure HTTP2
-	http2Transport, err := http2.ConfigureTransports(httpTransport)
-	if err != nil {
-		return nil, err
-	}
-
-	http2Transport.ReadIdleTimeout = HTTP2ReadIdleTimeout
-	http2Transport.PingTimeout = HTTP2PingTimeout
-	http2Transport.WriteByteTimeout = HTTP2WriteByteTimeout
 
 	// Wrap the transport with telemetry
 	return otelhttp.NewTransport(
