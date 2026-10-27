@@ -52,6 +52,9 @@ func Transport(genpkg string, roots []eval.Root) ([]*codegen.File, error) {
 
 		// Create service data
 		services := service.NewServicesData(r)
+		for _, s := range r.Services {
+			service.SetUserTypeImports(genpkg, services.Get(s.Name))
+		}
 
 		// HTTP
 		httpServices := httpgen.NewServicesData(services, r.API.HTTP)
@@ -107,8 +110,8 @@ func Transport(genpkg string, roots []eval.Root) ([]*codegen.File, error) {
 			if len(f.SectionTemplates) > 0 {
 				for _, s := range r.Services {
 					d := services.Get(s.Name)
-					service.AddServiceDataMetaTypeImports(f.SectionTemplates[0], s, d)
-					service.AddUserTypeImports(genpkg, f.SectionTemplates[0], d)
+					service.AddServiceDataMetaTypeImports(f.SectionTemplates[0], d)
+					service.AddUserTypeImports(f.SectionTemplates[0], d)
 				}
 			}
 		}
