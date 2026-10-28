@@ -8,16 +8,14 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"io"
-	"regexp"
 
 	"github.com/go-jose/go-jose/v4"
+	sdk "github.com/keboola/keboola-sdk-go/v2/pkg/apptoken"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
-	signingAlgorithm = "ES256"
-	kidPattern       = `^[A-Za-z0-9._-]{1,64}$`
 	ecParametersType = "EC PARAMETERS"
 )
 
@@ -66,7 +64,7 @@ func NewKeyring(keysJSON, activeKid string) (*Keyring, error) {
 
 	public := make([]jose.JSONWebKey, 0, len(kids))
 	for _, kid := range kids {
-		public = append(public, jose.JSONWebKey{Key: &keys[kid].PublicKey, KeyID: kid, Algorithm: signingAlgorithm, Use: "sig"})
+		public = append(public, jose.JSONWebKey{Key: &keys[kid].PublicKey, KeyID: kid, Algorithm: sdk.Algorithm, Use: sdk.KeyUse})
 	}
 	return newKeyring(activeKid, active, public)
 }
@@ -101,8 +99,8 @@ func parseSigningKeys(keysJSON string) ([]signingKey, error) {
 }
 
 func parseSigningKey(i int, entry signingKey, seen map[string]*ecdsa.PrivateKey) (*ecdsa.PrivateKey, error) {
-	if !validKid(entry.Kid) {
-		return nil, errors.Errorf(`app user token: signingKeys[%d]: invalid kid "%s", it must match %s`, i, entry.Kid, kidPattern)
+	if !sdk.ValidKID(entry.Kid) {
+		return nil, errors.Errorf(`app user token: signingKeys[%d]: invalid kid "%s", it must match %s`, i, entry.Kid, sdk.KIDPattern)
 	}
 	if _, ok := seen[entry.Kid]; ok {
 		return nil, errors.Errorf(`app user token: signingKeys[%d]: duplicate kid "%s"`, i, entry.Kid)
@@ -141,10 +139,6 @@ func keyBlock(pemData string) ([]byte, error) {
 	default:
 		return nil, errors.New("more than one PEM block")
 	}
-}
-
-func validKid(kid string) bool {
-	return regexp.MustCompile(kidPattern).MatchString(kid)
 }
 
 func parsePrivateKey(der []byte) (any, error) {
