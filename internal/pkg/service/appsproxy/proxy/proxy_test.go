@@ -3600,6 +3600,40 @@ func TestIdleTimerRecordsProxiedActivity(t *testing.T) {
 		require.Equal(t, http.StatusOK, response.StatusCode)
 	}
 
+	latestAliveAt := func(name string) time.Time {
+		obj, err := fake.Resource(k8sapp.IdleTimerGVR()).Namespace("keboola").Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return time.Time{}
+		}
+		observers, _, _ := unstructured.NestedMap(obj.Object, "spec", "observers")
+		var latest time.Time
+		for _, raw := range observers {
+			fields, _ := raw.(map[string]any)
+			at, _ := time.Parse(time.RFC3339Nano, fmt.Sprint(fields["aliveAt"]))
+			if at.After(latest) {
+				latest = at
+			}
+		}
+		return latest
+	}
+	fakeClock.Advance(10 * time.Second)
+	pollMark := fakeClock.Now()
+	for _, path := range []string{"/_stcore/health", "/_stcore/host-config"} {
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://public-123.hub.keboola.local"+path, nil)
+		require.NoError(t, err)
+		response, err := client.Do(request)
+		require.NoError(t, err)
+		require.NoError(t, response.Body.Close())
+	}
+	require.Eventually(t, func() bool {
+		if latestAliveAt(member).After(pollMark) {
+			return true
+		}
+		fakeClock.Advance(time.Second)
+		return false
+	}, 10*time.Second, 5*time.Millisecond, "no sweep wrote the member's record after the background polls")
+	assert.True(t, lastRequestAt(member).Before(pollMark), "a Streamlit background poll reached the record")
+
 	fakeClock.Advance(10 * time.Second)
 	mark := fakeClock.Now()
 	get("https://public-123.hub.keboola.local/")
