@@ -401,8 +401,8 @@ minted immediately after every login.
   tell it apart. Nothing distinguishes an internal preview from a real visit.
 - **Activity excludes framework background polls.** `/_stcore/health` and
   `/_stcore/host-config` fire on every Streamlit websocket reconnect
-  independently of the user, and are already excluded from the auto-suspend
-  notification. Session activity reuses that same rule (`streamlit.IsBackgroundPoll`) so
+  independently of the user, and are already excluded from the idle-timer
+  activity (auto-suspend). Session activity reuses that same rule (`streamlit.IsBackgroundPoll`) so
   there is exactly one definition of "the user did something".
 - **Rows written before `provider_user_id` was hashed still hold the raw
   claim.** That column used to carry the OIDC subject claim or GitHub login
