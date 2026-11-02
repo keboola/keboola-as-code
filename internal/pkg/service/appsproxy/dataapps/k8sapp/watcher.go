@@ -38,6 +38,7 @@ type entry struct {
 	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
 	workspaceID        string   // read on Sandbox entries only; an App resolves it through productionSandbox
 	notDeployed        bool
+	static             bool
 
 	uid               k8stypes.UID   // metadata.uid, required by any ownerReference naming this object
 	productionSandbox string         // App CRs only: the member Sandbox running the workload
@@ -201,6 +202,7 @@ func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, 
 		E2BAccessToken:     e.e2bAccessToken,
 		WorkspaceID:        w.workspaceFor(ref, e),
 		NotDeployed:        e.notDeployed,
+		Static:             e.static,
 	}, true
 }
 
@@ -455,6 +457,7 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 			e2bSecretName:      e2bSecretName,
 			workspaceID:        appObj.Status.Workspace.ID,
 			notDeployed:        isNotDeployed(appObj.Status.Conditions, u.GetGeneration()),
+			static:             appObj.Spec.Runtime.Backend.Type == BackendTypeStatic,
 		},
 	}, true
 }

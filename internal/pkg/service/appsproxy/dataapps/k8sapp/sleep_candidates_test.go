@@ -265,3 +265,25 @@ func TestScanForSleepCandidates_AppRouteCountsTheLaterOfTheAppAndMemberStart(t *
 	require.Len(t, got, 1)
 	assert.Equal(t, routeMoved, got[0].LastStarted.UTC().Format(time.RFC3339))
 }
+
+// A static App is Running with no member, but it is neither a candidate nor
+// unresolved: there is nothing to suspend.
+func TestScanForSleepCandidates_SkipsAStaticApp(t *testing.T) {
+	t.Parallel()
+
+	app := newAppWithProductionSandbox(k8sapp.AppActualStateRunning, "")
+	app.Object["spec"].(map[string]any)["runtime"] = map[string]any{"backend": map[string]any{"type": k8sapp.BackendTypeStatic}}
+	watcher := syncedWatcher(t, log.NewNopLogger(), app)
+
+	var info k8sapp.AppInfo
+	assert.Eventually(t, func() bool {
+		var ok bool
+		info, ok = watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: memberAppID})
+		return ok
+	}, 5*time.Second, 50*time.Millisecond)
+	assert.True(t, info.Static)
+
+	scan := watcher.ScanForSleepCandidates()
+	assert.Empty(t, scan.Candidates)
+	assert.Empty(t, scan.Unresolved)
+}

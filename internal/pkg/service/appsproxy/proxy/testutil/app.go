@@ -122,6 +122,16 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 		_, _ = w.Write(body)
 	})
 
+	// /cors answers like an upstream that allows cross-origin reads.
+	mux.HandleFunc("/cors", func(w http.ResponseWriter, r *http.Request) {
+		lock.Lock()
+		defer lock.Unlock()
+		requests = append(requests, r)
+		w.Header().Set("Access-Control-Allow-Origin", "https://other-456.hub.keboola.local")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		_, _ = fmt.Fprint(w, "Hello, client")
+	})
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		lock.Lock()
 		defer lock.Unlock()

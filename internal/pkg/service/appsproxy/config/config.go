@@ -163,6 +163,10 @@ type SandboxesAPI struct {
 type Upstream struct {
 	HTTPTimeout time.Duration `configKey:"httpTimeout" configUsage:"Timeout for HTTP request on upstream"`
 	WsTimeout   time.Duration `configKey:"wsTimeout" configUsage:"Timeout for websocket request on upstream"`
+	// StaticMaxConnsPerHost limits connections to the static server, which serves every static app.
+	StaticMaxConnsPerHost int
+	// StaticMaxRequestsPerApp limits concurrent requests to one static app; more get 503.
+	StaticMaxRequestsPerApp int
 }
 
 type K8s struct {
@@ -188,8 +192,10 @@ func New() Config {
 		Upstream: Upstream{
 			//  must always be less than the timeout configured on the LB
 			// https://github.com/keboola/kbc-stacks/blob/28786129217c532d90f3a14d321e2b3de982ce04/apps/apps-proxy/templates/ingress.yaml#L11
-			HTTPTimeout: 4*time.Minute + 30*time.Second,
-			WsTimeout:   6 * time.Hour,
+			HTTPTimeout:             4*time.Minute + 30*time.Second,
+			WsTimeout:               6 * time.Hour,
+			StaticMaxConnsPerHost:   512,
+			StaticMaxRequestsPerApp: 50,
 		},
 		API: API{
 			Listen: "0.0.0.0:8000",

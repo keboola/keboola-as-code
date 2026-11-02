@@ -32,7 +32,7 @@ func (w *StateWatcher) collectCandidates() (candidates []SleepCandidate, unresol
 	candidates = make([]SleepCandidate, 0, len(w.apps)+len(w.sandboxes))
 
 	for appID, e := range w.apps {
-		if e.state != AppActualStateRunning {
+		if e.state != AppActualStateRunning || e.static {
 			continue
 		}
 		member, ok := w.productionMemberLocked(e)

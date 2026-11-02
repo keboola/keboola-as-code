@@ -80,6 +80,7 @@ type ServiceScope interface {
 	AppHandlers() *apphandler.Manager
 	AppConfigLoader() appconfig.Loader
 	UpstreamTransport() http.RoundTripper
+	StaticUpstreamTransport() http.RoundTripper
 	UpstreamManager() *upstream.Manager
 	AuthProxyManager() *authproxy.Manager
 	PageWriter() *pagewriter.Writer
@@ -104,6 +105,7 @@ type serviceScope struct {
 	appsAPI           *api.API
 	appHandlers       *apphandler.Manager
 	upstreamTransport http.RoundTripper
+	staticTransport   http.RoundTripper
 	upstreamManager   *upstream.Manager
 	authProxyManager  *authproxy.Manager
 	pageWriter        *pagewriter.Writer
@@ -192,7 +194,14 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	d.parentScopes = parentScp
 	d.config = cfg
 
-	d.upstreamTransport, err = transport.New(d, cfg.Upstream.HTTPTimeout)
+	d.upstreamTransport, err = transport.New(d, cfg.Upstream.HTTPTimeout, transport.MaxConnectionsPerHost)
+	if err != nil {
+		return nil, err
+	}
+
+	// Every static app is served by the same static server host, so it gets its own
+	// connection pool and cannot use up the per-host limit of the shared one.
+	d.staticTransport, err = transport.New(d, cfg.Upstream.HTTPTimeout, cfg.Upstream.StaticMaxConnsPerHost)
 	if err != nil {
 		return nil, err
 	}
@@ -257,6 +266,10 @@ func (v *serviceScope) AppConfigLoader() appconfig.Loader {
 
 func (v *serviceScope) UpstreamTransport() http.RoundTripper {
 	return v.upstreamTransport
+}
+
+func (v *serviceScope) StaticUpstreamTransport() http.RoundTripper {
+	return v.staticTransport
 }
 
 func (v *serviceScope) UpstreamManager() *upstream.Manager {

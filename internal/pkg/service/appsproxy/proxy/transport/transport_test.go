@@ -44,7 +44,7 @@ func TestTransport_ResponseHeaderTimeout(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			rt, err := New(testDeps{telemetry: telemetry.NewNop()}, tc.timeout)
+			rt, err := New(testDeps{telemetry: telemetry.NewNop()}, tc.timeout, MaxConnectionsPerHost)
 			require.NoError(t, err)
 
 			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, app.URL, nil)

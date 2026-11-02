@@ -3146,6 +3146,75 @@ func TestAppProxyRouter(t *testing.T) {
 			},
 			expectedNotifications: map[string]int{},
 		},
+		testCase{
+			name: "client-forwarded-host-is-overwritten",
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, appServer *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				response := getWithHeaders(t, client, "https://public-123.hub.keboola.local/", map[string]string{
+					"X-Forwarded-Host": "evil-123.hub.keboola.local",
+				})
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				require.Len(t, *appServer.Requests, 1)
+				assert.Equal(t, []string{"public-123.hub.keboola.local"}, (*appServer.Requests)[0].Header.Values("X-Forwarded-Host"))
+			},
+			expectedNotifications: map[string]int{"123": 1},
+		},
+		testCase{
+			name:     "static-app-is-proxied-with-overwritten-headers",
+			setupK8s: patchStaticApp("123", k8sapp.AppActualStateRunning),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, appServer *testutil.AppServer, _ *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				patchesBefore := appPatchCount(fakeClient, "123")
+				response := getWithHeaders(t, client, "https://public-123.hub.keboola.local/", map[string]string{
+					"X-Forwarded-Host": "evil-123.hub.keboola.local",
+					"X-Kbc-User-Id":    "spoofed",
+				})
+				require.Equal(t, http.StatusOK, response.StatusCode)
+
+				require.Len(t, *appServer.Requests, 1)
+				appRequest := (*appServer.Requests)[0]
+				assert.Equal(t, []string{"public-123.hub.keboola.local"}, appRequest.Header.Values("X-Forwarded-Host"))
+				assert.Empty(t, appRequest.Header.Get("X-Kbc-User-Id"))
+				assert.Equal(t, patchesBefore, appPatchCount(fakeClient, "123"))
+			},
+			expectedNotifications: map[string]int{"123": 1},
+		},
+		testCase{
+			name:     "static-app-response-has-no-cors-headers",
+			setupK8s: patchStaticApp("123", k8sapp.AppActualStateRunning),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				response := getWithHeaders(t, client, "https://public-123.hub.keboola.local/cors", map[string]string{
+					"Origin": "https://other-456.hub.keboola.local",
+				})
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				for name := range response.Header {
+					assert.NotContains(t, strings.ToLower(name), "access-control-")
+				}
+			},
+			expectedNotifications: map[string]int{"123": 1},
+		},
+		testCase{
+			name:     "stopped-static-app-is-not-woken",
+			setupK8s: patchStaticApp("123", k8sapp.AppActualStateStopped),
+			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, appServer *testutil.AppServer, _ *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
+				t.Helper()
+
+				patchesBefore := appPatchCount(fakeClient, "123")
+				response := getWithHeaders(t, client, "https://public-123.hub.keboola.local/", nil)
+				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+
+				assert.Never(t, func() bool {
+					return appPatchCount(fakeClient, "123") > patchesBefore
+				}, 500*time.Millisecond, 50*time.Millisecond, "a static App must not be woken")
+				assert.Empty(t, *appServer.Requests)
+			},
+			expectedNotifications: map[string]int{},
+		},
 	)
 
 	pm := osAssignedPorts{}
@@ -3997,6 +4066,39 @@ func unpublishedAppPatch(generation int) string {
 			"conditions": [{"type": "Ready", "status": "True", "reason": "NotDeployed", "message": "no production member is desired", "observedGeneration": 2, "lastTransitionTime": "2026-10-22T15:00:00Z"}]
 		}
 	}`, generation)
+}
+
+// patchStaticApp turns the App into a static one; state is the currentState the operator would report.
+func patchStaticApp(appID string, state k8sapp.AppActualState) func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+	return func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+		t.Helper()
+
+		patch := `{"spec": {"runtime": {"backend": {"type": "static"}}}, "status": {"currentState": "` + string(state) + `"}}`
+		_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(
+			t.Context(), "app-"+appID, k8stypes.MergePatchType, []byte(patch), metav1.PatchOptions{},
+		)
+		require.NoError(t, err)
+		require.Eventually(t, func() bool {
+			info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: api.AppID(appID)})
+			return ok && info.Static && info.ActualState == state
+		}, 5*time.Second, 50*time.Millisecond)
+	}
+}
+
+func getWithHeaders(t *testing.T, client *http.Client, rawURL string, headers map[string]string) *http.Response {
+	t.Helper()
+
+	request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, rawURL, nil)
+	require.NoError(t, err)
+	for name, value := range headers {
+		request.Header.Set(name, value)
+	}
+	response, err := client.Do(request)
+	require.NoError(t, err)
+	_, err = io.Copy(io.Discard, response.Body)
+	require.NoError(t, err)
+	require.NoError(t, response.Body.Close())
+	return response
 }
 
 func patchStoppedApp(appID, patch string) func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
