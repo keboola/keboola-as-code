@@ -131,7 +131,7 @@ func TestWrap_OnlyControlFrames_NoCallbacks(t *testing.T) {
 	_, err = c.Write(pings)
 	require.NoError(t, err)
 
-	assert.Equal(t, 0, count, "control-only traffic must not trigger notify")
+	assert.Equal(t, 0, count, "control-only traffic must not trigger the callback")
 }
 
 func TestWrap_PassThroughGolden(t *testing.T) {

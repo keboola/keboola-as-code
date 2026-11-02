@@ -20,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/idletimer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/streamlit"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
@@ -34,7 +33,6 @@ import (
 )
 
 const (
-	notifyRequestTimeout = 5 * time.Second
 	wakeupRequestTimeout = 60 * time.Second
 	attrWakeupReason     = "proxy.wakeup.reason"
 	attrWebsocket        = "proxy.websocket"
@@ -47,7 +45,6 @@ type Manager struct {
 	transport    http.RoundTripper
 	pageWriter   *pagewriter.Writer
 	configLoader appconfig.Loader
-	notify       *notify.Manager
 	wakeup       *wakeup.Manager
 	sessions     *sessions.Manager
 	idleTimer    *idletimer.Recorder
@@ -73,7 +70,6 @@ type dependencies interface {
 	UpstreamTransport() http.RoundTripper
 	PageWriter() *pagewriter.Writer
 	AppConfigLoader() appconfig.Loader
-	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
 	SessionsManager() *sessions.Manager
 	IdleTimerRecorder() *idletimer.Recorder
@@ -89,7 +85,6 @@ func NewManager(d dependencies) *Manager {
 		transport:    d.UpstreamTransport(),
 		pageWriter:   d.PageWriter(),
 		configLoader: d.AppConfigLoader(),
-		notify:       d.NotifyManager(),
 		wakeup:       d.WakeupManager(),
 		sessions:     d.SessionsManager(),
 		idleTimer:    d.IdleTimerRecorder(),
@@ -105,7 +100,7 @@ func NewManager(d dependencies) *Manager {
 }
 
 func (m *Manager) Shutdown(ctx context.Context) {
-	m.logger.Infof(ctx, `waiting for running notify/wakeup requests`)
+	m.logger.Infof(ctx, `waiting for running wakeup requests`)
 	m.wg.Wait()
 }
 
@@ -334,9 +329,7 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	//   - Write on the wrapped RWC = client→server bytes (masked frames).
 	//
 	// wsactivity.Wrap parses frame headers in both directions and invokes
-	// the callback once per non-control frame. notify.Manager already
-	// throttles per app to one outbound call per 30s, so we can fire the
-	// callback per frame without flooding the Sandboxes Service.
+	// the callback once per non-control frame.
 	proxy.ModifyResponse = func(res *http.Response) error {
 		if res.StatusCode != http.StatusSwitchingProtocols {
 			// A failed handshake is a regular response and can carry a redirect.
@@ -349,15 +342,8 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 			// We just skip wrapping and let the proxy report the error.
 			return nil
 		}
-		// Bind the callback to the request context so notify() can decorate
-		// its span/log with the right request attributes. notify() itself
-		// uses context.WithoutCancel, so the in-flight call survives the WS
-		// timeout and any per-request cancellation.
 		reqCtx := res.Request.Context()
 		wrapped := wsactivity.Wrap(rwc, func() {
-			if !u.workload.IsSandbox() {
-				u.notify(reqCtx)
-			}
 			u.recordActivity(reqCtx)
 			u.manager.sessions.ActivityWS(reqCtx)
 		})
@@ -399,18 +385,11 @@ func (u *AppUpstream) trace() chain.Middleware {
 
 			// Trace connection events. Background polls emitted by data-app
 			// frontends independent of user interaction (see
-			// streamlit.IsBackgroundPoll) are not considered activity and do
-			// not bump lastRequestTimestamp.
+			// streamlit.IsBackgroundPoll) are not considered activity.
 			reqCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
 				GotConn: func(connInfo httptrace.GotConnInfo) {
 					if streamlit.IsBackgroundPoll(reqPath) {
 						return
-					}
-					// notify bumps lastRequestTimestamp on the App, which is not
-					// this workload. Until a Sandbox has an idle timer of its
-					// own, draft traffic must not hold the App awake.
-					if !u.workload.IsSandbox() {
-						u.notify(ctx)
 					}
 					u.recordActivity(ctx)
 					u.manager.sessions.Activity(ctx)
@@ -422,30 +401,11 @@ func (u *AppUpstream) trace() chain.Middleware {
 	}
 }
 
-// recordActivity marks the workload as in use for idle-suspend. It hangs off
-// the same two callbacks as notify so it inherits their filtering: the HTTP
-// path has already dropped background polls, and the websocket path fires only
-// on data frames, never on the keepalives a parked browser tab produces.
-//
-// Unlike notify this is not gated on the route kind: a draft's timer belongs to
-// the draft, so draft traffic has to reach it.
+// recordActivity marks the workload as in use for idle-suspend. The HTTP path
+// has already dropped background polls, and the websocket path fires only on
+// data frames, never on the keepalives a parked browser tab produces.
 func (u *AppUpstream) recordActivity(ctx context.Context) {
 	u.manager.idleTimer.RecordActivity(ctx, u.workload)
-}
-
-func (u *AppUpstream) notify(ctx context.Context) {
-	// The request should not wait for the notification
-	u.manager.wg.Go(func() {
-		notificationCtx, cancel := context.WithTimeoutCause(context.WithoutCancel(ctx), notifyRequestTimeout, errors.New("upstream notification timeout"))
-		defer cancel()
-
-		_, span := u.manager.telemetry.Tracer().Start(ctx, "keboola.go.apps-proxy.upstream.notify")
-		notificationCtx = telemetry.ContextWithSpan(notificationCtx, span)
-
-		// Error is already logged by the Notify method itself.
-		err := u.manager.notify.Notify(notificationCtx, u.app.ID) //nolint:contextcheck
-		span.End(&err)
-	})
 }
 
 func (u *AppUpstream) wakeup(ctx context.Context, err error) {

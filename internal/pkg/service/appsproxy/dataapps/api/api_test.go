@@ -6,7 +6,6 @@ import (
 	"os"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/management"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +36,9 @@ func startAuthHeaderRecorder(t *testing.T) *authHeaderRecorder {
 		recorder.lock.Lock()
 		recorder.headers = append(recorder.headers, req.Header.Clone())
 		recorder.lock.Unlock()
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("{}"))
 	}))
 	t.Cleanup(recorder.Close)
 
@@ -63,7 +64,7 @@ func TestAPI_ServiceAccountAuth(t *testing.T) {
 	tokenPath := writeTokenFile(t, "my-sa-token\n")
 	api := New(httpclient.New(httpclient.WithoutForcedHTTP2()), srv.URL, management.NewKeboolaServiceAccountAuth(tokenPath))
 
-	require.NoError(t, api.NotifyAppUsage("app-1", time.Now()).SendOrErr(t.Context()))
+	require.NoError(t, api.GetAppConfig("app-1", "").SendOrErr(t.Context()))
 
 	requests := srv.Requests()
 	require.Len(t, requests, 1)
@@ -80,11 +81,11 @@ func TestAPI_ServiceAccountAuth_Rotation(t *testing.T) {
 	tokenPath := writeTokenFile(t, "old-token")
 	api := New(httpclient.New(httpclient.WithoutForcedHTTP2()), srv.URL, management.NewKeboolaServiceAccountAuth(tokenPath))
 
-	require.NoError(t, api.NotifyAppUsage("app-1", time.Now()).SendOrErr(t.Context()))
+	require.NoError(t, api.GetAppConfig("app-1", "").SendOrErr(t.Context()))
 
 	// Rotate the token
 	require.NoError(t, os.WriteFile(tokenPath, []byte("new-token"), 0o600))
-	require.NoError(t, api.NotifyAppUsage("app-1", time.Now()).SendOrErr(t.Context()))
+	require.NoError(t, api.GetAppConfig("app-1", "").SendOrErr(t.Context()))
 
 	requests := srv.Requests()
 	require.Len(t, requests, 2)

@@ -23,35 +23,10 @@ import (
 type DataAppsAPI struct {
 	*httptest.Server
 	Apps map[api.AppID]api.AppConfig
-	// Notifications counts PATCH /apps/{app} calls per appID.
-	//
-	// Most table-driven tests read this map only after process Shutdown, by which
-	// time all in-flight notify goroutines have drained, so direct access is
-	// race-free. Tests that need to observe Notifications mid-flight must call
-	// NotificationsSnapshot or NotificationsCount, both of which lock the map.
+	// Notifications counts PATCH /apps/{app} calls carrying lastRequestTimestamp,
+	// per appID. Read it only after the process has shut down.
 	Notifications map[string]int
 	notifyLock    sync.Mutex
-}
-
-// NotificationsCount returns the current count for appID under a lock,
-// suitable for use in concurrent test assertions (e.g. require.Eventually
-// while the proxy is still running).
-func (v *DataAppsAPI) NotificationsCount(appID string) int {
-	v.notifyLock.Lock()
-	defer v.notifyLock.Unlock()
-	return v.Notifications[appID]
-}
-
-// NotificationsSnapshot returns a copy of the current Notifications map under
-// a lock.
-func (v *DataAppsAPI) NotificationsSnapshot() map[string]int {
-	v.notifyLock.Lock()
-	defer v.notifyLock.Unlock()
-	out := make(map[string]int, len(v.Notifications))
-	for k, val := range v.Notifications {
-		out[k] = val
-	}
-	return out
 }
 
 func StartDataAppsAPI(t *testing.T, pm server.PortManager) *DataAppsAPI {
