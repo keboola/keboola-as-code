@@ -95,9 +95,7 @@ func (h *harness) cacheLive() {
 
 // counterValue reads an emitted counter back, so the assertions are about what
 // a dashboard would show rather than about a field kept for the tests.
-// suspendCount reads one outcome of the suspends counter. Taking the first
-// data point would read whichever outcome happened to be recorded first.
-func (h *harness) suspendCount(t *testing.T, outcome string) int64 {
+func (h *harness) performedSuspends(t *testing.T) int64 {
 	t.Helper()
 	for _, m := range h.tel.Metrics(t) {
 		if m.Name != "keboola.go.appsproxy.idletimer.suspends" {
@@ -108,7 +106,7 @@ func (h *harness) suspendCount(t *testing.T, outcome string) int64 {
 			return 0
 		}
 		for _, dp := range sum.DataPoints {
-			if v, found := dp.Attributes.Value(attribute.Key("outcome")); found && v.AsString() == outcome {
+			if v, found := dp.Attributes.Value(attribute.Key("outcome")); found && v.AsString() == outcomePerformed {
 				return dp.Value
 			}
 		}

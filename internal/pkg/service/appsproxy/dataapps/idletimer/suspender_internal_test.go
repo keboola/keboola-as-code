@@ -124,7 +124,7 @@ func TestRound_SuspendsAWorkloadIdlePastTheMargin(t *testing.T) {
 	h.round()
 
 	assert.Equal(t, []k8sapp.WorkloadRef{appRef}, h.source.slept)
-	assert.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
+	assert.Equal(t, int64(1), h.performedSuspends(t))
 }
 
 func TestRound_DoesNotSuspendBeforeTheThreshold(t *testing.T) {
@@ -195,7 +195,7 @@ func TestRound_CountsASuspendFollowedByAWakeWithinAMinute(t *testing.T) {
 	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.round()
-	require.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
+	require.Equal(t, int64(1), h.performedSuspends(t))
 
 	// Something woke it: the workload started again, which moves lastStartedTime.
 	h.clock.Advance(30 * time.Second)
@@ -215,7 +215,7 @@ func TestRound_DoesNotCountAnUnreconciledSuspendAsAWake(t *testing.T) {
 	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.round()
-	require.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
+	require.Equal(t, int64(1), h.performedSuspends(t))
 
 	// Still in the Running set a round later, but it never restarted.
 	h.clock.Advance(15 * time.Second)
@@ -231,7 +231,7 @@ func TestRound_DoesNotCountAWakeLongAfterTheSuspend(t *testing.T) {
 	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.round()
-	require.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
+	require.Equal(t, int64(1), h.performedSuspends(t))
 
 	// It starts again, but well after the window.
 	h.clock.Advance(2 * time.Minute)
@@ -496,7 +496,7 @@ func TestRound_ASuspendThatDidNotHappenIsNotCounted(t *testing.T) {
 
 			h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 			h.round()
-			assert.Zero(t, h.suspendCount(t, outcomePerformed))
+			assert.Zero(t, h.performedSuspends(t))
 
 			h.clock.Advance(30 * time.Second)
 			h.source.candidates[0].LastStarted = h.clock.Now()
