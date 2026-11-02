@@ -65,11 +65,10 @@ type wiring struct {
 	clock *clockwork.FakeClock
 }
 
-func newWiring(t *testing.T, suspendEnabled bool) *wiring {
+func newWiring(t *testing.T) *wiring {
 	t.Helper()
 
 	cfg := config.New()
-	cfg.IdleSuspend.Enabled = suspendEnabled
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC))
 	scope, mocked := proxyDependencies.NewMockedServiceScopeWithK8sObjects(t, t.Context(), cfg, appObject(), dependencies.WithClock(clock))
 	fake := mocked.TestFakeK8sClient()
@@ -118,7 +117,7 @@ func (w *wiring) suspendPatched() bool {
 func TestService_TakesItsEntryOutOfTheRecordOnShutdown(t *testing.T) {
 	t.Parallel()
 
-	w := newWiring(t, false)
+	w := newWiring(t)
 	w.running(func() bool { return len(w.entries()) == 1 }, "the replica never wrote its entry")
 
 	w.scope.Process().Shutdown(t.Context(), errors.New("test"))
@@ -127,15 +126,11 @@ func TestService_TakesItsEntryOutOfTheRecordOnShutdown(t *testing.T) {
 	assert.Empty(t, w.entries())
 }
 
-// The gate is the one switch between reporting a suspend and performing it, and
-// it reaches the loop only through the service's constructor.
-func TestService_PassesTheSuspendGateToTheLoop(t *testing.T) {
+func TestService_SuspendsAnIdleWorkload(t *testing.T) {
 	t.Parallel()
 
-	for _, enabled := range []bool{true, false} {
-		w := newWiring(t, enabled)
-		start := w.clock.Now()
-		w.running(func() bool { return w.suspendPatched() || w.clock.Since(start) > 2*time.Minute }, "the workload was never judged")
-		assert.Equal(t, enabled, w.suspendPatched(), "suspend enabled=%t", enabled)
-	}
+	w := newWiring(t)
+	start := w.clock.Now()
+	w.running(func() bool { return w.suspendPatched() || w.clock.Since(start) > 2*time.Minute }, "the workload was never judged")
+	assert.True(t, w.suspendPatched())
 }

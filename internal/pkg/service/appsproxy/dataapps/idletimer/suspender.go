@@ -33,17 +33,16 @@ type k8sWorkloads interface {
 
 // Suspender decides which running workloads have gone idle and suspends them.
 type Suspender struct {
-	suspendEnabled bool
-	self           string
-	clock          clockwork.Clock
-	logger         log.Logger
-	client         *client
-	workloads      k8sWorkloads
-	records        *recordCache
-	recorder       *Recorder
-	errorLog       *errorLog
-	metrics        *metrics
-	states         *syncmap.SyncMap[k8sapp.WorkloadRef, suspendState]
+	self      string
+	clock     clockwork.Clock
+	logger    log.Logger
+	client    *client
+	workloads k8sWorkloads
+	records   *recordCache
+	recorder  *Recorder
+	errorLog  *errorLog
+	metrics   *metrics
+	states    *syncmap.SyncMap[k8sapp.WorkloadRef, suspendState]
 
 	// Touched only by the round.
 	warnedUnresolved map[api.AppID]bool
@@ -54,11 +53,6 @@ type suspendState struct {
 	lock sync.Mutex
 
 	suspendedAt time.Time
-
-	// A real suspend takes the workload out of the Running set and is edge
-	// triggered by that. A suppressed one leaves it there, so without this every
-	// later round would count and log it again.
-	suppressedAt time.Time
 }
 
 // NewSuspender starts the round loop and the record watch. The ctx the service
@@ -73,7 +67,6 @@ func NewSuspender(d dependencies, k8sClient dynamic.Interface, recorder *Recorde
 		recorder,
 		newMetrics(d.Telemetry().Meter()),
 		newErrorLog(d.Clock(), d.Logger().WithComponent("idletimer")),
-		d.Config().IdleSuspend.Enabled,
 		recorder.self,
 	)
 
@@ -111,17 +104,16 @@ func (m *Suspender) run(ctx context.Context) {
 	}
 }
 
-func newSuspender(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, recorder *Recorder, metrics *metrics, errorLog *errorLog, suspendEnabled bool, self string) *Suspender {
+func newSuspender(clock clockwork.Clock, logger log.Logger, c *client, workloads k8sWorkloads, recorder *Recorder, metrics *metrics, errorLog *errorLog, self string) *Suspender {
 	return &Suspender{
-		suspendEnabled: suspendEnabled,
-		self:           self,
-		clock:          clock,
-		logger:         logger,
-		client:         c,
-		workloads:      workloads,
-		recorder:       recorder,
-		metrics:        metrics,
-		errorLog:       errorLog,
+		self:      self,
+		clock:     clock,
+		logger:    logger,
+		client:    c,
+		workloads: workloads,
+		recorder:  recorder,
+		metrics:   metrics,
+		errorLog:  errorLog,
 		states: syncmap.New[k8sapp.WorkloadRef, suspendState](func(k8sapp.WorkloadRef) *suspendState {
 			return &suspendState{}
 		}),
@@ -219,16 +211,12 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate, seen obs
 	}
 	idleFor := now.Sub(lastSeen(seen.lastRequestAt, rec.lastRequestAt, c.LastStarted))
 	if !shouldSuspend(idleFor, *c.Threshold, margin) {
-		m.clearSuppressed(item)
 		return stateCandidate, nil
 	}
 
-	// A cached read lags, and a lagging record reads as idle. With the gate on
-	// that would suspend a workload in use; with it off it would report a
-	// suspend the enabled loop would not have made, which is the number the
-	// rollout is judged on. Confirming once per episode covers the second case
-	// without a read per round.
-	if rec.cached && (m.suspendEnabled || !m.suppressed(item)) {
+	// A cached read lags, and a lagging record reads as idle, which would
+	// suspend a workload in use.
+	if rec.cached {
 		live, err := m.client.get(ctx, c.SandboxName)
 		if err != nil {
 			m.noteRecordError(ctx, "confirm", c, err)
@@ -240,12 +228,11 @@ func (m *Suspender) visit(ctx context.Context, c k8sapp.SleepCandidate, seen obs
 		}
 		idleFor = now.Sub(lastSeen(seen.lastRequestAt, live.lastRequestAt, c.LastStarted))
 		if !shouldSuspend(idleFor, *c.Threshold, margin) {
-			m.clearSuppressed(item)
 			return stateCandidate, nil
 		}
 	}
 
-	m.suspend(ctx, c, item, idleFor)
+	m.suspend(ctx, c, item)
 	return stateCandidate, nil
 }
 
@@ -312,12 +299,7 @@ func (m *Suspender) readRecord(ctx context.Context, c k8sapp.SleepCandidate) (re
 	return record{}, false
 }
 
-func (m *Suspender) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *suspendState, idleFor time.Duration) {
-	if !m.suspendEnabled {
-		m.reportSuppressed(ctx, c, item, idleFor)
-		return
-	}
-
+func (m *Suspender) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *suspendState) {
 	suspended, err := m.workloads.Sleep(ctx, c.Ref, c.SandboxName)
 	if err != nil {
 		m.logger.Warnf(ctx, "failed to suspend idle workload %q: %s", c.Ref, err)
@@ -338,34 +320,4 @@ func (m *Suspender) suspend(ctx context.Context, c k8sapp.SleepCandidate, item *
 
 func (m *Suspender) noteRecordError(ctx context.Context, verb string, c k8sapp.SleepCandidate, err error) {
 	m.errorLog.Warnf(ctx, err, "failed to %s the idle timer of workload %q: %s", verb, c.Ref, err)
-}
-
-// reportSuppressed records one gated suspend per idle episode.
-func (m *Suspender) reportSuppressed(ctx context.Context, c k8sapp.SleepCandidate, item *suspendState, idleFor time.Duration) {
-	item.lock.Lock()
-	first := item.suppressedAt.IsZero()
-	if first {
-		item.suppressedAt = m.clock.Now()
-	}
-	item.lock.Unlock()
-
-	if !first {
-		return
-	}
-
-	m.metrics.suspends.Add(ctx, 1, withOutcome(outcomeSuppressed))
-	m.logger.Infof(ctx, "would suspend workload %q, idle for %s, but the suspend action is off", c.Ref, idleFor)
-}
-
-func (m *Suspender) suppressed(item *suspendState) bool {
-	item.lock.Lock()
-	defer item.lock.Unlock()
-
-	return !item.suppressedAt.IsZero()
-}
-
-func (m *Suspender) clearSuppressed(item *suspendState) {
-	item.lock.Lock()
-	item.suppressedAt = time.Time{}
-	item.lock.Unlock()
 }
