@@ -275,8 +275,12 @@ func TestScanForSleepCandidates_SkipsAStaticApp(t *testing.T) {
 	app.Object["spec"].(map[string]any)["runtime"] = map[string]any{"backend": map[string]any{"type": k8sapp.BackendTypeStatic}}
 	watcher := syncedWatcher(t, log.NewNopLogger(), app)
 
-	info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: memberAppID})
-	require.True(t, ok)
+	var info k8sapp.AppInfo
+	assert.Eventually(t, func() bool {
+		var ok bool
+		info, ok = watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: memberAppID})
+		return ok
+	}, 5*time.Second, 50*time.Millisecond)
 	assert.True(t, info.Static)
 
 	scan := watcher.ScanForSleepCandidates()
