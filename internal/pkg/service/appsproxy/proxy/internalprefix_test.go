@@ -1,16 +1,22 @@
 package proxy_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/cookiejar"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
 )
 
 const publicOrigin = "https://public-123.hub.keboola.local"
@@ -197,5 +203,53 @@ func TestInternalPrefix_LookalikePathGetsSelector(t *testing.T) {
 		resp := env.do(req)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode, path)
 		assert.Contains(t, readBody(t, resp), "_proxy/selection?provider=oidc0", path)
+	}
+}
+
+func TestInternalPrefix_SignOutWithoutProvidersEndsSession(t *testing.T) {
+	t.Parallel()
+	events := make(chan sessions.Event, 16)
+	stream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		var event sessions.Event
+		if assert.NoError(t, json.NewDecoder(req.Body).Decode(&event)) {
+			events <- event
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(stream.Close)
+	env := startPreviewEnv(t, func(cfg *config.Config, _ *previewtest.JWKSServer) {
+		cfg.Sessions.StreamURL = stream.URL
+	})
+	env.syncClock()
+	jar, err := cookiejar.New(nil)
+	require.NoError(t, err)
+	client := *env.client
+	client.Jar = jar
+
+	require.Equal(t, http.StatusOK, env.send(&client, publicOrigin+"/", "Accept", "text/html").StatusCode)
+	before := len(*env.appServer.Requests)
+
+	resp := env.send(&client, publicOrigin+"/_proxy/sign_out")
+	assert.Equal(t, http.StatusFound, resp.StatusCode)
+	assert.Len(t, *env.appServer.Requests, before, "sign-out never reaches the app")
+	var cleared *http.Cookie
+	for _, c := range resp.Cookies() {
+		if c.Name == sessions.CookieName {
+			cleared = c
+		}
+	}
+	require.NotNil(t, cleared, "sign-out clears the session cookie")
+	assert.Empty(t, cleared.Value)
+
+	deadline := time.After(5 * time.Second)
+	for {
+		select {
+		case event := <-events:
+			if event.EventType == sessions.EventSessionEnd {
+				return
+			}
+		case <-deadline:
+			t.Fatal("no session_end event")
+		}
 	}
 }

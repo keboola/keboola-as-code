@@ -20,6 +20,9 @@ func (h *appHandler) serveInternal(w http.ResponseWriter, req *http.Request) err
 	previewCookie := session.TakeCookie(req)
 	if path == selector.SignOutPath {
 		h.clearPreviewSession(w, previewCookie)
+		// A sign-out ends the session explicitly. Internal paths never reach
+		// the upstream, so this cannot be handled by the sessions middleware.
+		h.manager.sessionsManager.SignOut(w, req, h.app)
 	}
 
 	if h.allAuthHandlers == nil {
@@ -30,11 +33,6 @@ func (h *appHandler) serveInternal(w http.ResponseWriter, req *http.Request) err
 		return internalPathNotFound(path)
 	}
 
-	// A sign-out ends the session explicitly. Internal paths never reach
-	// the upstream, so this cannot be handled by the sessions middleware.
-	if path == selector.SignOutPath {
-		h.manager.sessionsManager.SignOut(w, req, h.app)
-	}
 	return h.allAuthHandlers.ServeHTTPOrError(w, req)
 }
 
