@@ -125,7 +125,8 @@ func TestInternalPrefix_UnknownPathNotForwarded(t *testing.T) {
 		assert.Len(t, *env.appServer.Requests, before)
 
 		resp = env.get(devmodeHost, "/_proxy/sign_out", cookie, nil)
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+		assert.Equal(t, http.StatusFound, resp.StatusCode)
+		assert.Equal(t, "/", resp.Header.Get("Location"))
 		assert.Len(t, *env.appServer.Requests, before, "sign-out never reaches the app")
 		cleared := previewCookie(resp)
 		require.NotNil(t, cleared, "sign-out clears the preview cookie")

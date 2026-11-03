@@ -23,6 +23,10 @@ func (h *appHandler) serveInternal(w http.ResponseWriter, req *http.Request) err
 	}
 
 	if h.allAuthHandlers == nil {
+		if path == selector.SignOutPath {
+			http.Redirect(w, req, "/", http.StatusFound)
+			return nil
+		}
 		return internalPathNotFound(path)
 	}
 
