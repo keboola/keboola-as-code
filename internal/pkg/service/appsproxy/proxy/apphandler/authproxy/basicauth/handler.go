@@ -172,7 +172,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 // - Other values fall back to "/".
 func callbackPath(req *http.Request) string {
 	for _, path := range []string{req.Header.Get(callbackQueryParam), req.URL.Query().Get(callbackQueryParam)} {
-		if strings.HasPrefix(path, "/") && !strings.HasPrefix(path, config.InternalPrefix) {
+		if strings.HasPrefix(path, "/") && !config.IsInternalPath(path) {
 			return path
 		}
 	}

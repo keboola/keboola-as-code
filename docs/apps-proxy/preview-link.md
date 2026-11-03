@@ -161,9 +161,10 @@ session only proves "this link was redeemed for this origin," nothing about
 who redeemed it.
 
 **Removed before the upstream.** The cookie is stripped from the `Cookie`
-header (`session.TakeCookie`) immediately after the `/_proxy/preview`
-path check and before any other routing decision, so neither the app itself
-nor any auth handler ever sees it.
+header (`session.TakeCookie`) on every request: for an internal path, in the
+internal router right after the `/_proxy/preview` check; for any other path,
+right after the internal routing. Neither the app itself nor any auth handler
+ever sees it.
 
 **The upgrade slides, open frames don't.** A websocket upgrade is an ordinary
 request/response pair — the slid `Set-Cookie` reaches the client on the `101`
@@ -189,39 +190,45 @@ Incoming request
 ├─1─ Host != canonical host (App only, not Sandbox)?
 │       └─ YES → 308 redirect to canonical URL
 │
-├─2─ Path == /_proxy/preview?
-│       └─ YES → preview landing page (GET/HEAD) or redeem (POST)
+├─2─ Internal path? (/_proxy or /_proxy/*, in any case, with ;params,
+│    or with encoded / or .. — config.IsInternalPath)
+│       └─ YES → internal router, never the upstream:
+│                a. Path == /_proxy/preview → preview landing page
+│                   (GET/HEAD) or redeem (POST)
+│                b. strip the preview session cookie; /_proxy/sign_out
+│                   also clears it and ends the sessions-manager session
+│                c. app has no auth handler → /_proxy/sign_out: 302 to /,
+│                   anything else: 404
+│                d. otherwise → auth handlers (OAuth2 Proxy / Basic)
 │
-│   (the preview session cookie is stripped from every request here,
-│    before any further routing — see §6; a request to /_proxy/sign_out
-│    clears it too, whether or not the app has an auth handler)
+│   (any other request: the preview session cookie is stripped here,
+│    before any further routing — see §6)
 │
-├─3─ Path starts with /_proxy/* and the app has an auth handler?
-│       └─ YES → existing auth handler (sign-out also ends the
-│                 sessions-manager session, then OAuth2 Proxy / Basic)
-│
-├─4─ App has dev-mode enabled + valid preview session cookie for this origin?
+├─3─ App has dev-mode enabled + valid preview session cookie for this origin?
 │       └─ YES → forward to upstream (skips AuthRules; slides the cookie)
 │
-├─5─ Preview links enabled + frame ancestors set + app has dev-mode enabled
+├─4─ Preview links enabled + frame ancestors set + app has dev-mode enabled
 │    + frame document load (no valid preview session)?
 │       └─ YES → session-required page (§7.1)
 │
-└─6─ AuthRules matching
+└─5─ AuthRules matching
         └─ matching rule found → apply configured auth, forward to upstream
            no match → 404
 ```
 
-Step 2 runs before any auth handler, `AuthRule` or upstream forwarding — see
-[§2](#2-endpoints), and clears the preview session cookie on sign-out
-regardless of whether the app has an auth handler. Step 3 is checked ahead of
-step 4, when the app does have an auth handler, so sign-out and the OIDC
-callback always reach it rather than being shadowed by a live preview
-session; on a sign-out it additionally ends the sessions-manager session.
+Step 2 runs before any preview session, `AuthRule` or upstream forwarding —
+see [§2](#2-endpoints) — so sign-out and the OIDC callback always reach the
+auth handlers rather than being shadowed by a live preview session, and a
+sign-out clears the preview session cookie and ends the sessions-manager
+session whether or not the app has an auth handler. An auth handler can still
+pass an internal path on to the upstream (the OAuth2 Proxy catch-all, a valid
+basic-auth cookie). The upstream chain therefore starts with a guard that
+answers any internal path with `404`, before session tracking and the app user
+token, so no internal path ever reaches the app.
 
 ### 7.1 Session-Required Page
 
-Step 5 answers a dev-mode app framed without a valid preview session — the
+Step 4 answers a dev-mode app framed without a valid preview session — the
 session expired, was signed out, or was never started. The frame cannot fix
 this itself; its parent (kbc-ui) has to mint a new link and reframe it. The
 page tells it to.
@@ -229,9 +236,9 @@ page tells it to.
 **When:** `preview.jwksURL` and `preview.allowedFrameAncestors` are set (with
 no ancestors no parent could get the message), the workload has dev mode
 enabled, the request has `Sec-Fetch-Dest: iframe` or `frame` and an `Accept` header
-containing `text/html` (`preview.IsFrameDocumentLoad`), and step 4 did not
+containing `text/html` (`preview.IsFrameDocumentLoad`), and step 3 did not
 match. Any other request — a top-level load, a fetch from inside the frame, a
-non-dev-mode app — falls through to step 6. `Sec-Fetch-*` can be forged by a
+non-dev-mode app — falls through to step 5. `Sec-Fetch-*` can be forged by a
 non-browser client; the page grants nothing, so it only picks which page is
 shown.
 
