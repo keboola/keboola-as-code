@@ -196,11 +196,10 @@ Incoming request
 │                a. Path == /_proxy/preview → preview landing page
 │                   (GET/HEAD) or redeem (POST)
 │                b. strip the preview session cookie; /_proxy/sign_out
-│                   also clears it
+│                   also clears it and ends the sessions-manager session
 │                c. app has no auth handler → /_proxy/sign_out: 302 to /,
 │                   anything else: 404
-│                d. otherwise → auth handlers (sign-out also ends the
-│                   sessions-manager session, then OAuth2 Proxy / Basic)
+│                d. otherwise → auth handlers (OAuth2 Proxy / Basic)
 │
 │   (any other request: the preview session cookie is stripped here,
 │    before any further routing — see §6)
@@ -220,12 +219,12 @@ Incoming request
 Step 2 runs before any preview session, `AuthRule` or upstream forwarding —
 see [§2](#2-endpoints) — so sign-out and the OIDC callback always reach the
 auth handlers rather than being shadowed by a live preview session, and a
-sign-out clears the preview session cookie whether or not the app has an auth
-handler. An auth handler can still pass an internal path on to the upstream
-(the OAuth2 Proxy catch-all, a valid basic-auth cookie). The upstream chain
-therefore starts with a guard that answers any internal path with `404`, before
-session tracking and the app user token, so no internal path ever reaches the
-app.
+sign-out clears the preview session cookie and ends the sessions-manager
+session whether or not the app has an auth handler. An auth handler can still
+pass an internal path on to the upstream (the OAuth2 Proxy catch-all, a valid
+basic-auth cookie). The upstream chain therefore starts with a guard that
+answers any internal path with `404`, before session tracking and the app user
+token, so no internal path ever reaches the app.
 
 ### 7.1 Session-Required Page
 
