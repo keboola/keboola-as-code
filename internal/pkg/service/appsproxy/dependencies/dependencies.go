@@ -31,7 +31,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/idletimer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/notify"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/wakeup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler"
@@ -83,7 +82,6 @@ type ServiceScope interface {
 	UpstreamManager() *upstream.Manager
 	AuthProxyManager() *authproxy.Manager
 	PageWriter() *pagewriter.Writer
-	NotifyManager() *notify.Manager
 	WakeupManager() *wakeup.Manager
 	AppStateWatcher() *k8sapp.StateWatcher
 	SessionsManager() *sessions.Manager
@@ -108,7 +106,6 @@ type serviceScope struct {
 	authProxyManager  *authproxy.Manager
 	pageWriter        *pagewriter.Writer
 	appConfigLoader   appconfig.Loader
-	notifyManager     *notify.Manager
 	wakeupManager     *wakeup.Manager
 	appStateWatcher   *k8sapp.StateWatcher
 	sessionsManager   *sessions.Manager
@@ -210,7 +207,6 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 		management.NewKeboolaServiceAccountAuth(cfg.ConnectionServiceAccountTokenPath),
 	)
 	d.appConfigLoader = appconfig.NewLoader(d)
-	d.notifyManager = notify.NewManager(d)
 
 	var k8sClient dynamic.Interface
 	if provider, ok := parentScp.(k8sClientProvider); ok {
@@ -269,10 +265,6 @@ func (v *serviceScope) AuthProxyManager() *authproxy.Manager {
 
 func (v *serviceScope) PageWriter() *pagewriter.Writer {
 	return v.pageWriter
-}
-
-func (v *serviceScope) NotifyManager() *notify.Manager {
-	return v.notifyManager
 }
 
 func (v *serviceScope) WakeupManager() *wakeup.Manager {

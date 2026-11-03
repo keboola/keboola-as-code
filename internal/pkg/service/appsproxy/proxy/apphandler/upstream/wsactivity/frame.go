@@ -54,8 +54,8 @@ const (
 //
 // The parser holds no resync logic. A malformed stream desynchronizes the
 // parser indefinitely; the connection endpoints (browser, upstream) will
-// terminate such streams on their own and the throttling in notify.Manager
-// caps the cost of any spurious callback bursts.
+// terminate such streams on their own, and a spurious callback costs only
+// in-memory bookkeeping.
 type frameParser struct {
 	onDataFrame FrameCallback
 

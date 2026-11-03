@@ -58,11 +58,10 @@ import (
 )
 
 type testCase struct {
-	name                  string
-	setupK8s              func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher)
-	run                   func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher)
-	expectedNotifications map[string]int
-	expectedSpans         tracetest.SpanStubs
+	name          string
+	setupK8s      func(t *testing.T, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher)
+	run           func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher)
+	expectedSpans tracetest.SpanStubs
 }
 
 func TestAppProxyRouter(t *testing.T) {
@@ -82,7 +81,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, "OK\n", string(body))
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "missing-app-id",
@@ -97,7 +95,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Unexpected domain, missing application ID.")
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "unknown-app-id",
@@ -112,7 +109,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), html.EscapeString(`Application "unknown" not found in the stack.`))
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "broken-app",
@@ -128,7 +124,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), html.EscapeString(`Application "broken" has invalid configuration for authentication provider "oidc"`))
 				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
 			},
-			expectedNotifications: map[string]int{},
 			expectedSpans: []tracetest.SpanStub{
 				{
 					Name:     "keboola.go.common.dependencies.NewBaseScope",
@@ -232,7 +227,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), html.EscapeString(`no path rule is configured`))
 				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "wrong-rule-type-app",
@@ -248,7 +242,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), html.EscapeString(`no authentication provider is configured`))
 				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "missing-referenced-provider",
@@ -264,7 +257,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), html.EscapeString(`authentication provider "test" not found for "/"`))
 				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "empty-allowed-roles-array-app",
@@ -280,7 +272,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), html.EscapeString(`Application "invalid3" has invalid configuration for authentication provider "oidc"`))
 				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "unknown-provider-app",
@@ -296,7 +287,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), html.EscapeString(`authentication provider "unknown" not found for "/"`))
 				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "not-empty-providers-auth-required-false",
@@ -312,7 +302,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), html.EscapeString(`no authentication provider is expected for "/"`))
 				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "redirect-to-canonical-host",
@@ -326,7 +315,6 @@ func TestAppProxyRouter(t *testing.T) {
 				location := response.Header.Get("Location")
 				assert.Equal(t, "https://public-123.hub.keboola.local/some/data/app/url?foo=bar", location)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "redirect-to-host-lowercase",
@@ -339,7 +327,6 @@ func TestAppProxyRouter(t *testing.T) {
 				location := response.Header.Get("Location")
 				assert.Equal(t, "https://lowercase-12345.hub.keboola.local/some/data/app/url?foo=bar", location)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-app-down",
@@ -359,7 +346,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// The error page must not disclose the internal upstream address.
 				assert.NotContains(t, string(body), appServer.Listener.Addr().String())
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			// The upstream sees the internal upstream address in its Host header
@@ -378,9 +364,6 @@ func TestAppProxyRouter(t *testing.T) {
 				location := response.Header.Get("Location")
 				assert.NotContains(t, location, appServer.Listener.Addr().String())
 				assert.Equal(t, "https://public-123.hub.keboola.local/redirect/", location)
-			},
-			expectedNotifications: map[string]int{
-				"123": 1,
 			},
 		},
 		{
@@ -409,9 +392,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Empty(t, appRequest.Header.Get("X-Kbc-Test"))
 				assert.Empty(t, appRequest.Header.Get("X-Kbc-User-Email"))
 			},
-			expectedNotifications: map[string]int{
-				"123": 1,
-			},
 		},
 		{
 			name: "forwarded-headers-http",
@@ -437,9 +417,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// X-Forwarded-For contains the client IP.
 				assert.NotEmpty(t, appRequest.Header.Get("X-Forwarded-For"))
 			},
-			expectedNotifications: map[string]int{
-				"123": 1,
-			},
 		},
 		{
 			// Nginx Ingress on GKE sets X-Forwarded-Scheme instead of X-Forwarded-Proto.
@@ -459,9 +436,6 @@ func TestAppProxyRouter(t *testing.T) {
 
 				// X-Forwarded-Proto must be set from X-Forwarded-Scheme fallback.
 				assert.Equal(t, "https", appRequest.Header.Get("X-Forwarded-Proto"))
-			},
-			expectedNotifications: map[string]int{
-				"123": 1,
 			},
 		},
 		{
@@ -503,9 +477,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Origin is rewritten to the upstream hostname (Streamlit/Tornado workaround).
 				assert.Equal(t, "http://"+appServer.Listener.Addr().String(), appRequest.Header.Get("Origin"))
 			},
-			expectedNotifications: map[string]int{
-				"123": 1,
-			},
 		},
 		{
 			// Streamlit (Tornado) rejects WebSocket connections when Origin does not match Host.
@@ -542,9 +513,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Origin must be rewritten to the upstream hostname so Tornado's
 				// check_origin() sees Origin == Host and accepts the connection.
 				assert.Equal(t, "http://"+appServer.Listener.Addr().String(), appRequest.Header.Get("Origin"))
-			},
-			expectedNotifications: map[string]int{
-				"123": 1,
 			},
 		},
 		{
@@ -629,9 +597,6 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.Equal(t, http.SameSiteStrictMode, cookies[1].SameSite)
 				}
 			},
-			expectedNotifications: map[string]int{
-				"oidc": 1,
-			},
 		},
 		{
 			name: "private-app-unauthorized",
@@ -665,7 +630,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-missing-csrf-token",
@@ -735,7 +699,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-group-mismatch",
@@ -799,7 +762,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-unverified-email",
@@ -851,7 +813,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-oidc-down",
@@ -902,7 +863,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-down",
@@ -993,7 +953,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), `Request to application failed.`)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "multi-app-basic-flow",
@@ -1096,9 +1055,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "admin,manager", appRequest.Header.Get("X-Kbc-User-Roles"))
 				assert.Empty(t, appRequest.Header.Get("X-Kbc-Test"))
 			},
-			expectedNotifications: map[string]int{
-				"multi": 1,
-			},
 		},
 		{
 			name: "multi-app-redirect-to-selection-page",
@@ -1129,7 +1085,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc1`))
 				assert.Contains(t, string(body), htmlLinkTo(`https://multi.hub.keboola.local/_proxy/selection?provider=oidc2`))
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "multi-app-unverified-email",
@@ -1197,7 +1152,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusUnauthorized, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "multi-app-down",
@@ -1274,7 +1228,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), `Request to application failed.`)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "multi-app-broken-provider",
@@ -1301,7 +1254,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), html.EscapeString(`Application "multi" has invalid configuration for authentication provider "oidc2"`))
 				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-app-websocket",
@@ -1326,9 +1278,6 @@ func TestAppProxyRouter(t *testing.T) {
 
 				require.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
 			},
-			expectedNotifications: map[string]int{
-				"123": 1,
-			},
 		},
 		{
 			name: "private-app-websocket-unauthorized",
@@ -1346,7 +1295,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "failed to WebSocket dial: expected handshake response status code 101 but got 302")
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-websocket",
@@ -1416,9 +1364,6 @@ func TestAppProxyRouter(t *testing.T) {
 
 				require.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
 			},
-			expectedNotifications: map[string]int{
-				"oidc": 1,
-			},
 		},
 		{
 			name: "websocket-connection-check",
@@ -1445,9 +1390,6 @@ func TestAppProxyRouter(t *testing.T) {
 					}
 					return true
 				}, 10*time.Second, time.Millisecond*100)
-			},
-			expectedNotifications: map[string]int{
-				"111": 1,
 			},
 		},
 		{
@@ -1538,9 +1480,6 @@ func TestAppProxyRouter(t *testing.T) {
 
 				require.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
 			},
-			expectedNotifications: map[string]int{
-				"multi": 1,
-			},
 		},
 		{
 			name: "prefix-app-no-auth",
@@ -1572,9 +1511,6 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusNotFound, response.StatusCode)
-			},
-			expectedNotifications: map[string]int{
-				"prefix": 1,
 			},
 		},
 		{
@@ -1634,9 +1570,6 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
-			},
-			expectedNotifications: map[string]int{
-				"prefix": 1,
 			},
 		},
 		{
@@ -1715,9 +1648,6 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-			},
-			expectedNotifications: map[string]int{
-				"prefix": 1,
 			},
 		},
 		{
@@ -1803,9 +1733,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusUnauthorized, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{
-				"prefix": 1,
-			},
 		},
 		{
 			name: "configuration-change",
@@ -1849,9 +1776,6 @@ func TestAppProxyRouter(t *testing.T) {
 
 				require.Equal(t, http.StatusOK, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{
-				"123": 1,
-			},
 		},
 		{
 			name: "concurrency-test",
@@ -1887,7 +1811,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// Check total requests count
 				assert.Equal(t, int64(100), counter.Load())
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-app-wakeup",
@@ -1931,9 +1854,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, `Hello, client`, string(body))
 			},
-			expectedNotifications: map[string]int{
-				"123": 1,
-			},
 		},
 		{
 			name: "public-app-wakeup-only",
@@ -1958,33 +1878,7 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "<title>Starting</title>")
-
-				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
 			},
-			expectedNotifications: map[string]int{},
-		},
-		{
-			// Background-poll endpoints emitted by data-app frontends
-			// (Streamlit's /_stcore/health and /_stcore/host-config) fire
-			// independently of user interaction — every WS reconnect cycle
-			// while the tab stays open. Apps-proxy must NOT count them as
-			// activity, otherwise auto-suspend never triggers.
-			name: "public-app-framework-background-poll-skips-notify",
-			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				// Three background-poll requests against a Running app. Each
-				// reaches the upstream (GotConn fires), but the new filter in
-				// trace() must skip notify for these paths. The upstream test
-				// server has no handler for them, so we accept whatever status
-				// it returns — what matters is the notify count below.
-				for _, path := range []string{"/_stcore/health", "/_stcore/host-config", "/_stcore/health"} {
-					request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local"+path, nil)
-					require.NoError(t, err)
-					response, err := client.Do(request)
-					require.NoError(t, err)
-					_ = response.Body.Close()
-				}
-			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			// On a Suspended app, framework background polls must NOT trigger
@@ -2030,7 +1924,6 @@ func TestAppProxyRouter(t *testing.T) {
 					"should include the prevention hint about the auto-sleep timeout")
 				assert.NotContains(t, string(body), "<title>Starting</title>")
 			},
-			expectedNotifications: map[string]int{},
 		},
 
 		{
@@ -2046,7 +1939,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), htmlLinkTo(`https://oidc.hub.keboola.local/_proxy/selection?provider=oidc`))
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-wakeup",
@@ -2133,9 +2025,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
 			},
-			expectedNotifications: map[string]int{
-				"oidc": 1,
-			},
 		},
 		{
 			name: "private-app-wakeup-only",
@@ -2206,10 +2095,7 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err = io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "<title>Starting</title>")
-
-				// Expect wakeup but no notification since there was an authorized request to the app but not while it was running.
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "private-app-no-wakeup",
@@ -2259,10 +2145,7 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-
-				// Expect no notification or wakeup because there was never an authorized request to the app
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-basic-auth-wrong-login-no-password",
@@ -2296,7 +2179,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Please enter a correct password.")
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-basic-auth-wrong-login",
@@ -2322,7 +2204,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Please enter a correct password.")
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-basic-auth-correct-app-url",
@@ -2376,9 +2257,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusMovedPermanently, response.StatusCode)
 				assert.Equal(t, "https://basic-auth.hub.keboola.local/app/url", response.Header.Get("Location"))
-			},
-			expectedNotifications: map[string]int{
-				"auth": 1,
 			},
 		},
 		{
@@ -2434,9 +2312,6 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.NotContains(t, strings.ToLower(name), "x-kbc-", name)
 				}
 			},
-			expectedNotifications: map[string]int{
-				"auth": 1,
-			},
 		},
 		{
 			name: "public-basic-auth-wrong-cookie",
@@ -2452,7 +2327,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Cookie has expired")
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-basic-auth-cookie",
@@ -2468,9 +2342,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Hello, client")
 				require.Len(t, response.Cookies(), 2)
-			},
-			expectedNotifications: map[string]int{
-				"auth": 1,
 			},
 		},
 		{
@@ -2508,7 +2379,6 @@ func TestAppProxyRouter(t *testing.T) {
 				// The login POST must not reach the upstream
 				assert.Empty(t, *appServer.Requests)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-basic-auth-login-form-expired-csrf-with-valid-cookie",
@@ -2527,7 +2397,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), "Session expired, reload page")
 				assert.Empty(t, *appServer.Requests)
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "public-basic-auth-cookie-app-form-post",
@@ -2547,9 +2416,6 @@ func TestAppProxyRouter(t *testing.T) {
 
 				require.Len(t, *appServer.Requests, 1)
 				assert.Equal(t, http.MethodPost, (*appServer.Requests)[0].Method)
-			},
-			expectedNotifications: map[string]int{
-				"auth": 1,
 			},
 		},
 		{
@@ -2575,7 +2441,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, string(body), "<title>Login</title>")
 				require.Empty(t, response.Cookies())
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			name: "restart-disabled",
@@ -2604,7 +2469,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), "Application Disabled")
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			// DEV mode app that is Stopped — the proxy must auto-resume it
@@ -2645,7 +2509,6 @@ func TestAppProxyRouter(t *testing.T) {
 					return err == nil && found && state == string(k8sapp.AppActualStateRunning)
 				}, 5*time.Second, 50*time.Millisecond, "expected wakeup to patch spec.state=Running")
 			},
-			expectedNotifications: map[string]int{},
 		},
 		{
 			// DEV mode app that is Stopped AND has autoRestartEnabled=false —
@@ -2687,7 +2550,6 @@ func TestAppProxyRouter(t *testing.T) {
 					return err != nil || (found && state == string(k8sapp.AppActualStateRunning))
 				}, time.Second, 50*time.Millisecond, "app must not be auto-resumed")
 			},
-			expectedNotifications: map[string]int{},
 		},
 	}
 
@@ -2704,9 +2566,6 @@ func TestAppProxyRouter(t *testing.T) {
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
 				assert.Equal(t, `Hello, client`, string(body))
-			},
-			expectedNotifications: map[string]int{
-				"123": 1,
 			},
 		}
 	}
@@ -2810,9 +2669,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "admin@keboola.com", appRequest.Header.Get("X-Kbc-User-Email"))
 				assert.Equal(t, "admin", appRequest.Header.Get("X-Kbc-User-Roles"))
 			},
-			expectedNotifications: map[string]int{
-				"oidc": 1,
-			},
 		}
 	}
 
@@ -2840,34 +2696,10 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Equal(t, "Hello, client", string(body))
 				require.Len(t, *appServer.Requests, 1)
 			},
-			// notify bumps lastRequestTimestamp on the App, which is not this
-			// workload. Draft traffic must not hold the App awake. Paired with
-			// the case below, which shares this fixture and asserts the App's
-			// own hostname still notifies — the notify throttle is keyed per
-			// app id, so only two separate cases can show both halves.
-			expectedNotifications: map[string]int{},
 		},
 		testCase{
-			// The other half of the case above: on the same fixture, a request
-			// to the App's own hostname still notifies.
-			name:     "draft-sandbox-fixture-app-host-still-notifies",
-			setupK8s: setupDraftSandbox("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local"),
-			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
-				t.Helper()
-
-				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
-				require.NoError(t, err)
-				response, err := client.Do(request)
-				require.NoError(t, err)
-				require.Equal(t, http.StatusOK, response.StatusCode)
-				_ = response.Body.Close()
-			},
-			expectedNotifications: map[string]int{"123": 1},
-		},
-		testCase{
-			// The websocket counterpart of draft-sandbox-public-app-is-served:
-			// frames on a draft's websocket must not hold the App awake either.
-			name:     "draft-sandbox-websocket-does-not-notify",
+			// The websocket counterpart of draft-sandbox-public-app-is-served.
+			name:     "draft-sandbox-websocket-is-served",
 			setupK8s: setupDraftSandbox("123", "https://public-123.hub.keboola.local", "draft-abc", "https://draft-abc.hub.keboola.local"),
 			run: func(t *testing.T, client *http.Client, _ []*mockoidc.MockOIDC, _ *testutil.AppServer, _ *testutil.DataAppsAPI, _ *k8sfake.FakeDynamicClient, _ *k8sapp.StateWatcher) {
 				t.Helper()
@@ -2892,7 +2724,6 @@ func TestAppProxyRouter(t *testing.T) {
 
 				require.NoError(t, c.Close(websocket.StatusNormalClosure, ""))
 			},
-			expectedNotifications: map[string]int{},
 		},
 		testCase{
 			// A Stopped draft must be woken: the proxy patches the Sandbox CR's
@@ -2927,7 +2758,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.NotEqual(t, string(k8sapp.AppActualStateRunning), appState, "the App must not be woken in place of the draft")
 			},
-			expectedNotifications: map[string]int{},
 		},
 		testCase{
 			// An upstream redirect must land back on the draft's own hostname.
@@ -2945,7 +2775,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusMovedPermanently, response.StatusCode)
 				assert.Equal(t, "https://draft-abc.hub.keboola.local/redirect/", response.Header.Get("Location"))
 			},
-			expectedNotifications: map[string]int{},
 		},
 		testCase{
 			// A password-protected app's draft prompts for its own password:
@@ -2993,7 +2822,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, "Hello, client", string(body))
 			},
-			expectedNotifications: map[string]int{},
 		},
 		testCase{
 			// An OIDC-protected app's draft cannot complete a login yet, since
@@ -3014,7 +2842,6 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.NotContains(t, string(body), "Hello, client", "an unauthenticated draft must never reach the upstream")
 				assert.Empty(t, *appServer.Requests, "the upstream must not be reached without authentication")
 			},
-			expectedNotifications: map[string]int{},
 		},
 	)
 
@@ -3051,7 +2878,6 @@ func TestAppProxyRouter(t *testing.T) {
 					return appPatchCount(fakeClient, "123") > patchesBefore
 				}, time.Second, 50*time.Millisecond, "an unpublished app must not be woken")
 			},
-			expectedNotifications: map[string]int{},
 		},
 		testCase{
 			name:     "unpublished-private-app-is-not-found-before-login",
@@ -3068,15 +2894,13 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), html.EscapeString(`Application "auth" not found in the stack.`))
 			},
-			expectedNotifications: map[string]int{},
 		},
 		testCase{
 			// Republishing bumps the generation before the operator rewrites the
 			// condition, so the NotDeployed verdict is stale and must not 404.
-			name:                  "republished-app-with-stale-not-deployed-is-woken",
-			setupK8s:              patchStoppedApp("123", unpublishedAppPatch(3)),
-			run:                   expectWoken("123", "https://public-123.hub.keboola.local/"),
-			expectedNotifications: map[string]int{},
+			name:     "republished-app-with-stale-not-deployed-is-woken",
+			setupK8s: patchStoppedApp("123", unpublishedAppPatch(3)),
+			run:      expectWoken("123", "https://public-123.hub.keboola.local/"),
 		},
 		testCase{
 			name: "suspended-product-app-is-woken",
@@ -3089,14 +2913,12 @@ func TestAppProxyRouter(t *testing.T) {
 					"conditions": [{"type": "Ready", "status": "True", "reason": "Serving", "message": "", "observedGeneration": 2, "lastTransitionTime": "2026-10-22T15:00:00Z"}]
 				}
 			}`),
-			run:                   expectWoken("123", "https://public-123.hub.keboola.local/"),
-			expectedNotifications: map[string]int{},
+			run: expectWoken("123", "https://public-123.hub.keboola.local/"),
 		},
 		testCase{
-			name:                  "legacy-app-without-production-ref-is-woken",
-			setupK8s:              patchStoppedApp("123", `{"spec": {"state": "Stopped", "autoRestartEnabled": true}, "status": {"currentState": "Stopped"}}`),
-			run:                   expectWoken("123", "https://public-123.hub.keboola.local/"),
-			expectedNotifications: map[string]int{},
+			name:     "legacy-app-without-production-ref-is-woken",
+			setupK8s: patchStoppedApp("123", `{"spec": {"state": "Stopped", "autoRestartEnabled": true}, "status": {"currentState": "Stopped"}}`),
+			run:      expectWoken("123", "https://public-123.hub.keboola.local/"),
 		},
 		testCase{
 			name: "stopped-draft-of-unpublished-app-is-woken",
@@ -3123,7 +2945,6 @@ func TestAppProxyRouter(t *testing.T) {
 				}, 5*time.Second, 50*time.Millisecond, "expected a wake patch of the draft Sandbox CR")
 				assert.Equal(t, appPatchesBefore, appPatchCount(fakeClient, "123"), "the App must not be woken in place of the draft")
 			},
-			expectedNotifications: map[string]int{},
 		},
 		testCase{
 			name: "draft-of-unpublished-app-is-served",
@@ -3144,7 +2965,6 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, `Hello, client`, string(body))
 			},
-			expectedNotifications: map[string]int{},
 		},
 	)
 
@@ -3222,7 +3042,7 @@ func TestAppProxyRouter(t *testing.T) {
 			d.Process().Shutdown(t.Context(), errors.New("bye bye"))
 			d.Process().WaitForShutdown()
 
-			assert.Equal(t, tc.expectedNotifications, appsAPI.Notifications)
+			assert.Empty(t, appsAPI.Notifications, "apps-proxy must not report activity to sandboxes-service")
 			assert.Empty(t, mocked.DebugLogger().ErrorMessages())
 		})
 	}
@@ -3649,137 +3469,6 @@ func registerDefaultK8sApps(t *testing.T, watcher *k8sapp.StateWatcher) {
 	require.True(t, watcher.WaitForCacheSync(t.Context()), "App CRD informer cache sync timed out")
 }
 
-// TestWebsocketActivityTracking verifies the per-frame WebSocket activity-tracking
-// behavior introduced by wsactivity:
-//
-//  1. The initial handshake produces exactly one Sandboxes Service notify (from the
-//     GotConn ClientTrace hook).
-//  2. An idle WebSocket — connection open, no data frames exchanged — does NOT
-//     spontaneously increment the notify count past the throttle window. The
-//     customer-visible goal of the change (forgotten browser tab no longer blocks
-//     auto-suspend) is that an idle connection produces zero activity-driven
-//     notifies; this test confirms that for the per-frame path.
-//  3. A real data frame past the throttle window MUST produce a second notify,
-//     proving the per-frame path is wired end-to-end through the wrapped conn.
-//
-// The test uses an injected FakeClock so the notify throttle can be advanced
-// deterministically without sleeping for 30 s of real time.
-//
-// Caveat on (2): this is not a hard regression test against re-introducing a real-
-// time ticker (the previous implementation slept 30 s of wall-clock time). The
-// 250 ms wall-clock yield only catches accidentally short-period real-time goroutines;
-// a future 30 s ticker would still pass this test. Catching that regression
-// reliably would require making the ticker interval injectable. Code review is
-// expected to catch any reintroduction of presence-based polling.
-//
-// The "control frames are ignored" property is covered separately by
-// wsactivity's TestWrap_OnlyControlFrames_NoCallbacks unit test, which can do
-// the assertion without driving ping/pong through coder/websocket's read loop.
-func TestWebsocketActivityTracking(t *testing.T) {
-	t.Parallel()
-	ctx := t.Context()
-
-	fakeClock := clockwork.NewFakeClock()
-
-	// Standard testing scaffold: apps API + upstream app server + secrets + config.
-	pm := osAssignedPorts{}
-	appsAPI := testutil.StartDataAppsAPI(t, pm)
-	t.Cleanup(func() { appsAPI.Close() })
-	appServer := testutil.StartAppServer(t, pm)
-	t.Cleanup(func() { appServer.Close() })
-
-	providers := testAuthProviders(t, pm)
-	appURL := testutil.AppServerURL(t, appServer)
-	apps := testDataApps(appURL, providers)
-	appsAPI.Register(apps)
-
-	secret := make([]byte, 32)
-	_, err := rand.Read(secret)
-	require.NoError(t, err)
-	csrfSecret := make([]byte, 32)
-	_, err = rand.Read(csrfSecret)
-	require.NoError(t, err)
-
-	cfg := config.New()
-	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
-	cfg.CookieSecretSalt = string(secret)
-	cfg.CsrfTokenSalt = string(csrfSecret)
-	cfg.SandboxesAPI.URL = appsAPI.URL
-
-	d, mocked := proxyDependencies.NewMockedServiceScopeWithK8sObjects(
-		t, ctx, cfg,
-		makeDefaultK8sObjects(apps, appURL.String()),
-		dependencies.WithRealHTTPClient(),
-		dependencies.WithClock(fakeClock),
-	)
-	defer func() {
-		d.Process().Shutdown(ctx, errors.New("bye bye"))
-		d.Process().WaitForShutdown()
-	}()
-
-	loggerWriter := logging.NewLoggerWriter(d.Logger(), "info")
-	logger.SetOutput(loggerWriter)
-	logger.SetErrOutput(loggerWriter)
-	handler := proxy.NewHandler(ctx, d)
-
-	var lc net.ListenConfig
-	l, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	proxySrv := &httptest.Server{
-		Listener: l,
-		Config:   &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ErrorLog: log.NewStdErrorLogger(d.Logger())},
-	}
-	proxySrv.StartTLS()
-	t.Cleanup(func() { proxySrv.Close() })
-
-	proxyURL, err := url.Parse(proxySrv.URL)
-	require.NoError(t, err)
-	client := createHTTPClient(t, proxyURL)
-	registerDefaultK8sApps(t, d.AppStateWatcher())
-
-	// notifyCount is locked behind the testutil mutex so it is safe to read
-	// concurrently with the in-flight notify goroutine driven by data frames.
-	notifyCount := func() int { return appsAPI.NotificationsCount("123") }
-
-	wsCtx, wsCancel := context.WithTimeout(ctx, time.Minute)
-	defer wsCancel()
-
-	// Open the idle WebSocket. The handshake's GotConn ClientTrace hook fires
-	// u.notify once, producing the first Sandboxes Service PATCH call.
-	c, _, err := websocket.Dial(
-		wsCtx,
-		"wss://public-123.hub.keboola.local/ws-idle",
-		&websocket.DialOptions{HTTPClient: client},
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = c.Close(websocket.StatusNormalClosure, "") })
-
-	require.Eventually(t, func() bool { return notifyCount() == 1 }, 5*time.Second, 10*time.Millisecond,
-		"handshake should produce exactly one notify (from GotConn)")
-
-	// Advance the fake clock past the per-app throttle window. From now on,
-	// any activity-driven notify will pass the throttle gate. With no
-	// frames flowing through the wrapper, the count must stay at 1.
-	fakeClock.Advance(31 * time.Second)
-	// Brief wall-clock yield so that any short-period goroutine that mistakenly
-	// fired on connection presence (rather than per-frame) would surface. See
-	// the doc comment caveat — this does NOT catch a 30 s real-time ticker.
-	time.Sleep(250 * time.Millisecond)
-	assert.Equal(t, 1, notifyCount(),
-		"idle WS past the throttle window must NOT trigger an activity-driven notify")
-
-	// Write a real data frame (text message). The proxy observes a non-control
-	// opcode (0x1) in the client→server direction, fires u.notify, and — since
-	// fakeClock is past the throttle window — the throttle gate opens and we
-	// get a second PATCH call to apps API.
-	require.NoError(t, c.Write(wsCtx, websocket.MessageText, []byte("hello data")))
-
-	require.Eventually(t, func() bool { return notifyCount() == 2 }, 5*time.Second, 10*time.Millisecond,
-		"data-frame activity past the throttle window must produce a second notify")
-
-	assert.Empty(t, mocked.DebugLogger().ErrorMessages())
-}
-
 // The proxy is the only way traffic reaches a workload's idle timer. A request
 // and a websocket data frame each have to move the shared record, on an App's
 // route and on a draft's own route, or a workload in use reads as idle and is
@@ -3910,6 +3599,40 @@ func TestIdleTimerRecordsProxiedActivity(t *testing.T) {
 		require.NoError(t, response.Body.Close())
 		require.Equal(t, http.StatusOK, response.StatusCode)
 	}
+
+	latestAliveAt := func(name string) time.Time {
+		obj, err := fake.Resource(k8sapp.IdleTimerGVR()).Namespace("keboola").Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return time.Time{}
+		}
+		observers, _, _ := unstructured.NestedMap(obj.Object, "spec", "observers")
+		var latest time.Time
+		for _, raw := range observers {
+			fields, _ := raw.(map[string]any)
+			at, _ := time.Parse(time.RFC3339Nano, fmt.Sprint(fields["aliveAt"]))
+			if at.After(latest) {
+				latest = at
+			}
+		}
+		return latest
+	}
+	fakeClock.Advance(10 * time.Second)
+	pollMark := fakeClock.Now()
+	for _, path := range []string{"/_stcore/health", "/_stcore/host-config"} {
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://public-123.hub.keboola.local"+path, nil)
+		require.NoError(t, err)
+		response, err := client.Do(request)
+		require.NoError(t, err)
+		require.NoError(t, response.Body.Close())
+	}
+	require.Eventually(t, func() bool {
+		if latestAliveAt(member).After(pollMark) {
+			return true
+		}
+		fakeClock.Advance(time.Second)
+		return false
+	}, 10*time.Second, 5*time.Millisecond, "no sweep wrote the member's record after the background polls")
+	assert.True(t, lastRequestAt(member).Before(pollMark), "a Streamlit background poll reached the record")
 
 	fakeClock.Advance(10 * time.Second)
 	mark := fakeClock.Now()

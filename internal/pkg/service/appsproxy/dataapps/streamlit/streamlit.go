@@ -2,7 +2,7 @@
 // distinct from anything a person did.
 //
 // It is a package of its own so that both callers share one definition: the
-// auto-suspend notification in the upstream handler, and session tracking. The
+// idle-timer activity in the upstream handler, and session tracking. The
 // helper could equally live in sessions — upstream already imports that — but
 // an auto-suspend rule reading out of a package called sessions would be an
 // odd place to look for it.
