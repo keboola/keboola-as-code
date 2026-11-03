@@ -251,3 +251,19 @@ func TestInternalPrefix_SignOutWithoutProvidersEndsSession(t *testing.T) {
 		}
 	}, 5*time.Second, 10*time.Millisecond, "no session_end event")
 }
+
+func TestInternalPrefix_LookalikePathBasicAuthReturnPath(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+
+	resp := env.send(env.client, authOrigin+"/_proxyfoo")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Contains(t, readBody(t, resp), `action="/_proxy/form?rd=%2F_proxyfoo"`)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, authOrigin+"/_proxy/form?rd=%2F_proxyfoo", strings.NewReader("password=abc"))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp = env.do(req)
+	require.Equal(t, http.StatusMovedPermanently, resp.StatusCode)
+	assert.Equal(t, authOrigin+"/_proxyfoo", resp.Header.Get("Location"))
+}
