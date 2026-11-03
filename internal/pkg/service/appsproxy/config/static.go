@@ -11,20 +11,35 @@ const (
 )
 
 // IsInternalPath matches the path in every form an app could resolve to the internal prefix:
-// any case, with ";" segment parameters, with "//" or ".." left by encoded characters,
-// and with ".." the app does not resolve.
+// any case, with or without ";" segment parameters, and with ".." either resolved or not.
 func IsInternalPath(p string) bool {
-	segments := strings.Split(strings.ToLower(p), "/")
+	p = strings.ToLower(p)
+	for _, candidate := range []string{p, stripSegmentParams(p)} {
+		if hasInternalPrefix(dropEmptyAndDotSegments(candidate)) || hasInternalPrefix(path.Clean(candidate)) {
+			return true
+		}
+	}
+	return false
+}
+
+func stripSegmentParams(p string) string {
+	segments := strings.Split(p, "/")
+	for i, segment := range segments {
+		segments[i], _, _ = strings.Cut(segment, ";")
+	}
+	return strings.Join(segments, "/")
+}
+
+func dropEmptyAndDotSegments(p string) string {
+	segments := strings.Split(p, "/")
 	kept := make([]string, 0, len(segments))
 	for _, segment := range segments {
-		segment, _, _ = strings.Cut(segment, ";")
 		if segment == "" || segment == "." {
 			continue
 		}
 		kept = append(kept, segment)
 	}
-	unresolved := "/" + strings.Join(kept, "/")
-	return hasInternalPrefix(unresolved) || hasInternalPrefix(path.Clean(unresolved))
+	return "/" + strings.Join(kept, "/")
 }
 
 func hasInternalPrefix(p string) bool {

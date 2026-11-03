@@ -30,6 +30,8 @@ func TestIsInternalPath(t *testing.T) {
 		{"/_proxy/..", true},
 		{"/_proxy/../../x", true},
 		{"//_proxy/./../x", true},
+		{"/a/../_proxy/;x/../app", true},
+		{"/a;x/../_proxy/y", true},
 		{"/", false},
 		{"/_proxyfoo", false},
 		{"/_proxyfoo/x", false},
