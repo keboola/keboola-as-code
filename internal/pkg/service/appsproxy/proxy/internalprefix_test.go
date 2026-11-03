@@ -24,6 +24,14 @@ func (e *previewEnv) assertInternalNotFound(client *http.Client, target string, 
 	assert.Len(e.t, *e.appServer.Requests, before, "%s must not reach the app", target)
 }
 
+func (e *previewEnv) assertAppNotReached(client *http.Client, target string) *http.Response {
+	e.t.Helper()
+	before := len(*e.appServer.Requests)
+	resp := e.send(client, target)
+	assert.Len(e.t, *e.appServer.Requests, before, "%s must not reach the app", target)
+	return resp
+}
+
 func (e *previewEnv) basicAuthLogin() *http.Client {
 	e.t.Helper()
 	e.syncClock()
@@ -68,7 +76,9 @@ func TestInternalPrefix_UnknownPathNotForwarded(t *testing.T) {
 	t.Run("OAuth app, anonymous", func(t *testing.T) {
 		t.Parallel()
 		env := startPreviewEnv(t)
-		env.assertInternalNotFound(env.client, oidcOrigin+"/_proxy/anything")
+		resp := env.assertAppNotReached(env.client, oidcOrigin+"/_proxy/anything")
+		assert.Equal(t, http.StatusFound, resp.StatusCode)
+		assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?")
 	})
 
 	t.Run("basic-auth app, logged in", func(t *testing.T) {
@@ -85,7 +95,9 @@ func TestInternalPrefix_UnknownPathNotForwarded(t *testing.T) {
 	t.Run("basic-auth app, anonymous", func(t *testing.T) {
 		t.Parallel()
 		env := startPreviewEnv(t)
-		env.assertInternalNotFound(env.client, authOrigin+"/_proxy/anything")
+		resp := env.assertAppNotReached(env.client, authOrigin+"/_proxy/anything")
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Contains(t, readBody(t, resp), `name="password"`)
 	})
 
 	t.Run("app without providers", func(t *testing.T) {

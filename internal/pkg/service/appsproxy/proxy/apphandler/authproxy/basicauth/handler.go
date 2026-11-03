@@ -26,7 +26,7 @@ import (
 const (
 	basicAuthCookie    = "proxyBasicAuth"
 	callbackQueryParam = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
-	FormPagePath       = config.InternalPrefix + "/form"
+	formPagePath       = config.InternalPrefix + "/form"
 	csrfTokenKey       = "_csrf"
 	csrfTokenMaxAge    = 15 * time.Minute
 )
@@ -68,7 +68,7 @@ func (h *Handler) Name() string {
 }
 
 func (h *Handler) SignInPath() string {
-	return FormPagePath
+	return formPagePath
 }
 
 func (h *Handler) CookieExpiration() time.Duration {
@@ -91,7 +91,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 
 	requestCookie, _ := req.Cookie(basicAuthCookie)
 	// Pass request to upstream when cookie have been set, the login form is always handled here
-	if requestCookie != nil && req.URL.Path != selector.SignOutPath && req.URL.Path != FormPagePath && h.isCookieAuthorized(requestCookie) == nil {
+	if requestCookie != nil && req.URL.Path != selector.SignOutPath && req.URL.Path != formPagePath && h.isCookieAuthorized(requestCookie) == nil {
 		h.setCookie(w, host, h.CookieExpiration(), requestCookie)
 		return h.upstream.ServeHTTPOrError(w, req)
 	}
@@ -126,7 +126,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 	csrfToken := xsrftoken.Generate(csrfTokenKey, h.csrfTokenSalt, "/")
 	fragment := fmt.Sprintf(`<input type="hidden" name="%s" value="%s">`, template.HTMLEscapeString(csrfTokenKey), template.HTMLEscapeString(csrfToken))
 	callback := callbackPath(req)
-	formAction := &url.URL{Path: FormPagePath}
+	formAction := &url.URL{Path: formPagePath}
 	if callback != "/" {
 		formAction.RawQuery = url.Values{callbackQueryParam: {callback}}.Encode()
 	}
@@ -168,7 +168,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 // callbackPath returns the app path to redirect to after login.
 //
 // - The selector sets the header to the requested app path.
-// - The login form posts to FormPagePath and carries the path in the query.
+// - The login form posts to formPagePath and carries the path in the query.
 // - Other values fall back to "/".
 func callbackPath(req *http.Request) string {
 	for _, path := range []string{req.Header.Get(callbackQueryParam), req.URL.Query().Get(callbackQueryParam)} {

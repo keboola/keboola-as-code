@@ -2,10 +2,8 @@ package apphandler
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/basicauth"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/session"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
@@ -13,8 +11,6 @@ import (
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 )
 
-// serveInternal routes the internal paths. The oauth2-proxy routes are spelled out because
-// the fork does not export them. A new auth endpoint must be added here.
 func (h *appHandler) serveInternal(w http.ResponseWriter, req *http.Request) error {
 	path := req.URL.Path
 	if path == preview.Path {
@@ -30,27 +26,12 @@ func (h *appHandler) serveInternal(w http.ResponseWriter, req *http.Request) err
 		return internalPathNotFound(path)
 	}
 
-	switch path {
-	case selector.SignOutPath:
-		// A sign-out ends the session explicitly. Internal paths never reach
-		// the upstream, so this cannot be handled by the sessions middleware.
+	// A sign-out ends the session explicitly. Internal paths never reach
+	// the upstream, so this cannot be handled by the sessions middleware.
+	if path == selector.SignOutPath {
 		h.manager.sessionsManager.SignOut(w, req, h.app)
-		return h.allAuthHandlers.ServeHTTPOrError(w, req)
-	case selector.SelectionPagePath,
-		selector.CallbackPath,
-		basicauth.FormPagePath,
-		config.InternalPrefix + "/sign_in",
-		config.InternalPrefix + "/start",
-		config.InternalPrefix + "/userinfo",
-		config.InternalPrefix + "/auth":
-		return h.allAuthHandlers.ServeHTTPOrError(w, req)
 	}
-
-	if strings.HasPrefix(path, config.InternalPrefix+"/static/") {
-		return h.allAuthHandlers.ServeHTTPOrError(w, req)
-	}
-
-	return internalPathNotFound(path)
+	return h.allAuthHandlers.ServeHTTPOrError(w, req)
 }
 
 func internalPathNotFound(path string) error {
