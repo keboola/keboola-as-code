@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -266,4 +267,13 @@ func TestInternalPrefix_LookalikePathBasicAuthReturnPath(t *testing.T) {
 	resp = env.do(req)
 	require.Equal(t, http.StatusMovedPermanently, resp.StatusCode)
 	assert.Equal(t, authOrigin+"/_proxyfoo", resp.Header.Get("Location"))
+
+	for _, rd := range []string{"/_PROXY/x", "/_proxy;x", "/a/../_proxy/x"} {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, authOrigin+"/_proxy/form?"+url.Values{"rd": {rd}}.Encode(), strings.NewReader("password=abc"))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		resp := env.do(req)
+		require.Equal(t, http.StatusMovedPermanently, resp.StatusCode, rd)
+		assert.Equal(t, authOrigin+"/", resp.Header.Get("Location"), rd)
+	}
 }
