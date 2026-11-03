@@ -241,15 +241,12 @@ func TestInternalPrefix_SignOutWithoutProvidersEndsSession(t *testing.T) {
 	require.NotNil(t, cleared, "sign-out clears the session cookie")
 	assert.Empty(t, cleared.Value)
 
-	deadline := time.After(5 * time.Second)
-	for {
+	assert.Eventually(t, func() bool {
 		select {
 		case event := <-events:
-			if event.EventType == sessions.EventSessionEnd {
-				return
-			}
-		case <-deadline:
-			t.Fatal("no session_end event")
+			return event.EventType == sessions.EventSessionEnd
+		default:
+			return false
 		}
-	}
+	}, 5*time.Second, 10*time.Millisecond, "no session_end event")
 }
