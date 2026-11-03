@@ -320,7 +320,7 @@ func TestRecordActivity_APersistentFailureIsNotRetriedPerRequest(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1"))
+	h := buildHarness(t, logger, []k8sapp.SleepCandidate{candidate(appRef, "member-1")})
 	h.suspender.suspendIdleWorkloads(t.Context())
 
 	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
@@ -632,7 +632,7 @@ func TestSweep_BacksOffAndThrottlesAStandingFailure(t *testing.T) {
 		candidates = append(candidates, candidate(ref, "member-"+strconv.Itoa(i)))
 	}
 
-	h := newGatedHarnessWithLogger(t, logger, candidates...)
+	h := buildHarness(t, logger, candidates)
 	h.suspender.suspendIdleWorkloads(t.Context())
 
 	h.fake.PrependReactor("patch", resource, func(k8stesting.Action) (bool, runtime.Object, error) {

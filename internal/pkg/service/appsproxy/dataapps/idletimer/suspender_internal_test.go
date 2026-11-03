@@ -124,7 +124,7 @@ func TestRound_SuspendsAWorkloadIdlePastTheMargin(t *testing.T) {
 	h.round()
 
 	assert.Equal(t, []k8sapp.WorkloadRef{appRef}, h.source.slept)
-	assert.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
+	assert.Equal(t, int64(1), h.performedSuspends(t))
 }
 
 func TestRound_DoesNotSuspendBeforeTheThreshold(t *testing.T) {
@@ -195,7 +195,7 @@ func TestRound_CountsASuspendFollowedByAWakeWithinAMinute(t *testing.T) {
 	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.round()
-	require.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
+	require.Equal(t, int64(1), h.performedSuspends(t))
 
 	// Something woke it: the workload started again, which moves lastStartedTime.
 	h.clock.Advance(30 * time.Second)
@@ -215,7 +215,7 @@ func TestRound_DoesNotCountAnUnreconciledSuspendAsAWake(t *testing.T) {
 	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.round()
-	require.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
+	require.Equal(t, int64(1), h.performedSuspends(t))
 
 	// Still in the Running set a round later, but it never restarted.
 	h.clock.Advance(15 * time.Second)
@@ -231,7 +231,7 @@ func TestRound_DoesNotCountAWakeLongAfterTheSuspend(t *testing.T) {
 	h.round()
 	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 	h.round()
-	require.Equal(t, int64(1), h.suspendCount(t, outcomePerformed))
+	require.Equal(t, int64(1), h.performedSuspends(t))
 
 	// It starts again, but well after the window.
 	h.clock.Advance(2 * time.Minute)
@@ -241,91 +241,13 @@ func TestRound_DoesNotCountAWakeLongAfterTheSuspend(t *testing.T) {
 	assert.Zero(t, h.counterValue(t, "keboola.go.appsproxy.idletimer.woke_soon_after_suspend"))
 }
 
-func TestRound_GateSuppressesOnlyTheSuspendAction(t *testing.T) {
-	t.Parallel()
-
-	h := newGatedHarness(t, candidate(appRef, "member-1"))
-	h.round()
-	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.round()
-
-	assert.Empty(t, h.source.slept, "the gate must stop the patch")
-	assert.Zero(t, h.suspendCount(t, outcomePerformed))
-	assert.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
-
-	// Everything leading up to the suspend still has to run: that is what the
-	// gated deploy exists to exercise against a real apiserver.
-	rec, err := h.recorder.client.get(t.Context(), "member-1")
-	require.NoError(t, err)
-	assert.False(t, rec.lastRequestAt.IsZero(), "the record must still be created")
-	assert.Equal(t, int64(1), h.suspender.metrics.candidates.Load())
-}
-
-// A suppressed suspend leaves the workload Running, so every later round decides
-// to suspend it again. Reporting each decision would be four lines a minute for
-// every idle workload on the stack.
-func TestRound_SuppressedSuspendIsReportedOncePerIdleEpisode(t *testing.T) {
-	t.Parallel()
-
-	logger := log.NewDebugLogger()
-	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1"))
-	h.round()
-	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-
-	for range 5 {
-		h.round()
-		h.clock.Advance(tickInterval)
-	}
-
-	assert.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
-	assert.Equal(t, 1, strings.Count(logger.AllMessages(), "would suspend"))
-}
-
-// A workload that came back and went idle again is a second episode, and the
-// comparison against the cron counts it separately.
-func TestRound_ASecondIdleEpisodeIsReportedAgain(t *testing.T) {
-	t.Parallel()
-
-	h := newGatedHarness(t, candidate(appRef, "member-1"))
-	h.round()
-	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.round()
-	require.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
-
-	// Someone used it again.
-	h.recorder.RecordActivity(t.Context(), appRef)
-	h.flush()
-	h.round()
-
-	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.round()
-
-	assert.Equal(t, int64(2), h.suspendCount(t, outcomeSuppressed))
-}
-
-func TestRound_SuppressedSuspendNamesTheWorkloadAndHowLongItWasIdle(t *testing.T) {
-	t.Parallel()
-
-	logger := log.NewDebugLogger()
-	h := newGatedHarnessWithLogger(t, logger, candidate(appRef, "member-1"))
-	h.round()
-	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.round()
-
-	messages := logger.AllMessages()
-	assert.Contains(t, messages, "would suspend")
-	assert.Contains(t, messages, appRef.String())
-	assert.Contains(t, messages, "idle for")
-}
-
 // Both replicas run rounds, so both can try to create the same record. The loser is
-// not an error, and counting it as one would put noise into the metric that
-// gates retiring the cron.
+// not an error, and counting it as one would put noise into the error log.
 func TestRound_AlreadyExistsIsNotAnError(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	h := buildHarness(t, logger, true,
+	h := buildHarness(t, logger,
 		[]k8sapp.SleepCandidate{candidate(appRef, "member-1")})
 	h.fake.PrependReactor("create", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, k8serrors.NewAlreadyExists(gvr().GroupResource(), "member-1")
@@ -358,7 +280,7 @@ func TestRound_WarnsOncePerUnresolvedApp(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	h := buildHarness(t, logger, true, nil)
+	h := buildHarness(t, logger, nil)
 	h.source.unresolved = []api.AppID{"123"}
 
 	for range 3 {
@@ -375,7 +297,7 @@ func TestRound_RepeatedReadFailureIsLoggedOnce(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	h := buildHarness(t, logger, true,
+	h := buildHarness(t, logger,
 		[]k8sapp.SleepCandidate{candidate(appRef, "member-1")})
 	h.fake.PrependReactor("get", resource, func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, k8serrors.NewForbidden(gvr().GroupResource(), "member-1", errors.New("no rbac"))
@@ -415,49 +337,6 @@ func TestRound_StopsWhenTheRoundRunsOutOfTime(t *testing.T) {
 	// Not "nothing was suspended": that holds even without the break, because
 	// the reactor fails every read. The round must not touch the apiserver.
 	assert.Empty(t, h.fake.Actions(), "a cancelled round must stop, not visit the rest")
-}
-
-// Shadow mode exists to justify turning the gate on, so it has to count what
-// the enabled loop would do. A cached read that the apiserver disagrees with is
-// a suspend that would not have happened.
-func TestRound_AGatedDecisionIsConfirmedBeforeItIsCounted(t *testing.T) {
-	t.Parallel()
-
-	h := newGatedHarness(t, candidate(appRef, testMember))
-	h.round()
-
-	// The cache holds the record as it was before the other replica's last
-	// request reached it.
-	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.flush()
-	h.cacheLive()
-	require.NoError(t, h.recorder.client.write(t.Context(), testMember, "other", h.clock.Now(), entry{aliveAt: h.clock.Now(), heartbeat: heartbeatInterval(threshold)}))
-
-	h.suspender.suspendIdleWorkloads(t.Context())
-
-	require.Equal(t, int64(1), h.suspender.metrics.candidates.Load(), "the round must have judged the workload, not skipped it")
-	assert.Zero(t, h.suspendCount(t, outcomeSuppressed), "a stale cached read must not be counted as a suspend that would have happened")
-}
-
-// Once an idle episode has been counted the confirm is skipped: it would cost
-// a live read every round for a decision that no longer counts. A stale cached
-// read then still must not count the episode twice.
-func TestRound_AGatedEpisodeAlreadyCountedIsNotCountedAgain(t *testing.T) {
-	t.Parallel()
-
-	h := newGatedHarness(t, candidate(appRef, testMember))
-	h.round()
-
-	h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
-	h.round()
-	require.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
-
-	h.flush()
-	h.cacheLive()
-	require.NoError(t, h.recorder.client.write(t.Context(), testMember, "other", h.clock.Now(), entry{aliveAt: h.clock.Now(), heartbeat: heartbeatInterval(threshold)}))
-	h.suspender.suspendIdleWorkloads(t.Context())
-
-	assert.Equal(t, int64(1), h.suspendCount(t, outcomeSuppressed))
 }
 
 // A pod is Ready, and taking traffic, before its first tick. Its marks reach
@@ -572,7 +451,7 @@ func TestRound_AnEntryWithAnUnreadableHeartbeatHoldsOnlyUntilNoHeartbeatCouldCov
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	h := buildHarness(t, logger, true, []k8sapp.SleepCandidate{withThreshold(appRef, time.Minute)})
+	h := buildHarness(t, logger, []k8sapp.SleepCandidate{withThreshold(appRef, time.Minute)})
 	h.round()
 
 	_, err := h.fake.Resource(gvr()).Namespace(testNamespace).Patch(t.Context(), testMember, k8stypes.MergePatchType,
@@ -617,7 +496,7 @@ func TestRound_ASuspendThatDidNotHappenIsNotCounted(t *testing.T) {
 
 			h.clock.Advance(threshold + heartbeatInterval(threshold) + time.Second)
 			h.round()
-			assert.Zero(t, h.suspendCount(t, outcomePerformed))
+			assert.Zero(t, h.performedSuspends(t))
 
 			h.clock.Advance(30 * time.Second)
 			h.source.candidates[0].LastStarted = h.clock.Now()

@@ -19,8 +19,7 @@ const (
 )
 
 const (
-	outcomePerformed  = "performed"
-	outcomeSuppressed = "suppressed"
+	outcomePerformed = "performed"
 )
 
 type metrics struct {
@@ -71,7 +70,7 @@ func newMetrics(meter telemetry.Meter) *metrics {
 
 	m.suspends = meter.IntCounter(
 		"keboola.go.appsproxy.idletimer.suspends",
-		`Suspend decisions by outcome: performed (the patch landed) or suppressed (the suspend action is off, counted once per idle episode rather than once per round).`,
+		`Suspend decisions by outcome: performed (the patch landed).`,
 		"",
 	)
 	m.wokeSoonAfterSuspend = meter.IntCounter(
