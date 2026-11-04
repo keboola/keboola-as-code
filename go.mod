@@ -51,7 +51,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/keboola/go-cloud-encrypt v0.0.0-20250422071622-41a5d5547c43
 	github.com/keboola/go-utils v1.5.0
-	github.com/keboola/keboola-sdk-go/v2 v2.24.0
+	github.com/keboola/keboola-sdk-go/v2 v2.24.1-0.20261103112328-fae1a8fedbea
 	github.com/keboola/keboola-sdk-go/v2/transfer v1.1.0
 	github.com/klauspost/compress v1.19.1
 	github.com/klauspost/pgzip v1.2.6

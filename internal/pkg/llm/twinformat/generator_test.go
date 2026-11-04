@@ -236,16 +236,16 @@ func TestBuildBucketIndex(t *testing.T) {
 			},
 			Tables: []*ProcessedTable{
 				{
-					Table:      &keboola.Table{Name: "orders"},
-					BucketName: "shopify",
+					TableListV2Item: &keboola.TableListV2Item{Name: "orders"},
+					BucketName:      "shopify",
 				},
 				{
-					Table:      &keboola.Table{Name: "customers"},
-					BucketName: "shopify",
+					TableListV2Item: &keboola.TableListV2Item{Name: "customers"},
+					BucketName:      "shopify",
 				},
 				{
-					Table:      &keboola.Table{Name: "processed"},
-					BucketName: "transformed",
+					TableListV2Item: &keboola.TableListV2Item{Name: "processed"},
+					BucketName:      "transformed",
 				},
 			},
 		}
@@ -498,7 +498,7 @@ func TestGenerator_Generate_Integration(t *testing.T) {
 		},
 		Tables: []*ProcessedTable{
 			{
-				Table: &keboola.Table{
+				TableListV2Item: &keboola.TableListV2Item{
 					TableKey: keboola.TableKey{
 						TableID: keboola.TableID{
 							BucketID:  keboola.BucketID{Stage: "in", BucketName: "c-shopify"},

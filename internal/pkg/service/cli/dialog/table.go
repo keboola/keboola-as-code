@@ -50,7 +50,7 @@ func WithAllowCreateNewTable() AskTableOption {
 }
 
 // AskTable returns `nil, nil` if the `WithAllowCreateNewTable` option is set, and the user asked to create a new table.
-func (p *Dialogs) AskTable(allTables []*keboola.Table, id configmap.Value[string], opts ...AskTableOption) (*keboola.Table, error) {
+func (p *Dialogs) AskTable(allTables []*keboola.TableListV2Item, id configmap.Value[string], opts ...AskTableOption) (*keboola.TableListV2Item, error) {
 	config := &askTableConfig{}
 	for _, opt := range opts {
 		opt.apply(config)

@@ -29,18 +29,16 @@ func Run(ctx context.Context, d dependencies) (err error) {
 	}
 
 	logger.Info(ctx, "Loading tables, please wait.")
-	tablesPtr, err := d.KeboolaProjectAPI().ListTablesRequest(branch.ID, keboola.WithBuckets()).Send(ctx)
+	tables, err := d.KeboolaProjectAPI().ListTablesV2(ctx, branch.ID)
 	if err != nil {
 		return err
 	}
 
-	tables := *tablesPtr
 	sort.Slice(tables, func(i, j int) bool { return tables[i].TableID.String() < tables[j].TableID.String() })
 
 	logger.Info(ctx, "Found tables:")
 	for _, table := range tables {
-		bucketName := table.Bucket.BucketID.String()
-		logger.Infof(ctx, "  %s (Name: %s, Bucket: %s)", table.TableID, table.DisplayName, bucketName)
+		logger.Infof(ctx, "  %s (Name: %s, Bucket: %s)", table.TableID, table.DisplayName, table.TableID.BucketID)
 	}
 
 	return nil

@@ -190,24 +190,26 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	// Storage Tables
 	var tables []*keboola.Table
 	grp.Go(func() error {
-		req := p.keboolaProjectAPI.
-			ListTablesRequest(p.defaultBranch.ID).
-			WithOnSuccess(func(ctx context.Context, apiTables *[]*keboola.Table) error {
-				for _, table := range *apiTables {
-					// The table list does not contain the "definition" field, so we have to load the tables separately.
-					grp.Go(func() error {
-						return p.keboolaProjectAPI.
-							GetTableRequest(table.TableKey).
-							WithOnSuccess(func(ctx context.Context, table *keboola.Table) error {
-								tables = append(tables, table)
-								return nil
-							}).
-							SendOrErr(ctx)
-					})
-				}
-				return nil
+		apiTables, err := p.keboolaProjectAPI.ListTablesV2(ctx, p.defaultBranch.ID)
+		if err != nil {
+			return err
+		}
+		for _, item := range apiTables {
+			// The snapshot needs fields the table list does not contain (URI, the definition of every table),
+			// so each table is loaded from its detail.
+			grp.Go(func() error {
+				return p.keboolaProjectAPI.
+					GetTableRequest(item.TableKey).
+					WithOnSuccess(func(_ context.Context, table *keboola.Table) error {
+						lock.Lock()
+						defer lock.Unlock()
+						tables = append(tables, table)
+						return nil
+					}).
+					SendOrErr(ctx)
 			})
-		return req.SendOrErr(ctx)
+		}
+		return nil
 	})
 
 	// Storage Files

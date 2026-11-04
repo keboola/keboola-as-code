@@ -17,7 +17,7 @@ import (
 // (which will be checked to be a valid table ID), and if successful, the return value of
 // `createNew` will be `true`.
 func AskTable(ctx context.Context, d dependencies.RemoteCommandScope, branchID keboola.BranchID, allowCreateNew bool, id configmap.Value[string]) (tableKey keboola.TableKey, createNew bool, err error) {
-	allTables, err := d.KeboolaProjectAPI().ListTablesRequest(branchID, keboola.WithColumns()).Send(ctx)
+	allTables, err := d.KeboolaProjectAPI().ListTablesV2(ctx, branchID)
 	if err != nil {
 		return keboola.TableKey{}, false, err
 	}
@@ -27,14 +27,14 @@ func AskTable(ctx context.Context, d dependencies.RemoteCommandScope, branchID k
 		opts = append(opts, dialog.WithAllowCreateNewTable())
 	}
 
-	table, err := d.Dialogs().AskTable(*allTables, id, opts...)
+	table, err := d.Dialogs().AskTable(allTables, id, opts...)
 	if err != nil {
 		return keboola.TableKey{}, false, err
 	}
 
 	if table != nil {
-		// user selected table
-		return table.TableKey, false, nil
+		// user selected table; the key keeps the requested branch, the listing carries the owning branch of an inherited table
+		return keboola.TableKey{BranchID: branchID, TableID: table.TableID}, false, nil
 	} else {
 		// user asked to create new table
 		tableID, err := keboola.ParseTableID(d.Dialogs().AskTableID())

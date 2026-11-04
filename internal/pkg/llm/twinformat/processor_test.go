@@ -247,7 +247,7 @@ func TestProcessor_Process_Integration(t *testing.T) {
 			{BucketKey: keboola.BucketKey{BucketID: keboola.BucketID{Stage: "in", BucketName: "c-shopify"}}},
 			{BucketKey: keboola.BucketKey{BucketID: keboola.BucketID{Stage: "out", BucketName: "c-transformed"}}},
 		},
-		Tables: []*keboola.Table{
+		Tables: []*keboola.TableListV2Item{
 			{
 				TableKey: keboola.TableKey{
 					TableID: keboola.TableID{
