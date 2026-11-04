@@ -372,7 +372,7 @@ jobs:
           ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'  # allow add-path
 
       - name: Install Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: 'zulu'  # See 'Supported distributions' for available options
           java-version: '21'
