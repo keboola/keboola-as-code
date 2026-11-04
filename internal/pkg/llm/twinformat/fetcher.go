@@ -130,7 +130,7 @@ func (f *Fetcher) fetchBucketsWithTables(ctx context.Context, branchID keboola.B
 // the listing omits it while the column types of the table are not all native.
 //
 //   - An untyped table has no native column types at all, so its listing definition (descriptions only) is kept.
-//   - A table whose detail cannot be read stays without a definition and is exported without column types:
+//   - A table whose detail cannot be read stays without a definition and is exported without column types and descriptions:
 //     one unreadable table does not fail the export. A cancelled context does.
 func (f *Fetcher) loadMissingDefinitions(ctx context.Context, tables []*keboola.TableListV2Item) error {
 	sem := semaphore.NewWeighted(maxAPIConcurrency)
@@ -157,7 +157,7 @@ func (f *Fetcher) loadDefinition(ctx context.Context, table *keboola.TableListV2
 		if ctx.Err() != nil {
 			return err
 		}
-		f.logger.Warnf(ctx, "Cannot load the definition of table %s, exporting it without column types: %s", table.TableID, err)
+		f.logger.Warnf(ctx, "Cannot load the definition of table %s, exporting it without column types and descriptions: %s", table.TableID, err)
 		return nil
 	}
 	table.Definition = detail.Definition
