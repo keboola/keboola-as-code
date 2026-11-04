@@ -175,7 +175,7 @@ func TestFetchBucketsWithTables(t *testing.T) {
 	assert.Equal(t, 1, calls[`GET =~/v2/storage/branch/123/tables/in.test-bucket.legacy$`])
 }
 
-func TestFetchBucketsWithTables_DefinitionDetailFails(t *testing.T) {
+func TestFetchBucketsWithTables_UnreadableDefinitionDetailKeepsTheTable(t *testing.T) {
 	t.Parallel()
 
 	fetcher, transport := newTestFetcher(t)
@@ -199,9 +199,12 @@ func TestFetchBucketsWithTables_DefinitionDetailFails(t *testing.T) {
 		httpmock.NewStringResponder(500, "Internal Server Error"),
 	)
 
-	_, _, err := fetcher.fetchBucketsWithTables(t.Context(), branchID)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot load definition of table in.test-bucket.legacy")
+	_, tables, err := fetcher.fetchBucketsWithTables(t.Context(), branchID)
+	require.NoError(t, err)
+	require.Len(t, tables, 1)
+	assert.Equal(t, "in.test-bucket.legacy", tables[0].TableID.String())
+	assert.Nil(t, tables[0].Definition)
+	assert.Equal(t, []string{"amount"}, tables[0].Columns)
 }
 
 func TestFetchJobsQueue(t *testing.T) {
