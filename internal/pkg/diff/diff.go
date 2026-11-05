@@ -161,10 +161,10 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 	}
 
 	// Get pointer value
-	if remoteValues.Type().Kind() == reflect.Ptr {
+	if remoteValues.Type().Kind() == reflect.Pointer {
 		remoteValues = remoteValues.Elem()
 	}
-	if localValues.Type().Kind() == reflect.Ptr {
+	if localValues.Type().Kind() == reflect.Pointer {
 		localValues = localValues.Elem()
 	}
 

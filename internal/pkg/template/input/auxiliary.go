@@ -169,7 +169,7 @@ func (v InputsMap) All() Inputs {
 	i := 0
 	for _, key := range v.data.Keys() {
 		item, _ := v.data.Get(key)
-		out[i] = *(item.(*Input))
+		out[i] = *item.(*Input)
 		i++
 	}
 	return out

@@ -142,7 +142,7 @@ func SortByName(slice any) any {
 // unwrap all interfaces and pointers.
 func unwrap(v reflect.Value) reflect.Value {
 	for {
-		if v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
+		if v.Kind() == reflect.Interface || v.Kind() == reflect.Pointer {
 			v = v.Elem()
 		} else {
 			return v

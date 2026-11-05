@@ -313,39 +313,37 @@ func (m *dataGatewayMapper) storePrivateKey(ctx context.Context, config *model.C
 
 // normalizeWorkspaceID rewrites workspaceId to json.Number when possible.
 // This ensures consistent type representation across different JSON parsing scenarios.
-func normalizeWorkspaceID(config *model.Config) bool {
+func normalizeWorkspaceID(config *model.Config) {
 	value, found, _ := config.Content.GetNested("parameters.db.workspaceId")
 	if !found || value == nil {
-		return false
+		return
 	}
 
 	switch v := value.(type) {
 	case json.Number:
-		return false
+		return
 	case string:
 		trimmed := strings.TrimSpace(v)
 		if trimmed == "" {
-			return false
+			return
 		}
 		if _, err := strconv.ParseFloat(trimmed, 64); err != nil {
-			return false
+			return
 		}
-		return setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(trimmed))
+		setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(trimmed))
 	case float64:
 		if math.IsNaN(v) {
-			return false
+			return
 		}
-		return setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(strconv.FormatFloat(v, 'f', -1, 64)))
+		setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(strconv.FormatFloat(v, 'f', -1, 64)))
 	case float32:
 		if math.IsNaN(float64(v)) {
-			return false
+			return
 		}
-		return setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(strconv.FormatFloat(float64(v), 'f', -1, 32)))
+		setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(strconv.FormatFloat(float64(v), 'f', -1, 32)))
 	case int, int32, int64:
-		return setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(fmt.Sprintf("%d", v)))
+		setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(fmt.Sprintf("%d", v)))
 	case uint, uint32, uint64:
-		return setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(fmt.Sprintf("%d", v)))
-	default:
-		return false
+		setNestedIfDifferent(config, "parameters.db.workspaceId", json.Number(fmt.Sprintf("%d", v)))
 	}
 }

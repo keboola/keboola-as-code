@@ -215,7 +215,7 @@ func valuesDiff(remote, local reflect.Value) []string {
 	var localType reflect.Type
 	if remote.IsValid() {
 		remoteType = remote.Type()
-		if remoteType.Kind() == reflect.Interface || remoteType.Kind() == reflect.Ptr {
+		if remoteType.Kind() == reflect.Interface || remoteType.Kind() == reflect.Pointer {
 			if !remote.IsZero() {
 				remote = remote.Elem()
 			}
@@ -224,7 +224,7 @@ func valuesDiff(remote, local reflect.Value) []string {
 	}
 	if local.IsValid() {
 		localType = local.Type()
-		if localType.Kind() == reflect.Interface || localType.Kind() == reflect.Ptr {
+		if localType.Kind() == reflect.Interface || localType.Kind() == reflect.Pointer {
 			if !local.IsZero() {
 				local = local.Elem()
 			}
@@ -266,7 +266,7 @@ func valuesDiff(remote, local reflect.Value) []string {
 func formatValue(value reflect.Value, t reflect.Type, includeType bool) []string {
 	var formatted string
 	switch {
-	case t.Kind() == reflect.Ptr && value.IsNil():
+	case t.Kind() == reflect.Pointer && value.IsNil():
 		formatted = `(null)`
 	case t.Kind() == reflect.Map:
 		// Format map to JSON

@@ -28,7 +28,7 @@ func TestCalculateSize(t *testing.T) {
 		{name: "Map value", input: map[string]int{}, expected: 2 * unsafe.Sizeof(map[string]int{})},
 		{name: "Channel value", input: make(chan int), expected: 2 * unsafe.Sizeof(make(chan int))},
 		{name: "Function value", input: (func())(nil), expected: 2 * unsafe.Sizeof((func())(nil))},
-		{name: "Interface value", input: (any)(42), expected: unsafe.Sizeof((*any)(nil))},
+		{name: "Interface value", input: any(42), expected: unsafe.Sizeof((*any)(nil))},
 	}
 
 	for _, tc := range tests {
