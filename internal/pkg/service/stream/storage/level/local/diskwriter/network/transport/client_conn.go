@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
@@ -181,13 +182,10 @@ func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 			initDone = nil
 		}
 
-		// Handle connection error with backoff.
-		// A refused dial is an expected transient state, not a failure of this node, so it is logged as info:
-		// the writer registration in etcd outlives its listener (a stopping node closes the listener before
-		// its registration is removed, a crashed node stays registered until the lease TTL expires).
+		// Handle connection error with backoff
 		if err != nil {
 			delay := b.NextBackOff()
-			c.client.logger.Infof(ctx, `disk writer client cannot connect to %q - %q: %s, waiting %s before retry`, c.remoteNodeID, c.remoteAddr, err, delay)
+			c.logDialError(ctx, err, delay)
 			<-time.After(delay)
 			continue
 		}
@@ -203,6 +201,20 @@ func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 
 		c.client.logger.Infof(ctx, `disk writer client disconnected from %q - %q: %s`, c.remoteNodeID, c.remoteAddr, closeErr.Error())
 	}
+}
+
+// logDialError logs a failed connection attempt.
+// A refused dial is an expected transient state, not a failure of this node, so it is logged as info:
+// the writer registration in etcd outlives its listener (a stopping node closes the listener before
+// its registration is removed, a crashed node stays registered until the lease TTL expires).
+// Any other error (unresolvable or unreachable address, handshake failure) is an error.
+func (c *ClientConnection) logDialError(ctx context.Context, err error, delay time.Duration) {
+	const msg = `disk writer client cannot connect to %q - %q: %s, waiting %s before retry`
+	if errors.Is(err, syscall.ECONNREFUSED) {
+		c.client.logger.Infof(ctx, msg, c.remoteNodeID, c.remoteAddr, err, delay)
+		return
+	}
+	c.client.logger.Errorf(ctx, msg, c.remoteNodeID, c.remoteAddr, err, delay)
 }
 
 func (c *ClientConnection) newSession(ctx context.Context) (sess *yamux.Session, err error) {

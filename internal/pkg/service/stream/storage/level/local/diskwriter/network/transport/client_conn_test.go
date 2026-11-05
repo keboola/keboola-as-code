@@ -43,3 +43,23 @@ func TestClientConnection_RefusedDialIsInfo(t *testing.T) {
 	require.NoError(t, client.Close())
 	clientLogger.AssertNoErrorMessage(t)
 }
+
+// A dial that fails for another reason than a refused connection stays an error.
+func TestClientConnection_OtherDialErrorIsError(t *testing.T) {
+	t.Parallel()
+
+	cfg := network.NewConfig()
+	tr := tcp.New(cfg)
+	cfg.Transport = tr.Type()
+
+	clientLogger := log.NewDebugLogger()
+	client := transport.NewClient(clientLogger, cfg, "client-node", tr)
+	_, err := client.OpenConnection(t.Context(), "srv", "address-without-port")
+	require.NoError(t, err)
+
+	assert.Eventually(t, func() bool {
+		return strings.Contains(clientLogger.ErrorMessages(), "disk writer client cannot connect to")
+	}, 5*time.Second, 10*time.Millisecond)
+
+	require.NoError(t, client.Close())
+}
