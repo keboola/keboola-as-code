@@ -35,7 +35,7 @@ func DeepEqualNotSame(t *testing.T, a, b any, path string) {
 	// Nested fields
 	valueA := reflect.ValueOf(a)
 	valueB := reflect.ValueOf(b)
-	if typeA.Kind() == reflect.Ptr {
+	if typeA.Kind() == reflect.Pointer {
 		typeA = typeA.Elem()
 		valueA = valueA.Elem()
 		valueB = valueB.Elem()

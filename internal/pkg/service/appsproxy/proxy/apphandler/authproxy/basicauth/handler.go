@@ -155,7 +155,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		return err
 	}
 
-	v := &http.Cookie{
+	v := &http.Cookie{ //nolint:gosec // G124: carries the value only, setCookie sets Secure, HttpOnly and SameSite=Strict
 		Value: string(hash),
 	}
 	h.setCookie(w, host, h.CookieExpiration(), v)
@@ -207,7 +207,7 @@ func (h *Handler) isCookieAuthorized(cookie *http.Cookie) error {
 	return nil
 }
 
-func (h *Handler) signOut(host string, cookie *http.Cookie, w http.ResponseWriter, req *http.Request) {
+func (h *Handler) signOut(host string, cookie *http.Cookie, w http.ResponseWriter, req *http.Request) { //nolint:gosec // G124: only the cleared value is passed on, setCookie sets the attributes
 	cookie.Value = ""
 	h.setCookie(w, host, -1, cookie)
 	redirectURL := &url.URL{

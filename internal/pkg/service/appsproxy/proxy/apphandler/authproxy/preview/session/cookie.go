@@ -8,7 +8,7 @@ import (
 const CookieName = "__Host-kbc-app-preview-session"
 
 func ClearCookie() *http.Cookie {
-	return &http.Cookie{
+	return &http.Cookie{ //nolint:gosec // G124: SameSite=None with Partitioned is required for the cross-site embedded preview
 		Name:        CookieName,
 		Path:        "/",
 		MaxAge:      -1,

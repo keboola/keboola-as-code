@@ -250,7 +250,7 @@ func prefixErrorWithNamespace(e validator.FieldError, errMsg string, customNames
 	if value.IsValid() {
 		// Remove first part, if it is a struct name
 		valueType := value.Type()
-		for valueType.Kind() == reflect.Ptr {
+		for valueType.Kind() == reflect.Pointer {
 			// Type to which the pointer refers
 			valueType = valueType.Elem()
 		}

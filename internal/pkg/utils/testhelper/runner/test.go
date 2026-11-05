@@ -465,7 +465,7 @@ func (t *Test) runAPIServer(
 	select {
 	case <-time.After(shutdownTimeout):
 		t.t.Fatalf("timeout while waiting for server shutdown")
-	case <-cmdWaitCh:
+	case <-cmdWaitCh: //nolint:errcheck // the exit status after SIGTERM is expected
 		// continue
 	}
 

@@ -107,7 +107,7 @@ func (s *Manager) cookie(origin string, now time.Time, authTime int64, linkJTI s
 	if err != nil {
 		return nil, errors.Errorf("preview: sign session: %w", err)
 	}
-	return &http.Cookie{
+	return &http.Cookie{ //nolint:gosec // G124: SameSite=None with Partitioned is required for the cross-site embedded preview
 		Name:        CookieName,
 		Value:       signed,
 		Path:        "/",

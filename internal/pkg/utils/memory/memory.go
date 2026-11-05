@@ -21,7 +21,7 @@ func calculateSize(v reflect.Value, visited map[uintptr]bool) uintptr {
 	baseSize := v.Type().Size()
 
 	switch v.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		// Important: Prevent infinite loops with cyclic pointers
 		ptrVal := v.Pointer()
 		if visited[ptrVal] || ptrVal == 0 {

@@ -139,7 +139,16 @@ linters:
           msg: Use context.WithCancelCause, context.WithTimeoutCause or context.WithDeadlineCause instead.
       analyze-types: true
     goconst:
-      ignore-string-values: localhost
+      # The repeated values are labels in data literals, not shared constants.
+      ignore-string-values:
+        - localhost
+        - ^Every sync$
+        - ^transformation$
+        - ^variables$
+        - ^_shared/\{target_component_id\}$
+        - ^prompt$
+        - ^std$
+      ignore-map-keys: true
     gocyclo:
       min-complexity: 10
     gosec:
@@ -178,6 +187,9 @@ linters:
           - gocyclo
           - gosec
         path: _test\.go
+      - linters:
+          - goconst
+        path: internal/pkg/(service/stream/storage/test/|service/stream/sink/type/tablesink/keboola/bridge/test/|utils/testapi/)
       - linters:
           - forbidigo
         path: _test\.go
