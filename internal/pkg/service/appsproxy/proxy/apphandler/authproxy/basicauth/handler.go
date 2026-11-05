@@ -207,7 +207,7 @@ func (h *Handler) isCookieAuthorized(cookie *http.Cookie) error {
 	return nil
 }
 
-func (h *Handler) signOut(host string, cookie *http.Cookie, w http.ResponseWriter, req *http.Request) { //nolint:gosec // G124: the cookie is only read for its name, setCookie sets the attributes
+func (h *Handler) signOut(host string, cookie *http.Cookie, w http.ResponseWriter, req *http.Request) { //nolint:gosec // G124: only the cleared value is passed on, setCookie sets the attributes
 	cookie.Value = ""
 	h.setCookie(w, host, -1, cookie)
 	redirectURL := &url.URL{

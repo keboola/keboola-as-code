@@ -189,7 +189,7 @@ linters:
         path: _test\.go
       - linters:
           - goconst
-        path: internal/pkg/(service/stream/(sink/type/tablesink/keboola/bridge/)?(storage/)?test/|utils/testapi/)
+        path: internal/pkg/(service/stream/storage/test/|service/stream/sink/type/tablesink/keboola/bridge/test/|utils/testapi/)
       - linters:
           - forbidigo
         path: _test\.go
