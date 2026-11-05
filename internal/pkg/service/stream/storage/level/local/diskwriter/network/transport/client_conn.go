@@ -181,10 +181,13 @@ func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 			initDone = nil
 		}
 
-		// Handle connection error with backoff
+		// Handle connection error with backoff.
+		// A refused dial is an expected transient state, not a failure of this node, so it is logged as info:
+		// the writer registration in etcd outlives its listener (a stopping node closes the listener before
+		// its registration is removed, a crashed node stays registered until the lease TTL expires).
 		if err != nil {
 			delay := b.NextBackOff()
-			c.client.logger.Errorf(ctx, `disk writer client cannot connect to %q - %q: %s, waiting %s before retry`, c.remoteNodeID, c.remoteAddr, err, delay)
+			c.client.logger.Infof(ctx, `disk writer client cannot connect to %q - %q: %s, waiting %s before retry`, c.remoteNodeID, c.remoteAddr, err, delay)
 			<-time.After(delay)
 			continue
 		}
