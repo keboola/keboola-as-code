@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
@@ -210,7 +209,7 @@ func (c *ClientConnection) dialLoop(ctx context.Context, initDone chan error) {
 // Any other error (unresolvable or unreachable address, handshake failure) is an error.
 func (c *ClientConnection) logDialError(ctx context.Context, err error, delay time.Duration) {
 	const msg = `disk writer client cannot connect to %q - %q: %s, waiting %s before retry`
-	if errors.Is(err, syscall.ECONNREFUSED) {
+	if isConnectionRefused(err) {
 		c.client.logger.Infof(ctx, msg, c.remoteNodeID, c.remoteAddr, err, delay)
 		return
 	}
