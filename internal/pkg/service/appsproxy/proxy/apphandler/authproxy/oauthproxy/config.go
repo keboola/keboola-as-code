@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
@@ -16,6 +17,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+)
+
+const (
+	sessionRefresh = time.Hour
+	sessionExpire  = 24 * time.Hour
 )
 
 func proxyConfig(
@@ -63,6 +69,8 @@ func proxyConfig(
 	v.Cookie.Secret = secret
 	v.Cookie.Domains = []string{domain}
 	v.Cookie.SameSite = "strict"
+	v.Cookie.Refresh = sessionRefresh
+	v.Cookie.Expire = sessionExpire
 	v.ProxyPrefix = config.InternalPrefix
 	v.RawRedirectURL = redirectURL
 	v.Providers = options.Providers{proxyProvider}
