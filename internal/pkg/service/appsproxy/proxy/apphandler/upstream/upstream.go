@@ -362,6 +362,12 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 			ctx, cancel := context.WithTimeoutCause(ctx, timeout, errors.New("upstream websocket request timeout"))
 			defer cancel()
 
+			if deadline, ok := sessionDeadline(ctx); ok {
+				var cancelSession context.CancelFunc
+				ctx, cancelSession = context.WithDeadlineCause(ctx, deadline, errors.New("authentication session due for refresh or expired"))
+				defer cancelSession()
+			}
+
 			ctx, c := context.WithCancelCause(ctx)
 			u.cancelWs = c
 

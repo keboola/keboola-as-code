@@ -1,6 +1,7 @@
 package proxy_test
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"net/http"
@@ -89,6 +90,28 @@ func dialIdleWebsocket(t *testing.T, client *http.Client) (*websocket.Conn, *htt
 	return c, resp
 }
 
+// waitForClose blocks until the proxy closes the websocket and returns how long that took.
+func waitForClose(t *testing.T, c *websocket.Conn, limit time.Duration) time.Duration {
+	t.Helper()
+	start := time.Now()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for {
+			if _, _, err := c.Read(t.Context()); err != nil {
+				return
+			}
+		}
+	}()
+	select {
+	case <-done:
+		return time.Since(start)
+	case <-time.After(limit):
+		require.Fail(t, "websocket was not closed by the proxy")
+		return 0
+	}
+}
+
 func TestSessionFreshness_RefreshOnUpgradeSetsCookieOn101(t *testing.T) {
 	t.Parallel()
 	env := startPreviewEnv(t)
@@ -138,4 +161,56 @@ func TestSessionFreshness_SessionWithoutRefreshTokenEndsAfter24h(t *testing.T) {
 	resp := env.send(client, oidcOrigin+"/some/path")
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
+}
+
+func TestSessionFreshness_WebsocketClosedAtCookieExpiry(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+
+	env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
+		s.RefreshToken = ""
+		s.CreatedAt = ago(24*time.Hour - 5*time.Second)
+	})
+
+	c, resp := dialIdleWebsocket(t, client)
+	require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+	assert.Less(t, waitForClose(t, c, 20*time.Second), 15*time.Second)
+
+	// The reconnect finds the cookie expired.
+	require.Equal(t, http.StatusFound, env.send(client, oidcOrigin+"/some/path").StatusCode)
+}
+
+func TestSessionFreshness_WebsocketClosedAtRefreshAndReconnectRefreshes(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+
+	env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
+		require.NotEmpty(t, s.RefreshToken)
+		s.CreatedAt = ago(time.Hour - time.Second)
+	})
+
+	c, resp := dialIdleWebsocket(t, client)
+	require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+	assert.NotContains(t, setCookieNames(resp), oauthCookieName)
+	assert.Less(t, waitForClose(t, c, 30*time.Second), 20*time.Second)
+
+	_, resp = dialIdleWebsocket(t, client)
+	require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+	assert.Contains(t, setCookieNames(resp), oauthCookieName)
+}
+
+func TestSessionFreshness_WebsocketWithFreshSessionStaysOpen(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+
+	c, resp := dialIdleWebsocket(t, client)
+	require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+	_, _, err := c.Read(ctx)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
 }

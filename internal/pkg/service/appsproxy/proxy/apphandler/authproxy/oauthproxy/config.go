@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	middlewareapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/middleware"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
+	appupstream "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -53,6 +55,11 @@ func proxyConfig(
 
 	// Connect to the app upstream
 	v.UpstreamHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if scope := middlewareapi.GetRequestScope(req); scope != nil {
+			if deadline, ok := websocketDeadline(scope.Session, time.Now()); ok {
+				req = req.WithContext(appupstream.WithSessionDeadline(req.Context(), deadline))
+			}
+		}
 		if err := upstream.ServeHTTPOrError(w, req); err != nil {
 			pageWriter.WriteError(w, req, &app, err)
 		}
