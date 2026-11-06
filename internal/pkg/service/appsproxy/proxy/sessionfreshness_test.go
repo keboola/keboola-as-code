@@ -1,0 +1,141 @@
+package proxy_test
+
+import (
+	"crypto/sha256"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
+	"time"
+
+	"github.com/coder/websocket"
+	"github.com/oauth2-proxy/mockoidc"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+	sessionsapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/sessions/cookie"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+const oauthCookieName = "_oauth2_proxy"
+
+func freshnessUser() *mockoidc.MockUser {
+	return &mockoidc.MockUser{Subject: "sub-1", Email: "admin@keboola.com", EmailVerified: new(true), Groups: []string{"admin"}}
+}
+
+// oidcSessionStore reads and writes the oauth2-proxy session cookie of the "oidc" app,
+// so a test can move a session back in time.
+func (e *previewEnv) oidcSessionStore() sessionsapi.SessionStore {
+	e.t.Helper()
+	h := sha256.New()
+	h.Write([]byte("oidc/oidc/" + e.d.Config().CookieSecretSalt))
+	cookieOpts := &options.Cookie{
+		Name:     oauthCookieName,
+		Secret:   fmt.Sprintf("%x", h.Sum(nil)[:16]),
+		Domains:  []string{oidcHost},
+		Path:     "/",
+		Expire:   24 * time.Hour,
+		Secure:   true,
+		HTTPOnly: true,
+		SameSite: "strict",
+	}
+	store, err := cookie.NewCookieSessionStore(&options.SessionOptions{Type: options.CookieSessionStoreType}, cookieOpts)
+	require.NoError(e.t, err)
+	return store
+}
+
+func (e *previewEnv) loadOIDCSession(client *http.Client) *sessionsapi.SessionState {
+	e.t.Helper()
+	req := httptest.NewRequestWithContext(e.t.Context(), http.MethodGet, oidcOrigin+"/", nil)
+	for _, c := range client.Jar.Cookies(&url.URL{Scheme: "https", Host: oidcHost, Path: "/"}) {
+		req.AddCookie(c)
+	}
+	session, err := e.oidcSessionStore().Load(req)
+	require.NoError(e.t, err)
+	return session
+}
+
+// rewriteOIDCSession re-signs the session cookie in the client's jar after mutate.
+// The cookie signature carries CreatedAt, so moving it back ages the cookie too.
+func (e *previewEnv) rewriteOIDCSession(client *http.Client, mutate func(s *sessionsapi.SessionState)) {
+	e.t.Helper()
+	session := e.loadOIDCSession(client)
+	mutate(session)
+	rec := httptest.NewRecorder()
+	require.NoError(e.t, e.oidcSessionStore().Save(rec, httptest.NewRequestWithContext(e.t.Context(), http.MethodGet, oidcOrigin+"/", nil), session))
+	client.Jar.SetCookies(&url.URL{Scheme: "https", Host: oidcHost, Path: "/"}, rec.Result().Cookies())
+}
+
+func ago(d time.Duration) *time.Time {
+	v := time.Now().Add(-d)
+	return &v
+}
+
+func setCookieNames(resp *http.Response) []string {
+	cookies := resp.Cookies()
+	names := make([]string, 0, len(cookies))
+	for _, c := range cookies {
+		names = append(names, c.Name)
+	}
+	return names
+}
+
+func dialIdleWebsocket(t *testing.T, client *http.Client) (*websocket.Conn, *http.Response) {
+	t.Helper()
+	c, resp, err := websocket.Dial(t.Context(), "wss://"+oidcHost+"/ws-idle", &websocket.DialOptions{HTTPClient: client})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = c.CloseNow() })
+	return c, resp
+}
+
+func TestSessionFreshness_RefreshOnUpgradeSetsCookieOn101(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+
+	createdAt := ago(2 * time.Hour)
+	env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
+		require.NotEmpty(t, s.RefreshToken)
+		s.CreatedAt = createdAt
+	})
+
+	_, resp := dialIdleWebsocket(t, client)
+	require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+	assert.Contains(t, setCookieNames(resp), oauthCookieName)
+
+	refreshed := env.loadOIDCSession(client)
+	assert.WithinDuration(t, time.Now(), *refreshed.CreatedAt, time.Minute)
+}
+
+func TestSessionFreshness_SessionWithoutRefreshTokenIsNotRefreshed(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+
+	// Expired tokens would end the session if it were re-validated, as on GitHub's refresh path.
+	env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
+		s.RefreshToken = ""
+		s.CreatedAt = ago(2 * time.Hour)
+		s.ExpiresOn = ago(time.Hour)
+	})
+
+	resp := env.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.NotContains(t, setCookieNames(resp), oauthCookieName)
+}
+
+func TestSessionFreshness_SessionWithoutRefreshTokenEndsAfter24h(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+
+	env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
+		s.RefreshToken = ""
+		s.CreatedAt = ago(24*time.Hour + time.Minute)
+	})
+
+	resp := env.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusFound, resp.StatusCode)
+	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
+}
