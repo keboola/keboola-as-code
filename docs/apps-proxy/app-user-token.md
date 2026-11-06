@@ -165,9 +165,12 @@ The token, the claims and the keys are never logged.
 - **Header size.** With a large group list the token reaches about 6 KB. App
   servers with a small header limit (Node.js: 16 KiB for all headers) may need a
   higher limit.
-- **Rollout.** `email_verified` is read from the oauth2-proxy session cookie,
-  which apps-proxy does not refresh. OIDC users who logged in before the release
-  get tokens without `email` until they log in again or the cookie expires
-  (7 days).
+- **Rollout.** `email_verified` is read from the oauth2-proxy session cookie.
+  OIDC users who logged in before the release get tokens without `email` until
+  they log in again or the cookie expires (24 hours, see
+  [login-session.md](login-session.md)).
+- **Group freshness.** The token's groups come from the session cookie. They
+  can be up to about 1 hour old for a session with a refresh token, and up to
+  24 hours old for one without.
 - **Replay.** App code can reuse a token of a user who visited the app until it
   expires, and so can anyone the app sends it to.
