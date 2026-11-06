@@ -804,7 +804,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
-				require.Equal(t, http.StatusInternalServerError, response.StatusCode)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
 
 				// Request to private app
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
@@ -1143,7 +1143,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				response, err = client.Do(request)
 				require.NoError(t, err)
-				require.Equal(t, http.StatusInternalServerError, response.StatusCode)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
 
 				// Request to private app - unauthorized - selection page
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://multi.hub.keboola.local/", nil)
