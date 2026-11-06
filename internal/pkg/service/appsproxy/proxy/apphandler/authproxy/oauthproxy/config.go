@@ -1,6 +1,7 @@
 package oauthproxy
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"net/http"
@@ -25,7 +26,9 @@ const (
 )
 
 func proxyConfig(
+	ctx context.Context,
 	cfg config.Config,
+	scopes scopeResolver,
 	selector *selector.Selector,
 	pageWriter *pagewriter.Writer,
 	app api.AppConfig,
@@ -41,6 +44,9 @@ func proxyConfig(
 	proxyProvider, err := oAuthProvider.ProxyProviderOptions()
 	if err != nil {
 		return nil, err
+	}
+	if scope := scopes.scope(ctx, proxyProvider); scope != "" {
+		proxyProvider.Scope = scope
 	}
 
 	v := options.NewOptions()

@@ -21,14 +21,13 @@ func TestProxyConfig_SessionLifetime(t *testing.T) {
 	cfg.CookieSecretSalt = "salt"
 
 	app := api.AppConfig{ID: "123", ProjectID: "456", AppSlug: new("app")}
-	auth := provider.OIDC{
-		Base:         provider.Base{Info: provider.Info{ID: "oidc", Type: provider.TypeOIDC}},
+	auth := provider.GitHub{
+		Base:         provider.Base{Info: provider.Info{ID: "github", Type: provider.TypeGitHub}},
 		ClientID:     "client",
 		ClientSecret: "secret",
-		IssuerURL:    "https://idp.example.com",
 	}
 
-	v, err := proxyConfig(cfg, nil, nil, app, auth, nil)
+	v, err := proxyConfig(t.Context(), cfg, scopeResolver{}, nil, nil, app, auth, nil)
 	require.NoError(t, err)
 	assert.Equal(t, time.Hour, v.Cookie.Refresh)
 	assert.Equal(t, 24*time.Hour, v.Cookie.Expire)

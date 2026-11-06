@@ -1,7 +1,10 @@
 package authproxy
 
 import (
+	"context"
+
 	"github.com/jonboulle/clockwork"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -21,12 +24,14 @@ type Manager struct {
 	config           config.Config
 	pageWriter       *pagewriter.Writer
 	clock            clockwork.Clock
+	httpClient       client.Client
 	providerSelector *selector.Selector
 }
 
 type dependencies interface {
 	Logger() log.Logger
 	Clock() clockwork.Clock
+	HTTPClient() client.Client
 	Config() config.Config
 	PageWriter() *pagewriter.Writer
 }
@@ -37,6 +42,7 @@ func NewManager(d dependencies) *Manager {
 		config:           d.Config(),
 		pageWriter:       d.PageWriter(),
 		clock:            d.Clock(),
+		httpClient:       d.HTTPClient(),
 		providerSelector: selector.New(d),
 	}
 }
@@ -45,7 +51,7 @@ func (m *Manager) ProviderSelector() *selector.Selector {
 	return m.providerSelector
 }
 
-func (m *Manager) NewHandlers(app api.AppConfig, upstream chain.Handler) map[provider.ID]selector.Handler {
+func (m *Manager) NewHandlers(ctx context.Context, app api.AppConfig, upstream chain.Handler) map[provider.ID]selector.Handler {
 	authHandlers := make(map[provider.ID]selector.Handler, len(app.AuthProviders))
 	for _, auth := range app.AuthProviders {
 		// Record which provider admitted the request, so a session event can
@@ -54,7 +60,7 @@ func (m *Manager) NewHandlers(app api.AppConfig, upstream chain.Handler) map[pro
 		providerUpstream := sessions.WithAuthProvider(upstream, auth.ID(), auth.Type())
 		switch p := auth.(type) {
 		case provider.OAuthProvider:
-			authHandlers[auth.ID()] = oauthproxy.NewHandler(m.logger, m.config, m.providerSelector, m.pageWriter, app, p, apptoken.WithIdentity(providerUpstream, p.IdentityProviderURL()))
+			authHandlers[auth.ID()] = oauthproxy.NewHandler(ctx, m.logger, m.httpClient, m.config, m.providerSelector, m.pageWriter, app, p, apptoken.WithIdentity(providerUpstream, p.IdentityProviderURL()))
 		case provider.Basic:
 			authHandlers[auth.ID()] = basicauth.NewHandler(m.logger, m.config, m.clock, m.pageWriter, app, p, providerUpstream)
 		default:
