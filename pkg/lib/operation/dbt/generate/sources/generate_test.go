@@ -29,27 +29,23 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 		SourceName:  bucket.BucketID.String(),
 		Schema:      bucket.BucketID.String(),
 		DatabaseEnv: "DBT_KBC_TARGET1_DATABASE",
-		Tables: []keboola.Table{
+		Tables: []keboola.TableListV2Item{
 			{
 				TableKey: keboola.TableKey{
 					BranchID: 123,
 					TableID:  keboola.MustParseTableID("out.c-main.products"),
 				},
-				URI:         "/uri",
 				Name:        "products",
 				DisplayName: "Products",
 				PrimaryKey:  []string{"primary1", "primary2"},
-				Bucket:      bucket,
 			},
 			{
 				TableKey: keboola.TableKey{
 					BranchID: 123,
 					TableID:  keboola.MustParseTableID("out.c-main.categories"),
 				},
-				URI:         "/uri",
 				Name:        "categories",
 				DisplayName: "Categories",
-				Bucket:      bucket,
 			},
 		},
 	}
@@ -155,27 +151,23 @@ func TestGenerateSourcesDefinition_LinkedBucket(t *testing.T) {
 		SourceName:      bucket.BucketID.String(),
 		Schema:          bucket.BucketID.String(),
 		DatabaseEnv:     "DBT_KBC_TARGET1_12345_DATABASE",
-		Tables: []keboola.Table{
+		Tables: []keboola.TableListV2Item{
 			{
 				TableKey: keboola.TableKey{
 					BranchID: 123,
 					TableID:  keboola.MustParseTableID("out.c-main.products"),
 				},
-				URI:         "/uri",
 				Name:        "products",
 				DisplayName: "Products",
 				PrimaryKey:  []string{"primary1", "primary2"},
-				Bucket:      bucket,
 			},
 			{
 				TableKey: keboola.TableKey{
 					BranchID: 123,
 					TableID:  keboola.MustParseTableID("out.c-main.categories"),
 				},
-				URI:         "/uri",
 				Name:        "categories",
 				DisplayName: "Categories",
-				Bucket:      bucket,
 			},
 		},
 	}

@@ -46,7 +46,7 @@ type ProcessedData struct {
 
 // ProcessedTable represents a table with computed lineage.
 type ProcessedTable struct {
-	*keboola.Table
+	*keboola.TableListV2Item
 	UID          string
 	Source       string
 	BucketName   string
@@ -327,15 +327,13 @@ func (p *Processor) registerTablesFromJobResult(componentID, configID string, re
 }
 
 // processBuckets processes buckets with source derived from tables.
-func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucket, tables []*keboola.Table, sourceRegistry *TableSourceRegistry, stats *ProcessingStatistics) []*ProcessedBucket {
+func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucket, tables []*keboola.TableListV2Item, sourceRegistry *TableSourceRegistry, stats *ProcessingStatistics) []*ProcessedBucket {
 	// Build maps of bucket ID to table names and full table IDs
 	bucketTableNames := make(map[string][]string)
 	bucketTableIDs := make(map[string][]string)
 	for _, table := range tables {
-		// Use TableID.BucketID instead of Bucket.BucketID since Bucket can be nil.
-		// Note: TableID is a value type (embedded via TableKey), not a pointer,
-		// so nil checks are not needed - checking for empty string handles
-		// zero-value cases where the table identification is incomplete.
+		// The bucket ID is the prefix of the table ID. TableID is a value type (embedded via TableKey),
+		// so an empty string marks an incomplete table identification.
 		if table == nil || table.TableID.BucketID.String() == "" {
 			continue
 		}
@@ -367,7 +365,7 @@ func (p *Processor) processBuckets(ctx context.Context, buckets []*keboola.Bucke
 }
 
 // processTables processes tables with lineage dependencies and component-based source.
-func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, graph *LineageGraph, sourceRegistry *TableSourceRegistry) []*ProcessedTable {
+func (p *Processor) processTables(ctx context.Context, tables []*keboola.TableListV2Item, graph *LineageGraph, sourceRegistry *TableSourceRegistry) []*ProcessedTable {
 	processed := make([]*ProcessedTable, 0, len(tables))
 
 	for _, table := range tables {
@@ -378,7 +376,7 @@ func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, 
 		if table == nil || table.TableID.BucketID.String() == "" {
 			continue
 		}
-		// Build table UID - use TableID.BucketID since Bucket can be nil
+		// Build table UID from the bucket ID prefix of the table ID
 		bucketID := table.TableID.BucketID.String()
 		bucketName := extractBucketName(bucketID)
 		uid := buildTableUID(bucketName, table.Name)
@@ -391,11 +389,11 @@ func (p *Processor) processTables(ctx context.Context, tables []*keboola.Table, 
 		source := sourceRegistry.Source(tableID)
 
 		processed = append(processed, &ProcessedTable{
-			Table:        table,
-			UID:          uid,
-			Source:       source,
-			BucketName:   bucketName,
-			Dependencies: deps,
+			TableListV2Item: table,
+			UID:             uid,
+			Source:          source,
+			BucketName:      bucketName,
+			Dependencies:    deps,
 		})
 	}
 

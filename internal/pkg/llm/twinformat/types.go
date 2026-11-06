@@ -23,7 +23,7 @@ type ProjectData struct {
 	ProjectID             keboola.ProjectID
 	BranchID              keboola.BranchID
 	Buckets               []*keboola.Bucket
-	Tables                []*keboola.Table
+	Tables                []*keboola.TableListV2Item
 	Jobs                  []*keboola.QueueJobDetail // Jobs with detailed result data including input/output tables
 	TransformationConfigs []*configparser.TransformationConfig
 	ComponentConfigs      []*configparser.ComponentConfig

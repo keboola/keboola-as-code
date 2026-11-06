@@ -76,6 +76,24 @@ func TestNewFetcher(t *testing.T) {
 	assert.Equal(t, keboola.ProjectID(12345), fetcher.projectID)
 }
 
+// jsonStringResponder responds with the raw JSON body.
+func jsonStringResponder(body string) httpmock.Responder {
+	return func(_ *http.Request) (*http.Response, error) {
+		return jsonStringResponse(body), nil
+	}
+}
+
+func jsonStringResponse(body string) *http.Response {
+	resp := httpmock.NewStringResponse(http.StatusOK, body)
+	resp.Header.Set("Content-Type", "application/json")
+	return resp
+}
+
+// tableListV2Page returns one page of the table list V2 with the given JSON items; an empty next link ends the listing.
+func tableListV2Page(items, next string) string {
+	return `{"data":[` + items + `],"meta":{"total":0,"limit":200},"links":{"self":"","first":"","next":"` + next + `"}}`
+}
+
 func TestFetchBucketsWithTables(t *testing.T) {
 	t.Parallel()
 
@@ -100,31 +118,36 @@ func TestFetchBucketsWithTables(t *testing.T) {
 		}),
 	)
 
-	// Mock tables response with column metadata but no columns array
+	// Two pages: a typed table with a definition and an untyped table, then a typed table without a definition.
+	firstPage := tableListV2Page(`
+		{"id":"in.test-bucket.typed","branchId":123,"name":"typed","displayName":"Typed","isTyped":true,"columns":["id"],
+		 "definition":{"primaryKeysNames":[],"columns":[{"name":"id","basetype":"INTEGER","definition":{"type":"NUMBER","nullable":false}}]}},
+		{"id":"in.test-bucket.untyped","branchId":123,"name":"untyped","displayName":"Untyped","isTyped":false,"columns":["note"],
+		 "definition":{"primaryKeysNames":[],"columns":[{"name":"note","definition":{"description":"A note"}}]}}`,
+		"https://connection.keboola.local/v2/storage/branch/123/table-list?include=columns,definition&page[after]=cursor1",
+	)
+	secondPage := tableListV2Page(`
+		{"id":"in.test-bucket.legacy","branchId":123,"name":"legacy","displayName":"Legacy","isTyped":true,"columns":["amount"],"definition":null}`,
+		"",
+	)
 	transport.RegisterResponder(
 		http.MethodGet,
-		`=~/v2/storage/branch/123/tables`,
-		httpmock.NewJsonResponderOrPanic(200, []*keboola.Table{
-			{
-				TableKey: keboola.TableKey{
-					BranchID: branchID,
-					TableID: keboola.TableID{
-						BucketID: keboola.BucketID{
-							Stage:      keboola.BucketStageIn,
-							BucketName: "test-bucket",
-						},
-						TableName: "test-table",
-					},
-				},
-				DisplayName: "Test Table",
-				Columns:     []string{}, // Empty - should be extracted from ColumnMetadata
-				ColumnMetadata: map[string]keboola.ColumnMetadata{
-					"zebra_col":  {},
-					"alpha_col":  {},
-					"middle_col": {},
-				},
-			},
-		}),
+		`=~/v2/storage/branch/123/table-list`,
+		func(req *http.Request) (*http.Response, error) {
+			assert.Equal(t, "columns,definition", req.URL.Query().Get("include"))
+			if req.URL.Query().Get("page[after]") == "cursor1" {
+				return jsonStringResponse(secondPage), nil
+			}
+			return jsonStringResponse(firstPage), nil
+		},
+	)
+
+	// Only the typed table without a definition is read from the table detail.
+	transport.RegisterResponder(
+		http.MethodGet,
+		`=~/v2/storage/branch/123/tables/in.test-bucket.legacy$`,
+		jsonStringResponder(`{"id":"in.test-bucket.legacy","name":"legacy",
+			"definition":{"primaryKeysNames":[],"columns":[{"name":"amount","basetype":"NUMERIC","definition":{"type":"NUMBER","length":"38,2","nullable":true}}]}}`),
 	)
 
 	buckets, tables, err := fetcher.fetchBucketsWithTables(t.Context(), branchID)
@@ -133,55 +156,55 @@ func TestFetchBucketsWithTables(t *testing.T) {
 	assert.Len(t, buckets, 1)
 	assert.Equal(t, "Test Bucket", buckets[0].DisplayName)
 
-	assert.Len(t, tables, 1)
-	assert.Equal(t, "Test Table", tables[0].DisplayName)
+	require.Len(t, tables, 3)
+	assert.Equal(t, "in.test-bucket.typed", tables[0].TableID.String())
+	assert.Equal(t, branchID, tables[0].BranchID)
+	assert.Equal(t, []string{"id"}, tables[0].Columns)
+	assert.Equal(t, "NUMBER", tables[0].Definition.Columns[0].Definition.Type)
 
-	// Verify columns were extracted from ColumnMetadata and sorted
-	assert.Equal(t, []string{"alpha_col", "middle_col", "zebra_col"}, tables[0].Columns)
+	// The untyped table keeps its description-only definition from the listing.
+	require.NotNil(t, tables[1].Definition)
+	assert.Equal(t, "A note", tables[1].Definition.Columns[0].Definition.Description)
+
+	// The typed table without a definition in the listing takes it from the table detail.
+	require.NotNil(t, tables[2].Definition)
+	assert.Equal(t, "38,2", tables[2].Definition.Columns[0].Definition.Length)
+
+	calls := transport.GetCallCountInfo()
+	assert.Equal(t, 2, calls[`GET =~/v2/storage/branch/123/table-list`])
+	assert.Equal(t, 1, calls[`GET =~/v2/storage/branch/123/tables/in.test-bucket.legacy$`])
 }
 
-func TestFetchBucketsWithTables_ColumnsAlreadyPresent(t *testing.T) {
+func TestFetchBucketsWithTables_UnreadableDefinitionDetailKeepsTheTable(t *testing.T) {
 	t.Parallel()
 
 	fetcher, transport := newTestFetcher(t)
 	branchID := keboola.BranchID(123)
 
-	// Mock buckets response
 	transport.RegisterResponder(
 		http.MethodGet,
 		`=~/v2/storage/branch/123/buckets$`,
 		httpmock.NewJsonResponderOrPanic(200, []*keboola.Bucket{}),
 	)
-
-	// Mock tables response with columns already present
 	transport.RegisterResponder(
 		http.MethodGet,
-		`=~/v2/storage/branch/123/tables`,
-		httpmock.NewJsonResponderOrPanic(200, []*keboola.Table{
-			{
-				TableKey: keboola.TableKey{
-					BranchID: branchID,
-					TableID: keboola.TableID{
-						BucketID: keboola.BucketID{
-							Stage:      keboola.BucketStageIn,
-							BucketName: "test-bucket",
-						},
-						TableName: "test-table",
-					},
-				},
-				Columns: []string{"original_col1", "original_col2"}, // Already present
-				ColumnMetadata: map[string]keboola.ColumnMetadata{
-					"different_col": {}, // Should be ignored
-				},
-			},
-		}),
+		`=~/v2/storage/branch/123/table-list`,
+		jsonStringResponder(tableListV2Page(
+			`{"id":"in.test-bucket.legacy","branchId":123,"name":"legacy","isTyped":true,"columns":["amount"],"definition":null}`, "",
+		)),
+	)
+	transport.RegisterResponder(
+		http.MethodGet,
+		`=~/v2/storage/branch/123/tables/in.test-bucket.legacy$`,
+		httpmock.NewStringResponder(500, "Internal Server Error"),
 	)
 
 	_, tables, err := fetcher.fetchBucketsWithTables(t.Context(), branchID)
 	require.NoError(t, err)
-
-	// Original columns should be preserved (not overwritten by ColumnMetadata)
-	assert.Equal(t, []string{"original_col1", "original_col2"}, tables[0].Columns)
+	require.Len(t, tables, 1)
+	assert.Equal(t, "in.test-bucket.legacy", tables[0].TableID.String())
+	assert.Nil(t, tables[0].Definition)
+	assert.Equal(t, []string{"amount"}, tables[0].Columns)
 }
 
 func TestFetchJobsQueue(t *testing.T) {
@@ -245,18 +268,8 @@ func TestFetchAll(t *testing.T) {
 	// Mock tables response
 	transport.RegisterResponder(
 		http.MethodGet,
-		`=~/v2/storage/branch/123/tables`,
-		httpmock.NewJsonResponderOrPanic(200, []*keboola.Table{
-			{
-				TableKey: keboola.TableKey{
-					BranchID: branchID,
-					TableID: keboola.TableID{
-						BucketID:  keboola.BucketID{Stage: keboola.BucketStageIn, BucketName: "bucket"},
-						TableName: "table1",
-					},
-				},
-			},
-		}),
+		`=~/v2/storage/branch/123/table-list`,
+		jsonStringResponder(tableListV2Page(`{"id":"in.bucket.table1","branchId":123,"name":"table1"}`, "")),
 	)
 
 	// Mock jobs queue search response
@@ -291,7 +304,7 @@ func TestFetchAll(t *testing.T) {
 				},
 			},
 		},
-		Tables: []*keboola.Table{
+		Tables: []*keboola.TableListV2Item{
 			{
 				TableKey: keboola.TableKey{
 					BranchID: branchID,
@@ -300,6 +313,8 @@ func TestFetchAll(t *testing.T) {
 						TableName: "table1",
 					},
 				},
+				TableBranchID: branchID,
+				Name:          "table1",
 			},
 		},
 		Jobs:                  []*keboola.QueueJobDetail{},
@@ -324,8 +339,8 @@ func TestFetchAll_JobsFailure_ReturnsEmptyJobs(t *testing.T) {
 	)
 	transport.RegisterResponder(
 		http.MethodGet,
-		`=~/v2/storage/branch/123/tables`,
-		httpmock.NewJsonResponderOrPanic(200, []*keboola.Table{}),
+		`=~/v2/storage/branch/123/table-list`,
+		jsonStringResponder(tableListV2Page("", "")),
 	)
 
 	// Mock jobs queue - failure
@@ -514,7 +529,7 @@ func TestFetchTableSamples(t *testing.T) {
 	fetcher, transport := newTestFetcher(t)
 	branchID := keboola.BranchID(123)
 
-	tables := []*keboola.Table{
+	tables := []*keboola.TableListV2Item{
 		{
 			TableKey: keboola.TableKey{
 				BranchID: branchID,
@@ -576,7 +591,7 @@ func TestFetchTableSamples_SkipsFailedTables(t *testing.T) {
 	fetcher, transport := newTestFetcher(t)
 	branchID := keboola.BranchID(123)
 
-	tables := []*keboola.Table{
+	tables := []*keboola.TableListV2Item{
 		{
 			TableKey: keboola.TableKey{
 				BranchID: branchID,

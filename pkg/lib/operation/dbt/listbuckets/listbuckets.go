@@ -22,10 +22,10 @@ func Run(ctx context.Context, o Options, d dependencies) (buckets []Bucket, err 
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.dbt.listBuckets")
 	defer span.End(&err)
 
-	tablesList, err := d.KeboolaProjectAPI().ListTablesRequest(o.BranchKey.ID, keboola.WithBuckets()).Send(ctx)
+	tablesList, err := d.KeboolaProjectAPI().ListTablesV2(ctx, o.BranchKey.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	return groupTables(o.TargetName, *tablesList), nil
+	return groupTables(o.TargetName, tablesList), nil
 }

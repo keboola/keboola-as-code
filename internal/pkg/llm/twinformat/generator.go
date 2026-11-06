@@ -7,8 +7,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/llm/twinformat/writer"
@@ -250,12 +248,12 @@ func (g *Generator) generateTableMetadata(ctx context.Context, table *ProcessedT
 		metadata["primary_key"] = table.PrimaryKey
 	}
 
-	if table.RowsCount > 0 {
-		metadata["rows_count"] = table.RowsCount
+	if table.RowsCount != nil && *table.RowsCount > 0 {
+		metadata["rows_count"] = *table.RowsCount
 	}
 
-	if table.DataSizeBytes > 0 {
-		metadata["data_size_bytes"] = table.DataSizeBytes
+	if table.DataSizeBytes != nil && *table.DataSizeBytes > 0 {
+		metadata["data_size_bytes"] = *table.DataSizeBytes
 	}
 
 	// Get dependencies from the Dependencies field.
@@ -279,12 +277,12 @@ func (g *Generator) generateTableMetadata(ctx context.Context, table *ProcessedT
 	return g.jsonWriter.Write(ctx, metadataPath, metadata)
 }
 
-// buildColumnDetails builds detailed column information including metadata.
+// buildColumnDetails builds detailed column information from the table definition.
 func (g *Generator) buildColumnDetails(table *ProcessedTable) []map[string]any {
+	definitions := columnsByName(table.Definition)
 	columns := make([]map[string]any, 0, len(table.Columns))
 	for _, colName := range table.Columns {
-		col := buildColumnDetailEntry(colName, table.ColumnMetadata)
-		columns = append(columns, col)
+		columns = append(columns, buildColumnDetailEntry(colName, definitions))
 	}
 	return columns
 }
@@ -878,60 +876,6 @@ func buildSourcesList(buckets []*ProcessedBucket) []map[string]any {
 	return sources
 }
 
-// buildColumnDetailEntry builds a detailed column entry map for table metadata.
-// Extracts all available metadata fields (base_type, type, nullable, length, description).
-func buildColumnDetailEntry(colName string, columnMetadata keboola.ColumnsMetadata) map[string]any {
-	col := map[string]any{"name": colName}
-	if columnMetadata == nil {
-		return col
-	}
-
-	colMeta, ok := columnMetadata[colName]
-	if !ok {
-		return col
-	}
-
-	for _, meta := range colMeta {
-		switch meta.Key {
-		case "KBC.datatype.basetype":
-			col["base_type"] = meta.Value
-		case "KBC.datatype.type":
-			col["type"] = meta.Value
-		case "KBC.datatype.nullable":
-			col["nullable"] = meta.Value == "1" || meta.Value == "true"
-		case "KBC.datatype.length":
-			col["length"] = meta.Value
-		case "KBC.description":
-			col["description"] = meta.Value
-		}
-	}
-	return col
-}
-
-// buildColumnEntry builds a column entry map for data dictionary.
-// Extracts type and description from column metadata if available.
-func buildColumnEntry(colName string, columnMetadata keboola.ColumnsMetadata) map[string]any {
-	col := map[string]any{"name": colName}
-	if columnMetadata == nil {
-		return col
-	}
-
-	colMeta, ok := columnMetadata[colName]
-	if !ok {
-		return col
-	}
-
-	for _, meta := range colMeta {
-		switch meta.Key {
-		case "KBC.datatype.basetype":
-			col["type"] = meta.Value
-		case "KBC.description":
-			col["description"] = meta.Value
-		}
-	}
-	return col
-}
-
 // formatSourceName converts a source ID to a human-readable name.
 func formatSourceName(source string) string {
 	names := map[string]string{
@@ -1273,11 +1217,16 @@ func (g *Generator) generateDataDictionary(ctx context.Context, data *ProcessedD
 	// Build tables section from actual data.
 	tables := make(map[string]map[string]any)
 	for _, table := range data.Tables {
+		// A filtered alias has no rows count; the dictionary keeps the field numeric.
+		rowsCount := uint64(0)
+		if table.RowsCount != nil {
+			rowsCount = *table.RowsCount
+		}
 		tableEntry := map[string]any{
 			"name":         table.Name,
 			"bucket":       table.BucketName,
 			"source":       table.Source,
-			"rows_count":   table.RowsCount,
+			"rows_count":   rowsCount,
 			"column_count": len(table.Columns),
 		}
 
@@ -1286,10 +1235,10 @@ func (g *Generator) generateDataDictionary(ctx context.Context, data *ProcessedD
 		}
 
 		// Add column details.
+		definitions := columnsByName(table.Definition)
 		columns := make([]map[string]any, 0, len(table.Columns))
 		for _, colName := range table.Columns {
-			col := buildColumnEntry(colName, table.ColumnMetadata)
-			columns = append(columns, col)
+			columns = append(columns, buildColumnEntry(colName, definitions))
 		}
 		tableEntry["columns"] = columns
 

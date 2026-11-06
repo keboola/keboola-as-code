@@ -13,10 +13,10 @@ type Bucket struct {
 	Schema          string
 	SourceName      string
 	DatabaseEnv     string
-	Tables          []keboola.Table
+	Tables          []keboola.TableListV2Item
 }
 
-func groupTables(targetName string, in []*keboola.Table) (out []Bucket) {
+func groupTables(targetName string, in []*keboola.TableListV2Item) (out []Bucket) {
 	groupMap := make(map[string]Bucket)
 	for _, table := range in {
 		var projectID keboola.ProjectID
@@ -31,12 +31,12 @@ func groupTables(targetName string, in []*keboola.Table) (out []Bucket) {
 			databaseEnv = fmt.Sprintf("DBT_KBC_%s_%d_DATABASE", strings.ToUpper(targetName), projectID)
 		}
 
-		key := table.Bucket.BucketID.String()
+		key := table.TableID.BucketID.String()
 		bucket, ok := groupMap[key]
 		if !ok {
 			bucket.LinkedProjectID = projectID
 			bucket.Schema = schema
-			bucket.SourceName = table.Bucket.BucketID.String()
+			bucket.SourceName = table.TableID.BucketID.String()
 			bucket.DatabaseEnv = databaseEnv
 		}
 		bucket.Tables = append(bucket.Tables, *table)

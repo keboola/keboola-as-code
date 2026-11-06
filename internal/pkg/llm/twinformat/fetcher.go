@@ -17,6 +17,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// maxAPIConcurrency bounds the concurrent per-table API requests to respect API rate limits.
+const maxAPIConcurrency = 10
+
 // FetcherDependencies defines the dependencies required by the Fetcher.
 type FetcherDependencies interface {
 	KeboolaProjectAPI() *keboola.AuthorizedAPI
@@ -92,7 +95,7 @@ func (f *Fetcher) FetchAll(ctx context.Context, branchID keboola.BranchID) (data
 }
 
 // fetchBucketsWithTables fetches all buckets and their tables.
-func (f *Fetcher) fetchBucketsWithTables(ctx context.Context, branchID keboola.BranchID) (buckets []*keboola.Bucket, tables []*keboola.Table, err error) {
+func (f *Fetcher) fetchBucketsWithTables(ctx context.Context, branchID keboola.BranchID) (buckets []*keboola.Bucket, tables []*keboola.TableListV2Item, err error) {
 	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.fetchBucketsWithTables")
 	defer span.End(&err)
 
@@ -107,38 +110,58 @@ func (f *Fetcher) fetchBucketsWithTables(ctx context.Context, branchID keboola.B
 
 	f.logger.Infof(ctx, "Found %d buckets", len(buckets))
 
-	// Fetch tables for all buckets with column metadata
-	f.logger.Info(ctx, "Fetching tables with column metadata...")
-	tablesResult, err := f.api.ListTablesRequest(branchID, keboola.WithColumnMetadata()).Send(ctx)
+	// Fetch tables with columns and the native definition (column types and descriptions)
+	f.logger.Info(ctx, "Fetching tables with columns and definitions...")
+	tables, err = f.api.ListTablesV2(ctx, branchID, keboola.WithTableListV2Columns(), keboola.WithTableListV2Definition())
 	if err != nil {
 		return nil, nil, err
 	}
-	tables = *tablesResult
 
 	f.logger.Infof(ctx, "Found %d tables", len(tables))
 
-	// Extract column names from ColumnMetadata if Columns is empty
-	// (API sometimes returns only columnMetadata without columns array)
-	for _, t := range tables {
-		if len(t.Columns) == 0 && len(t.ColumnMetadata) > 0 {
-			t.Columns = make([]string, 0, len(t.ColumnMetadata))
-			for colName := range t.ColumnMetadata {
-				t.Columns = append(t.Columns, colName)
-			}
-			// Sort column names for deterministic output
-			sort.Strings(t.Columns)
-		}
-	}
-
-	// Debug: Log column info for first few tables
-	for i, t := range tables {
-		if i < 3 {
-			f.logger.Debugf(ctx, "Table %s: %d columns, %d column metadata entries",
-				t.TableID, len(t.Columns), len(t.ColumnMetadata))
-		}
+	if err := f.loadMissingDefinitions(ctx, tables); err != nil {
+		return nil, nil, err
 	}
 
 	return buckets, tables, nil
+}
+
+// loadMissingDefinitions reads the table detail of each typed table the listing returns without a definition:
+// the listing omits it while the column types of the table are not all native.
+//
+//   - An untyped table has no native column types at all, so its listing definition (descriptions only) is kept.
+//   - A table whose detail cannot be read stays without a definition and is exported without column types and descriptions:
+//     one unreadable table does not fail the export. A cancelled context does.
+func (f *Fetcher) loadMissingDefinitions(ctx context.Context, tables []*keboola.TableListV2Item) error {
+	sem := semaphore.NewWeighted(maxAPIConcurrency)
+	group, groupCtx := errgroup.WithContext(ctx)
+	for _, table := range tables {
+		if !table.IsTyped || table.Definition != nil {
+			continue
+		}
+		group.Go(func() error {
+			if err := sem.Acquire(groupCtx, 1); err != nil {
+				return err
+			}
+			defer sem.Release(1)
+			return f.loadDefinition(groupCtx, table)
+		})
+	}
+	return group.Wait()
+}
+
+// loadDefinition sets the definition of the table from its table detail.
+func (f *Fetcher) loadDefinition(ctx context.Context, table *keboola.TableListV2Item) error {
+	detail, err := f.api.GetTableRequest(table.TableKey).Send(ctx)
+	if err != nil {
+		if ctx.Err() != nil {
+			return err
+		}
+		f.logger.Warnf(ctx, "Cannot load the definition of table %s, exporting it without column types and descriptions: %s", table.TableID, err)
+		return nil
+	}
+	table.Definition = detail.Definition
+	return nil
 }
 
 // fetchJobsQueue fetches jobs from the Jobs Queue API with detailed result data.
@@ -257,7 +280,7 @@ func (c *sampleFetchCollector) recordSuccess(idx int, sample *TableSample) {
 }
 
 // FetchTableSamples fetches samples for multiple tables concurrently.
-func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table, limit uint, maxTables int) (samples []*TableSample, err error) {
+func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.TableListV2Item, limit uint, maxTables int) (samples []*TableSample, err error) {
 	ctx, span := f.telemetry.Tracer().Start(ctx, "keboola.go.twinformat.fetcher.FetchTableSamples")
 	defer span.End(&err)
 
@@ -274,10 +297,7 @@ func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table
 
 	f.logger.Infof(ctx, "Fetching samples for %d tables concurrently (limit: %d rows each)", len(tablesToFetch), limit)
 
-	// Use bounded concurrency to respect API rate limits.
-	const maxConcurrency = 10
-
-	sem := semaphore.NewWeighted(maxConcurrency)
+	sem := semaphore.NewWeighted(maxAPIConcurrency)
 	group, groupCtx := errgroup.WithContext(ctx)
 	collector := &sampleFetchCollector{
 		results: make([]indexedSample, 0, len(tablesToFetch)),
@@ -327,13 +347,8 @@ func (f *Fetcher) FetchTableSamples(ctx context.Context, tables []*keboola.Table
 }
 
 // fetchTableSample fetches a sample for a single table and records the result.
-func (f *Fetcher) fetchTableSample(ctx context.Context, collector *sampleFetchCollector, idx int, t *keboola.Table, limit uint) {
-	tableKey := keboola.TableKey{
-		BranchID: t.BranchID,
-		TableID:  t.TableID,
-	}
-
-	sample, err := f.FetchTableSample(ctx, tableKey, limit)
+func (f *Fetcher) fetchTableSample(ctx context.Context, collector *sampleFetchCollector, idx int, t *keboola.TableListV2Item, limit uint) {
+	sample, err := f.FetchTableSample(ctx, t.TableKey, limit)
 	if err != nil {
 		f.logger.Warnf(ctx, "Failed to fetch sample for table %s: %v", t.TableID, err)
 		collector.recordFailure()
