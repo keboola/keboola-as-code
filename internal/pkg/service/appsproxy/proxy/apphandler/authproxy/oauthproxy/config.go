@@ -56,8 +56,8 @@ func proxyConfig(
 	// Connect to the app upstream
 	v.UpstreamHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if scope := middlewareapi.GetRequestScope(req); scope != nil {
-			if deadline, ok := websocketDeadline(scope.Session, v.Cookie.Refresh, time.Now()); ok {
-				req = req.WithContext(appupstream.WithSessionDeadline(req.Context(), deadline))
+			if deadline, reason, ok := websocketDeadline(scope.Session, v.Cookie.Refresh, time.Now()); ok {
+				req = req.WithContext(appupstream.WithSessionDeadline(req.Context(), deadline, reason))
 			}
 		}
 		if err := upstream.ServeHTTPOrError(w, req); err != nil {

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,9 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/sessions/cookie"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
 )
 
 const oauthCookieName = "_oauth2_proxy"
@@ -66,6 +70,19 @@ func (e *previewEnv) rewriteOIDCSession(client *http.Client, mutate func(s *sess
 	rec := httptest.NewRecorder()
 	require.NoError(e.t, e.oidcSessionStore().Save(rec, httptest.NewRequestWithContext(e.t.Context(), http.MethodGet, oidcOrigin+"/", nil), session))
 	client.Jar.SetCookies(&url.URL{Scheme: "https", Host: oidcHost, Path: "/"}, rec.Result().Cookies())
+}
+
+// requireWebsocketCloseLog waits for the log line apps-proxy writes when it closes a websocket at its deadline.
+func (e *previewEnv) requireWebsocketCloseLog(reason string) {
+	e.t.Helper()
+	require.Eventually(e.t, func() bool {
+		for _, line := range strings.Split(e.mocked.DebugLogger().AllMessages(), "\n") {
+			if strings.Contains(line, `"message":"websocket closed at its deadline: `+reason+`"`) && strings.Contains(line, `"proxy.app.id":"oidc"`) {
+				return true
+			}
+		}
+		return false
+	}, 5*time.Second, 50*time.Millisecond, "no websocket close log line with reason %q", reason)
 }
 
 func ago(d time.Duration) *time.Time {
@@ -176,6 +193,7 @@ func TestSessionFreshness_WebsocketClosedAtCookieExpiry(t *testing.T) {
 	c, resp := dialIdleWebsocket(t, client)
 	require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 	assert.Less(t, waitForClose(t, c, 20*time.Second), 15*time.Second)
+	env.requireWebsocketCloseLog("cookie expiry")
 
 	// The reconnect finds the cookie expired.
 	require.Equal(t, http.StatusFound, env.send(client, oidcOrigin+"/some/path").StatusCode)
@@ -195,6 +213,7 @@ func TestSessionFreshness_WebsocketClosedAtRefreshAndReconnectRefreshes(t *testi
 	require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 	assert.NotContains(t, setCookieNames(resp), oauthCookieName)
 	assert.Less(t, waitForClose(t, c, 30*time.Second), 20*time.Second)
+	env.requireWebsocketCloseLog("refresh due")
 
 	_, resp = dialIdleWebsocket(t, client)
 	require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
@@ -213,4 +232,17 @@ func TestSessionFreshness_WebsocketWithFreshSessionStaysOpen(t *testing.T) {
 	defer cancel()
 	_, _, err := c.Read(ctx)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
+}
+
+func TestSessionFreshness_WebsocketClosedAtWsTimeoutIsLogged(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t, func(cfg *config.Config, _ *previewtest.JWKSServer) {
+		cfg.Upstream.WsTimeout = 2 * time.Second
+	})
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+
+	c, resp := dialIdleWebsocket(t, client)
+	require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+	assert.Less(t, waitForClose(t, c, 20*time.Second), 15*time.Second)
+	env.requireWebsocketCloseLog("ws timeout")
 }
