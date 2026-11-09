@@ -3472,7 +3472,8 @@ func registerDefaultK8sApps(t *testing.T, watcher *k8sapp.StateWatcher) {
 // The proxy is the only way traffic reaches a workload's idle timer. A request
 // and a websocket data frame each have to move the shared record, on an App's
 // route and on a draft's own route, or a workload in use reads as idle and is
-// suspended once the gate is on.
+// suspended once the gate is on. A background poll and a websocket upgrade
+// must not move it, or a forgotten tab keeps the workload awake.
 func TestIdleTimerRecordsProxiedActivity(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
@@ -3644,11 +3645,21 @@ func TestIdleTimerRecordsProxiedActivity(t *testing.T) {
 	get("https://draft-abc.hub.keboola.local/")
 	reaches(draft, mark, "a request on the draft's route did not reach its record")
 
+	fakeClock.Advance(10 * time.Second)
+	upgradeMark := fakeClock.Now()
 	wsCtx, wsCancel := context.WithTimeout(ctx, time.Minute)
 	defer wsCancel()
 	c, _, err := websocket.Dial(wsCtx, "wss://public-123.hub.keboola.local/ws-idle", &websocket.DialOptions{HTTPClient: client})
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = c.Close(websocket.StatusNormalClosure, "") })
+	require.Eventually(t, func() bool {
+		if latestAliveAt(member).After(upgradeMark) {
+			return true
+		}
+		fakeClock.Advance(time.Second)
+		return false
+	}, 10*time.Second, 5*time.Millisecond, "no sweep wrote the member's record after the websocket upgrade")
+	assert.True(t, lastRequestAt(member).Before(upgradeMark), "a websocket upgrade reached the record")
 
 	fakeClock.Advance(10 * time.Second)
 	mark = fakeClock.Now()
