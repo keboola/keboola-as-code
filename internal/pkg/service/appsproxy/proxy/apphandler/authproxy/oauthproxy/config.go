@@ -56,7 +56,7 @@ func proxyConfig(
 	// Connect to the app upstream
 	v.UpstreamHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if scope := middlewareapi.GetRequestScope(req); scope != nil {
-			if deadline, ok := websocketDeadline(scope.Session, time.Now()); ok {
+			if deadline, ok := websocketDeadline(scope.Session, v.Cookie.Refresh, time.Now()); ok {
 				req = req.WithContext(appupstream.WithSessionDeadline(req.Context(), deadline))
 			}
 		}
@@ -83,6 +83,11 @@ func proxyConfig(
 	v.Cookie.Domains = []string{domain}
 	v.Cookie.SameSite = "strict"
 	v.Cookie.Refresh = sessionRefresh
+	if proxyProvider.Type == options.GitLabProvider {
+		// GitLab refresh tokens are single-use with no grace period, so parallel refreshes log users out.
+		// See docs/apps-proxy/login-session.md, section "GitLab: no refresh".
+		v.Cookie.Refresh = 0
+	}
 	v.Cookie.Expire = sessionExpire
 	v.ProxyPrefix = config.InternalPrefix
 	v.RawRedirectURL = redirectURL

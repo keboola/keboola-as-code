@@ -11,6 +11,7 @@ is not covered here.
 |---|---|---|---|
 | With a refresh token | every 1 hour | 24 hours after the last refresh | about 1 hour |
 | Without a refresh token | never | 24 hours after login | up to 24 hours |
+| GitLab (has a refresh token) | never | 24 hours after login | up to 24 hours |
 
 Both values are constants in
 `proxy/apphandler/authproxy/oauthproxy/config.go` (`sessionRefresh`,
@@ -52,6 +53,9 @@ This covers:
   to 24 hours.
 - **OIDC IdPs that give no refresh token** (see section 5).
 
+GitLab sessions have a refresh token but are not refreshed either, see
+section 6.
+
 ## 5. The `offline_access` scope
 
 An OIDC IdP gives a refresh token only when the login asks for the
@@ -64,16 +68,56 @@ the login uses the default scopes.
 - **Okta:** the customer's Okta app must also allow the "Refresh Token" grant
   type. Without it Okta logs the user in but returns no refresh token, and the
   session falls back to section 4.
-- **GitLab** always gives a refresh token, so GitLab sessions are refreshed.
+- **GitLab** is not asked: it always gives a refresh token, but apps-proxy
+  does not use it (section 6).
 - **Google** needs `access_type=offline` instead, which apps-proxy does not
   send. Google sessions have no refresh token.
 
-## 6. Websockets
+## 6. GitLab: no refresh
+
+`Cookie.Refresh` is 0 for the GitLab provider (`oauthproxy/config.go`). A GitLab
+session ends 24 hours after login, like a session without a refresh token. A
+user removed in GitLab, or removed from a required group or project, keeps
+access up to 24 hours.
+
+Do not turn the refresh on for GitLab without solving the race below first.
+
+- GitLab gives a refresh token on every login (`use_refresh_token` in
+  [GitLab's Doorkeeper initializer](https://gitlab.com/gitlab-org/gitlab/-/blob/master/config/initializers/doorkeeper.rb)).
+- A GitLab refresh token is single-use, with no grace period. The initializer
+  does not set `refresh_token_revoked_on_use`, so Doorkeeper revokes the old
+  token as soon as it is used. Reuse detection, which needs the
+  `previous_refresh_token` column, is not enabled
+  ([gitlab-org/gitlab#364111](https://gitlab.com/gitlab-org/gitlab/-/issues/364111)).
+- The cookie session store has no lock, and apps-proxy runs several replicas.
+  A page load sends many requests at once, and a Streamlit reconnect sends
+  `/_stcore/health`, `/_stcore/host-config` and the websocket upgrade together.
+  When the session is due, each of them refreshes with the same token.
+- The first refresh wins. The others get `invalid_grant`, which oauth2-proxy
+  treats as fatal: it clears the session and sends a cookie deletion. The
+  browser keeps whichever cookie it applies last, so users are logged out at
+  random, about once an hour. GitLab logins use `prompt=login`, so the user has
+  to sign in again.
+
+IdPs that rotate refresh tokens with a grace period (Okta 30 s by default,
+Pocket ID 1 min) are not affected: parallel requests arrive well inside it. An
+Okta admin can set that grace period to 0, which brings the same race back.
+This is not handled.
+
+Revisit this when one of these is true:
+
+- GitLab accepts a used refresh token for a grace period (for example
+  `refresh_token_revoked_on_use`, or reuse detection with
+  `previous_refresh_token`).
+- apps-proxy stores sessions server-side with a lock shared by all replicas,
+  so only one request refreshes.
+
+## 7. Websockets
 
 After the upgrade request, a websocket carries no cookie, so no refresh can run
 on it. apps-proxy therefore closes every websocket at the earliest of:
 
-- the next refresh, plus 5 seconds (only for a session with a refresh token),
+- the next refresh, plus 5 seconds (only for a session that is refreshed),
 - the cookie expiry,
 - 6 hours after it opened (`upstream.wsTimeout`).
 
@@ -93,7 +137,7 @@ Side effects of the close:
 - Session tracking records a heartbeat at each close (see
   [sessions.md](sessions.md)).
 
-## 7. Rollout
+## 8. Rollout
 
 Cookies issued before the 24-hour limit are older than 24 hours and have no
 refresh token. They are rejected once and the users log in again.

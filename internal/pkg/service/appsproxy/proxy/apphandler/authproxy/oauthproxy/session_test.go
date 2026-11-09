@@ -19,16 +19,42 @@ func TestProxyConfig_SessionLifetime(t *testing.T) {
 	cfg := config.New()
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CookieSecretSalt = "salt"
-
 	app := api.AppConfig{ID: "123", ProjectID: "456", AppSlug: new("app")}
-	auth := provider.GitHub{
-		Base:         provider.Base{Info: provider.Info{ID: "github", Type: provider.TypeGitHub}},
-		ClientID:     "client",
-		ClientSecret: "secret",
+
+	cases := []struct {
+		name            string
+		auth            provider.OAuthProvider
+		expectedRefresh time.Duration
+	}{
+		{
+			name: "github",
+			auth: provider.GitHub{
+				Base:         provider.Base{Info: provider.Info{ID: "github", Type: provider.TypeGitHub}},
+				ClientID:     "client",
+				ClientSecret: "secret",
+			},
+			expectedRefresh: time.Hour,
+		},
+		{
+			// GitLab refresh tokens are single-use, see docs/apps-proxy/login-session.md.
+			name: "gitlab",
+			auth: provider.GitLab{OIDC: provider.OIDC{
+				Base:         provider.Base{Info: provider.Info{ID: "gitlab", Type: provider.TypeGitLab}},
+				ClientID:     "client",
+				ClientSecret: "secret",
+				IssuerURL:    "https://gitlab.com",
+			}},
+			expectedRefresh: 0,
+		},
 	}
 
-	v, err := proxyConfig(t.Context(), cfg, scopeResolver{}, nil, nil, app, auth, nil)
-	require.NoError(t, err)
-	assert.Equal(t, time.Hour, v.Cookie.Refresh)
-	assert.Equal(t, 24*time.Hour, v.Cookie.Expire)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			v, err := proxyConfig(t.Context(), cfg, scopeResolver{}, nil, nil, app, tc.auth, nil)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedRefresh, v.Cookie.Refresh)
+			assert.Equal(t, 24*time.Hour, v.Cookie.Expire)
+		})
+	}
 }

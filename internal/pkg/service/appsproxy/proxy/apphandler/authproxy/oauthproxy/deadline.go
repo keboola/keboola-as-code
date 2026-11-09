@@ -13,20 +13,20 @@ const refreshGrace = 5 * time.Second
 
 // websocketDeadline is when a websocket opened with the session must be closed,
 // so that the browser reconnects through a refresh or a new login.
-func websocketDeadline(session *sessionsapi.SessionState, now time.Time) (time.Time, bool) {
+func websocketDeadline(session *sessionsapi.SessionState, refresh time.Duration, now time.Time) (time.Time, bool) {
 	if session == nil || session.CreatedAt == nil || session.CreatedAt.IsZero() {
 		return time.Time{}, false
 	}
 
 	deadline := session.CreatedAt.Add(sessionExpire)
-	if session.RefreshToken == "" {
+	if session.RefreshToken == "" || refresh == 0 {
 		return deadline, true
 	}
 
 	// A refresh that failed without ending the session leaves it overdue; retry it a period later.
-	refreshAt := session.CreatedAt.Add(sessionRefresh + refreshGrace)
+	refreshAt := session.CreatedAt.Add(refresh + refreshGrace)
 	if !refreshAt.After(now) {
-		refreshAt = now.Add(sessionRefresh)
+		refreshAt = now.Add(refresh)
 	}
 	if refreshAt.Before(deadline) {
 		deadline = refreshAt
