@@ -129,13 +129,44 @@ still holds.
 
 If a refresh failed without ending the session, the next close is 1 hour later.
 
+Each close writes one info log line:
+
+```
+websocket closed at its deadline: <reason>
+```
+
+`<reason>` is `refresh due`, `cookie expiry` or `ws timeout`. The line carries
+the app attributes (`proxy.app.id`, `proxy.app.projectId`, …). A websocket closed
+by the browser or the app writes no such line.
+
 Side effects of the close:
 
-- The reconnect counts as activity for auto-suspend. A forgotten tab with a
-  refresh-token session keeps an app with an auto-suspend threshold over 1 hour
-  awake.
+- Auto-suspend: the reconnect must not count as activity, or a forgotten tab
+  keeps an app with an auto-suspend threshold over 1 hour awake. A separate
+  apps-proxy change stops counting the websocket upgrade as activity. It must
+  be released before this one, or together with it.
 - Session tracking records a heartbeat at each close (see
   [sessions.md](sessions.md)).
+
+### Symptoms and how to check
+
+- **Users see the app reconnect (a short "CONNECTING" label in Streamlit) about
+  once an hour.** This is expected for a session with a refresh token. Check
+  the logs for `websocket closed at its deadline: refresh due` with the app's
+  `proxy.app.id`, about 1 hour apart. If the reconnect fails, look next for
+  `Unable to refresh session` or `Fatal refresh error` (oauth2-proxy) for the
+  same app: the IdP refused the refresh, and the user must log in.
+- **The close repeats much more often than once an hour.** Look for many
+  `refresh due` lines for one app within minutes. The likely cause is a refresh
+  that does not reset the session time, for example clock skew between
+  replicas larger than the 5-second grace.
+- **An app with a tab open never auto-suspends.** Check that the idle-suspend
+  change (websocket upgrade is not activity) is deployed. Without it, each
+  `websocket closed at its deadline` line is followed by a reconnect that
+  resets the app's idle timer.
+- **Users are logged out after 24 hours.** Expected for sessions without a
+  refresh token and for GitHub and GitLab. The close line says
+  `cookie expiry`, and the reconnect is sent to the login page.
 
 ## 8. Rollout
 
