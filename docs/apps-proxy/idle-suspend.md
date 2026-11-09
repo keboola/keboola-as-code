@@ -34,8 +34,17 @@ that reconnects its websocket without a poll first will wake a suspended app.
 ## 2. Why the Upgrade Does Not Count
 
 The browser reconnects the websocket without any user input every time the
-connection closes, for example when the upstream websocket timeout
-(`upstream.wsTimeout`, default `6h`) ends it.
+connection closes. Apps proxy itself closes it:
+
+- when the upstream websocket timeout (`upstream.wsTimeout`, default `6h`)
+  ends it,
+- at the login session deadline: when the session is due for refresh (about
+  every hour for a session that is refreshed) or when the session cookie
+  expires. See [login-session.md](login-session.md) §7.
+
+Each of these closes writes the log line
+`websocket closed at its deadline: <reason>` (`refresh due`, `cookie expiry`
+or `ws timeout`).
 
 If the reconnect counted, a forgotten tab would reset the idle timer on every
 reconnect. An app with a threshold over the reconnect interval would never
@@ -103,7 +112,8 @@ Check:
 
 1. Watch `spec.lastRequestAt` of the workload with the tab open and no input.
    If it moves on the websocket reconnect interval, a reconnect is counted
-   as activity, against the rule in §1.
+   as activity, against the rule in §1. The `websocket closed at its
+   deadline` log lines for the app show when apps proxy closed the websocket.
 2. If it moves more often, the app itself sends data frames or HTTP requests
    on a timer (a frontend heartbeat or poll). The proxy counts that by design.
 3. Check `workloads{state}`: an app in `no_threshold` has no

@@ -42,8 +42,8 @@ so a user removed from an allowed group loses access at the next refresh.
 
 ## 4. Sessions without a refresh token
 
-Such a session is never refreshed and never re-validated (fork change in
-`pkg/middleware/stored_session.go`). It ends 24 hours after login, whatever the
+Such a session is never refreshed and never re-validated (rule in the
+oauth2-proxy fork, `pkg/middleware/stored_session.go`). It ends 24 hours after login, whatever the
 lifetime of its ID and access tokens.
 
 This covers:
@@ -141,10 +141,9 @@ by the browser or the app writes no such line.
 
 Side effects of the close:
 
-- Auto-suspend: the reconnect must not count as activity, or a forgotten tab
-  keeps an app with an auto-suspend threshold over 1 hour awake. A separate
-  apps-proxy change stops counting the websocket upgrade as activity. It must
-  be released before this one, or together with it.
+- Auto-suspend: the reconnect is not idle-suspend activity. The upgrade does
+  not count, only websocket data frames do, so a forgotten tab does not keep
+  the app awake. See [idle-suspend.md](idle-suspend.md) §1 and §2.
 - Session tracking records a heartbeat at each close (see
   [sessions.md](sessions.md)).
 
@@ -160,15 +159,11 @@ Side effects of the close:
   `refresh due` lines for one app within minutes. The likely cause is a refresh
   that does not reset the session time, for example clock skew between
   replicas larger than the 5-second grace.
-- **An app with a tab open never auto-suspends.** Check that the idle-suspend
-  change (websocket upgrade is not activity) is deployed. Without it, each
-  `websocket closed at its deadline` line is followed by a reconnect that
-  resets the app's idle timer.
+- **An app with a tab open never auto-suspends.** Compare the times of the
+  `websocket closed at its deadline` lines for the app with
+  `spec.lastRequestAt` of its `IdleTimer` CR. If `lastRequestAt` moves at each
+  close, the reconnect is counted as activity, against the rule. Otherwise
+  follow [idle-suspend.md](idle-suspend.md) §3 (b).
 - **Users are logged out after 24 hours.** Expected for sessions without a
   refresh token and for GitHub and GitLab. The close line says
   `cookie expiry`, and the reconnect is sent to the login page.
-
-## 8. Rollout
-
-Cookies issued before the 24-hour limit are older than 24 hours and have no
-refresh token. They are rejected once and the users log in again.
