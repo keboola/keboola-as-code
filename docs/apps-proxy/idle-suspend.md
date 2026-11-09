@@ -16,14 +16,14 @@ Code: `internal/pkg/service/appsproxy/proxy/apphandler/upstream/upstream.go`
 | An HTTP request proxied to the app | Yes |
 | A websocket data frame, in either direction | Yes |
 | `/_stcore/health`, `/_stcore/host-config` (`streamlit.IsBackgroundPoll`) | No |
-| A websocket upgrade request (the handshake) | **No** |
+| A websocket upgrade request (the handshake) | No |
 | Websocket control frames (ping, pong, close) | No |
 
-A real new visitor is still counted: the page load is an HTTP request, and the
+A real new visitor is counted: the page load is an HTTP request, and the
 browser sends its first websocket data frame right after the upgrade.
 
 This rule is only for idle suspend. Session tracking (`dataapps/sessions`)
-still counts the upgrade, see [sessions.md](sessions.md).
+counts the upgrade, see [sessions.md](sessions.md).
 
 A request to an app that is **already suspended** is handled before the rule.
 A background poll gets a 503 "suspended" page and does not wake the app. Any
@@ -33,12 +33,9 @@ that reconnects its websocket without a poll first will wake a suspended app.
 
 ## 2. Why the Upgrade Does Not Count
 
-The browser reconnects the websocket without any user input:
-
-- Today, every 6 h, when the upstream websocket timeout (`upstream.wsTimeout`,
-  default `6h`) closes the connection.
-- Once session freshness (#2699) ships, about every hour, when the proxy closes
-  the websocket so the login session refreshes.
+The browser reconnects the websocket without any user input every time the
+connection closes, for example when the upstream websocket timeout
+(`upstream.wsTimeout`, default `6h`) ends it.
 
 If the reconnect counted, a forgotten tab would reset the idle timer on every
 reconnect. An app with a threshold over the reconnect interval would never
@@ -64,7 +61,7 @@ upgrade alone is not.
 
 ## 3. Symptoms and How to Check
 
-Tools that exist today:
+Available signals:
 
 - The `IdleTimer` CR of the workload:
   `kubectl -n <ns> get idletimers <name> -o yaml`. `spec.lastRequestAt` is the
@@ -89,8 +86,8 @@ reconnects its websocket, or that sends only control frames.
 Check:
 
 1. Find the `suspended idle workload` log line for the workload and its time.
-2. Look at `woke_soon_after_suspend`. A rise after a release means users wake
-   apps right after a suspend.
+2. Look at `woke_soon_after_suspend`. A rise means users wake apps right
+   after a suspend.
 3. Compare `spec.lastRequestAt` with what the user did. If the user was
    clicking but `lastRequestAt` did not move, the app's traffic is not seen as
    activity.
@@ -105,8 +102,8 @@ Likely cause: something without user input is counted as activity.
 Check:
 
 1. Watch `spec.lastRequestAt` of the workload with the tab open and no input.
-   If it moves on a fixed interval (about every hour after #2699, every 6 h
-   today), a reconnect still counts. That is a regression of this rule.
+   If it moves on the websocket reconnect interval, a reconnect is counted
+   as activity, against the rule in §1.
 2. If it moves more often, the app itself sends data frames or HTTP requests
    on a timer (a frontend heartbeat or poll). The proxy counts that by design.
 3. Check `workloads{state}`: an app in `no_threshold` has no
