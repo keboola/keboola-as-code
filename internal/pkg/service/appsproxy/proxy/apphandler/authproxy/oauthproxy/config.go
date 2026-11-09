@@ -83,9 +83,8 @@ func proxyConfig(
 	v.Cookie.Domains = []string{domain}
 	v.Cookie.SameSite = "strict"
 	v.Cookie.Refresh = sessionRefresh
-	if proxyProvider.Type == options.GitLabProvider {
-		// GitLab refresh tokens are single-use with no grace period, so parallel refreshes log users out.
-		// See docs/apps-proxy/login-session.md, section "GitLab: no refresh".
+	if oAuthProvider.RefreshTokensSingleUse() {
+		// The cookie store has no lock, so parallel requests would refresh with the same token and the losers log the user out.
 		v.Cookie.Refresh = 0
 	}
 	v.Cookie.Expire = sessionExpire

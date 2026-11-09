@@ -75,8 +75,9 @@ the login uses the default scopes.
 
 ## 6. GitLab: no refresh
 
-`Cookie.Refresh` is 0 for the GitLab provider (`oauthproxy/config.go`). A GitLab
-session ends 24 hours after login, like a session without a refresh token. A
+`Cookie.Refresh` is 0 for every provider whose `RefreshTokensSingleUse()`
+returns true (`dataapps/auth/provider`, applied in `oauthproxy/config.go`).
+Only GitLab does. A GitLab session ends 24 hours after login, like a session without a refresh token. A
 user removed in GitLab, or removed from a required group or project, keeps
 access up to 24 hours.
 

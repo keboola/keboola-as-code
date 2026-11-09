@@ -30,3 +30,8 @@ func (v GitLab) ProxyProviderOptions() (proxyOptions.Provider, error) {
 
 	return p, nil
 }
+
+// RefreshTokensSingleUse is true: see docs/apps-proxy/login-session.md, section "GitLab: no refresh".
+func (v GitLab) RefreshTokensSingleUse() bool {
+	return true
+}

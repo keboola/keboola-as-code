@@ -52,6 +52,10 @@ func (v GitHub) ProxyProviderOptions() (proxyOptions.Provider, error) {
 	return p, nil
 }
 
+func (v GitHub) RefreshTokensSingleUse() bool {
+	return false
+}
+
 func (v GitHub) IdentityProviderURL() string {
 	if v.URL == "" { // public github.com
 		return gitHubURL
