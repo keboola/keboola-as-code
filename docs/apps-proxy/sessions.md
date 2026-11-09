@@ -402,8 +402,9 @@ minted immediately after every login.
 - **Activity excludes framework background polls.** `/_stcore/health` and
   `/_stcore/host-config` fire on every Streamlit websocket reconnect
   independently of the user, and are already excluded from the idle-timer
-  activity (auto-suspend). Session activity reuses that same rule (`streamlit.IsBackgroundPoll`) so
-  there is exactly one definition of "the user did something".
+  activity (auto-suspend). Session activity reuses that same rule (`streamlit.IsBackgroundPoll`).
+  The two rules differ in one case: a websocket upgrade is session activity
+  but not idle-suspend activity, see [idle-suspend.md](idle-suspend.md).
 - **Rows written before `provider_user_id` was hashed still hold the raw
   claim.** That column used to carry the OIDC subject claim or GitHub login
   verbatim; existing rows in `in.c-data-apps.sessions` are not rewritten by the

@@ -393,6 +393,7 @@ func (u *AppUpstream) trace() chain.Middleware {
 			// the GotConn callback closure below, which only receives a
 			// connInfo argument.
 			reqPath := req.URL.Path
+			isUpgrade := sessions.IsWebsocketUpgrade(req)
 
 			// Trace connection events. Background polls emitted by data-app
 			// frontends independent of user interaction (see
@@ -402,8 +403,13 @@ func (u *AppUpstream) trace() chain.Middleware {
 					if streamlit.IsBackgroundPoll(reqPath) {
 						return
 					}
-					u.recordActivity(ctx)
 					u.manager.sessions.Activity(ctx)
+					// A websocket upgrade is not idle-suspend activity, only its
+					// data frames are: see docs/apps-proxy/idle-suspend.md.
+					if isUpgrade {
+						return
+					}
+					u.recordActivity(ctx)
 				},
 			})
 
