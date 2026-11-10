@@ -40,6 +40,13 @@ type OAuthProvider interface {
 	IdentityProviderURL() string
 }
 
+// AttributeClaimsProvider is implemented by a provider whose owner chooses the claims of the identity provider that become
+// attributes of the user in the app user token.
+type AttributeClaimsProvider interface {
+	// ValidAttributeClaims returns the allowlist in the order given, nothing for none, or an error for a list that cannot be used.
+	ValidAttributeClaims() ([]string, error)
+}
+
 func (v ID) String() string {
 	return string(v)
 }
