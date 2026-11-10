@@ -162,6 +162,9 @@ While the IdP is unavailable, the reconnect gets the 503 page and the
 browser retries. If a refresh failed for another reason and the session was
 kept, the next close is 1 hour later.
 
+The app user refresh token on the handshake expires at the same moment, see
+[app-user-token.md](app-user-token.md) §6.
+
 Each close writes one info log line:
 
 ```
