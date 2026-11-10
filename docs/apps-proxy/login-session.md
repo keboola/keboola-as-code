@@ -68,7 +68,15 @@ An OIDC IdP gives a refresh token only when the login asks for the
 `/.well-known/openid-configuration` when it builds an app's handler, and asks
 for the scope only when `scopes_supported` lists it. An IdP that does not know
 the scope therefore cannot reject the login. If the document cannot be read,
-the login uses the default scopes.
+the login uses the default scopes and apps-proxy logs a warning:
+
+```
+cannot read OIDC discovery of "<issuer>", "offline_access" scope not requested: <error>
+```
+
+The handler keeps that result until it is rebuilt, which happens only when the
+app config or its upstream changes, or apps-proxy restarts. Until then, new
+logins to that app get no refresh token and end 24 hours after login.
 
 - **Okta:** the customer's Okta app must also allow the "Refresh Token" grant
   type. Without it Okta logs the user in but returns no refresh token, and the
@@ -170,6 +178,11 @@ Side effects of the close:
   `spec.lastRequestAt` of its `IdleTimer` CR. If `lastRequestAt` moves at each
   close, the reconnect is counted as activity, against the rule. Otherwise
   follow [idle-suspend.md](idle-suspend.md) §3 (b).
+- **An OIDC app's sessions end after 24 hours although its IdP lists
+  `offline_access`.** Look for the `cannot read OIDC discovery` warning with
+  the app's `proxy.app.id`. If it is there, the handler was built while the
+  discovery document could not be read. A restart of apps-proxy or a change of
+  the app config rebuilds it.
 - **Users are logged out after 24 hours.** Expected for sessions without a
   refresh token and for GitHub and GitLab. The close line says
   `cookie expiry`, and the reconnect is sent to the login page.
