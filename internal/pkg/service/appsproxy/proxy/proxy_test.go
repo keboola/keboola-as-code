@@ -3204,7 +3204,9 @@ func testDataApps(upstream *url.URL, m []*mockoidc.MockOIDC) []api.AppConfig {
 					ClientID:     m[0].Config().ClientID,
 					ClientSecret: m[0].Config().ClientSecret,
 					AllowedRoles: new([]string{"admin"}),
-					IssuerURL:    m[0].Issuer(),
+					// Claims of the ID token of mockoidc that the app owner allows as attributes of the user.
+					AttributeClaims: []string{"address", "phone_number"},
+					IssuerURL:       m[0].Issuer(),
 				},
 			},
 			AuthRules: []api.Rule{
