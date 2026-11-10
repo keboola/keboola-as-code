@@ -24,6 +24,11 @@ cookie carries the tokens, the email and the groups, and it is signed with the
 session's creation time. A cookie older than 24 hours is rejected and the user
 logs in again.
 
+An app with several providers also sets `_oauth2_provider`, which only
+remembers the chosen provider and grants no access. It is set again on every
+app request with a 24-hour expiry, so it never expires before the session. Not
+on `/_proxy/...` paths.
+
 ## 3. Refresh
 
 Refresh is lazy. It runs only when a request with the cookie arrives and the
