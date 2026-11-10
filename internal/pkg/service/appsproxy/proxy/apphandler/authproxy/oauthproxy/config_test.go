@@ -2,9 +2,13 @@ package oauthproxy
 
 import (
 	"testing"
+	"time"
 
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 )
 
 func TestUserIDClaim(t *testing.T) {
@@ -52,5 +56,30 @@ func TestUserIDClaim_NeverNamesTheEmailClaim(t *testing.T) {
 		"",
 	} {
 		assert.NotEqual(t, options.OIDCEmailClaim, userIDClaim(providerType), providerType)
+	}
+}
+
+func TestAttrsSessionTTL(t *testing.T) {
+	t.Parallel()
+
+	cfg := config.New()
+	cfg.AppUserToken.AttrsSessionTTL = 3 * time.Hour
+
+	cases := []struct {
+		name     string
+		provider provider.OAuthProvider
+		expected time.Duration
+	}{
+		{name: "an OIDC provider with an allowlist", provider: provider.OIDC{AttributeClaims: []string{"department"}}, expected: 3 * time.Hour},
+		{name: "an OIDC provider without an allowlist keeps the default session", provider: provider.OIDC{}, expected: 0},
+		{name: "an empty allowlist", provider: provider.OIDC{AttributeClaims: []string{}}, expected: 0},
+		{name: "a bad allowlist is not used, so the session is not shortened", provider: provider.OIDC{AttributeClaims: []string{"email"}}, expected: 0},
+		{name: "a provider that has no allowlist", provider: provider.GitHub{}, expected: 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.expected, attrsSessionTTL(cfg, tc.provider))
+		})
 	}
 }

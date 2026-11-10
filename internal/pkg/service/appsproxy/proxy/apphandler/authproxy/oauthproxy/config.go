@@ -108,6 +108,9 @@ func proxyConfig(
 	v.Cookie.Name = CookieName
 	v.Cookie.Secret = secret
 	v.Cookie.Domains = []string{domain}
+	if ttl := attrsSessionTTL(cfg, oAuthProvider); ttl > 0 {
+		v.Cookie.Expire = ttl
+	}
 	v.Cookie.SameSite = "strict"
 	v.Cookie.Refresh = sessionRefresh
 	if oAuthProvider.RefreshTokensSingleUse() {
@@ -155,6 +158,22 @@ func sessionStoreUnavailableError(err error) error {
 	return svcErrors.
 		NewServiceUnavailableError(errors.PrefixError(err, "session store unavailable")).
 		WithUserMessage("Sign-in is temporarily unavailable. Please try again in a moment.")
+}
+
+// attrsSessionTTL is the lifetime of the login session of an app whose provider has attribute claims, 0 for any other app, which
+// keeps the default of oauth2-proxy. The attributes are read from the ID token once, at login, and they do not change in the
+// session, so a shorter session is how long a change at the identity provider can take to reach the rules. A bad allowlist is
+// not used (the app gets no attributes), so it does not shorten the session either.
+func attrsSessionTTL(cfg config.Config, oAuthProvider provider.OAuthProvider) time.Duration {
+	withClaims, ok := oAuthProvider.(provider.AttributeClaimsProvider)
+	if !ok {
+		return 0
+	}
+	if claims, err := withClaims.ValidAttributeClaims(); err != nil || len(claims) == 0 {
+		return 0
+	}
+
+	return cfg.AppUserToken.AttrsSessionTTL
 }
 
 // generateCookieSecret creates a unique cookie secret for each app and provider.
