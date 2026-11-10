@@ -45,6 +45,7 @@ must check `typ`, so that it never takes this token for a different kind of JWT.
 | `idp` | Issuer URL of the IdP, trailing `/` removed. GitHub: `https://github.com`, or the GitHub Enterprise URL. |
 | `email` | Only when verified, see §4 |
 | `groups` | IdP groups. Omitted when unknown, see §4 |
+| `attrs` | Attributes of the user: a map of claim name to a list of strings, only the claims of the provider's `attributeClaims` allowlist. Omitted when there are none, see §4 and §10 |
 | `kbc.project_id` | Project id of the app |
 | `kbc.app_id` | App id |
 | `kbc.workspace_id` | Workspace id of the app. Omitted when unknown, see §4 |
@@ -94,6 +95,16 @@ wrongly mean "known, no groups", so it is never sent.
   header from oauth2-proxy is comma-joined, so a group name that contains `,` is
   split into two groups.
 
+- **`attrs`** holds the claims of the provider's `attributeClaims` allowlist
+  (see §10) that have a usable value. A claim the IdP did not send, or sent
+  with a value that cannot be an attribute, is not in `attrs`: that attribute
+  is **unknown**, never "known and empty", and the verifier must fail closed.
+  A value is usable when it is a non-empty string, or a list of non-empty
+  strings (duplicates removed, order kept). A number, bool, null, object, a
+  mixed list, `""` and `[]` are not converted, the claim is dropped. A claim
+  with more than 32 values or a value longer than 256 characters (Unicode code
+  points) is dropped too. `attrs` is omitted when no claim is left.
+
 - **`kbc.workspace_id`** comes from `status.workspace.id` of the Sandbox CR that
   runs the app: the draft Sandbox itself, or the App's `status.productionSandbox`.
   It is omitted when that Sandbox has no workspace or is not cached. This is a
@@ -117,6 +128,7 @@ app.
 | `appUserToken.signingKeys` | `APPS_PROXY_APP_USER_TOKEN_SIGNING_KEYS` | *(empty — feature off)* |
 | `appUserToken.activeKid` | `APPS_PROXY_APP_USER_TOKEN_ACTIVE_KID` | *(empty — feature off)* |
 | `appUserToken.ttl` | `APPS_PROXY_APP_USER_TOKEN_TTL` | `5m` (maximum `5m`) |
+| `appUserToken.attrsSessionTtl` | `APPS_PROXY_APP_USER_TOKEN_ATTRS_SESSION_TTL` | `8h` (from `1m` to `168h`) |
 
 `signingKeys` is a JSON list of `{"kid": "...", "pem": "..."}` entries, each an
 EC P-256 private key (`openssl ecparam -name prime256v1 -genkey -noout`). It is a
@@ -127,6 +139,10 @@ Startup refuses: invalid JSON, an entry without `kid` or `pem`, a `kid` that doe
 not match `^[A-Za-z0-9._-]{1,64}$`, a duplicate `kid`, a key that is not EC
 P-256, an active kid that is not in the list, and a TTL above 5 minutes. Error
 messages never contain a PEM.
+
+`attrsSessionTtl` is the lifetime of the login session (the oauth2-proxy
+cookie) of an app whose OIDC provider has `attributeClaims`. Apps without that
+allowlist keep the oauth2-proxy default of 7 days. See §10.
 
 In kbc-stacks the keys are `appUserToken.signingKeyPems` (secrets) and
 `appUserToken.activeSigningKid` (values), the same model as the sandboxes-service
@@ -147,12 +163,22 @@ verifiers refetch the JWKS on an unknown `kid`.
 
 ## 8. Monitoring
 
-There are no metrics. Missing claims are valid states, not errors. The only
+One counter: `keboola.go.appsproxy.apptoken.attrs.dropped`, claims of an
+`attributeClaims` allowlist that did not become an attribute. Its only label is
+`reason`: `type` (the value cannot be an attribute), `size` (too many values, a
+value over 256 characters, or a claim larger than the whole `attrs`) or
+`budget` (valid, but it does not fit the 1 KB cap of `attrs` or the size of the
+token). A claim the IdP did not send is not counted. The label is never a claim
+name, because the name is chosen by the app owner and the value by the user.
+
+Missing claims are valid states, not errors. The only
 runtime error is a failed signing: apps-proxy logs `cannot sign the app user
 token, the request continues without it` at error level and passes the request
 on without a token. A bad key config stops apps-proxy at startup.
 
-The token, the claims and the keys are never logged.
+The token, the claims, the attribute values and the keys are never logged. A
+bad allowlist (see §10) is logged once, when the handlers of the app are built,
+with the app and provider ids and a fixed reason, never a claim.
 
 ## 9. Limits in v1
 
@@ -162,12 +188,77 @@ The token, the claims and the keys are never logged.
 - **Drafts.** A draft gets no OIDC login of its own yet, so it gets no token.
   When it does, its token carries the production `kbc.app_id` and the draft's own
   `kbc.workspace_id`.
-- **Header size.** With a large group list the token reaches about 6 KB. App
-  servers with a small header limit (Node.js: 16 KiB for all headers) may need a
-  higher limit.
+- **Header size.** With a large group list the token reaches about 6 KB. With
+  `attrs` the token is kept at most 8000 bytes (encoded), because many app
+  servers refuse a header line over 8190 bytes and the verifiers parse at most
+  8 KiB: `attrs` is at most 1 KB of JSON and gives way before the groups, see
+  §10. App servers with a small header limit (Node.js: 16 KiB for all headers)
+  may need a higher limit. The app gets the session cookie of oauth2-proxy next
+  to the token: apps-proxy does not strip it (a request of a user with a small ID
+  token measured about 3.1 KB of headers in all, the cookie 2.3 KB, and the
+  cookie grows with the ID token and with the claims of the allowlist; it is
+  split into chunks above 4000 bytes). Count it when you size the header limit.
 - **Rollout.** `email_verified` is read from the oauth2-proxy session cookie,
   which apps-proxy does not refresh. OIDC users who logged in before the release
   get tokens without `email` until they log in again or the cookie expires
   (7 days).
 - **Replay.** App code can reuse a token of a user who visited the app until it
   expires, and so can anyone the app sends it to.
+- **Attributes are as fresh as the session.** `attrs` come from the ID token that
+  oauth2-proxy read at login. A change of an attribute at the IdP reaches the app
+  at the next login, so the session of an app with `attributeClaims` lasts
+  `appUserToken.attrsSessionTtl` (8 hours by default) instead of 7 days.
+- **Replay is wider with attributes.** A rule that selects by an attribute is not
+  tied to a named person, so app code that holds a token reads, for up to
+  5 minutes, whatever everyone with that attribute may read.
+
+## 10. Attributes
+
+An app owner can allow claims of the IdP, such as `department`, as attributes of
+the user. Query Service rules select readers by them. The owner lists the claim
+names in `attributeClaims` of an OIDC auth provider (Sandboxes API, next to
+`allowedRoles`):
+
+- at most 100 names, each matching `^[A-Za-z0-9_.:/-]{1,128}$`, no repeated name;
+- the order is kept and matters: when the token is full, the claims at the end
+  of the list give way first;
+- a name of a claim that apps-proxy or the token already uses is refused,
+  whatever its case: `sub`, `email`, `email_verified`, `groups`, `roles`, `iss`,
+  `aud`, `exp`, `iat`, `nbf`, `nonce`, `jti`, `sid`, `idp`, `kbc`, `azp`, `acr`,
+  `amr`, `auth_time`, `at_hash`, `c_hash`, `attrs`. A rule that selects by such
+  an attribute would bypass the `email_verified` and the group handling above.
+
+How it works:
+
+1. At login, oauth2-proxy takes the allowlisted claims from the ID token into the
+   session (`additionalClaims`, next to `sub` and `email_verified`). oauth2-proxy
+   looks in the ID token first and, for a claim that is not there, asks the userinfo
+   endpoint of the IdP (its default, which apps-proxy does not turn off). The
+   fallback to userinfo is not covered by a test here. Whether the IdP puts a custom
+   claim in the ID token or in userinfo, and for which scopes, is up to the IdP; a
+   claim that neither has is simply missing, which is unknown.
+2. For each request, apps-proxy reads those claims from the session, never from a
+   header, so a client cannot send them. A claim that is not allowlisted is never
+   read, so the name, phone or address of the user does not reach the app.
+3. The values become `attrs` as described in §4 and are signed into the token.
+
+A bad allowlist does not break the app. It is logged once and the app gets no
+`attrs`; its session is not shortened either.
+
+Size. `attrs` is at most 1024 bytes of JSON, and the whole encoded token at most
+8000 bytes. The claims are tried in the order of the allowlist, and one that does
+not fit is dropped and counted (`budget`) while the next ones are still tried, so
+the result does not depend on anything but the allowlist. With the largest group
+list (4096 bytes) the token has no room left and `attrs` is empty. The groups are
+never cut for `attrs`. The limits come from `keboola-sdk-go` (`pkg/apptoken`),
+which Query Service uses to verify the same token.
+
+What was checked, not assumed:
+
+- **Spans and logs.** The token never reaches a span or a log, also not a token that
+  a client sends: inbound `X-Kbc-*` headers are removed before anything records
+  the request, and the token is minted after the request span has taken its
+  attributes (`TestAppUserToken_NotInTraces`). The cookie and authorization
+  headers are redacted in spans already.
+- **Session cookie.** The oauth2-proxy session cookie is forwarded to the app next
+  to the token (`TestAppUserToken_SessionCookieReachesTheApp`).
