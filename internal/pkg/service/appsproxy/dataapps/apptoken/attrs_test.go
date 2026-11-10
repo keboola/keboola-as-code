@@ -35,7 +35,7 @@ func TestMapAttrs_Values(t *testing.T) {
 		{name: "string", value: "finance", want: []string{"finance"}},
 		{name: "list", value: []any{"finance", "hr"}, want: []string{"finance", "hr"}},
 		{name: "list of strings", value: []string{"finance", "hr"}, want: []string{"finance", "hr"}},
-		{name: "duplicates are removed, order is kept", value: []any{"hr", "finance", "hr"}, want: []string{"hr", "finance"}},
+		{name: "duplicates are removed, the order is canonical", value: []any{"hr", "finance", "hr"}, want: []string{"finance", "hr"}},
 		{name: "number", value: float64(42), reason: attrDropType},
 		{name: "bool", value: true, reason: attrDropType},
 		{name: "null", value: nil, reason: attrDropType},
