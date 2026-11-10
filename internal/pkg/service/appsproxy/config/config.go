@@ -83,11 +83,17 @@ type AppUserToken struct {
 	SigningKeys string        `configKey:"signingKeys" configUsage:"JSON list of {\"kid\": \"...\", \"pem\": \"...\"} EC P-256 private keys. All are published in the JWKS. Empty together with activeKid disables the token." sensitive:"true"`
 	ActiveKid   string        `configKey:"activeKid" configUsage:"Kid of the signing key that signs new tokens."`
 	TTL         time.Duration `configKey:"ttl" configUsage:"Lifetime of one token, from 1s to 5m." validate:"required,minDuration=1s,maxDuration=5m"`
+	// RefreshKeys sign the refresh tokens that WebSocket apps exchange for a new token. They are never published in the JWKS.
+	RefreshKeys      string `configKey:"refreshKeys" configUsage:"JSON list of {\"kid\": \"...\", \"secret\": \"...\"} HS256 keys of refresh tokens, secret is standard base64 of at least 32 bytes. Empty together with refreshActiveKid disables the refresh." sensitive:"true"`
+	RefreshActiveKid string `configKey:"refreshActiveKid" configUsage:"Kid of the refresh key that signs new refresh tokens."`
 }
 
 func (c *AppUserToken) Validate() error {
 	if (c.SigningKeys == "") != (c.ActiveKid == "") {
 		return errors.New("appUserToken.signingKeys and appUserToken.activeKid must be set together")
+	}
+	if (c.RefreshKeys == "") != (c.RefreshActiveKid == "") {
+		return errors.New("appUserToken.refreshKeys and appUserToken.refreshActiveKid must be set together")
 	}
 	return nil
 }
