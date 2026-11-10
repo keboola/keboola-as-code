@@ -1,6 +1,7 @@
 package apptoken_test
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -29,6 +30,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
@@ -42,13 +44,16 @@ const (
 	testWorkspaceID = "91011"
 	testIssuer      = "https://hub.keboola.local"
 	testIDP         = "https://idp.example.com"
+	testProviderID  = "oidc-1"
+	testAppHost     = "app-1.hub.keboola.local"
 )
 
 type envOptions struct {
-	noKeys      bool
-	sessions    bool
-	noWorkspace bool
-	ttl         time.Duration
+	noKeys        bool
+	noRefreshKeys bool
+	sessions      bool
+	noWorkspace   bool
+	ttl           time.Duration
 }
 
 type testEnv struct {
@@ -57,7 +62,9 @@ type testEnv struct {
 	d      dependencies.ServiceScope
 	mocked dependencies.Mocked
 	app    api.AppConfig
-	ref    k8sapp.WorkloadRef
+	// refreshKeys are the HS256 refresh key secrets by kid.
+	refreshKeys map[string][]byte
+	ref         k8sapp.WorkloadRef
 }
 
 type upstreamRequest struct {
@@ -75,6 +82,12 @@ func newEnv(t *testing.T, opts envOptions) *testEnv {
 	if !opts.noKeys {
 		cfg.AppUserToken.SigningKeys = signingKeysJSON(t, "k1", "k2")
 		cfg.AppUserToken.ActiveKid = "k2"
+	}
+	refreshKeys := map[string][]byte{}
+	if !opts.noRefreshKeys {
+		// "k2" is also the kid of the active signing key, so an app user token is refused for its type, not its kid.
+		cfg.AppUserToken.RefreshKeys, refreshKeys = refreshKeysWithSecrets(t, "r1", "k2")
+		cfg.AppUserToken.RefreshActiveKid = "k2"
 	}
 	if opts.ttl != 0 {
 		cfg.AppUserToken.TTL = opts.ttl
@@ -94,8 +107,10 @@ func newEnv(t *testing.T, opts envOptions) *testEnv {
 		clock:  clock,
 		d:      d,
 		mocked: mocked,
-		app:    api.AppConfig{ID: testAppID, ProjectID: "123"},
+		app:    testApp(),
 		ref:    k8sapp.WorkloadRef{AppID: testAppID},
+
+		refreshKeys: refreshKeys,
 	}
 	if !opts.noWorkspace {
 		e.createSandbox()
@@ -135,6 +150,17 @@ func (e *testEnv) waitForWorkspace(workspaceID string) {
 	}, 5*time.Second, 10*time.Millisecond)
 }
 
+func testApp() api.AppConfig {
+	return api.AppConfig{
+		ID:        testAppID,
+		ProjectID: "123",
+		AuthProviders: provider.Providers{
+			provider.OIDC{Base: provider.Base{Info: provider.Info{ID: testProviderID, Type: provider.TypeOIDC}}, IssuerURL: testIDP + "/"},
+		},
+		AuthRules: []api.Rule{{Type: api.RulePathPrefix, Value: "/", Auth: []provider.ID{testProviderID}}},
+	}
+}
+
 func appObject() *unstructured.Unstructured {
 	return &unstructured.Unstructured{Object: map[string]any{
 		"apiVersion": k8sapp.Group + "/" + k8sapp.Version,
@@ -157,6 +183,7 @@ func sandboxObject(name, workspaceID string) *unstructured.Unstructured {
 		"status": map[string]any{
 			"currentState": string(k8sapp.AppActualStateRunning),
 			"workspace":    map[string]any{"id": workspaceID, "name": "Workspace"},
+			"appsProxy":    map[string]any{"publicUrl": "https://" + name + ".hub.keboola.local"},
 		},
 	}}
 }
@@ -196,6 +223,14 @@ type testHandler struct {
 }
 
 func (e *testEnv) newHandler(idp string) *testHandler {
+	return e.newHandlerForIDP(e.ref, idp)
+}
+
+func (e *testEnv) newHandlerFor(ref k8sapp.WorkloadRef) *testHandler {
+	return e.newHandlerForIDP(ref, testIDP)
+}
+
+func (e *testEnv) newHandlerForIDP(ref k8sapp.WorkloadRef, idp string) *testHandler {
 	got := &upstreamRequest{}
 	upstream := chain.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) error {
 		got.header = req.Header.Clone()
@@ -203,17 +238,22 @@ func (e *testEnv) newHandler(idp string) *testHandler {
 		return nil
 	})
 	m := e.d.AppTokenMinter()
-	var handler chain.Handler = chain.New(upstream).Prepend(e.d.SessionsManager().Middleware(e.app, e.ref), m.Inject(e.app, e.ref))
+	var handler chain.Handler = chain.New(upstream).Prepend(e.d.SessionsManager().Middleware(e.app, ref), m.Inject(e.app, ref))
 	if idp != "" {
-		handler = apptoken.WithIdentity(handler, idp)
+		handler = apptoken.WithIdentity(handler, testProviderID, idp)
 	}
 	return &testHandler{e: e, handler: handler, got: got}
 }
 
 func (h *testHandler) serve(headers map[string]string) upstreamRequest {
 	h.e.t.Helper()
+	return h.serveCtx(h.e.t.Context(), headers)
+}
+
+func (h *testHandler) serveCtx(ctx context.Context, headers map[string]string) upstreamRequest {
+	h.e.t.Helper()
 	*h.got = upstreamRequest{}
-	req := httptest.NewRequestWithContext(h.e.t.Context(), http.MethodGet, "https://app-1.hub.keboola.local/", nil)
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "https://"+testAppHost+"/", nil)
 	req.Header.Set("Accept", "text/html")
 	for k, v := range headers {
 		req.Header.Set(k, v)

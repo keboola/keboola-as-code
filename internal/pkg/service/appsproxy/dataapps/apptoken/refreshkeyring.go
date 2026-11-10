@@ -94,3 +94,12 @@ func (k *RefreshKeyring) Configured() bool {
 func (k *RefreshKeyring) ActiveKid() string {
 	return k.activeKid
 }
+
+func (k *RefreshKeyring) activeKey() []byte {
+	return k.keys[k.activeKid]
+}
+
+func (k *RefreshKeyring) key(kid string) ([]byte, bool) {
+	key, ok := k.keys[kid]
+	return key, ok
+}

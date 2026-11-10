@@ -23,17 +23,28 @@ func refreshSecret(t *testing.T, size int) string {
 
 func refreshKeysJSON(t *testing.T, kids ...string) string {
 	t.Helper()
+	out, _ := refreshKeysWithSecrets(t, kids...)
+	return out
+}
+
+func refreshKeysWithSecrets(t *testing.T, kids ...string) (string, map[string][]byte) {
+	t.Helper()
 	type entry struct {
 		Kid    string `json:"kid"`
 		Secret string `json:"secret"`
 	}
 	entries := make([]entry, 0, len(kids))
+	secrets := make(map[string][]byte, len(kids))
 	for _, kid := range kids {
-		entries = append(entries, entry{Kid: kid, Secret: refreshSecret(t, 32)})
+		secret := refreshSecret(t, 32)
+		raw, err := base64.StdEncoding.DecodeString(secret)
+		require.NoError(t, err)
+		secrets[kid] = raw
+		entries = append(entries, entry{Kid: kid, Secret: secret})
 	}
 	out, err := json.Marshal(entries)
 	require.NoError(t, err)
-	return string(out)
+	return string(out), secrets
 }
 
 func TestNewRefreshKeyring_Disabled(t *testing.T) {
