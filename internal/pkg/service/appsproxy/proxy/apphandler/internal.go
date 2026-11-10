@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/session"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
@@ -15,6 +16,9 @@ func (h *appHandler) serveInternal(w http.ResponseWriter, req *http.Request) err
 	path := req.URL.Path
 	if path == preview.Path {
 		return h.servePreviewEndpoint(w, req)
+	}
+	if path == apptoken.RefreshPath {
+		return h.serveAppUserTokenRefresh(w, req)
 	}
 
 	previewCookie := session.TakeCookie(req)
