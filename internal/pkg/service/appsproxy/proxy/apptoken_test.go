@@ -140,23 +140,35 @@ func (e *previewEnv) withOIDCWorkspace() {
 // the oauth2-proxy session cookie for the host.
 func (e *previewEnv) oidcLogin(provider *mockoidc.MockOIDC, user *mockoidc.MockUser, startURL string) *http.Client {
 	e.t.Helper()
+	client, _ := e.oidcLoginCookies(provider, user, startURL)
+	return client
+}
+
+// oidcLoginCookies is oidcLogin that also returns the cookies the proxy set during the login.
+func (e *previewEnv) oidcLoginCookies(provider *mockoidc.MockOIDC, user *mockoidc.MockUser, startURL string) (*http.Client, []*http.Cookie) {
+	e.t.Helper()
 	jar, err := cookiejar.New(nil)
 	require.NoError(e.t, err)
 	client := *e.client
 	client.Jar = jar
+	cookies := make([]*http.Cookie, 0, 4)
 
 	provider.QueueUser(user)
 	resp := e.send(&client, startURL)
 	require.Equal(e.t, http.StatusFound, resp.StatusCode)
+	cookies = append(cookies, resp.Cookies()...)
 	resp = e.send(&client, resp.Header.Get("Location"))
 	require.Equal(e.t, http.StatusFound, resp.StatusCode)
+	cookies = append(cookies, resp.Cookies()...)
 	resp = e.send(&client, resp.Header.Get("Location"))
 	require.Equal(e.t, http.StatusOK, resp.StatusCode)
+	cookies = append(cookies, resp.Cookies()...)
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(e.t, err)
 	resp = e.send(&client, extractMetaRefreshTag(e.t, body))
 	require.Equal(e.t, http.StatusFound, resp.StatusCode)
-	return &client
+	cookies = append(cookies, resp.Cookies()...)
+	return &client, cookies
 }
 
 // syncClock moves the fake clock to the wall clock. Cookies the proxy sets
@@ -371,4 +383,114 @@ func TestAppUserToken_Rotation(t *testing.T) {
 		kids = append(kids, key.KeyID)
 	}
 	assert.Equal(t, []string{"k1", "k2"}, kids)
+}
+
+// TestAppUserToken_Attrs runs the production chain: the claims of the allowlist that oauth2-proxy took from the ID token at login
+// reach the token as attrs, and nothing else does.
+func TestAppUserToken_Attrs(t *testing.T) {
+	t.Parallel()
+
+	t.Run("allowlisted claims only", func(t *testing.T) {
+		t.Parallel()
+		env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
+		env.withOIDCWorkspace()
+		client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{
+			Subject: "sub-7", Email: "admin@example.com", EmailVerified: new(true), Groups: []string{"admin"},
+			Address: "Main Street 1", Phone: "555-0100", PreferredUsername: "jane.doe",
+		}, oidcOrigin+"/")
+
+		require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/some/path").StatusCode)
+
+		tok := env.verify(env.lastAppRequest().Header.Get(apptoken.HeaderName))
+		assert.Equal(t, map[string]any{"address": []any{"Main Street 1"}, "phone_number": []any{"555-0100"}}, tok.payload["attrs"])
+		assert.Equal(t, "sub-7", tok.payload["sub"])
+		assert.NotContains(t, tok.payload, "preferred_username", "a claim that is not allowlisted does not reach the token")
+		assert.NotContains(t, tok.payload, "address")
+	})
+
+	t.Run("a user without the claims has no attrs", func(t *testing.T) {
+		t.Parallel()
+		env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
+		client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-8", Email: "a@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
+
+		require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/").StatusCode)
+
+		tok := env.verify(env.lastAppRequest().Header.Get(apptoken.HeaderName))
+		assert.NotContains(t, tok.payload, "attrs")
+	})
+
+	t.Run("a client cannot supply attributes", func(t *testing.T) {
+		t.Parallel()
+		env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
+		client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-9", Email: "a@example.com", Groups: []string{"admin"}, Address: "Main Street 1"}, oidcOrigin+"/")
+
+		resp := env.send(client, oidcOrigin+"/", apptoken.HeaderName, "forged", "X-Kbc-User-Attr-Address", "evil", "X-Kbc-App-User-Attrs", `{"address":["evil"]}`)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		upstream := env.lastAppRequest()
+		assert.Empty(t, upstream.Header.Values("X-Kbc-User-Attr-Address"))
+		assert.Empty(t, upstream.Header.Values("X-Kbc-App-User-Attrs"))
+		require.Len(t, upstream.Header.Values(apptoken.HeaderName), 1)
+		tok := env.verify(upstream.Header.Get(apptoken.HeaderName))
+		assert.Equal(t, map[string]any{"address": []any{"Main Street 1"}}, tok.payload["attrs"])
+	})
+
+	t.Run("the session of an app with attributes is as long as configured", func(t *testing.T) {
+		t.Parallel()
+		env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"), func(cfg *config.Config, _ *previewtest.JWKSServer) {
+			cfg.AppUserToken.AttrsSessionTTL = 3 * time.Hour
+		})
+		env.syncClock()
+		_, cookies := env.oidcLoginCookies(env.providers[0], &mockoidc.MockUser{Subject: "sub-10", Email: "a@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
+
+		var sessionCookies int
+		for _, cookie := range cookies {
+			// The session cookie of oauth2-proxy, or a chunk of it. Not the CSRF cookie, which lives 15 minutes and is cleared.
+			if !strings.HasPrefix(cookie.Name, "_oauth2_proxy") || strings.Contains(cookie.Name, "csrf") {
+				continue
+			}
+			sessionCookies++
+			assert.Equal(t, int((3 * time.Hour).Seconds()), cookie.MaxAge, cookie.Name)
+		}
+		assert.Positive(t, sessionCookies, "the session cookie was set")
+	})
+}
+
+// TestAppUserToken_SessionCookieReachesTheApp pins down what the app gets next to the token: apps-proxy does not strip the session
+// cookie of oauth2-proxy, so the largest request an app receives is the token plus the cookie, and the cookie grows with the ID token.
+func TestAppUserToken_SessionCookieReachesTheApp(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
+	client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-11", Email: "a@example.com", Groups: []string{"admin"}, Address: "Main Street 1"}, oidcOrigin+"/")
+
+	require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/").StatusCode)
+
+	upstream := env.lastAppRequest()
+	require.Len(t, upstream.Header.Values("Cookie"), 1)
+	assert.Contains(t, upstream.Header.Get("Cookie"), "_oauth2_proxy=")
+	assert.NotEmpty(t, upstream.Header.Get(apptoken.HeaderName))
+}
+
+// TestAppUserToken_NotInTraces checks that neither the token nor an attribute reaches a span or the logs, also when the client sends a
+// token of its own: the header is redacted next to the cookies and the authorization headers.
+func TestAppUserToken_NotInTraces(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
+	client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-12", Email: "a@example.com", Groups: []string{"admin"}, Address: "Secret Street 1"}, oidcOrigin+"/")
+
+	require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/", apptoken.HeaderName, "client-sent-token").StatusCode)
+
+	token := env.lastAppRequest().Header.Get(apptoken.HeaderName)
+	require.NotEmpty(t, token)
+	for _, span := range env.mocked.TestTelemetry().Spans(t) {
+		for _, attr := range span.Attributes {
+			value := attr.Value.String()
+			assert.NotContains(t, value, token, attr.Key)
+			assert.NotContains(t, value, "client-sent-token", attr.Key)
+			assert.NotContains(t, value, "Secret Street", attr.Key)
+		}
+	}
+	logs := env.mocked.DebugLogger().AllMessages()
+	assert.NotContains(t, logs, token)
+	assert.NotContains(t, logs, "Secret Street")
 }

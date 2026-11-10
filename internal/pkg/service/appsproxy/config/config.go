@@ -83,6 +83,9 @@ type AppUserToken struct {
 	SigningKeys string        `configKey:"signingKeys" configUsage:"JSON list of {\"kid\": \"...\", \"pem\": \"...\"} EC P-256 private keys. All are published in the JWKS. Empty together with activeKid disables the token." sensitive:"true"`
 	ActiveKid   string        `configKey:"activeKid" configUsage:"Kid of the signing key that signs new tokens."`
 	TTL         time.Duration `configKey:"ttl" configUsage:"Lifetime of one token, from 1s to 5m." validate:"required,minDuration=1s,maxDuration=5m"`
+	// AttrsSessionTTL is how long the login session of a data app lasts when its OIDC provider has attribute claims. The attributes
+	// are read from the ID token once, at login, so this is how long a change of an attribute at the identity provider can take.
+	AttrsSessionTTL time.Duration `configKey:"attrsSessionTtl" configUsage:"Lifetime of the login session of an app whose OIDC provider has attributeClaims, from 1m to 168h (7 days, the default of other apps)." validate:"required,minDuration=1m,maxDuration=168h"`
 }
 
 func (c *AppUserToken) Validate() error {
@@ -195,7 +198,8 @@ func New() Config {
 			SendTimeout:       5 * time.Second,
 		},
 		AppUserToken: AppUserToken{
-			TTL: 5 * time.Minute,
+			TTL:             5 * time.Minute,
+			AttrsSessionTTL: 8 * time.Hour,
 		},
 		ConnectionServiceAccountTokenPath: management.DefaultServiceAccountTokenPath,
 	}
