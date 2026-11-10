@@ -64,6 +64,10 @@ func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 	return p, nil
 }
 
+func (v OIDC) RefreshTokensSingleUse() bool {
+	return false
+}
+
 func (v OIDC) IdentityProviderURL() string {
 	return strings.TrimRight(v.IssuerURL, "/")
 }

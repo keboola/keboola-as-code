@@ -1048,6 +1048,17 @@ func TestAppProxyRouter(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, http.StatusOK, response.StatusCode)
 
+				// The provider choice slides with the session, so an active user is not sent back to the selector.
+				providerCookies := 0
+				for _, c := range response.Cookies() {
+					if c.Name == "_oauth2_provider" {
+						providerCookies++
+						assert.Equal(t, "oidc1", c.Value)
+						assert.WithinDuration(t, time.Now().Add(24*time.Hour), c.Expires, time.Minute)
+					}
+				}
+				assert.Equal(t, 1, providerCookies)
+
 				require.Len(t, *appServer.Requests, 1)
 				appRequest := (*appServer.Requests)[0]
 				assert.Equal(t, "/some/data/app/url?foo=bar", appRequest.URL.String())

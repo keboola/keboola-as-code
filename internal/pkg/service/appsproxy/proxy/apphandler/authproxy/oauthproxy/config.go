@@ -1,10 +1,13 @@
 package oauthproxy
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"net/http"
+	"time"
 
+	middlewareapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/middleware"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
 
@@ -14,12 +17,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
+	appupstream "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const (
+	sessionRefresh = time.Hour
+	sessionExpire  = 24 * time.Hour
+)
+
 func proxyConfig(
+	ctx context.Context,
 	cfg config.Config,
+	scopes scopeResolver,
 	selector *selector.Selector,
 	pageWriter *pagewriter.Writer,
 	app api.AppConfig,
@@ -36,11 +47,19 @@ func proxyConfig(
 	if err != nil {
 		return nil, err
 	}
+	if scope := scopes.scope(ctx, proxyProvider); scope != "" {
+		proxyProvider.Scope = scope
+	}
 
 	v := options.NewOptions()
 
 	// Connect to the app upstream
 	v.UpstreamHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if scope := middlewareapi.GetRequestScope(req); scope != nil {
+			if deadline, reason, ok := websocketDeadline(scope.Session, v.Cookie.Refresh, time.Now()); ok {
+				req = req.WithContext(appupstream.WithSessionDeadline(req.Context(), deadline, reason))
+			}
+		}
 		if err := upstream.ServeHTTPOrError(w, req); err != nil {
 			pageWriter.WriteError(w, req, &app, err)
 		}
@@ -63,6 +82,12 @@ func proxyConfig(
 	v.Cookie.Secret = secret
 	v.Cookie.Domains = []string{domain}
 	v.Cookie.SameSite = "strict"
+	v.Cookie.Refresh = sessionRefresh
+	if oAuthProvider.RefreshTokensSingleUse() {
+		// The cookie store has no lock, so parallel requests would refresh with the same token and the losers log the user out.
+		v.Cookie.Refresh = 0
+	}
+	v.Cookie.Expire = sessionExpire
 	v.ProxyPrefix = config.InternalPrefix
 	v.RawRedirectURL = redirectURL
 	v.Providers = options.Providers{proxyProvider}

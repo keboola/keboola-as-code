@@ -38,6 +38,8 @@ type OAuthProvider interface {
 	Provider
 	ProxyProviderOptions() (proxyOptions.Provider, error)
 	IdentityProviderURL() string
+	// RefreshTokensSingleUse reports that the IdP revokes a refresh token on its first use, with no grace period.
+	RefreshTokensSingleUse() bool
 }
 
 func (v ID) String() string {

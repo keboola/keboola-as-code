@@ -182,7 +182,7 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig, workload k8
 	)
 
 	// Create authentication handlers
-	authHandlers := m.authProxyManager.NewHandlers(app, trackedUpstream)
+	authHandlers := m.authProxyManager.NewHandlers(ctx, app, trackedUpstream)
 
 	// Create root handler for application
 	handler, err := newAppHandler(m, app, workload, trackedUpstream, authHandlers)

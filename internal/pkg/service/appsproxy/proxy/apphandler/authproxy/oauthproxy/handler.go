@@ -1,10 +1,12 @@
 package oauthproxy
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7"
 	proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 
@@ -27,7 +29,9 @@ type Handler struct {
 }
 
 func NewHandler(
+	ctx context.Context,
 	logger log.Logger,
+	httpClient client.Client,
 	cfg config.Config,
 	selector *selector.Selector,
 	pw *pagewriter.Writer,
@@ -39,7 +43,7 @@ func NewHandler(
 	handler := &Handler{providerName: auth.Name()}
 
 	// Create proxy configuration
-	handler.proxyConfig, err = proxyConfig(cfg, selector, pw, app, auth, upstream)
+	handler.proxyConfig, err = proxyConfig(ctx, cfg, newScopeResolver(logger, httpClient), selector, pw, app, auth, upstream)
 	if err != nil {
 		handler.initErr = wrapHandlerInitErr(app, auth, err)
 		return handler

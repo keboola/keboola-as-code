@@ -132,6 +132,10 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 
 	// Identify the chosen provider by the cookie
 	if handler := s.handlers[providerID]; handler != nil {
+		// Re-set on app requests so the choice expires no sooner than the sliding login session.
+		if !config.IsInternalPath(req.URL.Path) {
+			s.setCookie(w, req, providerID, handler)
+		}
 		return handler.ServeHTTPOrError(w, req)
 	}
 
