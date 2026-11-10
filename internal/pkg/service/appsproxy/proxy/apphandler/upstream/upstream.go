@@ -359,14 +359,9 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	return chain.
 		New(chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
 			ctx := ctxattr.ContextWith(req.Context(), attribute.Bool(attrWebsocket, true))
-			ctx, cancel := context.WithTimeoutCause(ctx, timeout, deadlineReachedError{reason: closeReasonWsTimeout})
+			deadline, reason := WebsocketDeadline(ctx, time.Now(), timeout)
+			ctx, cancel := context.WithDeadlineCause(ctx, deadline, deadlineReachedError{reason: reason})
 			defer cancel()
-
-			if deadline, ok := sessionDeadlineFrom(ctx); ok {
-				var cancelSession context.CancelFunc
-				ctx, cancelSession = context.WithDeadlineCause(ctx, deadline.at, deadlineReachedError{reason: deadline.reason})
-				defer cancelSession()
-			}
 
 			ctx, c := context.WithCancelCause(ctx)
 			u.cancelWs = c
