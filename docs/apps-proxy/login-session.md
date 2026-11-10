@@ -143,6 +143,9 @@ still holds.
 
 If a refresh failed without ending the session, the next close is 1 hour later.
 
+The app user refresh token on the handshake expires at the same moment, see
+[app-user-token.md](app-user-token.md) §6.
+
 Each close writes one info log line:
 
 ```
