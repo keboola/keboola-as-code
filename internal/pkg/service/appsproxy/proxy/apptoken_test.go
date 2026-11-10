@@ -395,7 +395,7 @@ func TestAppUserToken_Attrs(t *testing.T) {
 		env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
 		env.withOIDCWorkspace()
 		client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{
-			Subject: "sub-7", Email: "admin@keboola.com", EmailVerified: new(true), Groups: []string{"admin"},
+			Subject: "sub-7", Email: "admin@example.com", EmailVerified: new(true), Groups: []string{"admin"},
 			Address: "Main Street 1", Phone: "555-0100", PreferredUsername: "jane.doe",
 		}, oidcOrigin+"/")
 
