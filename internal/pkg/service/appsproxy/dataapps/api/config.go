@@ -108,7 +108,7 @@ func (a *API) GetAppConfig(appID AppID, eTag string) request.APIRequest[*AppConf
 
 	return request.NewAPIRequest(result, req.
 		WithResult(result).
-		WithGet("apps/{appId}/proxy-config").
+		WithGet("v2/apps/{appId}/proxy-config").
 		AndPathParam("appId", appID.String()).
 		AndHeader("If-None-Match", eTag).
 		WithOnSuccess(func(ctx context.Context, response request.HTTPResponse) error {

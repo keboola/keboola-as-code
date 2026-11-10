@@ -38,7 +38,7 @@ func StartDataAppsAPI(t *testing.T, pm server.PortManager) *DataAppsAPI {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /apps/{app}/proxy-config", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("GET /v2/apps/{app}/proxy-config", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		appID := req.PathValue("app")

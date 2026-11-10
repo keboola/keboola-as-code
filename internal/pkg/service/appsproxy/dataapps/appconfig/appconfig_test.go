@@ -223,7 +223,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 				transport.Reset()
 				transport.RegisterResponder(
 					http.MethodGet,
-					fmt.Sprintf("%s/apps/%s/proxy-config", mock.TestConfig().SandboxesAPI.URL, appID),
+					fmt.Sprintf("%s/v2/apps/%s/proxy-config", mock.TestConfig().SandboxesAPI.URL, appID),
 					httpmock.ResponderFromMultipleResponses(attempt.responses, t.Log),
 				)
 
@@ -264,7 +264,7 @@ func TestLoader_LoadConfig_Race(t *testing.T) {
 	transport := mock.MockedHTTPTransport()
 	transport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("%s/apps/%s/proxy-config", mock.TestConfig().SandboxesAPI.URL, appID),
+		fmt.Sprintf("%s/v2/apps/%s/proxy-config", mock.TestConfig().SandboxesAPI.URL, appID),
 		httpmock.ResponderFromResponse(newResponse(t, http.StatusOK, appPayload, "", "")),
 	)
 
@@ -310,7 +310,7 @@ func TestLoader_GetConfig_RefreshSurvivesRequestCancellation(t *testing.T) {
 	transport := mock.MockedHTTPTransport()
 	transport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("%s/apps/%s/proxy-config", mock.TestConfig().SandboxesAPI.URL, appID),
+		fmt.Sprintf("%s/v2/apps/%s/proxy-config", mock.TestConfig().SandboxesAPI.URL, appID),
 		// Fail if the request context is canceled; succeed otherwise. This detects
 		// whether the refresh runs on the (canceled) request context or a detached one.
 		func(req *http.Request) (*http.Response, error) {
