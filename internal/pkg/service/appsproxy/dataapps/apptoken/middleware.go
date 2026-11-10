@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -64,10 +65,57 @@ func (m *Minter) mint(ctx context.Context, app api.AppConfig, workload k8sapp.Wo
 		claims.SID = s.ID
 	}
 
+	claims.Attrs = m.attrsFor(ctx, claims, id)
+	signed, err := m.sign(claims)
+	if err != nil || claims.Attrs == nil || len(signed) <= maxEncodedTokenBytes {
+		return signed, err
+	}
+
+	// The size is worked out before signing, so this is not expected. If it ever happens, the attributes give way: the token is
+	// signed again without them, and they are unknown to the rules of Query Service.
+	m.countDropped(ctx, attrDropBudget, len(claims.Attrs))
+	claims.Attrs = nil
+	return m.sign(claims)
+}
+
+func (m *Minter) sign(claims sdk.Claims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
 	token.Header["kid"] = m.keyring.ActiveKid()
 	token.Header["typ"] = sdk.TokenType
 	return token.SignedString(m.keyring.ActiveKey())
+}
+
+// attrsFor returns the attributes of the user for the token: the claims of the allowlist that have a usable value, as many as fit
+// the cap of attrs and the budget of the token next to the other claims, in the order of the allowlist. It returns nil when there
+// are none, and counts every claim that did not become an attribute.
+func (m *Minter) attrsFor(ctx context.Context, claims sdk.Claims, id identity) map[string][]string {
+	for _, reason := range []attrDrop{attrDropType, attrDropSize} {
+		m.countDropped(ctx, reason, countOf(id.attrDrops, reason))
+	}
+	if len(id.attrs) == 0 {
+		return nil
+	}
+
+	header, errHeader := json.Marshal(map[string]string{"alg": sdk.Algorithm, "kid": m.keyring.ActiveKid(), "typ": sdk.TokenType})
+	payload, errPayload := json.Marshal(claims) // without attrs: the claims have none yet
+	if errHeader != nil || errPayload != nil {
+		m.countDropped(ctx, attrDropBudget, len(id.attrs))
+		return nil
+	}
+
+	attrs, dropped := fitAttrs(id.attrs, len(header), len(payload))
+	m.countDropped(ctx, attrDropBudget, dropped)
+	return attrs
+}
+
+func countOf(drops []attrDrop, reason attrDrop) int {
+	n := 0
+	for _, drop := range drops {
+		if drop == reason {
+			n++
+		}
+	}
+	return n
 }
 
 // workspaceID is read per request: a promotion moves the App to another
