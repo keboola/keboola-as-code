@@ -1,6 +1,8 @@
 package authproxy
 
 import (
+	"context"
+
 	"github.com/jonboulle/clockwork"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -54,7 +56,7 @@ func (m *Manager) NewHandlers(app api.AppConfig, upstream chain.Handler) map[pro
 		providerUpstream := sessions.WithAuthProvider(upstream, auth.ID(), auth.Type())
 		switch p := auth.(type) {
 		case provider.OAuthProvider:
-			authHandlers[auth.ID()] = oauthproxy.NewHandler(m.logger, m.config, m.providerSelector, m.pageWriter, app, p, apptoken.WithIdentity(providerUpstream, p.IdentityProviderURL()))
+			authHandlers[auth.ID()] = oauthproxy.NewHandler(m.logger, m.config, m.providerSelector, m.pageWriter, app, p, apptoken.WithIdentity(providerUpstream, p.IdentityProviderURL(), m.attributeClaims(app, p)))
 		case provider.Basic:
 			authHandlers[auth.ID()] = basicauth.NewHandler(m.logger, m.config, m.clock, m.pageWriter, app, p, providerUpstream)
 		default:
@@ -62,4 +64,21 @@ func (m *Manager) NewHandlers(app api.AppConfig, upstream chain.Handler) map[pro
 		}
 	}
 	return authHandlers
+}
+
+// attributeClaims returns the validated allowlist of attribute claims of the provider, nothing for none. A bad allowlist does not
+// break the app: it is logged each time the handlers of the app are built, never per request, and the app gets no attributes. The
+// log names the app, never a claim.
+func (m *Manager) attributeClaims(app api.AppConfig, p provider.OAuthProvider) []string {
+	withClaims, ok := p.(provider.AttributeClaimsProvider)
+	if !ok {
+		return nil
+	}
+	claims, err := withClaims.ValidAttributeClaims()
+	if err != nil {
+		m.logger.Warnf(context.Background(), `data app "%s" provider "%s": the attributeClaims are not used, the app gets no attributes: %s`, app.ID, p.ID(), err)
+		return nil
+	}
+
+	return claims
 }

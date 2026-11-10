@@ -1,6 +1,7 @@
 package apptoken_test
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -19,6 +20,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jonboulle/clockwork"
 	sdk "github.com/keboola/keboola-sdk-go/v2/pkg/apptoken"
+	middlewareapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/middleware"
+	oauthsessions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -193,9 +196,16 @@ type testHandler struct {
 	e       *testEnv
 	handler chain.Handler
 	got     *upstreamRequest
+	// session, when set, is the login session of oauth2-proxy in the request scope.
+	session *oauthsessions.SessionState
 }
 
 func (e *testEnv) newHandler(idp string) *testHandler {
+	return e.newHandlerWith(idp, nil)
+}
+
+// newHandlerWith builds the chain of a provider that has an allowlist of attribute claims.
+func (e *testEnv) newHandlerWith(idp string, attributeClaims []string) *testHandler {
 	got := &upstreamRequest{}
 	upstream := chain.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) error {
 		got.header = req.Header.Clone()
@@ -205,7 +215,7 @@ func (e *testEnv) newHandler(idp string) *testHandler {
 	m := e.d.AppTokenMinter()
 	var handler chain.Handler = chain.New(upstream).Prepend(e.d.SessionsManager().Middleware(e.app, e.ref), m.Inject(e.app, e.ref))
 	if idp != "" {
-		handler = apptoken.WithIdentity(handler, idp)
+		handler = apptoken.WithIdentity(handler, idp, attributeClaims)
 	}
 	return &testHandler{e: e, handler: handler, got: got}
 }
@@ -217,6 +227,10 @@ func (h *testHandler) serve(headers map[string]string) upstreamRequest {
 	req.Header.Set("Accept", "text/html")
 	for k, v := range headers {
 		req.Header.Set(k, v)
+	}
+	if h.session != nil {
+		scope := &middlewareapi.RequestScope{Session: h.session}
+		req = req.WithContext(context.WithValue(req.Context(), middlewareapi.RequestScopeKey, scope))
 	}
 	require.NoError(h.e.t, h.handler.ServeHTTPOrError(httptest.NewRecorder(), req))
 	return *h.got
