@@ -49,12 +49,12 @@ func TestMapAttrs_Values(t *testing.T) {
 		{name: "32 values", value: thirtyTwo, want: toStrings(thirtyTwo)},
 		{name: "33 values", value: thirtyThree, reason: attrDropSize},
 		{name: "a list of 1000", value: many, reason: attrDropSize},
-		{name: "256 characters", value: strings.Repeat("a", 256), want: []string{strings.Repeat("a", 256)}},
-		{name: "257 characters", value: strings.Repeat("a", 257), reason: attrDropSize},
-		{name: "256 multibyte characters", value: strings.Repeat("ě", 256), want: []string{strings.Repeat("ě", 256)}},
-		{name: "257 multibyte characters", value: strings.Repeat("ě", 257), reason: attrDropSize},
-		{name: "1 KB value", value: strings.Repeat("a", 1024), reason: attrDropSize},
-		{name: "a claim larger than the whole attrs", value: []any{strings.Repeat("a", 256), strings.Repeat("b", 256), strings.Repeat("c", 256), strings.Repeat("d", 256), "e"}, reason: attrDropSize},
+		{name: "1024 characters", value: strings.Repeat("a", sdk.MaxAttrValueChars), want: []string{strings.Repeat("a", sdk.MaxAttrValueChars)}},
+		{name: "1025 characters", value: strings.Repeat("a", sdk.MaxAttrValueChars+1), reason: attrDropSize},
+		{name: "1024 multibyte characters", value: strings.Repeat("ě", sdk.MaxAttrValueChars), want: []string{strings.Repeat("ě", sdk.MaxAttrValueChars)}},
+		{name: "1025 multibyte characters", value: strings.Repeat("ě", sdk.MaxAttrValueChars+1), reason: attrDropSize},
+		{name: "4 KB value", value: strings.Repeat("a", 4096), reason: attrDropSize},
+		{name: "a claim larger than the whole attrs", value: []any{strings.Repeat("a", 1000), strings.Repeat("b", 1000), strings.Repeat("c", 1000), strings.Repeat("d", 1000), strings.Repeat("e", 1000)}, reason: attrDropSize},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -138,11 +138,11 @@ func TestFitAttrs(t *testing.T) {
 		assert.Zero(t, dropped)
 	})
 
-	t.Run("the whole attrs claim is capped at 1 KB, a later claim that fits is still taken", func(t *testing.T) {
+	t.Run("the whole attrs claim is capped at 4 KB, a later claim that fits is still taken", func(t *testing.T) {
 		t.Parallel()
-		big1 := attrCandidate{name: "big1", values: []string{strings.Repeat("a", 256), strings.Repeat("b", 256)}}
-		big2 := attrCandidate{name: "big2", values: []string{strings.Repeat("c", 256), strings.Repeat("d", 256)}}
-		big3 := attrCandidate{name: "big3", values: []string{strings.Repeat("e", 256)}}
+		big1 := attrCandidate{name: "big1", values: []string{strings.Repeat("a", 1024), strings.Repeat("b", 1024)}}
+		big2 := attrCandidate{name: "big2", values: []string{strings.Repeat("c", 1024), strings.Repeat("d", 1024)}}
+		big3 := attrCandidate{name: "big3", values: []string{strings.Repeat("e", 1024)}}
 		small := attrCandidate{name: "small", values: []string{"s"}}
 
 		attrs, dropped := fitAttrs([]attrCandidate{big1, big2, big3, small}, headerLen, payloadLen)
