@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
@@ -62,6 +63,9 @@ func proxyConfig(
 	v.Logging.RequestEnabled = false // we have log middleware for all requests
 	v.Cookie.Secret = secret
 	v.Cookie.Domains = []string{domain}
+	if ttl := attrsSessionTTL(cfg, oAuthProvider); ttl > 0 {
+		v.Cookie.Expire = ttl
+	}
 	v.Cookie.SameSite = "strict"
 	v.ProxyPrefix = config.InternalPrefix
 	v.RawRedirectURL = redirectURL
@@ -89,6 +93,22 @@ func proxyConfig(
 	}
 
 	return v, nil
+}
+
+// attrsSessionTTL is the lifetime of the login session of an app whose provider has attribute claims, 0 for any other app, which
+// keeps the default of oauth2-proxy. The attributes are read from the ID token once, at login, and they do not change in the
+// session, so a shorter session is how long a change at the identity provider can take to reach the rules. A bad allowlist is
+// not used (the app gets no attributes), so it does not shorten the session either.
+func attrsSessionTTL(cfg config.Config, oAuthProvider provider.OAuthProvider) time.Duration {
+	withClaims, ok := oAuthProvider.(provider.AttributeClaimsProvider)
+	if !ok {
+		return 0
+	}
+	if claims, err := withClaims.ValidAttributeClaims(); err != nil || len(claims) == 0 {
+		return 0
+	}
+
+	return cfg.AppUserToken.AttrsSessionTTL
 }
 
 // generateCookieSecret creates a unique cookie secret for each app and provider.
