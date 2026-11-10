@@ -66,19 +66,7 @@ func (m *Minter) mint(ctx context.Context, app api.AppConfig, workload k8sapp.Wo
 	}
 
 	claims.Attrs = m.attrsFor(ctx, claims, id)
-	signed, err := m.sign(claims)
-	if err != nil || claims.Attrs == nil || len(signed) <= maxEncodedTokenBytes {
-		return signed, err
-	}
 
-	// The size is worked out before signing, so this is not expected. If it ever happens, the attributes give way: the token is
-	// signed again without them, and they are unknown to the rules of Query Service.
-	m.countDropped(ctx, attrDropBudget, len(claims.Attrs))
-	claims.Attrs = nil
-	return m.sign(claims)
-}
-
-func (m *Minter) sign(claims sdk.Claims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
 	token.Header["kid"] = m.keyring.ActiveKid()
 	token.Header["typ"] = sdk.TokenType

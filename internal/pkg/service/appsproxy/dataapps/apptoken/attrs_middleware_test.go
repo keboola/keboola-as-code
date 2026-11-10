@@ -211,6 +211,35 @@ func TestAttrs_BudgetOfTheToken(t *testing.T) {
 	})
 }
 
+// TestAttrs_TokenNeverOverTheBudget sweeps the size of the attributes across the 8000 byte budget next to the largest groups: the size of
+// the token is worked out before it is signed, so no token may be over the budget, and the attributes that fit are kept.
+func TestAttrs_TokenNeverOverTheBudget(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, envOptions{})
+	groups := strings.TrimSuffix(strings.Repeat("0123456789abcdef,", 4096/17), ",")
+
+	kept, dropped := 0, 0
+	for length := 1; length <= 256; length += 5 {
+		h := e.newHandlerWith(testIDP, []string{"a"})
+		value := strings.Repeat("v", length)
+		h.session = attrsSession(map[string]any{"a": []any{value + "1", value + "2", value + "3", value + "4"}})
+		headers := identityHeaders()
+		headers["X-Kbc-User-Roles"] = groups
+		headers["X-Kbc-User-Email"] = strings.Repeat("e", 240) + "@example.com" // the longest email the verifier accepts
+
+		token := h.serve(headers).header.Get(apptoken.HeaderName)
+
+		require.LessOrEqual(t, len(token), 8000, "values of %d characters", length)
+		if _, found := e.parse(token).payload["attrs"]; found {
+			kept++
+		} else {
+			dropped++
+		}
+	}
+	assert.Positive(t, kept, "small attributes fit next to the groups")
+	assert.Positive(t, dropped, "large attributes do not")
+}
+
 func TestAttrs_ForgedTokenIsReplaced(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
