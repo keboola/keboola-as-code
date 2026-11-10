@@ -102,7 +102,7 @@ wrongly mean "known, no groups", so it is never sent.
   A value is usable when it is a non-empty string, or a list of non-empty
   strings (duplicates removed, order kept). A number, bool, null, object, a
   mixed list, `""` and `[]` are not converted, the claim is dropped. A claim
-  with more than 32 values or a value longer than 256 characters (Unicode code
+  with more than 32 values or a value longer than 1024 characters (Unicode code
   points) is dropped too. `attrs` is omitted when no claim is left.
 
 - **`kbc.workspace_id`** comes from `status.workspace.id` of the Sandbox CR that
@@ -166,8 +166,8 @@ verifiers refetch the JWKS on an unknown `kid`.
 One counter: `keboola.go.appsproxy.apptoken.attrs.dropped`, claims of an
 `attributeClaims` allowlist that did not become an attribute. Its only label is
 `reason`: `type` (the value cannot be an attribute), `size` (too many values, a
-value over 256 characters, or a claim larger than the whole `attrs`) or
-`budget` (valid, but it does not fit the 1 KB cap of `attrs` or the size of the
+value over 1024 characters, or a claim larger than the whole `attrs`) or
+`budget` (valid, but it does not fit the 4 KB cap of `attrs` or the size of the
 token). A claim the IdP did not send is not counted. The label is never a claim
 name, because the name is chosen by the app owner and the value by the user.
 
@@ -191,13 +191,23 @@ with the app and provider ids and a fixed reason, never a claim.
 - **Header size.** With a large group list the token reaches about 6 KB. With
   `attrs` the token is kept at most 8000 bytes (encoded), because many app
   servers refuse a header line over 8190 bytes and the verifiers parse at most
-  8 KiB: `attrs` is at most 1 KB of JSON and gives way before the groups, see
+  8 KiB: `attrs` is at most 4 KB of JSON and gives way before the groups, see
   §10. App servers with a small header limit (Node.js: 16 KiB for all headers)
   may need a higher limit. The app gets the session cookie of oauth2-proxy next
-  to the token: apps-proxy does not strip it (a request of a user with a small ID
-  token measured about 3.1 KB of headers in all, the cookie 2.3 KB, and the
-  cookie grows with the ID token and with the claims of the allowlist; it is
-  split into chunks above 4000 bytes). Count it when you size the header limit.
+  to the token, in one `Cookie` header line: apps-proxy does not strip it. It
+  holds the ID token, the access and refresh tokens and the allowlisted claims,
+  encrypted and base64 encoded, and is split into chunks of 4000 bytes only for
+  the browser. Measured on 2026-11-10 with the oauth2-proxy encoder and
+  incompressible filler (an upper bound, real JSON compresses a little): a small
+  ID token gives a cookie of about 2.9 KB (one chunk); an Entra-like ID token of
+  2.5 KB with a 1.5 KB access token and 1 KB of `attrs` about 7.4 KB (two
+  chunks); a 3.5 KB ID token with 4 KB of `attrs` and 4 KB of groups about
+  19 KB (five chunks). So the largest request an app receives is the token (up
+  to 8000 bytes) plus that cookie line plus the other headers, which exceeds the
+  8190 byte line limit and the 16 KiB total of Node.js in the large cases. An app
+  of such a tenant needs a higher header limit, or apps-proxy has to remove the
+  `_oauth2_proxy*` cookies before the upstream (the app never uses them; this is
+  not done yet and changes the request of every app).
 - **Rollout.** `email_verified` is read from the oauth2-proxy session cookie,
   which apps-proxy does not refresh. OIDC users who logged in before the release
   get tokens without `email` until they log in again or the cookie expires
@@ -245,11 +255,12 @@ How it works:
 A bad allowlist does not break the app. It is logged once and the app gets no
 `attrs`; its session is not shortened either.
 
-Size. `attrs` is at most 1024 bytes of JSON, and the whole encoded token at most
+Size. `attrs` is at most 4096 bytes of JSON, and the whole encoded token at most
 8000 bytes. The claims are tried in the order of the allowlist, and one that does
 not fit is dropped and counted (`budget`) while the next ones are still tried, so
 the result does not depend on anything but the allowlist. With the largest group
-list (4096 bytes) the token has no room left and `attrs` is empty. The groups are
+list (4096 bytes) only about 0.7 KB of `attrs` fit under the budget, so larger
+attributes are dropped claim by claim (`budget`). The groups are
 never cut for `attrs`. The limits come from `keboola-sdk-go` (`pkg/apptoken`),
 which Query Service uses to verify the same token.
 

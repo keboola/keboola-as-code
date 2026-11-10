@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
+	sdk "github.com/keboola/keboola-sdk-go/v2/pkg/apptoken"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -125,7 +127,7 @@ func TestAttrs_UnusableValuesAreCountedByReason(t *testing.T) {
 	h.session = attrsSession(map[string]any{
 		"number": float64(7),
 		"empty":  "",
-		"long":   strings.Repeat("a", 300),
+		"long":   strings.Repeat("a", sdk.MaxAttrValueChars+1),
 		"good":   "ok",
 		"many":   many,
 	})
@@ -146,7 +148,7 @@ func TestAttrs_BudgetOfTheToken(t *testing.T) {
 	attrs := func(n int) map[string]any {
 		out := map[string]any{}
 		for i := range n {
-			// About 1 KB of JSON: it fits the cap of attrs, but not next to the largest groups.
+			// About 1 KB of JSON each (1020 B): four fit the cap of attrs (4 KB), none fits next to the largest groups.
 			out["claim"+strings.Repeat("c", i)] = []any{strings.Repeat("w", 248), strings.Repeat("x", 248), strings.Repeat("y", 248), strings.Repeat("z", 248)}
 		}
 		return out
@@ -179,21 +181,21 @@ func TestAttrs_BudgetOfTheToken(t *testing.T) {
 		assert.Equal(t, int64(3), e.dropped()["budget"], "every claim was dropped for the budget")
 	})
 
-	t.Run("no groups: the whole attrs cap of 1 KB is used, the token is far below the budget", func(t *testing.T) {
+	t.Run("no groups: the whole attrs cap of 4 KB is used, the token is below the budget", func(t *testing.T) {
 		t.Parallel()
 		e := newEnv(t, envOptions{})
-		h := e.newHandlerWith(testIDP, names(3))
-		h.session = attrsSession(attrs(3))
+		h := e.newHandlerWith(testIDP, names(5))
+		h.session = attrsSession(attrs(5))
 
 		got := h.serve(without(identityHeaders(), "X-Kbc-User-Roles"))
 
 		token := got.header.Get(apptoken.HeaderName)
-		assert.Less(t, len(token), 4000)
+		assert.Less(t, len(token), 8000)
 		raw, err := json.Marshal(e.attrsOf(got))
 		require.NoError(t, err)
-		assert.LessOrEqual(t, len(raw), 1024)
-		assert.Len(t, e.attrsOf(got), 1, "one claim of about 1 KB fills the cap")
-		assert.Equal(t, int64(2), e.dropped()["budget"])
+		assert.LessOrEqual(t, len(raw), sdk.MaxAttrBytes)
+		assert.Len(t, e.attrsOf(got), 4, "four claims of about 1 KB (4080 B) fill the cap, the fifth does not fit it")
+		assert.Equal(t, int64(1), e.dropped()["budget"])
 	})
 
 	t.Run("deterministic: the same session gives the same attrs every time", func(t *testing.T) {
@@ -219,7 +221,7 @@ func TestAttrs_TokenNeverOverTheBudget(t *testing.T) {
 	groups := strings.TrimSuffix(strings.Repeat("0123456789abcdef,", 4096/17), ",")
 
 	kept, dropped := 0, 0
-	for length := 1; length <= 256; length += 5 {
+	for length := 1; length <= sdk.MaxAttrValueChars; length += 19 {
 		h := e.newHandlerWith(testIDP, []string{"a"})
 		value := strings.Repeat("v", length)
 		h.session = attrsSession(map[string]any{"a": []any{value + "1", value + "2", value + "3", value + "4"}})
@@ -258,7 +260,7 @@ func TestAttrs_NoValueInTheLogs(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
 	h := e.newHandlerWith(testIDP, []string{"department", "number", "long"})
-	h.session = attrsSession(map[string]any{"department": "very-secret-value", "number": float64(7), "long": strings.Repeat("s", 300)})
+	h.session = attrsSession(map[string]any{"department": "very-secret-value", "number": float64(7), "long": strings.Repeat("s", sdk.MaxAttrValueChars+1)})
 
 	h.serve(identityHeaders())
 
