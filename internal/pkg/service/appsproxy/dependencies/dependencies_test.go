@@ -49,3 +49,26 @@ func TestNewServiceScope_InvalidAppUserTokenKeysStopStartup(t *testing.T) {
 	assert.Contains(t, err.Error(), `signingKeys[0] (kid "k1"): not an EC P-256 key`)
 	assert.NotContains(t, err.Error(), "BEGIN")
 }
+
+func TestNewServiceScope_InvalidAppUserTokenRefreshKeysStopStartup(t *testing.T) {
+	t.Parallel()
+
+	cfg := config.New()
+	cfg.AppUserToken.RefreshKeys = `[{"kid":"r1","secret":"c2hvcnQtc2VjcmV0"}]`
+	cfg.AppUserToken.RefreshActiveKid = "r1"
+	cfg.SandboxesAPI.URL = "http://sandboxes-service-api.default.svc.cluster.local"
+	cfg.K8s.AppsNamespace = "keboola"
+
+	fakeClient := k8sfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
+		k8sapp.AppGVR():       "AppList",
+		k8sapp.SandboxGVR():   "SandboxList",
+		k8sapp.SecretGVR():    "SecretList",
+		k8sapp.IdleTimerGVR(): "IdleTimerList",
+	})
+	mock := &mocked{Mocked: dependencies.NewMocked(t, t.Context()), config: cfg, fakeK8sClient: fakeClient}
+
+	_, err := newServiceScope(t.Context(), mock, cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `refreshKeys[0] (kid "r1"): secret is not standard base64 of at least 32 bytes`)
+	assert.NotContains(t, err.Error(), "c2hvcnQtc2VjcmV0")
+}

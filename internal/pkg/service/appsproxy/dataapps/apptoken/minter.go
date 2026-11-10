@@ -2,6 +2,7 @@ package apptoken
 
 import (
 	"context"
+	"net/url"
 	"time"
 
 	"github.com/jonboulle/clockwork"
@@ -12,12 +13,15 @@ import (
 )
 
 type Minter struct {
-	keyring *Keyring
-	issuer  string
-	ttl     time.Duration
-	clock   clockwork.Clock
-	logger  log.Logger
-	apps    appStates
+	keyring   *Keyring
+	refresh   *RefreshKeyring
+	issuer    string
+	publicURL *url.URL
+	ttl       time.Duration
+	wsTimeout time.Duration
+	clock     clockwork.Clock
+	logger    log.Logger
+	apps      appStates
 }
 
 type appStates interface {
@@ -37,13 +41,20 @@ func NewMinter(d dependencies) (*Minter, error) {
 	if err != nil {
 		return nil, err
 	}
+	refresh, err := NewRefreshKeyring(cfg.AppUserToken.RefreshKeys, cfg.AppUserToken.RefreshActiveKid)
+	if err != nil {
+		return nil, err
+	}
 	return &Minter{
-		keyring: keyring,
-		issuer:  cfg.API.PublicURL.String(),
-		ttl:     cfg.AppUserToken.TTL,
-		clock:   d.Clock(),
-		logger:  d.Logger().WithComponent("app-user-token"),
-		apps:    d.AppStateWatcher(),
+		keyring:   keyring,
+		refresh:   refresh,
+		issuer:    cfg.API.PublicURL.String(),
+		publicURL: cfg.API.PublicURL,
+		ttl:       cfg.AppUserToken.TTL,
+		wsTimeout: cfg.Upstream.WsTimeout,
+		clock:     d.Clock(),
+		logger:    d.Logger().WithComponent("app-user-token"),
+		apps:      d.AppStateWatcher(),
 	}, nil
 }
 

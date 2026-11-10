@@ -60,7 +60,7 @@ func (m *Manager) NewHandlers(ctx context.Context, app api.AppConfig, upstream c
 		providerUpstream := sessions.WithAuthProvider(upstream, auth.ID(), auth.Type())
 		switch p := auth.(type) {
 		case provider.OAuthProvider:
-			authHandlers[auth.ID()] = oauthproxy.NewHandler(ctx, m.logger, m.httpClient, m.config, m.providerSelector, m.pageWriter, app, p, apptoken.WithIdentity(providerUpstream, p.IdentityProviderURL()))
+			authHandlers[auth.ID()] = oauthproxy.NewHandler(ctx, m.logger, m.httpClient, m.config, m.providerSelector, m.pageWriter, app, p, apptoken.WithIdentity(providerUpstream, p.ID(), p.IdentityProviderURL()))
 		case provider.Basic:
 			authHandlers[auth.ID()] = basicauth.NewHandler(m.logger, m.config, m.clock, m.pageWriter, app, p, providerUpstream)
 		default:
