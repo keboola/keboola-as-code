@@ -22,9 +22,12 @@ the WebSocket handshake included, whichever auth handler served it.
 
 ## How the cookies are matched
 
-The names are matched exactly. For the split session cookie, the match is
-`_oauth2_proxy_` followed by digits only. A cookie of the app with a similar
-name, for example `_streamlit_xsrf` or `_oauth2_proxy_app`, reaches the app
+`_oauth2_proxy` and every name that starts with `_oauth2_proxy_` are removed.
+This covers every cookie oauth2-proxy sets: the session, its split parts, the
+CSRF cookie, and the per-request CSRF cookies `_oauth2_proxy_<state>_csrf`.
+An app cookie whose name starts with `_oauth2_proxy_` therefore does not reach
+the app. The other names are matched exactly. An app cookie with a similar
+name, for example `_streamlit_xsrf` or `_oauth2_proxyapp`, reaches the app
 unchanged.
 
 A `Cookie` header line that contains no apps-proxy cookie is forwarded byte
