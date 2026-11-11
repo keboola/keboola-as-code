@@ -22,6 +22,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// CookieName is the oauth2-proxy session cookie. oauth2-proxy also sets "<CookieName>_csrf",
+// and splits a large session into "<CookieName>_0", "<CookieName>_1", ...
+const CookieName = "_oauth2_proxy"
+
 const (
 	sessionRefresh = time.Hour
 	sessionExpire  = 24 * time.Hour
@@ -79,6 +83,7 @@ func proxyConfig(
 	redirectURL := cfg.API.PublicURL.Scheme + "://" + domain + config.InternalPrefix + "/callback"
 	v.Logging.RequestIDHeader = config.RequestIDHeader
 	v.Logging.RequestEnabled = false // we have log middleware for all requests
+	v.Cookie.Name = CookieName
 	v.Cookie.Secret = secret
 	v.Cookie.Domains = []string{domain}
 	v.Cookie.SameSite = "strict"

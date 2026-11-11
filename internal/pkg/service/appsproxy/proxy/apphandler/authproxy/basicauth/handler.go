@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	basicAuthCookie    = "proxyBasicAuth"
+	CookieName         = "proxyBasicAuth"
 	callbackQueryParam = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
 	formPagePath       = config.InternalPrefix + "/form"
 	csrfTokenKey       = "_csrf"
@@ -89,7 +89,7 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		return errors.New("internal server error")
 	}
 
-	requestCookie, _ := req.Cookie(basicAuthCookie)
+	requestCookie, _ := req.Cookie(CookieName)
 	// Pass request to upstream when cookie have been set, the login form is always handled here
 	if requestCookie != nil && req.URL.Path != selector.SignOutPath && req.URL.Path != formPagePath && h.isCookieAuthorized(requestCookie) == nil {
 		h.setCookie(w, host, h.CookieExpiration(), requestCookie)
@@ -221,7 +221,7 @@ func (h *Handler) signOut(host string, cookie *http.Cookie, w http.ResponseWrite
 
 func (h *Handler) setCookie(w http.ResponseWriter, host string, expires time.Duration, cookie *http.Cookie) {
 	v := &http.Cookie{
-		Name:     basicAuthCookie,
+		Name:     CookieName,
 		Value:    cookie.Value,
 		Path:     "/",
 		Domain:   host,
