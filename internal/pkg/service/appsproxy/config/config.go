@@ -31,6 +31,7 @@ type Config struct {
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
 	Sessions         Sessions          `configKey:"sessions" configUsage:"End-user session tracking for data apps."`
 	AppUserToken     AppUserToken      `configKey:"appUserToken" configUsage:"Signed X-Kbc-App-User-Token passed to data apps."`
+	SessionStore     SessionStore      `configKey:"sessionStore" configUsage:"Store of OAuth/OIDC login sessions."`
 
 	ConnectionServiceAccountTokenPath string `configKey:"connectionServiceAccountTokenPath" configUsage:"Path to the projected Kubernetes ServiceAccount token used to authenticate to the Keboola APIs. Read per request, so a rotated token needs no restart." validate:"required"`
 }
@@ -188,6 +189,7 @@ func New() Config {
 		AppUserToken: AppUserToken{
 			TTL: 5 * time.Minute,
 		},
+		SessionStore:                      newSessionStore(),
 		ConnectionServiceAccountTokenPath: management.DefaultServiceAccountTokenPath,
 	}
 }
