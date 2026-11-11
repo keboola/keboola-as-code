@@ -21,6 +21,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/management"
+	"github.com/redis/go-redis/v9"
 	"k8s.io/client-go/dynamic"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 
@@ -38,6 +39,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/sessionstore"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -87,6 +89,7 @@ type ServiceScope interface {
 	SessionsManager() *sessions.Manager
 	IdleTimerRecorder() *idletimer.Recorder
 	AppTokenMinter() *apptoken.Minter
+	SessionStoreClient() *redis.Client
 }
 
 type Mocked interface {
@@ -111,6 +114,7 @@ type serviceScope struct {
 	sessionsManager   *sessions.Manager
 	idleTimerRecorder *idletimer.Recorder
 	appTokenMinter    *apptoken.Minter
+	sessionStore      *redis.Client
 }
 
 type parentScopes interface {
@@ -121,6 +125,10 @@ type parentScopes interface {
 // dynamic client (used in tests to inject a fake client without real kubeconfig).
 type k8sClientProvider interface {
 	K8sDynamicClient() dynamic.Interface
+}
+
+type sessionStoreClientProvider interface {
+	SessionStoreClient() *redis.Client
 }
 
 type parentScopesImpl struct {
@@ -224,6 +232,20 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 		return nil, err
 	}
 
+	if provider, ok := parentScp.(sessionStoreClientProvider); ok && provider.SessionStoreClient() != nil {
+		d.sessionStore = provider.SessionStoreClient()
+	} else {
+		d.sessionStore = sessionstore.NewClient(cfg.SessionStore)
+	}
+	if d.sessionStore != nil {
+		// Registered before the HTTP server, so it runs after the server has drained (LIFO).
+		d.Process().OnShutdown(func(ctx context.Context) {
+			if err := d.sessionStore.Close(); err != nil {
+				d.Logger().Warnf(ctx, "cannot close session store client: %s", err)
+			}
+		})
+	}
+
 	d.wakeupManager = wakeup.NewManager(d)
 	d.idleTimerRecorder = idletimer.NewRecorder(d, k8sClient)
 	idletimer.NewSuspender(d, k8sClient, d.idleTimerRecorder)
@@ -285,4 +307,8 @@ func (v *serviceScope) AppTokenMinter() *apptoken.Minter {
 
 func (v *serviceScope) SessionsManager() *sessions.Manager {
 	return v.sessionsManager
+}
+
+func (v *serviceScope) SessionStoreClient() *redis.Client {
+	return v.sessionStore
 }
