@@ -22,8 +22,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// CookieName is the oauth2-proxy session cookie. oauth2-proxy also sets "<CookieName>_csrf",
-// and splits a large session into "<CookieName>_0", "<CookieName>_1", ...
+// CookieName is the oauth2-proxy session cookie. Every other cookie oauth2-proxy sets starts with "<CookieName>_":
+// the CSRF cookies and the parts of a split session.
 const CookieName = "_oauth2_proxy"
 
 const (

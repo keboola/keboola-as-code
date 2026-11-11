@@ -24,25 +24,11 @@ func stripProxyCookies(next chain.Handler) chain.Handler {
 func isProxyCookie(name string) bool {
 	switch name {
 	case oauthproxy.CookieName,
-		oauthproxy.CookieName + "_csrf",
 		selector.ProviderCookie,
 		basicauth.CookieName,
 		sessions.CookieName,
 		session.CookieName:
 		return true
 	}
-	return isSplitSessionCookie(name)
-}
-
-func isSplitSessionCookie(name string) bool {
-	index, ok := strings.CutPrefix(name, oauthproxy.CookieName+"_")
-	if !ok || index == "" {
-		return false
-	}
-	for _, r := range index {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
+	return strings.HasPrefix(name, oauthproxy.CookieName+"_")
 }

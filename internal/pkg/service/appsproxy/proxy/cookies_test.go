@@ -29,7 +29,7 @@ import (
 const publicHost = "public-123.hub.keboola.local"
 
 // appCookies are set by the app itself and must reach it unchanged.
-const appCookies = "_streamlit_xsrf=2|abc|def|123; _oauth2_proxy_app=kept; session=a=b=c"
+const appCookies = "_streamlit_xsrf=2|abc|def|123; _oauth2_proxyapp=kept; session=a=b=c"
 
 // setCookieRecorder records the name of every cookie apps-proxy sets.
 type setCookieRecorder struct {
@@ -168,7 +168,7 @@ func TestUpstreamCookies(t *testing.T) {
 	splitClient := env.oidcLogin(env.providers[0], largeSessionUser(), oidcOrigin+"/")
 	require.Equal(t, http.StatusOK, env.send(splitClient, oidcOrigin+"/", "Accept", "text/html").StatusCode)
 	signedOut := withAllCookies(t, splitClient, oidcHost, nil)
-	env.send(signedOut, oidcOrigin+selector.SignOutPath)
+	require.Equal(t, http.StatusFound, env.send(signedOut, oidcOrigin+selector.SignOutPath).StatusCode)
 
 	basicClient := env.basicAuthLogin()
 	require.Equal(t, http.StatusOK, env.send(basicClient, authOrigin+"/", "Accept", "text/html").StatusCode)
