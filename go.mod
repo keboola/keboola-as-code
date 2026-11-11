@@ -4,7 +4,7 @@ go 1.27.3
 
 replace github.com/google/go-jsonnet => github.com/keboola/go-jsonnet v0.22.1-0.20260427095904-b7e5c35127af
 
-replace github.com/oauth2-proxy/oauth2-proxy/v7 => github.com/keboola/go-oauth2-proxy/v7 v7.15.3-0.20261109102220-2a90ca7d41fa
+replace github.com/oauth2-proxy/oauth2-proxy/v7 => github.com/keboola/go-oauth2-proxy/v7 v7.15.3-0.20261111183539-d3a9107d1628
 
 replace github.com/oauth2-proxy/mockoidc => github.com/keboola/go-mockoidc v0.0.0-20240405064136-5229d2b53db6
 
@@ -19,6 +19,7 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/Shopify/toxiproxy/v2 v2.12.0
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
+	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/armon/go-radix v1.0.1-0.20221118154546-54df44f2176c
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/ccoveille/go-safecast/v2 v2.0.1
@@ -69,6 +70,7 @@ require (
 	github.com/pquerna/cachecontrol v0.2.0
 	github.com/prometheus/client_golang v1.25.0
 	github.com/qiangxue/fasthttp-routing v0.0.0-20160225050629-6ccdc2a18d87
+	github.com/redis/go-redis/v9 v9.23.0
 	github.com/relvacode/iso8601 v1.8.3
 	github.com/rs/zerolog v1.35.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
@@ -321,7 +323,6 @@ require (
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.23.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
-	github.com/redis/go-redis/v9 v9.23.0 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/xid v1.6.0 // indirect
@@ -350,6 +351,7 @@ require (
 	github.com/xiang90/probing v0.0.0-20221125231312-a49e3df8f510 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	github.com/yuin/goldmark v1.8.2 // indirect
+	github.com/yuin/gopher-lua v1.1.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zclconf/go-cty v1.16.2 // indirect
 	github.com/zclconf/go-cty-yaml v1.1.0 // indirect
