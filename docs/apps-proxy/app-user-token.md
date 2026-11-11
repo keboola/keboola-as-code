@@ -126,7 +126,7 @@ WebSocket handshake that gets a token, apps-proxy also sets:
 | `X-Kbc-App-Public-Url` | Public origin of the app, e.g. `https://my-app-123.hub.<stack>`, no trailing `/`. For a Sandbox, its own host. |
 
 A plain HTTP request gets neither header: it gets a new token every time.
-When refresh keys are not configured, or the Sandbox has no public host, the
+When the app user token is off, or the Sandbox has no public host, the
 handshake gets neither header.
 
 The app calls:
@@ -152,7 +152,8 @@ The answer is `200`, `Content-Type: application/json`, `Cache-Control: no-store`
   refresh call is neither [session](sessions.md) nor
   [idle-suspend](idle-suspend.md) activity.
 - No CORS headers. A browser never holds the refresh token.
-- Other methods: `405`. Refresh keys not configured: `404`.
+- App user token off (no signing keys): `404` for every method. Otherwise other
+  methods get `405`.
 
 The new token is minted like the injected one: the identity from the
 handshake, a new `jti`, `iat` and `exp`, and `kbc.workspace_id` read again. Its
@@ -162,22 +163,40 @@ Every failed check answers `401` with `WWW-Authenticate: Bearer` and no detail
 in the body:
 
 - no `Authorization: Bearer` value;
-- the signature does not match a configured refresh key, or `alg` is not HS256;
+- the `kid` is not a configured signing key, the signature does not match the
+  refresh key derived from it, or `alg` is not HS256;
 - `typ`, `iss` or `aud` is wrong, or the token has expired;
+- the app user token is off;
 - `kbc.app_id`, `kbc.project_id` or `kbc.sandbox` differ from the app and the
   workload the host routes to (the App and each of its Sandboxes are separate);
 - the auth provider in the token is no longer configured for the app, no longer
-  guards any path that requires login, or has another issuer now;
-- the signing keys of the app user token are not configured.
+  guards any path that requires login, or has another issuer now.
 
 After a `401` the app gets no new token until the websocket reconnects.
 
 ### Refresh token
 
-A JWT signed with a separate HS256 key. The refresh keys are never in the JWKS,
-and only apps-proxy verifies refresh tokens.
+A JWT signed with HS256. Only apps-proxy verifies refresh tokens, and the
+refresh keys are never in the JWKS.
 
-JOSE header: `alg=HS256`, `kid=<active refresh kid>`, `typ=kbc-app-user-refresh+jwt`.
+Each signing key (§7) yields one refresh key, so there is no separate refresh
+key config:
+
+```
+refresh key = HKDF-SHA256(
+  secret = the EC P-256 private scalar, 32 bytes big-endian,
+  salt   = none,
+  info   = "kbc app-user-token refresh v1",
+  length = 32 bytes)
+```
+
+The public JWKS key does not reveal the private scalar, so the refresh key
+cannot be computed from it. A change of the derivation invalidates every refresh
+token already issued.
+
+JOSE header: `alg=HS256`, `kid=<active signing kid>`, `typ=kbc-app-user-refresh+jwt`.
+apps-proxy verifies a refresh token with the key derived from the signing key of
+its `kid`.
 
 | Claim | Value |
 |---|---|
@@ -201,28 +220,17 @@ The refresh token has no `kbc.workspace_id`; each refresh reads it again.
 | `appUserToken.signingKeys` | `APPS_PROXY_APP_USER_TOKEN_SIGNING_KEYS` | *(empty — feature off)* |
 | `appUserToken.activeKid` | `APPS_PROXY_APP_USER_TOKEN_ACTIVE_KID` | *(empty — feature off)* |
 | `appUserToken.ttl` | `APPS_PROXY_APP_USER_TOKEN_TTL` | `5m` (maximum `5m`) |
-| `appUserToken.refreshKeys` | `APPS_PROXY_APP_USER_TOKEN_REFRESH_KEYS` | *(empty — refresh off)* |
-| `appUserToken.refreshActiveKid` | `APPS_PROXY_APP_USER_TOKEN_REFRESH_ACTIVE_KID` | *(empty — refresh off)* |
 
 `signingKeys` is a JSON list of `{"kid": "...", "pem": "..."}` entries, each an
 EC P-256 private key (`openssl ecparam -name prime256v1 -genkey -noout`). It is a
-secret. `activeKid` names the key that signs. Both empty turn the feature off:
-no tokens, empty JWKS. Only one of them set is a startup error.
+secret. `activeKid` names the key that signs. The signing keys are also the
+source of the refresh keys (§6). Both empty turn the feature off: no tokens, no
+refresh tokens, empty JWKS. Only one of them set is a startup error.
 
 Startup refuses: invalid JSON, an entry without `kid` or `pem`, a `kid` that does
 not match `^[A-Za-z0-9._-]{1,64}$`, a duplicate `kid`, a key that is not EC
 P-256, an active kid that is not in the list, and a TTL above 5 minutes. Error
 messages never contain a PEM.
-
-`refreshKeys` is a JSON list of `{"kid": "...", "secret": "..."}` entries. It
-is a secret. `secret` is standard base64 (with padding) of at least 32 random
-bytes (`openssl rand -base64 32`). `refreshActiveKid` names the key that signs
-new refresh tokens. Both empty turn the refresh off: no refresh header, the
-endpoint answers `404`. Only one of them set is a startup error. Startup also
-refuses invalid JSON, an unknown field, a `kid` that does not match the pattern
-above, a duplicate `kid`, a secret that is not standard base64 of at least 32
-bytes, and an active kid that is not in the list. Error messages never contain a
-secret.
 
 In kbc-stacks the keys are `appUserToken.signingKeyPems` (secrets) and
 `appUserToken.activeSigningKid` (values), the same model as the sandboxes-service
@@ -235,22 +243,13 @@ The full runbook is in `kbc-stacks/apps/apps-proxy/README.md`. In short:
 1. Add the new key; keep the active kid at the old one. Check that the JWKS lists both kids.
 2. Activate the new key at least 10 minutes after step 1 is rolled out (JWKS
    max-age 300 s plus the verifiers' refetch).
-3. Remove the old key at least 6 minutes after step 2 is rolled out (token TTL
-   5 minutes plus clock skew).
+3. Remove the old key at least 6 hours 10 minutes after step 2 is rolled out.
+   The old key also verifies the refresh tokens issued before step 2, and they
+   live up to `wsTimeout` (6 hours) plus clock skew.
 
 Never remove the active key. For a leaked key, do all three steps in one change;
-verifiers refetch the JWKS on an unknown `kid`.
-
-Refresh keys rotate on their own, and only apps-proxy reads them, so there is no
-JWKS wait:
-
-1. Add the new key and make it the active refresh kid in the same change.
-2. Remove the old key once the longest refresh token life has passed after step
-   1 is rolled out: `wsTimeout` (6 hours) plus clock skew.
-
-A refresh token signed by a removed key gets `401` until its websocket
-reconnects. Rotating the refresh keys does not touch the app user token keys,
-and the other way round.
+verifiers refetch the JWKS on an unknown `kid`. The refresh tokens made from the
+removed key then get `401` until their websocket reconnects.
 
 ## 9. Monitoring
 
