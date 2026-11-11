@@ -100,7 +100,8 @@ func TestInjectRefresh_WebsocketHandshake(t *testing.T) {
 	iat, _ := tok.payload["iat"].(float64)
 	exp, _ := tok.payload["exp"].(float64)
 	assert.InDelta(t, float64(e.clock.Now().Unix()), iat, 0)
-	assert.InDelta(t, wsTimeout.Seconds(), exp-iat, 0)
+	// No session deadline in the context: the one-hour cap of a websocket with an app user token applies.
+	assert.InDelta(t, time.Hour.Seconds(), exp-iat, 0)
 
 	delete(tok.payload, "jti")
 	delete(tok.payload, "iat")
@@ -127,6 +128,28 @@ func TestInjectRefresh_ExpiresAtSessionDeadline(t *testing.T) {
 
 	tok := e.parseRefresh(got.header.Get(apptoken.RefreshHeaderName))
 	assert.InDelta(t, float64(deadline.Unix()), tok.payload["exp"], 0)
+}
+
+func TestInject_CapsTheWebsocketDeadline(t *testing.T) {
+	t.Parallel()
+	opened := time.Date(2026, 11, 11, 12, 0, 0, 0, time.UTC)
+
+	t.Run("with an app user token", func(t *testing.T) {
+		t.Parallel()
+		got := newEnv(t, envOptions{}).serve(testIDP, wsHeaders(identityHeaders()))
+		require.NotEmpty(t, got.header.Get(apptoken.HeaderName))
+		at, reason := upstream.WebsocketDeadline(got.ctx, opened, wsTimeout)
+		assert.Equal(t, opened.Add(time.Hour), at)
+		assert.Equal(t, upstream.CloseReasonAppUserTokenCap, reason)
+	})
+
+	t.Run("without an app user token", func(t *testing.T) {
+		t.Parallel()
+		got := newEnv(t, envOptions{noKeys: true}).serve(testIDP, wsHeaders(identityHeaders()))
+		require.Empty(t, got.header.Get(apptoken.HeaderName))
+		at, _ := upstream.WebsocketDeadline(got.ctx, opened, wsTimeout)
+		assert.Equal(t, opened.Add(wsTimeout), at)
+	})
 }
 
 func TestInjectRefresh_Sandbox(t *testing.T) {

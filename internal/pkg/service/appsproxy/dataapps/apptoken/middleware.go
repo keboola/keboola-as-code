@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 )
 
 // HeaderName is the header in which the token is passed on. The header, the claims and the rest of the contract with the services
@@ -43,6 +44,7 @@ func (m *Minter) Inject(app api.AppConfig, workload k8sapp.WorkloadRef) chain.Mi
 				return next.ServeHTTPOrError(rw, req)
 			}
 			req.Header.Set(HeaderName, token)
+			req = req.WithContext(upstream.WithAppUserToken(ctx))
 			if sessions.IsWebsocketUpgrade(req) {
 				m.injectRefresh(req, app, workload, id, sid)
 			}

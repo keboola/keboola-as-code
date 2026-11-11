@@ -69,6 +69,7 @@ type testEnv struct {
 type upstreamRequest struct {
 	header  http.Header
 	session *sessions.Session
+	ctx     context.Context
 }
 
 func newEnv(t *testing.T, opts envOptions) *testEnv {
@@ -233,6 +234,7 @@ func (e *testEnv) newHandlerForIDP(ref k8sapp.WorkloadRef, idp string) *testHand
 	upstream := chain.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) error {
 		got.header = req.Header.Clone()
 		got.session, _ = sessions.FromContext(req.Context())
+		got.ctx = req.Context()
 		return nil
 	})
 	m := e.d.AppTokenMinter()
