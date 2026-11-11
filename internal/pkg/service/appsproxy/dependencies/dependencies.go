@@ -44,6 +44,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
@@ -90,6 +91,8 @@ type ServiceScope interface {
 	IdleTimerRecorder() *idletimer.Recorder
 	AppTokenMinter() *apptoken.Minter
 	SessionStoreClient() *redis.Client
+	SessionStoreChecker() *sessionstore.Checker
+	SessionStoreMetrics() *sessionstore.Metrics
 }
 
 type Mocked interface {
@@ -115,6 +118,8 @@ type serviceScope struct {
 	idleTimerRecorder *idletimer.Recorder
 	appTokenMinter    *apptoken.Minter
 	sessionStore      *redis.Client
+	storeChecker      *sessionstore.Checker
+	storeMetrics      *sessionstore.Metrics
 }
 
 type parentScopes interface {
@@ -238,12 +243,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 		d.sessionStore = sessionstore.NewClient(cfg.SessionStore)
 	}
 	if d.sessionStore != nil {
-		// Registered before the HTTP server, so it runs after the server has drained (LIFO).
-		d.Process().OnShutdown(func(ctx context.Context) {
-			if err := d.sessionStore.Close(); err != nil {
-				d.Logger().Warnf(ctx, "cannot close session store client: %s", err)
-			}
-		})
+		d.startSessionStore(ctx)
 	}
 
 	d.wakeupManager = wakeup.NewManager(d)
@@ -311,4 +311,27 @@ func (v *serviceScope) SessionsManager() *sessions.Manager {
 
 func (v *serviceScope) SessionStoreClient() *redis.Client {
 	return v.sessionStore
+}
+
+func (v *serviceScope) startSessionStore(ctx context.Context) {
+	// Registered before the HTTP server, so it runs after the server has drained (LIFO).
+	v.Process().OnShutdown(func(ctx context.Context) {
+		if err := v.sessionStore.Close(); err != nil {
+			v.Logger().Warnf(ctx, "cannot close session store client: %s", err)
+		}
+	})
+
+	v.storeChecker = sessionstore.NewChecker(v.Logger().WithComponent("sessionstore"), v.Clock(), v.sessionStore)
+	v.storeMetrics = sessionstore.NewMetrics(v.Telemetry().Meter(), v.sessionStore, v.storeChecker)
+	checkerCtx, cancel := context.WithCancelCause(context.WithoutCancel(ctx))
+	v.Process().OnShutdown(func(context.Context) { cancel(errors.New("shutdown")) })
+	v.storeChecker.Start(checkerCtx)
+}
+
+func (v *serviceScope) SessionStoreChecker() *sessionstore.Checker {
+	return v.storeChecker
+}
+
+func (v *serviceScope) SessionStoreMetrics() *sessionstore.Metrics {
+	return v.storeMetrics
 }

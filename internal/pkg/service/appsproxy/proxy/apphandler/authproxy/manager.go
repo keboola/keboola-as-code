@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/sessionstore"
 )
 
 type Manager struct {
@@ -27,7 +28,7 @@ type Manager struct {
 	clock            clockwork.Clock
 	httpClient       client.Client
 	providerSelector *selector.Selector
-	sessionStore     *redis.Client
+	sessionStore     oauthproxy.SessionStore
 }
 
 type dependencies interface {
@@ -37,6 +38,7 @@ type dependencies interface {
 	Config() config.Config
 	PageWriter() *pagewriter.Writer
 	SessionStoreClient() *redis.Client
+	SessionStoreMetrics() *sessionstore.Metrics
 }
 
 func NewManager(d dependencies) *Manager {
@@ -47,7 +49,7 @@ func NewManager(d dependencies) *Manager {
 		clock:            d.Clock(),
 		httpClient:       d.HTTPClient(),
 		providerSelector: selector.New(d),
-		sessionStore:     d.SessionStoreClient(),
+		sessionStore:     oauthproxy.SessionStore{Client: d.SessionStoreClient(), Metrics: d.SessionStoreMetrics()},
 	}
 }
 
