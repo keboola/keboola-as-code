@@ -49,11 +49,10 @@ const (
 )
 
 type envOptions struct {
-	noKeys        bool
-	noRefreshKeys bool
-	sessions      bool
-	noWorkspace   bool
-	ttl           time.Duration
+	noKeys      bool
+	sessions    bool
+	noWorkspace bool
+	ttl         time.Duration
 }
 
 type testEnv struct {
@@ -62,7 +61,7 @@ type testEnv struct {
 	d      dependencies.ServiceScope
 	mocked dependencies.Mocked
 	app    api.AppConfig
-	// refreshKeys are the HS256 refresh key secrets by kid.
+	// refreshKeys are the HS256 keys derived from the signing keys, by kid.
 	refreshKeys map[string][]byte
 	ref         k8sapp.WorkloadRef
 }
@@ -79,15 +78,10 @@ func newEnv(t *testing.T, opts envOptions) *testEnv {
 	publicURL, err := url.Parse(testIssuer)
 	require.NoError(t, err)
 	cfg.API.PublicURL = publicURL
-	if !opts.noKeys {
-		cfg.AppUserToken.SigningKeys = signingKeysJSON(t, "k1", "k2")
-		cfg.AppUserToken.ActiveKid = "k2"
-	}
 	refreshKeys := map[string][]byte{}
-	if !opts.noRefreshKeys {
-		// "k2" is also the kid of the active signing key, so an app user token is refused for its type, not its kid.
-		cfg.AppUserToken.RefreshKeys, refreshKeys = refreshKeysWithSecrets(t, "r1", "k2")
-		cfg.AppUserToken.RefreshActiveKid = "k2"
+	if !opts.noKeys {
+		cfg.AppUserToken.SigningKeys, refreshKeys = signingKeysJSON(t, "k1", "k2")
+		cfg.AppUserToken.ActiveKid = "k2"
 	}
 	if opts.ttl != 0 {
 		cfg.AppUserToken.TTL = opts.ttl
@@ -188,23 +182,27 @@ func sandboxObject(name, workspaceID string) *unstructured.Unstructured {
 	}}
 }
 
-func signingKeysJSON(t *testing.T, kids ...string) string {
+// signingKeysJSON returns the signing keys config and the refresh keys derived from the keys, by kid.
+func signingKeysJSON(t *testing.T, kids ...string) (string, map[string][]byte) {
 	t.Helper()
 	type entry struct {
 		Kid string `json:"kid"`
 		Pem string `json:"pem"`
 	}
 	entries := make([]entry, 0, len(kids))
+	refreshKeys := make(map[string][]byte, len(kids))
 	for _, kid := range kids {
 		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		require.NoError(t, err)
 		der, err := x509.MarshalECPrivateKey(key)
 		require.NoError(t, err)
 		entries = append(entries, entry{Kid: kid, Pem: string(pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: der}))})
+		refreshKeys[kid], err = apptoken.DeriveRefreshKey(key)
+		require.NoError(t, err)
 	}
 	out, err := json.Marshal(entries)
 	require.NoError(t, err)
-	return string(out)
+	return string(out), refreshKeys
 }
 
 // serve runs one request through the chain the app handler builds.

@@ -13,7 +13,6 @@ import (
 
 type Minter struct {
 	keyring   *Keyring
-	refresh   *RefreshKeyring
 	issuer    string
 	publicURL *url.URL
 	ttl       time.Duration
@@ -40,13 +39,8 @@ func NewMinter(d dependencies) (*Minter, error) {
 	if err != nil {
 		return nil, err
 	}
-	refresh, err := NewRefreshKeyring(cfg.AppUserToken.RefreshKeys, cfg.AppUserToken.RefreshActiveKid)
-	if err != nil {
-		return nil, err
-	}
 	return &Minter{
 		keyring:   keyring,
-		refresh:   refresh,
 		issuer:    cfg.API.PublicURL.String(),
 		publicURL: cfg.API.PublicURL,
 		ttl:       cfg.AppUserToken.TTL,

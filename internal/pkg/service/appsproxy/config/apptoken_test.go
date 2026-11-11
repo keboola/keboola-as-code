@@ -1,7 +1,6 @@
 package config_test
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
@@ -90,53 +89,4 @@ func TestAppUserTokenConfig_TTLBounds(t *testing.T) {
 		cfg.AppUserToken.TTL = ttl
 		assert.NoError(t, configmap.ValidateAndNormalize(&cfg), ttl)
 	}
-}
-
-// TestAppUserTokenRefreshConfig_Envs pins the ENV names down: they are the contract with the kbc-stacks chart.
-func TestAppUserTokenRefreshConfig_Envs(t *testing.T) {
-	t.Parallel()
-
-	cfg := requiredConfig(t)
-
-	envs := env.Empty()
-	envs.Set("APPS_PROXY_APP_USER_TOKEN_REFRESH_KEYS", `[{"kid":"r1","secret":"x"}]`)
-	envs.Set("APPS_PROXY_APP_USER_TOKEN_REFRESH_ACTIVE_KID", "r1")
-	require.NoError(t, configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
-		EnvNaming: env.NewNamingConvention("APPS_PROXY_"),
-		Envs:      envs,
-	}, &cfg))
-
-	assert.JSONEq(t, `[{"kid":"r1","secret":"x"}]`, cfg.AppUserToken.RefreshKeys)
-	assert.Equal(t, "r1", cfg.AppUserToken.RefreshActiveKid)
-}
-
-func TestAppUserTokenRefreshConfig_Validate(t *testing.T) {
-	t.Parallel()
-
-	for name, mutate := range map[string]func(c *config.AppUserToken){
-		"keys without active kid": func(c *config.AppUserToken) { c.RefreshKeys = "[]" },
-		"active kid without keys": func(c *config.AppUserToken) { c.RefreshActiveKid = "r1" },
-	} {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			cfg := requiredConfig(t)
-			mutate(&cfg.AppUserToken)
-			err := configmap.ValidateAndNormalize(&cfg)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), "appUserToken.refreshKeys and appUserToken.refreshActiveKid must be set together")
-		})
-	}
-
-	cfg := requiredConfig(t)
-	cfg.AppUserToken.RefreshKeys = `[{"kid":"r1","secret":"x"}]`
-	cfg.AppUserToken.RefreshActiveKid = "r1"
-	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
-}
-
-func TestAppUserTokenRefreshConfig_KeysSensitive(t *testing.T) {
-	t.Parallel()
-
-	field, ok := reflect.TypeFor[config.AppUserToken]().FieldByName("RefreshKeys")
-	require.True(t, ok)
-	assert.Equal(t, "true", field.Tag.Get("sensitive"))
 }

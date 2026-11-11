@@ -64,15 +64,15 @@ func (c refreshClaims) identity() identity {
 	return identity{providerID: c.Kbc.AuthProviderID, subject: c.Subject, idp: c.IDP, email: c.Email, groups: c.Groups}
 }
 
-// RefreshEnabled reports whether refresh keys are configured. Without them no refresh token is issued.
+// RefreshEnabled reports whether refresh tokens are issued. Their keys are derived from the signing keys.
 func (m *Minter) RefreshEnabled() bool {
-	return m.refresh.Configured()
+	return m.keyring.Configured()
 }
 
 // injectRefresh adds the refresh token and the public URL the app sends it to. The refresh token expires when
 // apps-proxy closes the websocket, so the reconnect authenticates again.
 func (m *Minter) injectRefresh(req *http.Request, app api.AppConfig, workload k8sapp.WorkloadRef, id identity, sid string) {
-	if !m.refresh.Configured() {
+	if !m.keyring.Configured() {
 		return
 	}
 	ctx := req.Context()
@@ -118,15 +118,15 @@ func (m *Minter) signRefresh(app api.AppConfig, workload k8sapp.WorkloadRef, id 
 		ExpiresAt: jwt.NewNumericDate(exp),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token.Header["kid"] = m.refresh.ActiveKid()
+	token.Header["kid"] = m.keyring.ActiveKid()
 	token.Header["typ"] = refreshTokenType
-	return token.SignedString(m.refresh.activeKey())
+	return token.SignedString(m.keyring.activeRefreshKey())
 }
 
 // Refresh mints a new app user token from a refresh token issued for this workload.
 // The error never contains the token.
 func (m *Minter) Refresh(ctx context.Context, app api.AppConfig, workload k8sapp.WorkloadRef, refreshToken string) (string, time.Time, error) {
-	if !m.refresh.Configured() || !m.keyring.Configured() {
+	if !m.keyring.Configured() {
 		return "", time.Time{}, errors.New("app user token is disabled")
 	}
 	claims, err := m.verifyRefresh(refreshToken)
@@ -149,7 +149,7 @@ func (m *Minter) verifyRefresh(refreshToken string) (refreshClaims, error) {
 			return nil, errors.New("wrong typ")
 		}
 		kid, _ := tok.Header["kid"].(string)
-		key, ok := m.refresh.key(kid)
+		key, ok := m.keyring.refreshKey(kid)
 		if !ok {
 			return nil, errors.New("unknown kid")
 		}

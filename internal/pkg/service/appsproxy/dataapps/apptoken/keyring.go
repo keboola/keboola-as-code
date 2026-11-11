@@ -20,9 +20,10 @@ const (
 )
 
 type Keyring struct {
-	activeKid string
-	activeKey *ecdsa.PrivateKey
-	jwks      []byte
+	activeKid   string
+	activeKey   *ecdsa.PrivateKey
+	jwks        []byte
+	refreshKeys map[string][]byte
 }
 
 type signingKey struct {
@@ -32,7 +33,7 @@ type signingKey struct {
 
 func NewKeyring(keysJSON, activeKid string) (*Keyring, error) {
 	if keysJSON == "" && activeKid == "" {
-		return newKeyring("", nil, nil)
+		return newKeyring("", nil, nil, nil)
 	}
 
 	entries, err := parseSigningKeys(keysJSON)
@@ -48,13 +49,19 @@ func NewKeyring(keysJSON, activeKid string) (*Keyring, error) {
 
 	kids := make([]string, 0, len(entries))
 	keys := make(map[string]*ecdsa.PrivateKey, len(entries))
+	refreshKeys := make(map[string][]byte, len(entries))
 	for i, entry := range entries {
 		key, err := parseSigningKey(i, entry, keys)
 		if err != nil {
 			return nil, err
 		}
+		refreshKey, err := DeriveRefreshKey(key)
+		if err != nil {
+			return nil, err
+		}
 		kids = append(kids, entry.Kid)
 		keys[entry.Kid] = key
+		refreshKeys[entry.Kid] = refreshKey
 	}
 
 	active, ok := keys[activeKid]
@@ -66,10 +73,10 @@ func NewKeyring(keysJSON, activeKid string) (*Keyring, error) {
 	for _, kid := range kids {
 		public = append(public, jose.JSONWebKey{Key: &keys[kid].PublicKey, KeyID: kid, Algorithm: sdk.Algorithm, Use: sdk.KeyUse})
 	}
-	return newKeyring(activeKid, active, public)
+	return newKeyring(activeKid, active, public, refreshKeys)
 }
 
-func newKeyring(activeKid string, activeKey *ecdsa.PrivateKey, public []jose.JSONWebKey) (*Keyring, error) {
+func newKeyring(activeKid string, activeKey *ecdsa.PrivateKey, public []jose.JSONWebKey, refreshKeys map[string][]byte) (*Keyring, error) {
 	if public == nil {
 		public = []jose.JSONWebKey{}
 	}
@@ -77,7 +84,7 @@ func newKeyring(activeKid string, activeKey *ecdsa.PrivateKey, public []jose.JSO
 	if err != nil {
 		return nil, errors.PrefixError(err, "app user token: cannot encode JWKS")
 	}
-	return &Keyring{activeKid: activeKid, activeKey: activeKey, jwks: jwks}, nil
+	return &Keyring{activeKid: activeKid, activeKey: activeKey, jwks: jwks, refreshKeys: refreshKeys}, nil
 }
 
 func parseSigningKeys(keysJSON string) ([]signingKey, error) {
@@ -162,4 +169,13 @@ func (k *Keyring) ActiveKey() *ecdsa.PrivateKey {
 
 func (k *Keyring) JWKS() []byte {
 	return k.jwks
+}
+
+func (k *Keyring) activeRefreshKey() []byte {
+	return k.refreshKeys[k.activeKid]
+}
+
+func (k *Keyring) refreshKey(kid string) ([]byte, bool) {
+	key, ok := k.refreshKeys[kid]
+	return key, ok
 }
