@@ -126,6 +126,9 @@ WebSocket handshake that gets a token, apps-proxy also sets:
 | `X-Kbc-App-Public-Url` | Public origin of the app, e.g. `https://my-app-123.hub.<stack>`, no trailing `/`. For a Sandbox, its own host. |
 
 A plain HTTP request gets neither header: it gets a new token every time.
+Server-sent events and other streamed responses are plain HTTP requests too:
+apps-proxy ends every non-WebSocket response at `upstream.httpTimeout` (4 min
+30 s), before its token expires, so they need no refresh.
 When the app user token is off, or the Sandbox has no public host, the
 handshake gets neither header.
 
@@ -209,7 +212,7 @@ its `kid`.
 | `jti` | Random, 32 hex characters |
 | `sid` | Session id, only when session tracking is on |
 | `iat` | Time of the handshake |
-| `exp` | When apps-proxy closes this websocket, see [login-session.md](login-session.md): the earliest of the next session refresh, the cookie expiry and `wsTimeout` (6 hours) after the handshake |
+| `exp` | When apps-proxy closes this websocket, see [login-session.md](login-session.md): the earliest of the next session refresh, the cookie expiry and 1 hour after the handshake |
 
 The refresh token has no `kbc.workspace_id`; each refresh reads it again.
 
@@ -243,9 +246,9 @@ The full runbook is in `kbc-stacks/apps/apps-proxy/README.md`. In short:
 1. Add the new key; keep the active kid at the old one. Check that the JWKS lists both kids.
 2. Activate the new key at least 10 minutes after step 1 is rolled out (JWKS
    max-age 300 s plus the verifiers' refetch).
-3. Remove the old key at least 6 hours 10 minutes after step 2 is rolled out.
+3. Remove the old key at least 1 hour 10 minutes after step 2 is rolled out.
    The old key also verifies the refresh tokens issued before step 2, and they
-   live up to `wsTimeout` (6 hours) plus clock skew.
+   live up to 1 hour plus clock skew.
 
 Never remove the active key. For a leaked key, do all three steps in one change;
 verifiers refetch the JWKS on an unknown `kid`. The refresh tokens made from the
@@ -273,9 +276,8 @@ The token, the refresh token, the claims and the keys are never logged. The
 - **WebSockets.** The token on the handshake expires after 5 minutes. The app
   must call the refresh endpoint (§6) for a new one.
 - **Refresh outlives the tab.** After the user closes the tab, the app can still
-  refresh until the refresh token expires: about 1 hour for a session with a
-  refresh token, up to 6 hours without one. Sign-out does not revoke a refresh
-  token already issued.
+  refresh until the refresh token expires, at most 1 hour after the handshake.
+  Sign-out does not revoke a refresh token already issued.
 - **Refresh identity.** A refreshed token carries the identity of the
   handshake. Group or email changes at the IdP reach it only after the next
   handshake.
@@ -289,4 +291,7 @@ The token, the refresh token, the claims and the keys are never logged. The
   can be up to about 1 hour old for a session with a refresh token, and up to
   24 hours old for one without, see [login-session.md](login-session.md).
 - **Replay.** App code can reuse a token of a user who visited the app until it
-  expires, and so can anyone the app sends it to.
+  expires, and so can anyone the app sends it to. With the refresh token this
+  is at most 1 hour after the user's last WebSocket handshake. apps-proxy also
+  passes its own login cookies on to the app, so app code can replay the login
+  itself for up to 24 hours ([AJDA-3825](https://linear.app/keboola/issue/AJDA-3825)).
