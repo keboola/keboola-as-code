@@ -10,6 +10,7 @@ import (
 	middlewareapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/middleware"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
@@ -25,11 +26,14 @@ import (
 const (
 	sessionRefresh = time.Hour
 	sessionExpire  = 24 * time.Hour
+
+	redisSessionCookieName = "_oauth2_proxy_ticket"
 )
 
 func proxyConfig(
 	ctx context.Context,
 	cfg config.Config,
+	sessionStore *redis.Client,
 	scopes scopeResolver,
 	selector *selector.Selector,
 	pageWriter *pagewriter.Writer,
@@ -93,6 +97,10 @@ func proxyConfig(
 	v.Providers = options.Providers{proxyProvider}
 	v.SkipProviderButton = true
 	v.Session = options.SessionOptions{Type: options.CookieSessionStoreType}
+	if sessionStore != nil {
+		v.Cookie.Name = redisSessionCookieName
+		v.Session = options.SessionOptions{Type: options.RedisSessionStoreType, Redis: options.RedisStoreOptions{Client: sessionStore}}
+	}
 	v.EmailDomains = []string{"*"}
 	v.InjectRequestHeaders = []options.Header{
 		// New, and the only one session tracking records.
