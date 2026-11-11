@@ -234,6 +234,16 @@ func TestRedisStore_SignOutDeletesKey(t *testing.T) {
 	assert.Empty(t, env.ticketKeys())
 }
 
+func countTrue(values []bool) int {
+	n := 0
+	for _, v := range values {
+		if v {
+			n++
+		}
+	}
+	return n
+}
+
 func TestRedisStore_ParallelRefreshRefreshesOnce(t *testing.T) {
 	t.Parallel()
 	env := startRedisEnv(t)
@@ -243,15 +253,16 @@ func TestRedisStore_ParallelRefreshRefreshesOnce(t *testing.T) {
 		s.CreatedAt = ago(2 * time.Hour)
 	})
 
+	const n = 10
+	start := make(chan struct{})
 	var wg sync.WaitGroup
-	statuses := make([]int, 2)
-	refreshed := make([]bool, 2)
-	for i := range statuses {
+	statuses := make([]int, n)
+	refreshed := make([]bool, n)
+	for i := range n {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, oidcOrigin+"/some/path", nil)
+		require.NoError(t, err)
 		wg.Go(func() {
-			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, oidcOrigin+"/some/path", nil)
-			if err != nil {
-				return
-			}
+			<-start
 			resp, err := client.Do(req)
 			if err != nil {
 				return
@@ -261,9 +272,12 @@ func TestRedisStore_ParallelRefreshRefreshesOnce(t *testing.T) {
 			_ = resp.Body.Close()
 		})
 	}
+	close(start)
 	wg.Wait()
-	assert.Equal(t, []int{http.StatusOK, http.StatusOK}, statuses)
-	assert.ElementsMatch(t, []bool{true, false}, refreshed, "exactly one request refreshes and saves the session")
+	for i := range n {
+		assert.Equal(t, http.StatusOK, statuses[i], "request %d", i)
+	}
+	assert.Equal(t, 1, countTrue(refreshed), "exactly one request refreshes and saves the session")
 	assert.WithinDuration(t, time.Now(), *env.loadOIDCSession(client).CreatedAt, time.Minute)
 	assert.Equal(t, 24*time.Hour, env.redis.TTL(env.ticketKeys()[0]))
 }
