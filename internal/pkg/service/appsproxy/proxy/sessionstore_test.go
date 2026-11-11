@@ -17,6 +17,7 @@ import (
 	sessionsapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
@@ -25,7 +26,8 @@ import (
 var oidcCookieURL = &url.URL{Scheme: "https", Host: oidcHost, Path: "/"} //nolint:gochecknoglobals // test fixture
 
 func manyGroupsUser(n int) *mockoidc.MockUser {
-	groups := []string{"admin"}
+	groups := make([]string, 0, n)
+	groups = append(groups, "admin")
 	for i := range n - 1 {
 		groups = append(groups, fmt.Sprintf("group-with-a-long-name-%03d", i))
 	}
@@ -83,8 +85,9 @@ func TestRedisStore_LoginRoundTrip(t *testing.T) {
 	env := startRedisEnv(t)
 	client := env.oidcLogin(env.providers[0], manyGroupsUser(200), oidcOrigin+"/")
 
-	var names []string
-	for _, c := range client.Jar.Cookies(oidcCookieURL) {
+	jarCookies := client.Jar.Cookies(oidcCookieURL)
+	names := make([]string, 0, len(jarCookies))
+	for _, c := range jarCookies {
 		names = append(names, c.Name)
 	}
 	assert.NotContains(t, names, oauthCookieName)
@@ -161,8 +164,7 @@ func TestRedisStore_IgnoresCookieStoreCookie(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
 }
 
-// Not parallel: it compares the goroutine count of the whole process.
-func TestRedisStore_RebuildDoesNotLeak(t *testing.T) {
+func TestRedisStore_RebuildDoesNotLeak(t *testing.T) { //nolint:paralleltest // compares the goroutine count of the whole process
 	env := startRedisEnv(t)
 	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 
@@ -264,4 +266,36 @@ func TestRedisStore_ParallelRefreshRefreshesOnce(t *testing.T) {
 	assert.ElementsMatch(t, []bool{true, false}, refreshed, "exactly one request refreshes and saves the session")
 	assert.WithinDuration(t, time.Now(), *env.loadOIDCSession(client).CreatedAt, time.Minute)
 	assert.Equal(t, 24*time.Hour, env.redis.TTL(env.ticketKeys()[0]))
+}
+
+func (e *previewEnv) counterValue(name string) int64 {
+	e.t.Helper()
+	for _, m := range e.mocked.TestTelemetry().Metrics(e.t) {
+		if m.Name != name {
+			continue
+		}
+		if sum, ok := m.Data.(metricdata.Sum[int64]); ok && len(sum.DataPoints) > 0 {
+			return sum.DataPoints[0].Value
+		}
+	}
+	return 0
+}
+
+func TestHealthCheck_IgnoresSessionStore(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+	oidcClient := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+	basicClient := env.basicAuthLogin()
+	require.Eventually(t, env.d.SessionStoreChecker().Up, 5*time.Second, 10*time.Millisecond)
+
+	env.redis.Close()
+
+	resp := env.send(env.clientWithCookies(nil), "https://hub.keboola.local/health-check")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, env.send(basicClient, authOrigin+"/").StatusCode)
+	assert.Equal(t, http.StatusOK, env.send(env.clientWithCookies(nil), publicOrigin+"/").StatusCode)
+
+	resp = env.send(oidcClient, oidcOrigin+"/some/path")
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.Equal(t, int64(1), env.counterValue("keboola.go.appsproxy.sessionstore.unavailable"))
 }

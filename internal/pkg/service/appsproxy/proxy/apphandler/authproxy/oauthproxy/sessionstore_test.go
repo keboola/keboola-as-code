@@ -36,7 +36,7 @@ func TestProxyConfig_RedisStoreUnavailableWritesErrorPage(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
-	v, err := proxyConfig(t.Context(), cfg, client, scopes, nil, pw, app, testOIDC(issuer, nil), nil)
+	v, err := proxyConfig(t.Context(), cfg, SessionStore{Client: client}, scopes, nil, pw, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
 	require.NotNil(t, v.OnSessionStoreError)
 
@@ -54,7 +54,7 @@ func TestProxyConfig_CookieStoreByDefault(t *testing.T) {
 	t.Parallel()
 
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid","offline_access"]`)
-	v, err := proxyConfig(t.Context(), cfg, nil, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
+	v, err := proxyConfig(t.Context(), cfg, SessionStore{}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
 	assert.Equal(t, options.CookieSessionStoreType, v.Session.Type)
 	assert.Equal(t, "_oauth2_proxy", v.Cookie.Name)
@@ -69,7 +69,7 @@ func TestProxyConfig_RedisStore(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid","email","profile","offline_access"]`)
-	v, err := proxyConfig(t.Context(), cfg, client, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
+	v, err := proxyConfig(t.Context(), cfg, SessionStore{Client: client}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
 	assert.Equal(t, options.RedisSessionStoreType, v.Session.Type)
 	assert.Same(t, client, v.Session.Redis.Client)
@@ -89,7 +89,7 @@ func TestProxyConfig_RedisStoreBuildsWithStoreDown(t *testing.T) {
 	mr.Close()
 
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
-	_, err := proxyConfig(t.Context(), cfg, client, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
+	_, err := proxyConfig(t.Context(), cfg, SessionStore{Client: client}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
 }
 
