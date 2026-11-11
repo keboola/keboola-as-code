@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	appupstream "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
+	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -105,6 +106,9 @@ func proxyConfig(
 	if sessionStore != nil {
 		v.Cookie.Name = redisSessionCookieName
 		v.Session = options.SessionOptions{Type: options.RedisSessionStoreType, Redis: options.RedisStoreOptions{Client: sessionStore}}
+		v.OnSessionStoreError = func(rw http.ResponseWriter, req *http.Request, err error) {
+			pageWriter.WriteError(rw, req, &app, sessionStoreUnavailableError(err))
+		}
 	}
 	v.EmailDomains = []string{"*"}
 	v.InjectRequestHeaders = []options.Header{
@@ -127,6 +131,12 @@ func proxyConfig(
 	}
 
 	return v, nil
+}
+
+func sessionStoreUnavailableError(err error) error {
+	return svcErrors.
+		NewServiceUnavailableError(errors.PrefixError(err, "session store unavailable")).
+		WithUserMessage("Sign-in is temporarily unavailable. Please try again in a moment.")
 }
 
 // generateCookieSecret creates a unique cookie secret for each app and provider.

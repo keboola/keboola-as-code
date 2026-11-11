@@ -1,16 +1,54 @@
 package oauthproxy
 
 import (
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"regexp"
 	"testing"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/jonboulle/clockwork"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+	sessionsapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
+
+type pageWriterDeps struct{}
+
+func (pageWriterDeps) Clock() clockwork.Clock { return clockwork.NewRealClock() }
+func (pageWriterDeps) Logger() log.Logger     { return log.NewNopLogger() }
+
+func TestProxyConfig_RedisStoreUnavailableWritesErrorPage(t *testing.T) {
+	t.Parallel()
+
+	mr := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { _ = client.Close() })
+	pw, err := pagewriter.New(pageWriterDeps{})
+	require.NoError(t, err)
+
+	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
+	v, err := proxyConfig(t.Context(), cfg, client, scopes, nil, pw, app, testOIDC(issuer, nil), nil)
+	require.NoError(t, err)
+	require.NotNil(t, v.OnSessionStoreError)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://app.hub.keboola.local/", nil)
+	v.OnSessionStoreError(rec, req, errors.Errorf("load: %w", sessionsapi.ErrStoreUnavailable))
+	assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
+	body, err := io.ReadAll(rec.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "Sign-in is temporarily unavailable. Please try again in a moment.")
+	assert.Empty(t, rec.Result().Cookies())
+}
 
 func TestProxyConfig_CookieStoreByDefault(t *testing.T) {
 	t.Parallel()
