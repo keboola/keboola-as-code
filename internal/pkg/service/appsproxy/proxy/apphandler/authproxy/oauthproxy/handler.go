@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 	oauthproxy "github.com/oauth2-proxy/oauth2-proxy/v7"
 	proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -33,6 +34,7 @@ func NewHandler(
 	logger log.Logger,
 	httpClient client.Client,
 	cfg config.Config,
+	sessionStore *redis.Client,
 	selector *selector.Selector,
 	pw *pagewriter.Writer,
 	app api.AppConfig,
@@ -43,7 +45,7 @@ func NewHandler(
 	handler := &Handler{providerName: auth.Name()}
 
 	// Create proxy configuration
-	handler.proxyConfig, err = proxyConfig(ctx, cfg, newScopeResolver(logger, httpClient), selector, pw, app, auth, upstream)
+	handler.proxyConfig, err = proxyConfig(ctx, cfg, sessionStore, newScopeResolver(logger, httpClient), selector, pw, app, auth, upstream)
 	if err != nil {
 		handler.initErr = wrapHandlerInitErr(app, auth, err)
 		return handler
