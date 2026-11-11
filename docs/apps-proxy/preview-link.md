@@ -164,7 +164,8 @@ who redeemed it.
 header (`session.TakeCookie`) on every request: for an internal path, in the
 internal router right after the `/_proxy/preview` check; for any other path,
 right after the internal routing. Neither the app itself nor any auth handler
-ever sees it.
+ever sees it. The upstream chain also removes it with the other
+apps-proxy cookies, see [app-cookies.md](app-cookies.md).
 
 **The upgrade slides, open frames don't.** A websocket upgrade is an ordinary
 request/response pair — the slid `Set-Cookie` reaches the client on the `101`
