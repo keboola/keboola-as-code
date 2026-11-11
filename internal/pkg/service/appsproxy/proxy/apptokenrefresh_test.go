@@ -10,6 +10,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	sessionsapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -80,6 +81,22 @@ func TestAppUserTokenRefresh_WebsocketHandshake(t *testing.T) {
 	iat, _ := payload["iat"].(float64)
 	exp, _ := payload["exp"].(float64)
 	// The login session has a refresh token, so the websocket closes when the session is due for refresh, not at the 6 h timeout.
+	assert.InDelta(t, time.Hour.Seconds(), exp-iat, 30)
+}
+
+func TestAppUserTokenRefresh_CappedAtOneHourWithoutIdPRefreshToken(t *testing.T) {
+	t.Parallel()
+	env := startRefreshEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+	env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) { s.RefreshToken = "" })
+
+	handshake := env.dialWebsocket(client, nil)
+	parts := strings.Split(handshake.Header.Get(apptoken.RefreshHeaderName), ".")
+	require.Len(t, parts, 3)
+	payload := jsonSegment(t, parts[1])
+	iat, _ := payload["iat"].(float64)
+	exp, _ := payload["exp"].(float64)
+	// Without the cap the websocket and its refresh token would last until the 6 h ws timeout.
 	assert.InDelta(t, time.Hour.Seconds(), exp-iat, 30)
 }
 
