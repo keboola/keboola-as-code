@@ -221,14 +221,6 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 			} else if s := r.In.Header.Get("X-Forwarded-Scheme"); s != "" {
 				r.Out.Header.Set("X-Forwarded-Proto", s)
 			}
-
-			// Inject E2B access token for E2B sandbox apps.
-			// Always fetch the latest token from the state watcher to handle
-			// secret recreation (updates propagate asynchronously).
-			r.Out.Header.Del("e2b-traffic-access-token")
-			if info, ok := u.manager.AppInfo(r.Out.Context(), u.workload); ok && info.E2BAccessToken != "" {
-				r.Out.Header.Set("e2b-traffic-access-token", info.E2BAccessToken)
-			}
 		},
 		Transport:    u.manager.transport,
 		ErrorHandler: u.manager.pageWriter.ProxyErrorHandlerFor(u.app),

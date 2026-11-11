@@ -2,7 +2,6 @@ package k8sapp_test
 
 import (
 	"context"
-	"encoding/base64"
 	"testing"
 	"time"
 
@@ -53,7 +52,6 @@ func newFakeClient() *k8sfake.FakeDynamicClient {
 	return k8sfake.NewSimpleDynamicClientWithCustomListKinds(scheme, map[schema.GroupVersionResource]string{
 		k8sapp.AppGVR():     "AppList",
 		k8sapp.SandboxGVR(): "SandboxList",
-		k8sapp.SecretGVR():  "SecretList",
 	})
 }
 
@@ -220,78 +218,19 @@ func TestStateWatcher_GetState_UpstreamTarget_AbsentWhenMissing(t *testing.T) {
 	assert.Nil(t, info.UpstreamTarget)
 }
 
-// newE2BAppObject creates an App CRD with spec.runtime.backend.type = "e2bSandbox"
-// and status.e2bSandbox.accessTokenSecretName set.
-func newE2BAppObject(k8sName, appID string, state k8sapp.AppActualState, secretName string) *unstructured.Unstructured {
-	obj := newAppObject(k8sName, appID, state)
-	obj.Object["spec"].(map[string]any)["runtime"] = map[string]any{
-		"backend": map[string]any{
-			"type": k8sapp.BackendTypeE2BSandbox,
-		},
-	}
-	obj.Object["status"].(map[string]any)["e2bSandbox"] = map[string]any{
-		"accessTokenSecretName": secretName,
-	}
-	return obj
-}
-
-// newSecretObject creates an unstructured K8s Secret with a base64-encoded "token" key.
-func newSecretObject(name, namespace, tokenValue string) *unstructured.Unstructured {
-	return &unstructured.Unstructured{
-		Object: map[string]any{
-			"apiVersion": "v1",
-			"kind":       "Secret",
-			"metadata": map[string]any{
-				"name":      name,
-				"namespace": namespace,
-			},
-			"data": map[string]any{
-				"token": base64.StdEncoding.EncodeToString([]byte(tokenValue)),
-			},
-		},
-	}
-}
-
-func TestStateWatcher_GetState_E2BAccessToken(t *testing.T) {
+func TestStateWatcher_LeftoverE2BAppReadsNoSecret(t *testing.T) {
 	t.Parallel()
 
 	fakeClient := newFakeClient()
 	d := newTestDeps(t)
 
-	// Create the secret first.
-	secret := newSecretObject("my-e2b-secret", testNamespace, "my-e2b-token")
-	_, err := fakeClient.Resource(k8sapp.SecretGVR()).Namespace(testNamespace).Create(
-		t.Context(), secret, metav1.CreateOptions{},
-	)
-	require.NoError(t, err)
-
-	// Create E2B app referencing the secret.
-	appObj := newE2BAppObject("my-e2b-app-k8s", "app-e2b", k8sapp.AppActualStateRunning, "my-e2b-secret")
-	_, err = fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
-		t.Context(), appObj, metav1.CreateOptions{},
-	)
-	require.NoError(t, err)
-
-	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
-
-	var info k8sapp.AppInfo
-	assert.Eventually(t, func() bool {
-		var ok bool
-		info, ok = watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-e2b"})
-		return ok && info.E2BAccessToken != ""
-	}, 5*time.Second, 50*time.Millisecond)
-
-	assert.Equal(t, "my-e2b-token", info.E2BAccessToken)
-}
-
-func TestStateWatcher_GetState_E2BAccessToken_MissingSecret(t *testing.T) {
-	t.Parallel()
-
-	fakeClient := newFakeClient()
-	d := newTestDeps(t)
-
-	// Create E2B app referencing a non-existent secret.
-	appObj := newE2BAppObject("my-e2b-app-k8s", "app-e2b", k8sapp.AppActualStateRunning, "missing-secret")
+	appObj := newAppObject("my-e2b-app-k8s", "app-e2b", k8sapp.AppActualStateRunning)
+	appObj.Object["spec"].(map[string]any)["runtime"] = map[string]any{
+		"backend": map[string]any{"type": "e2bSandbox"},
+	}
+	appObj.Object["status"].(map[string]any)["e2bSandbox"] = map[string]any{
+		"accessTokenSecretName": "my-e2b-secret",
+	}
 	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
 		t.Context(), appObj, metav1.CreateOptions{},
 	)
@@ -306,32 +245,10 @@ func TestStateWatcher_GetState_E2BAccessToken_MissingSecret(t *testing.T) {
 
 	info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-e2b"})
 	require.True(t, ok)
-	assert.Empty(t, info.E2BAccessToken)
-}
-
-func TestStateWatcher_GetState_NonE2BApp_NoToken(t *testing.T) {
-	t.Parallel()
-
-	fakeClient := newFakeClient()
-	d := newTestDeps(t)
-
-	// Create a regular (non-E2B) app.
-	appObj := newAppObject("my-app-k8s", "app-regular", k8sapp.AppActualStateRunning)
-	_, err := fakeClient.Resource(k8sapp.AppGVR()).Namespace(testNamespace).Create(
-		t.Context(), appObj, metav1.CreateOptions{},
-	)
-	require.NoError(t, err)
-
-	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
-
-	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-regular"})
-		return ok
-	}, 5*time.Second, 50*time.Millisecond)
-
-	info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-regular"})
-	require.True(t, ok)
-	assert.Empty(t, info.E2BAccessToken)
+	assert.Equal(t, k8sapp.AppActualStateRunning, info.ActualState)
+	for _, action := range fakeClient.Actions() {
+		assert.NotEqual(t, "secrets", action.GetResource().Resource, "%s %s", action.GetVerb(), action.GetResource())
+	}
 }
 
 func TestHasSynced_FalseBeforeTheInformersList(t *testing.T) {

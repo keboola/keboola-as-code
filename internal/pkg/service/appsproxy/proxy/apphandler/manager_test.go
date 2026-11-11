@@ -39,7 +39,7 @@ func TestAppHandlerWrapper_NeedsRebuild(t *testing.T) {
 	// upstream hash is unchanged. This is the core fix.
 	assert.True(t, w.needsRebuild("etag-2", "hash-1"))
 
-	// Upstream/E2B hash changed → rebuild.
+	// Upstream hash changed → rebuild.
 	assert.True(t, w.needsRebuild("etag-1", "hash-2"))
 }
 

@@ -48,7 +48,7 @@ type appHandlerWrapper struct {
 	evicted     bool // the workload is gone and this entry has left the cache; never build into it again
 	handler     http.Handler
 	cancel      context.CancelCauseFunc
-	handlerHash string // hash of UpstreamTarget + E2BAccessToken; handler is recreated when it changes
+	handlerHash string // hash of UpstreamTarget + PublicHost; handler is recreated when it changes
 	configETag  string // ETag of the app config the handler was built from; handler is recreated when it changes
 }
 
@@ -148,8 +148,7 @@ func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResu
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, svcErrors.NewResourceNotFoundError("application", result.Workload.AppID.String(), "stack"))
 	}
 
-	// Create a new handler when the config changed (ETag), upstream URL changed, or E2B token changed.
-	// Only a hash is stored so raw secrets don't linger in the wrapper.
+	// Create a new handler when the config changed (ETag), or the upstream URL or public host changed.
 	currentHash := handlerHash(info, cached)
 	configETag := result.AppConfig.ETag()
 	if wrapper.needsRebuild(configETag, currentHash) {
@@ -198,7 +197,6 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig, workload k8
 }
 
 // handlerHash computes a hash from the fields that require handler recreation when they change.
-// Only a hash is stored so raw secrets don't linger in the wrapper.
 func handlerHash(info k8sapp.AppInfo, ok bool) string {
 	if !ok {
 		return ""
@@ -209,8 +207,6 @@ func handlerHash(info k8sapp.AppInfo, ok bool) string {
 	}
 	h.Write([]byte{0})
 	h.Write([]byte(info.PublicHost))
-	h.Write([]byte{0})
-	h.Write([]byte(info.E2BAccessToken))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
