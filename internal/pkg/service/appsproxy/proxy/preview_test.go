@@ -14,11 +14,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/jonboulle/clockwork"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,11 +62,42 @@ type previewEnv struct {
 	client    *http.Client
 	appServer *testutil.AppServer
 	providers []*mockoidc.MockOIDC
+	appsAPI   *testutil.DataAppsAPI
 	d         proxyDependencies.ServiceScope
 	mocked    proxyDependencies.Mocked
+	// Set only in redis mode.
+	redis      *miniredis.Miniredis
+	redisStore *redis.Client
 }
 
-func startPreviewEnv(t *testing.T, mutate ...func(cfg *config.Config, jwks *previewtest.JWKSServer)) *previewEnv {
+type envMutator = func(cfg *config.Config, jwks *previewtest.JWKSServer)
+
+func startPreviewEnv(t *testing.T, mutate ...envMutator) *previewEnv {
+	t.Helper()
+	return startEnv(t, nil, mutate...)
+}
+
+// startRedisEnv starts the proxy with the redis login session store on miniredis.
+// The client options match the production defaults of config.SessionStore.
+func startRedisEnv(t *testing.T, mutate ...envMutator) *previewEnv {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	defaults := config.New().SessionStore
+	client := redis.NewClient(&redis.Options{
+		Addr:         mr.Addr(),
+		DialTimeout:  defaults.DialTimeout,
+		ReadTimeout:  defaults.ReadTimeout,
+		WriteTimeout: defaults.WriteTimeout,
+		PoolSize:     defaults.PoolSize,
+		MaxRetries:   defaults.MaxRetries,
+	})
+	env := startEnv(t, client, mutate...)
+	env.redis = mr
+	env.redisStore = client
+	return env
+}
+
+func startEnv(t *testing.T, sessionStore *redis.Client, mutate ...envMutator) *previewEnv {
 	t.Helper()
 	ctx := t.Context()
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 9, 27, 10, 0, 0, 0, time.UTC))
@@ -96,8 +129,8 @@ func startPreviewEnv(t *testing.T, mutate ...func(cfg *config.Config, jwks *prev
 		m(&cfg, jwks)
 	}
 
-	d, mocked := proxyDependencies.NewMockedServiceScopeWithK8sObjects(
-		t, ctx, cfg, makeDefaultK8sObjects(apps, appURL.String()),
+	d, mocked := proxyDependencies.NewMockedServiceScopeWithSessionStore(
+		t, ctx, cfg, sessionStore, makeDefaultK8sObjects(apps, appURL.String()),
 		dependencies.WithRealHTTPClient(), dependencies.WithClock(clock),
 	)
 	t.Cleanup(func() {
@@ -122,7 +155,7 @@ func startPreviewEnv(t *testing.T, mutate ...func(cfg *config.Config, jwks *prev
 	client.Jar = nil
 
 	registerDefaultK8sApps(t, d.AppStateWatcher())
-	return &previewEnv{t: t, clock: clock, signer: signer, jwks: jwks, client: client, appServer: appServer, providers: providers, d: d, mocked: mocked}
+	return &previewEnv{t: t, clock: clock, signer: signer, jwks: jwks, client: client, appServer: appServer, providers: providers, appsAPI: appsAPI, d: d, mocked: mocked}
 }
 
 func (e *previewEnv) setDevMode(k8sName string, ref k8sapp.WorkloadRef, enabled bool) {
