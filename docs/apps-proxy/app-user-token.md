@@ -128,7 +128,9 @@ WebSocket handshake that gets a token, apps-proxy also sets:
 A plain HTTP request gets neither header: it gets a new token every time.
 Server-sent events and other streamed responses are plain HTTP requests too:
 apps-proxy ends every non-WebSocket response at `upstream.httpTimeout` (4 min
-30 s), before its token expires, so they need no refresh.
+30 s), before its token expires, so they need no refresh. This holds only while
+`upstream.httpTimeout` stays below `appUserToken.ttl`: with a longer timeout a
+streamed response outlives its token.
 When the app user token is off, or the Sandbox has no public host, the
 handshake gets neither header.
 
