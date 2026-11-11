@@ -169,14 +169,6 @@ func TestInjectRefresh_OnlyOnWebsocketWithToken(t *testing.T) {
 		assertNone(t, e.serve(testIDP, wsHeaders(identityHeaders())))
 	})
 
-	t.Run("refresh keys off", func(t *testing.T) {
-		t.Parallel()
-		e := newEnv(t, envOptions{noRefreshKeys: true})
-		got := e.serve(testIDP, wsHeaders(identityHeaders()))
-		require.NotEmpty(t, got.header.Get(apptoken.HeaderName))
-		assertNone(t, got)
-	})
-
 	t.Run("inbound copies on a plain request", func(t *testing.T) {
 		t.Parallel()
 		e := newEnv(t, envOptions{})
@@ -287,7 +279,7 @@ func TestRefresh_Sandbox(t *testing.T) {
 func TestRefresh_Enabled(t *testing.T) {
 	t.Parallel()
 	assert.True(t, newEnv(t, envOptions{noWorkspace: true}).d.AppTokenMinter().RefreshEnabled())
-	assert.False(t, newEnv(t, envOptions{noWorkspace: true, noRefreshKeys: true}).d.AppTokenMinter().RefreshEnabled())
+	assert.False(t, newEnv(t, envOptions{noWorkspace: true, noKeys: true}).d.AppTokenMinter().RefreshEnabled())
 }
 
 func TestRefresh_Refused(t *testing.T) {
@@ -353,7 +345,7 @@ func TestRefresh_Refused(t *testing.T) {
 			return e.resign(refresh, jwt.SigningMethodHS256, []byte(strings.Repeat("x", 32)), nil, nil)
 		}},
 		{name: "secret of another kid", token: func(e *testEnv, refresh, _ string) string {
-			return e.resign(refresh, jwt.SigningMethodHS256, e.refreshKeys["r1"], nil, nil)
+			return e.resign(refresh, jwt.SigningMethodHS256, e.refreshKeys["k1"], nil, nil)
 		}},
 		{name: "alg none", token: func(e *testEnv, refresh, _ string) string {
 			return e.resign(refresh, jwt.SigningMethodNone, jwt.UnsafeAllowNoneSignatureType, nil, nil)
@@ -385,6 +377,17 @@ func TestRefresh_Refused(t *testing.T) {
 	}
 }
 
+func TestRefresh_AcceptsAnInactiveSigningKey(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, envOptions{})
+	refresh := e.handshake(e.ref).header.Get(apptoken.RefreshHeaderName)
+	refresh = e.resign(refresh, jwt.SigningMethodHS256, e.refreshKeys["k1"], map[string]any{"kid": "k1"}, nil)
+
+	token, _, err := e.refresh(e.app, e.ref, refresh)
+	require.NoError(t, err)
+	assert.Equal(t, "k2", e.parse(token).header["kid"])
+}
+
 func TestRefresh_SandboxTokenRefusedOnTheApp(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t, envOptions{})
@@ -399,11 +402,12 @@ func TestRefresh_RefusedWhenSigningKeysOff(t *testing.T) {
 	on := newEnv(t, envOptions{})
 	refresh := on.handshake(on.ref).header.Get(apptoken.RefreshHeaderName)
 
-	off := newEnv(t, envOptions{noKeys: true})
-	refresh = off.resign(refresh, jwt.SigningMethodHS256, off.refreshKeys["k2"], nil, func(c jwt.MapClaims) {
-		c["exp"] = float64(off.clock.Now().Add(time.Hour).Unix())
+	refresh = on.resign(refresh, jwt.SigningMethodHS256, on.refreshKeys["k2"], nil, func(c jwt.MapClaims) {
+		c["exp"] = float64(on.clock.Now().Add(time.Hour).Unix())
 	})
-	off.parseRefresh(refresh)
+	on.parseRefresh(refresh)
+
+	off := newEnv(t, envOptions{noKeys: true})
 
 	_, _, err := off.refresh(off.app, off.ref, refresh)
 	require.Error(t, err)

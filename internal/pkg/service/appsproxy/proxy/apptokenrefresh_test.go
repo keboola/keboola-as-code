@@ -1,8 +1,6 @@
 package proxy_test
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,22 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
 )
-
-func withRefreshKeys(t *testing.T) func(cfg *config.Config, _ *previewtest.JWKSServer) {
-	t.Helper()
-	secret := make([]byte, 32)
-	_, err := rand.Read(secret)
-	require.NoError(t, err)
-	keys := `[{"kid":"r1","secret":"` + base64.StdEncoding.EncodeToString(secret) + `"}]`
-	return func(cfg *config.Config, _ *previewtest.JWKSServer) {
-		cfg.AppUserToken.RefreshKeys = keys
-		cfg.AppUserToken.RefreshActiveKid = "r1"
-	}
-}
 
 // websocketHandshake logs in to the "oidc" app, opens a websocket and returns the handshake the app received.
 func (e *previewEnv) websocketHandshake() *http.Request {
@@ -68,7 +52,7 @@ func (e *previewEnv) post(target string, headers ...string) *http.Response {
 
 func startRefreshEnv(t *testing.T) *previewEnv {
 	t.Helper()
-	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"), withRefreshKeys(t))
+	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
 	env.withOIDCWorkspace()
 	env.syncClock()
 	return env
@@ -213,7 +197,7 @@ func TestAppUserTokenRefresh_EndpointRefuses(t *testing.T) {
 
 func TestAppUserTokenRefresh_EndpointOff(t *testing.T) {
 	t.Parallel()
-	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
+	env := startPreviewEnv(t)
 
 	assert.Equal(t, http.StatusNotFound, env.post(oidcOrigin+apptoken.RefreshPath, "Authorization", "Bearer x").StatusCode)
 	assert.Empty(t, env.websocketHandshake().Header.Values(apptoken.RefreshHeaderName))
