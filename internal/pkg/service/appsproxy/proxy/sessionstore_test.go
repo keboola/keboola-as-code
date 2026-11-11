@@ -1,0 +1,267 @@
+package proxy_test
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/cookiejar"
+	"net/url"
+	"runtime"
+	"slices"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/oauth2-proxy/mockoidc"
+	sessionsapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
+)
+
+var oidcCookieURL = &url.URL{Scheme: "https", Host: oidcHost, Path: "/"} //nolint:gochecknoglobals // test fixture
+
+func manyGroupsUser(n int) *mockoidc.MockUser {
+	groups := []string{"admin"}
+	for i := range n - 1 {
+		groups = append(groups, fmt.Sprintf("group-with-a-long-name-%03d", i))
+	}
+	return &mockoidc.MockUser{Subject: "sub-1", Email: "admin@keboola.com", EmailVerified: new(true), Groups: groups}
+}
+
+func fixedCookieSalt(cfg *config.Config, _ *previewtest.JWKSServer) {
+	cfg.CookieSecretSalt = strings.Repeat("c", 32)
+}
+
+func (e *previewEnv) ticketKeys() []string {
+	e.t.Helper()
+	var keys []string
+	for _, k := range e.redis.Keys() {
+		if strings.HasPrefix(k, ticketCookieName+"-") && !strings.HasSuffix(k, ".lock") {
+			keys = append(keys, k)
+		}
+	}
+	return keys
+}
+
+// clientWithCookies returns a client of this env holding a copy of the other client's oidc cookies.
+func (e *previewEnv) clientWithCookies(other *http.Client) *http.Client {
+	e.t.Helper()
+	jar, err := cookiejar.New(nil)
+	require.NoError(e.t, err)
+	client := *e.client
+	client.Jar = jar
+	if other != nil {
+		jar.SetCookies(oidcCookieURL, other.Jar.Cookies(oidcCookieURL))
+	}
+	return &client
+}
+
+func expiresCookie(resp *http.Response, name string) bool {
+	for _, c := range resp.Cookies() {
+		if c.Name == name && (c.MaxAge < 0 || (!c.Expires.IsZero() && c.Expires.Before(time.Now()))) {
+			return true
+		}
+	}
+	return false
+}
+
+func jarCookie(client *http.Client, name string) *http.Cookie {
+	for _, c := range client.Jar.Cookies(oidcCookieURL) {
+		if c.Name == name {
+			return c
+		}
+	}
+	return nil
+}
+
+func TestRedisStore_LoginRoundTrip(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+	client := env.oidcLogin(env.providers[0], manyGroupsUser(200), oidcOrigin+"/")
+
+	var names []string
+	for _, c := range client.Jar.Cookies(oidcCookieURL) {
+		names = append(names, c.Name)
+	}
+	assert.NotContains(t, names, oauthCookieName)
+	for _, name := range names {
+		assert.NotRegexp(t, `^_oauth2_proxy_\d+$`, name)
+	}
+	ticket := jarCookie(client, ticketCookieName)
+	require.NotNil(t, ticket)
+	assert.Less(t, len(ticket.Name)+1+len(ticket.Value), 512)
+
+	keys := env.ticketKeys()
+	require.Len(t, keys, 1)
+	assert.Equal(t, 24*time.Hour, env.redis.TTL(keys[0]))
+
+	resp := env.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	appReq := env.lastAppRequest()
+	assert.Equal(t, "admin@keboola.com", appReq.Header.Get("X-Kbc-User-Email"))
+	assert.Contains(t, appReq.Header.Get("X-Kbc-User-Roles"), "group-with-a-long-name-198")
+}
+
+func TestRedisStore_OutageKeepsSession(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+
+	env.redis.Close()
+	resp := env.send(client, oidcOrigin+"/some/path")
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.False(t, expiresCookie(resp, ticketCookieName), "the session cookie must be kept")
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "Sign-in is temporarily unavailable. Please try again in a moment.")
+	require.NotNil(t, jarCookie(client, ticketCookieName))
+
+	require.NoError(t, env.redis.Restart())
+	resp = env.send(client, oidcOrigin+"/some/path")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestRedisStore_IgnoresCookieStoreCookie(t *testing.T) {
+	t.Parallel()
+	cookieEnv := startPreviewEnv(t, fixedCookieSalt)
+	redisEnv := startRedisEnv(t, fixedCookieSalt)
+
+	// A cookie-store session at a redis-mode replica: login page, the cookie stays.
+	cookieClient := cookieEnv.oidcLogin(cookieEnv.providers[0], freshnessUser(), oidcOrigin+"/")
+	resp := redisEnv.send(redisEnv.clientWithCookies(cookieClient), oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusFound, resp.StatusCode)
+	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
+	assert.False(t, expiresCookie(resp, oauthCookieName))
+
+	// A ticket at a cookie-mode replica: login page, the ticket stays.
+	redisClient := redisEnv.oidcLogin(redisEnv.providers[0], freshnessUser(), oidcOrigin+"/")
+	resp = cookieEnv.send(cookieEnv.clientWithCookies(redisClient), oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusFound, resp.StatusCode)
+	assert.False(t, expiresCookie(resp, ticketCookieName))
+
+	// Known, accepted: a login started at a cookie-mode replica and finished at a redis-mode
+	// replica fails the CSRF check, because the CSRF cookie name derives from the session cookie name.
+	starter := cookieEnv.clientWithCookies(nil)
+	cookieEnv.providers[0].QueueUser(freshnessUser())
+	resp = cookieEnv.send(starter, oidcOrigin+"/")
+	require.Equal(t, http.StatusFound, resp.StatusCode)
+	resp = cookieEnv.send(starter, resp.Header.Get("Location"))
+	require.Equal(t, http.StatusFound, resp.StatusCode)
+	resp = cookieEnv.send(starter, resp.Header.Get("Location"))
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	callback := extractMetaRefreshTag(t, body)
+	require.Contains(t, callback, "/_proxy/callback")
+	resp = redisEnv.send(redisEnv.clientWithCookies(starter), callback)
+	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+}
+
+// Not parallel: it compares the goroutine count of the whole process.
+func TestRedisStore_RebuildDoesNotLeak(t *testing.T) {
+	env := startRedisEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+
+	rebuild := func(i int) {
+		app := env.appsAPI.Apps["oidc"]
+		app.Name = fmt.Sprintf("oidc-%d", i)
+		env.appsAPI.Apps["oidc"] = app
+		resp := env.send(client, oidcOrigin+"/some/path")
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
+	}
+
+	for i := range 5 {
+		rebuild(i)
+	}
+	baseConns := env.redisStore.PoolStats().TotalConns
+	baseGoroutines := runtime.NumGoroutine()
+
+	for i := 5; i < 55; i++ {
+		rebuild(i)
+	}
+
+	assert.LessOrEqual(t, env.redisStore.PoolStats().TotalConns, baseConns+2)
+	assert.Eventually(t, func() bool {
+		return runtime.NumGoroutine() <= baseGoroutines+20
+	}, 10*time.Second, 100*time.Millisecond, "goroutines grew from %d to %d", baseGoroutines, runtime.NumGoroutine())
+}
+
+func TestRedisStore_HandlerBuildWithStoreDown(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+
+	env.redis.Close()
+	resp := env.send(env.clientWithCookies(nil), oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusFound, resp.StatusCode)
+	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
+
+	require.NoError(t, env.redis.Restart())
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+	resp = env.send(client, oidcOrigin+"/some/path")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestRedisStore_Eviction(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+
+	keys := env.ticketKeys()
+	require.Len(t, keys, 1)
+	env.redis.Del(keys[0])
+
+	resp := env.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusFound, resp.StatusCode)
+	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
+	assert.True(t, expiresCookie(resp, ticketCookieName))
+}
+
+func TestRedisStore_SignOutDeletesKey(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+	require.Len(t, env.ticketKeys(), 1)
+
+	env.send(client, oidcOrigin+"/_proxy/sign_out")
+	assert.Empty(t, env.ticketKeys())
+}
+
+func TestRedisStore_ParallelRefreshRefreshesOnce(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+	env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
+		require.NotEmpty(t, s.RefreshToken)
+		s.CreatedAt = ago(2 * time.Hour)
+	})
+
+	var wg sync.WaitGroup
+	statuses := make([]int, 2)
+	refreshed := make([]bool, 2)
+	for i := range statuses {
+		wg.Go(func() {
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, oidcOrigin+"/some/path", nil)
+			if err != nil {
+				return
+			}
+			resp, err := client.Do(req)
+			if err != nil {
+				return
+			}
+			statuses[i] = resp.StatusCode
+			refreshed[i] = slices.Contains(setCookieNames(resp), ticketCookieName)
+			_ = resp.Body.Close()
+		})
+	}
+	wg.Wait()
+	assert.Equal(t, []int{http.StatusOK, http.StatusOK}, statuses)
+	assert.ElementsMatch(t, []bool{true, false}, refreshed, "exactly one request refreshes and saves the session")
+	assert.WithinDuration(t, time.Now(), *env.loadOIDCSession(client).CreatedAt, time.Minute)
+	assert.Equal(t, 24*time.Hour, env.redis.TTL(env.ticketKeys()[0]))
+}
