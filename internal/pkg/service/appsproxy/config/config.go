@@ -149,7 +149,7 @@ type SandboxesAPI struct {
 }
 
 type Upstream struct {
-	HTTPTimeout time.Duration `configKey:"httpTimeout" configUsage:"Timeout for HTTP request on upstream"`
+	HTTPTimeout time.Duration `configKey:"httpTimeout" configUsage:"Timeout for HTTP request on upstream. Keep it below appUserToken.ttl: a streamed response that outlives its app user token gets no refresh."`
 	WsTimeout   time.Duration `configKey:"wsTimeout" configUsage:"Timeout for websocket request on upstream"`
 }
 
