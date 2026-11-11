@@ -29,21 +29,20 @@ const (
 	ticketCookieName = "_oauth2_proxy_ticket"
 )
 
-type startEnvFunc = func(t *testing.T, mutate ...envMutator) *previewEnv
-
-// forEachSessionStore runs the test once with the cookie store and once with the redis store.
-func forEachSessionStore(t *testing.T, test func(t *testing.T, start startEnvFunc)) {
+// forEachSessionStore runs the test in an env with the cookie store and in one with the redis store.
+// The test reads its *testing.T from env.t.
+func forEachSessionStore(t *testing.T, test func(env *previewEnv), mutate ...envMutator) {
 	t.Helper()
 	for _, store := range []struct {
 		name  string
-		start startEnvFunc
+		start func(t *testing.T, mutate ...envMutator) *previewEnv
 	}{
 		{name: "cookie", start: startPreviewEnv},
 		{name: "redis", start: startRedisEnv},
 	} {
 		t.Run(store.name, func(t *testing.T) {
 			t.Parallel()
-			test(t, store.start)
+			test(store.start(t, mutate...))
 		})
 	}
 }
@@ -172,8 +171,8 @@ func waitForClose(t *testing.T, c *websocket.Conn, limit time.Duration) time.Dur
 
 func TestSessionFreshness_RefreshOnUpgradeSetsCookieOn101(t *testing.T) {
 	t.Parallel()
-	forEachSessionStore(t, func(t *testing.T, start startEnvFunc) {
-		env := start(t)
+	forEachSessionStore(t, func(env *previewEnv) {
+		t := env.t
 		client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 
 		createdAt := ago(2 * time.Hour)
@@ -193,8 +192,8 @@ func TestSessionFreshness_RefreshOnUpgradeSetsCookieOn101(t *testing.T) {
 
 func TestSessionFreshness_SessionWithoutRefreshTokenIsNotRefreshed(t *testing.T) {
 	t.Parallel()
-	forEachSessionStore(t, func(t *testing.T, start startEnvFunc) {
-		env := start(t)
+	forEachSessionStore(t, func(env *previewEnv) {
+		t := env.t
 		client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 
 		// Expired tokens would end the session if it were re-validated, as on GitHub's refresh path.
@@ -212,8 +211,8 @@ func TestSessionFreshness_SessionWithoutRefreshTokenIsNotRefreshed(t *testing.T)
 
 func TestSessionFreshness_SessionWithoutRefreshTokenEndsAfter24h(t *testing.T) {
 	t.Parallel()
-	forEachSessionStore(t, func(t *testing.T, start startEnvFunc) {
-		env := start(t)
+	forEachSessionStore(t, func(env *previewEnv) {
+		t := env.t
 		client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 
 		env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
@@ -229,8 +228,8 @@ func TestSessionFreshness_SessionWithoutRefreshTokenEndsAfter24h(t *testing.T) {
 
 func TestSessionFreshness_WebsocketClosedAtCookieExpiry(t *testing.T) {
 	t.Parallel()
-	forEachSessionStore(t, func(t *testing.T, start startEnvFunc) {
-		env := start(t)
+	forEachSessionStore(t, func(env *previewEnv) {
+		t := env.t
 		client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 
 		env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
@@ -250,8 +249,8 @@ func TestSessionFreshness_WebsocketClosedAtCookieExpiry(t *testing.T) {
 
 func TestSessionFreshness_WebsocketClosedAtRefreshAndReconnectRefreshes(t *testing.T) {
 	t.Parallel()
-	forEachSessionStore(t, func(t *testing.T, start startEnvFunc) {
-		env := start(t)
+	forEachSessionStore(t, func(env *previewEnv) {
+		t := env.t
 		client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 
 		env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
@@ -273,8 +272,8 @@ func TestSessionFreshness_WebsocketClosedAtRefreshAndReconnectRefreshes(t *testi
 
 func TestSessionFreshness_WebsocketWithFreshSessionStaysOpen(t *testing.T) {
 	t.Parallel()
-	forEachSessionStore(t, func(t *testing.T, start startEnvFunc) {
-		env := start(t)
+	forEachSessionStore(t, func(env *previewEnv) {
+		t := env.t
 		client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 
 		c, resp := dialIdleWebsocket(t, client)
@@ -289,15 +288,15 @@ func TestSessionFreshness_WebsocketWithFreshSessionStaysOpen(t *testing.T) {
 
 func TestSessionFreshness_WebsocketClosedAtWsTimeoutIsLogged(t *testing.T) {
 	t.Parallel()
-	forEachSessionStore(t, func(t *testing.T, start startEnvFunc) {
-		env := start(t, func(cfg *config.Config, _ *previewtest.JWKSServer) {
-			cfg.Upstream.WsTimeout = 2 * time.Second
-		})
+	forEachSessionStore(t, func(env *previewEnv) {
+		t := env.t
 		client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 
 		c, resp := dialIdleWebsocket(t, client)
 		require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 		assert.Less(t, waitForClose(t, c, 20*time.Second), 15*time.Second)
 		env.requireWebsocketCloseLog("ws timeout")
+	}, func(cfg *config.Config, _ *previewtest.JWKSServer) {
+		cfg.Upstream.WsTimeout = 2 * time.Second
 	})
 }
