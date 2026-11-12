@@ -16,12 +16,13 @@ import (
 
 // cookieStoreMigration moves a valid cookie-store session into the redis store, so a switch of stores costs no login.
 type cookieStoreMigration struct {
-	logger      log.Logger
-	proxyConfig *options.Options
-	metrics     *sessionstore.Metrics
-	cookieStore sessionsapi.SessionStore
-	redisStore  sessionsapi.SessionStore
-	signOutPath string
+	logger       log.Logger
+	proxyConfig  *options.Options
+	metrics      *sessionstore.Metrics
+	cookieStore  sessionsapi.SessionStore
+	redisStore   sessionsapi.SessionStore
+	signOutPath  string
+	callbackPath string
 }
 
 func newCookieStoreMigration(logger log.Logger, proxyConfig *options.Options, sessions SessionStore) (*cookieStoreMigration, error) {
@@ -36,16 +37,25 @@ func newCookieStoreMigration(logger log.Logger, proxyConfig *options.Options, se
 		return nil, err
 	}
 	return &cookieStoreMigration{
-		logger:      logger,
-		proxyConfig: proxyConfig,
-		metrics:     sessions.Metrics,
-		cookieStore: cookieStore,
-		redisStore:  redisStore,
-		signOutPath: proxyConfig.ProxyPrefix + "/sign_out",
+		logger:       logger,
+		proxyConfig:  proxyConfig,
+		metrics:      sessions.Metrics,
+		cookieStore:  cookieStore,
+		redisStore:   redisStore,
+		signOutPath:  proxyConfig.ProxyPrefix + "/sign_out",
+		callbackPath: proxyConfig.ProxyPrefix + "/callback",
 	}, nil
 }
 
-// migrate returns true when it has written the response.
+// serve returns the writer for oauth2-proxy, and true when it has written the response.
+func (m *cookieStoreMigration) serve(w http.ResponseWriter, req *http.Request) (http.ResponseWriter, bool) {
+	m.renameCSRF(req)
+	if m.migrate(w, req) {
+		return w, true
+	}
+	return m.copyCSRF(w), false
+}
+
 func (m *cookieStoreMigration) migrate(w http.ResponseWriter, req *http.Request) bool {
 	if !hasCookie(req, CookieName) && !hasCookie(req, CookieName+"_0") {
 		return false
@@ -77,7 +87,7 @@ func (m *cookieStoreMigration) migrate(w http.ResponseWriter, req *http.Request)
 		m.logger.Warnf(req.Context(), "cannot move a cookie-store session into the session store: no ticket cookie")
 		return false
 	}
-	req.AddCookie(ticket)
+	req.AddCookie(&http.Cookie{Name: ticket.Name, Value: ticket.Value})
 	m.clearCookieStore(req.Context(), w, req)
 	m.metrics.Migrated(req.Context())
 	return false
@@ -102,8 +112,5 @@ func responseCookie(w http.ResponseWriter, name string) (*http.Cookie, bool) {
 			found = c
 		}
 	}
-	if found == nil {
-		return nil, false
-	}
-	return &http.Cookie{Name: found.Name, Value: found.Value}, true
+	return found, found != nil
 }

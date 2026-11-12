@@ -142,23 +142,6 @@ func TestCookieStore_IgnoresRedisStoreTicket(t *testing.T) {
 	resp := cookieEnv.send(cookieEnv.clientWithCookies(redisClient), oidcOrigin+"/some/path")
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	assert.False(t, expiresCookie(resp, ticketCookieName))
-
-	// Known, accepted: a login started at a cookie-mode replica and finished at a redis-mode
-	// replica fails the CSRF check, because the CSRF cookie name derives from the session cookie name.
-	starter := cookieEnv.clientWithCookies(nil)
-	cookieEnv.providers[0].QueueUser(freshnessUser())
-	resp = cookieEnv.send(starter, oidcOrigin+"/")
-	require.Equal(t, http.StatusFound, resp.StatusCode)
-	resp = cookieEnv.send(starter, resp.Header.Get("Location"))
-	require.Equal(t, http.StatusFound, resp.StatusCode)
-	resp = cookieEnv.send(starter, resp.Header.Get("Location"))
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-	body, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-	callback := extractMetaRefreshTag(t, body)
-	require.Contains(t, callback, "/_proxy/callback")
-	resp = redisEnv.send(redisEnv.clientWithCookies(starter), callback)
-	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
 }
 
 func TestRedisStore_RebuildDoesNotLeak(t *testing.T) { //nolint:paralleltest // compares the goroutine count of the whole process

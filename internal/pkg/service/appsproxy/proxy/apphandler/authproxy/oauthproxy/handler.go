@@ -100,8 +100,11 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		return h.initErr
 	}
 
-	if h.migration != nil && h.migration.migrate(w, req) {
-		return nil
+	if h.migration != nil {
+		var written bool
+		if w, written = h.migration.serve(w, req); written {
+			return nil
+		}
 	}
 
 	// Pass request to OAuth2Proxy
