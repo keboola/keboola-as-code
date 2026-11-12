@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	sdk "github.com/keboola/keboola-sdk-go/v2/pkg/apptoken"
@@ -13,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 )
 
 // HeaderName is the header in which the token is passed on. The header, the claims and the rest of the contract with the services
@@ -24,30 +26,45 @@ func (m *Minter) Inject(app api.AppConfig, workload k8sapp.WorkloadRef) chain.Mi
 	return func(next chain.Handler) chain.Handler {
 		return chain.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) error {
 			req.Header.Del(HeaderName)
+			req.Header.Del(RefreshHeaderName)
+			req.Header.Del(PublicURLHeaderName)
 			ctx := req.Context()
 			id, ok := ctx.Value(identityCtxKey{}).(identity)
 			if !ok || !m.keyring.Configured() {
 				return next.ServeHTTPOrError(rw, req)
 			}
 
-			token, err := m.mint(ctx, app, workload, id)
+			var sid string
+			if s, ok := sessions.FromContext(ctx); ok {
+				sid = s.ID
+			}
+			token, _, err := m.mint(ctx, app, workload, id, sid, time.Time{})
 			if err != nil {
 				m.logger.Errorf(ctx, "cannot sign the app user token, the request continues without it: %s", err)
 				return next.ServeHTTPOrError(rw, req)
 			}
 			req.Header.Set(HeaderName, token)
+			req = req.WithContext(upstream.WithAppUserToken(ctx))
+			if sessions.IsWebsocketUpgrade(req) {
+				m.injectRefresh(req, app, workload, id, sid)
+			}
 			return next.ServeHTTPOrError(rw, req)
 		})
 	}
 }
 
-func (m *Minter) mint(ctx context.Context, app api.AppConfig, workload k8sapp.WorkloadRef, id identity) (string, error) {
+// mint signs an app user token. A non-zero notAfter caps its expiry.
+func (m *Minter) mint(ctx context.Context, app api.AppConfig, workload k8sapp.WorkloadRef, id identity, sid string, notAfter time.Time) (string, time.Time, error) {
 	jti, err := randomID()
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 
 	now := m.clock.Now()
+	exp := now.Add(m.ttl)
+	if !notAfter.IsZero() && notAfter.Before(exp) {
+		exp = notAfter
+	}
 	claims := sdk.Claims{
 		Issuer:    m.issuer,
 		Audience:  sdk.Audience,
@@ -57,17 +74,19 @@ func (m *Minter) mint(ctx context.Context, app api.AppConfig, workload k8sapp.Wo
 		Groups:    id.groups,
 		Kbc:       sdk.KbcClaims{ProjectID: app.ProjectID, AppID: app.ID.String(), WorkspaceID: m.workspaceID(ctx, workload)},
 		ID:        jti,
+		SID:       sid,
 		IssuedAt:  jwt.NewNumericDate(now),
-		ExpiresAt: jwt.NewNumericDate(now.Add(m.ttl)),
-	}
-	if s, ok := sessions.FromContext(ctx); ok {
-		claims.SID = s.ID
+		ExpiresAt: jwt.NewNumericDate(exp),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
 	token.Header["kid"] = m.keyring.ActiveKid()
 	token.Header["typ"] = sdk.TokenType
-	return token.SignedString(m.keyring.ActiveKey())
+	signed, err := token.SignedString(m.keyring.ActiveKey())
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	return signed, claims.ExpiresAt.Time, nil
 }
 
 // workspaceID is read per request: a promotion moves the App to another

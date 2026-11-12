@@ -38,13 +38,14 @@ connection closes. Apps proxy itself closes it:
 
 - when the upstream websocket timeout (`upstream.wsTimeout`, default `6h`)
   ends it,
+- 1 hour after it opened, when the handshake got an app user token,
 - at the login session deadline: when the session is due for refresh (about
   every hour for a session that is refreshed) or when the session cookie
   expires. See [login-session.md](login-session.md) §7.
 
 Each of these closes writes the log line
-`websocket closed at its deadline: <reason>` (`refresh due`, `cookie expiry`
-or `ws timeout`).
+`websocket closed at its deadline: <reason>` (`refresh due`, `cookie expiry`,
+`app user token cap` or `ws timeout`).
 
 If the reconnect counted, a forgotten tab would reset the idle timer on every
 reconnect. An app with a threshold over the reconnect interval would never
