@@ -158,6 +158,16 @@ func TestMetrics_Unavailable(t *testing.T) {
 	nilMetrics.StoreUnavailable(t.Context())
 }
 
+func TestMetrics_Migrated(t *testing.T) {
+	t.Parallel()
+	h := newMetricsHarness(t)
+	h.metrics.Migrated(t.Context())
+	assert.Equal(t, int64(1), h.counter(t, "keboola.go.appsproxy.sessionstore.migrated"))
+
+	var nilMetrics *Metrics
+	nilMetrics.Migrated(t.Context())
+}
+
 func TestMetrics_Up(t *testing.T) {
 	t.Parallel()
 	h := newMetricsHarness(t)
