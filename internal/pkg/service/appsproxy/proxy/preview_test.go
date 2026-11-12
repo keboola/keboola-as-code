@@ -146,7 +146,8 @@ func startEnv(t *testing.T, sessionStore *redis.Client, mutate ...envMutator) *p
 	var lc net.ListenConfig
 	l, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	srv := &httptest.Server{Listener: l, Config: &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ErrorLog: log.NewStdErrorLogger(d.Logger())}}
+	// The header timeout also covers the TLS handshake, which takes seconds on a loaded Windows CI runner with -race.
+	srv := &httptest.Server{Listener: l, Config: &http.Server{Handler: handler, ReadHeaderTimeout: time.Minute, ErrorLog: log.NewStdErrorLogger(d.Logger())}}
 	srv.StartTLS()
 	t.Cleanup(srv.Close)
 	proxyURL, err := url.Parse(srv.URL)
