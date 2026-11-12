@@ -25,6 +25,8 @@ func TestIsProxyCookie(t *testing.T) {
 		"_oauth2_proxy_x",
 		"_oauth2_proxy_0x",
 		"_oauth2_proxy_csrf_0",
+		"_oauth2_proxy_ticket",
+		"_oauth2_proxy_ticket_csrf",
 		"_oauth2_provider",
 		"_kbc_dasid",
 		"proxyBasicAuth",
