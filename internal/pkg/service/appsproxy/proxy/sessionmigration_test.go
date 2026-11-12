@@ -296,8 +296,8 @@ func TestCookieStoreMigration_InvalidOldCookie(t *testing.T) {
 	}
 }
 
-// shareIdP points the oidc app of env "to" at the IdP of env "from", so a login started at one env can finish at the other.
-func shareIdP(from, to *previewEnv) {
+// shareIDP points the oidc app of env "to" at the IdP of env "from", so a login started at one env can finish at the other.
+func shareIDP(from, to *previewEnv) {
 	app := to.appsAPI.Apps["oidc"]
 	app.AuthProviders = from.appsAPI.Apps["oidc"].AuthProviders
 	to.appsAPI.Apps["oidc"] = app
@@ -329,7 +329,7 @@ func (e *previewEnv) requireLoggedIn(resp *http.Response, client *http.Client) {
 func TestCookieStoreMigration_LoginFromCookieModeFinishesInRedisMode(t *testing.T) {
 	t.Parallel()
 	envs := startMigrationEnvs(t)
-	shareIdP(envs.cookie, envs.redis)
+	shareIDP(envs.cookie, envs.redis)
 	starter := envs.cookie.clientWithCookies(nil)
 	callback := envs.cookie.startLogin(starter)
 
@@ -341,7 +341,7 @@ func TestCookieStoreMigration_LoginFromCookieModeFinishesInRedisMode(t *testing.
 func TestCookieStoreMigration_LoginFromRedisModeFinishesInCookieMode(t *testing.T) {
 	t.Parallel()
 	envs := startMigrationEnvs(t)
-	shareIdP(envs.redis, envs.cookie)
+	shareIDP(envs.redis, envs.cookie)
 	starter := envs.redis.clientWithCookies(nil)
 	callback := envs.redis.startLogin(starter)
 
@@ -380,7 +380,7 @@ func TestCookieStoreMigration_InvalidCookieModeCSRF(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			envs := startMigrationEnvs(t)
-			shareIdP(envs.cookie, envs.redis)
+			shareIDP(envs.cookie, envs.redis)
 			starter := envs.cookie.clientWithCookies(nil)
 			callback := envs.cookie.startLogin(starter)
 			c := jarCookie(starter, csrfName)

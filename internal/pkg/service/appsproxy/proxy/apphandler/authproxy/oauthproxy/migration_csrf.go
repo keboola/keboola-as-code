@@ -23,7 +23,7 @@ func (m *cookieStoreMigration) renameCSRF(req *http.Request) {
 		return
 	}
 	if signed, ok := m.resignCSRF(old, redisStoreCSRFName); ok {
-		req.AddCookie(&http.Cookie{Name: redisStoreCSRFName, Value: signed})
+		req.AddCookie(&http.Cookie{Name: redisStoreCSRFName, Value: signed}) //nolint:gosec // G124: a request cookie carries only the name and value
 	}
 }
 
@@ -44,7 +44,7 @@ func (m *cookieStoreMigration) copyCSRF(w http.ResponseWriter) http.ResponseWrit
 		if !ok {
 			return
 		}
-		copied := *c
+		copied := *c //nolint:gosec // G124: a copy of the CSRF cookie oauth2-proxy set, with its attributes
 		copied.Name = cookieStoreCSRFName
 		copied.Value = signed
 		http.SetCookie(w, &copied)

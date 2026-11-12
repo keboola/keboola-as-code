@@ -87,7 +87,7 @@ func (m *cookieStoreMigration) migrate(w http.ResponseWriter, req *http.Request)
 		m.logger.Warnf(req.Context(), "cannot move a cookie-store session into the session store: no ticket cookie")
 		return false
 	}
-	req.AddCookie(&http.Cookie{Name: ticket.Name, Value: ticket.Value})
+	req.AddCookie(&http.Cookie{Name: ticket.Name, Value: ticket.Value}) //nolint:gosec // G124: a request cookie carries only the name and value
 	m.clearCookieStore(req.Context(), w, req)
 	m.metrics.Migrated(req.Context())
 	return false
