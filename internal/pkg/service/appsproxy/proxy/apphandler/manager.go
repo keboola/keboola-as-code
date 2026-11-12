@@ -2,8 +2,6 @@ package apphandler
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"net/http"
 	"sync"
 
@@ -44,20 +42,20 @@ type Manager struct {
 }
 
 type appHandlerWrapper struct {
-	lock        *sync.Mutex
-	evicted     bool // the workload is gone and this entry has left the cache; never build into it again
-	handler     http.Handler
-	cancel      context.CancelCauseFunc
-	handlerHash string // hash of UpstreamTarget + PublicHost; handler is recreated when it changes
-	configETag  string // ETag of the app config the handler was built from; handler is recreated when it changes
+	lock       *sync.Mutex
+	evicted    bool // the workload is gone and this entry has left the cache; never build into it again
+	handler    http.Handler
+	cancel     context.CancelCauseFunc
+	upstream   upstreamKey // handler is recreated when it changes
+	configETag string      // ETag of the app config the handler was built from; handler is recreated when it changes
 }
 
 // needsRebuild reports whether the cached handler must be recreated.
 // The handler is keyed on config identity (the config ETag) and the upstream
-// hash, so any config change is picked up on the next request without relying
+// key, so any config change is picked up on the next request without relying
 // on a one-shot "modified" signal from the config loader.
-func (w *appHandlerWrapper) needsRebuild(configETag, currentHash string) bool {
-	return w.handler == nil || w.configETag != configETag || w.handlerHash != currentHash
+func (w *appHandlerWrapper) needsRebuild(configETag string, upstream upstreamKey) bool {
+	return w.handler == nil || w.configETag != configETag || w.upstream != upstream
 }
 
 type dependencies interface {
@@ -149,14 +147,14 @@ func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResu
 	}
 
 	// Create a new handler when the config changed (ETag), or the upstream URL or public host changed.
-	currentHash := handlerHash(info, cached)
+	upstream := upstreamKeyFor(info, cached)
 	configETag := result.AppConfig.ETag()
-	if wrapper.needsRebuild(configETag, currentHash) {
+	if wrapper.needsRebuild(configETag, upstream) {
 		if wrapper.cancel != nil {
 			wrapper.cancel(errors.New("configuration changed"))
 		}
 		wrapper.handler, wrapper.cancel = m.newHandler(ctx, result.AppConfig, result.Workload)
-		wrapper.handlerHash = currentHash
+		wrapper.upstream = upstream
 		wrapper.configETag = configETag
 	}
 
@@ -196,18 +194,22 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig, workload k8
 	return handler, appUpstream.Cancel
 }
 
-// handlerHash computes a hash from the fields that require handler recreation when they change.
-func handlerHash(info k8sapp.AppInfo, ok bool) string {
-	if !ok {
-		return ""
+// upstreamKey holds the workload fields that require handler recreation when they change.
+type upstreamKey struct {
+	cached     bool
+	targetURL  string
+	publicHost string
+}
+
+func upstreamKeyFor(info k8sapp.AppInfo, cached bool) upstreamKey {
+	if !cached {
+		return upstreamKey{}
 	}
-	h := sha256.New()
+	key := upstreamKey{cached: true, publicHost: info.PublicHost}
 	if info.UpstreamTarget != nil {
-		h.Write([]byte(info.UpstreamTarget.String()))
+		key.targetURL = info.UpstreamTarget.String()
 	}
-	h.Write([]byte{0})
-	h.Write([]byte(info.PublicHost))
-	return hex.EncodeToString(h.Sum(nil))
+	return key
 }
 
 func (m *Manager) newErrorHandler(ctx context.Context, app api.AppConfig, err error) http.Handler {

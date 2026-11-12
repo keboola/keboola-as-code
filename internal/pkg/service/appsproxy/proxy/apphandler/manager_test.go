@@ -3,6 +3,7 @@ package apphandler
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"sync"
 	"testing"
 
@@ -23,24 +24,26 @@ func TestAppHandlerWrapper_NeedsRebuild(t *testing.T) {
 	t.Parallel()
 
 	w := &appHandlerWrapper{}
+	key1 := upstreamKeyFor(k8sapp.AppInfo{PublicHost: "a.hub.example.com"}, true)
+	key2 := upstreamKeyFor(k8sapp.AppInfo{PublicHost: "b.hub.example.com"}, true)
 
 	// No handler yet → must build.
-	assert.True(t, w.needsRebuild("etag-1", "hash-1"))
+	assert.True(t, w.needsRebuild("etag-1", key1))
 
 	// Simulate a built handler.
 	w.handler = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 	w.configETag = "etag-1"
-	w.handlerHash = "hash-1"
+	w.upstream = key1
 
 	// Nothing changed → reuse the cached handler.
-	assert.False(t, w.needsRebuild("etag-1", "hash-1"))
+	assert.False(t, w.needsRebuild("etag-1", key1))
 
 	// Config ETag changed (auth config redeployed) → rebuild, even though the
 	// upstream hash is unchanged. This is the core fix.
-	assert.True(t, w.needsRebuild("etag-2", "hash-1"))
+	assert.True(t, w.needsRebuild("etag-2", key1))
 
-	// Upstream hash changed → rebuild.
-	assert.True(t, w.needsRebuild("etag-1", "hash-2"))
+	// Upstream changed → rebuild.
+	assert.True(t, w.needsRebuild("etag-1", key2))
 }
 
 // The handler cache is keyed by workload. A draft is short-lived, so without
@@ -98,11 +101,27 @@ func TestManager_EvictedWrapperIsNotRepopulated(t *testing.T) {
 // A Sandbox that republishes under a different hostname must rebuild its
 // handler: the old one rewrites upstream redirects to the hostname it was built
 // with, which would send the user to an address this workload no longer owns.
-func TestHandlerHash_ChangesWithThePublishedHostname(t *testing.T) {
+func TestUpstreamKey_ChangesWithThePublishedHostname(t *testing.T) {
 	t.Parallel()
 
-	before := handlerHash(k8sapp.AppInfo{PublicHost: "draft-abc.hub.example.com"}, true)
-	after := handlerHash(k8sapp.AppInfo{PublicHost: "draft-xyz.hub.example.com"}, true)
+	before := upstreamKeyFor(k8sapp.AppInfo{PublicHost: "draft-abc.hub.example.com"}, true)
+	after := upstreamKeyFor(k8sapp.AppInfo{PublicHost: "draft-xyz.hub.example.com"}, true)
 
 	assert.NotEqual(t, before, after)
+}
+
+func TestUpstreamKey_ChangesWithTheUpstreamURL(t *testing.T) {
+	t.Parallel()
+
+	before := upstreamKeyFor(k8sapp.AppInfo{UpstreamTarget: &url.URL{Scheme: "http", Host: "app-1.svc:8888"}}, true)
+	after := upstreamKeyFor(k8sapp.AppInfo{UpstreamTarget: &url.URL{Scheme: "http", Host: "app-2.svc:8888"}}, true)
+
+	assert.NotEqual(t, before, after)
+}
+
+// A workload that becomes cached must rebuild even when it published nothing.
+func TestUpstreamKey_ChangesWhenTheWorkloadBecomesCached(t *testing.T) {
+	t.Parallel()
+
+	assert.NotEqual(t, upstreamKeyFor(k8sapp.AppInfo{}, false), upstreamKeyFor(k8sapp.AppInfo{}, true))
 }
