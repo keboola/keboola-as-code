@@ -24,17 +24,19 @@ type SessionStore struct {
 	WriteTimeout       time.Duration `configKey:"writeTimeout" configUsage:"Session store write timeout." validate:"required,minDuration=1ms"`
 	PoolSize           int           `configKey:"poolSize" configUsage:"Session store connection pool size." validate:"required,min=1"`
 	MaxRetries         int           `configKey:"maxRetries" configUsage:"Retries of a failed session store command. 0 disables retries." validate:"min=0"`
+	MigrateCookieStore bool          `configKey:"migrateCookieStore" configUsage:"When type is redis, move a valid cookie-store session into the store instead of asking for a new login."`
 }
 
 func newSessionStore() SessionStore {
 	return SessionStore{
-		Type:             SessionStoreCookie,
-		SentinelUsername: "sentinel",
-		DialTimeout:      500 * time.Millisecond,
-		ReadTimeout:      500 * time.Millisecond,
-		WriteTimeout:     500 * time.Millisecond,
-		PoolSize:         20,
-		MaxRetries:       1,
+		Type:               SessionStoreCookie,
+		SentinelUsername:   "sentinel",
+		DialTimeout:        500 * time.Millisecond,
+		ReadTimeout:        500 * time.Millisecond,
+		WriteTimeout:       500 * time.Millisecond,
+		PoolSize:           20,
+		MaxRetries:         1,
+		MigrateCookieStore: true,
 	}
 }
 

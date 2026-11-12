@@ -31,6 +31,7 @@ func TestSessionStoreConfig_Defaults(t *testing.T) {
 	assert.Equal(t, 500*time.Millisecond, cfg.SessionStore.WriteTimeout)
 	assert.Equal(t, 20, cfg.SessionStore.PoolSize)
 	assert.Equal(t, 1, cfg.SessionStore.MaxRetries)
+	assert.True(t, cfg.SessionStore.MigrateCookieStore)
 
 	valid := requiredConfig(t)
 	require.NoError(t, configmap.ValidateAndNormalize(&valid))
