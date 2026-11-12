@@ -72,10 +72,12 @@ ENV prefix `APPS_PROXY_`. The chart sets the first seven keys only when
 | `sessionStore.writeTimeout` | `SESSION_STORE_WRITE_TIMEOUT` | `500ms` | – |
 | `sessionStore.poolSize` | `SESSION_STORE_POOL_SIZE` | `20` | – |
 | `sessionStore.maxRetries` | `SESSION_STORE_MAX_RETRIES` | `1` | – |
+| `sessionStore.migrateCookieStore` | `SESSION_STORE_MIGRATE_COOKIE_STORE` | `true` | – |
 
 `sentinelAddrs` is a comma-separated `host:port` list; one Service address is
 enough. `maxRetries: 0` means no retry. The short timeouts and the single retry
 make a request fail to the 503 page within about a second instead of waiting.
+`migrateCookieStore` has an effect only in redis mode, see section 6.
 
 The startup log shows the mode: `Cookie settings: name:_oauth2_proxy_ticket …`
 in redis mode, `name:_oauth2_proxy …` in cookie mode. It is written when an
@@ -152,6 +154,7 @@ All of them exist only in redis mode.
 |---|---|---|
 | `keboola.go.appsproxy.sessionstore.up` | gauge | 1 if the last ping of the store succeeded, 0 otherwise. Pinged at startup and every 10 s. `min` over pods below 1 means some replica cannot reach the store. |
 | `keboola.go.appsproxy.sessionstore.unavailable` | counter | Requests answered with the 503 page because the store was unavailable. What users saw. |
+| `keboola.go.appsproxy.sessionstore.migrated` | counter | Cookie-store sessions moved into the store (section 6). It drops to zero when no browser sends a valid cookie-store session any more. |
 | `keboola.go.appsproxy.sessionstore.errors` | counter, `command` | Failed store commands. A missing key is not an error. |
 | `keboola.go.appsproxy.sessionstore.duration` | histogram (ms), `command`, `result` | Duration of each store command. `command`: `get` (load), `set` (save), `del` (sign-out, clear), `lock` (lock scripts), `other` (ping, connection setup). `result`: `ok`, `miss` (no such session), `error`. |
 | `keboola.go.appsproxy.sessionstore.pool.connections` | gauge, `state` | Connections in the client pool, `total` and `idle`. Should stay flat; handler rebuilds share the pool. |
@@ -171,25 +174,89 @@ passwords in `secrets.yaml`), all 6 pods are Ready, and
 1. Set `sessionStore.type: redis` in `<stack>/apps-proxy/values.yaml` and sync.
 2. apps-proxy pods restart one by one. During the rollout old and new pods serve
    side by side; neither clears the other's cookie.
-3. Every OAuth/OIDC user logs in once, because a cookie-store session cannot be
-   read in redis mode. With a live IdP session this is usually one click.
-4. A login started on an old pod and finished on a new pod fails with
-   "Unable to find a valid CSRF token" (the CSRF cookie name differs). Trying
-   again works.
+3. Users with a valid cookie-store session do not log in again. On their first
+   request to a redis-mode pod, the session is moved into Valkey (see below).
+4. A login can start on a pod of one mode and finish on a pod of the other mode
+   (see below).
 5. Check: the log shows `name:_oauth2_proxy_ticket`, `sessionstore.up` is 1 on
-   every pod, `sessionstore.unavailable` stays flat, and no `NOPERM` appears in
-   the apps-proxy log after the first login.
+   every pod, `sessionstore.unavailable` stays flat, `sessionstore.migrated`
+   rises and then falls, and no `NOPERM` appears in the apps-proxy log after the
+   first login.
+
+Users log in once only when their cookie-store session cannot be moved: it is
+older than 24 hours, it was made for another provider of the app, or
+`sessionStore.migrateCookieStore` is `false`. With a live IdP session this is
+usually one click; GitLab and JumpCloud ask for the password.
 
 Users who could not open an app because of a too-large session cookie may keep
-the old cookie until it expires (up to 24 hours). Clearing the cookies of the
-app's domain fixes it at once.
+the old cookie until it expires (up to 24 hours). The ingress rejects the
+request before it reaches apps-proxy, so the session cannot be moved. Clearing
+the cookies of the app's domain fixes it at once.
+
+### Moving cookie-store sessions into the store
+
+In redis mode, with `sessionStore.migrateCookieStore: true` (the default), a
+request that carries `_oauth2_proxy` or `_oauth2_proxy_0`, `_1`, … and no
+`_oauth2_proxy_ticket` is handled before oauth2-proxy:
+
+- The cookie-store session is read with the app's cookie secret. A cookie with a
+  bad signature, older than 24 hours or of another provider is ignored, and the
+  user goes to the login page.
+- The session is saved to Valkey with its original creation time, so it expires
+  when the cookie-store session would have. Older than 1 hour, it is refreshed in
+  the same request, as any Valkey session.
+- The same response sets `_oauth2_proxy_ticket` and deletes `_oauth2_proxy` and
+  all its parts. Sign-out then sticks, and the request headers shrink at once.
+- On `/_proxy/sign_out` the cookie-store cookies are only deleted, not moved.
+- When the store is unavailable, the user gets the 503 page and keeps the
+  cookie-store cookie. The next request after the store is back moves it.
+- Each moved session counts in `sessionstore.migrated`.
+
+Parallel requests with the same cookie-store session (several tabs, websocket
+reconnects) each move it, so one user can leave a few extra keys. The browser
+keeps the last ticket; the other keys expire with their 24-hour TTL.
+
+### Logins across pods of different modes
+
+The CSRF cookie of a login in progress is `_oauth2_proxy_csrf` in cookie mode
+and `_oauth2_proxy_ticket_csrf` in redis mode. Its value is encrypted with the
+cookie secret only, which is the same in both modes. A redis-mode pod with
+`migrateCookieStore: true` bridges the two names:
+
+- When a login starts, the response sets both names, so the callback finds its
+  CSRF cookie on a cookie-mode pod too.
+- On `/_proxy/callback` without `_oauth2_proxy_ticket_csrf`, a valid
+  `_oauth2_proxy_csrf` is signed again under the redis-mode name with its
+  original time, so it expires as before (15 minutes).
+
+A tampered or expired CSRF cookie still ends in "Unable to find a valid CSRF
+token". This applies to a rollback as well as to a switch.
+
+### Removing the migration code
+
+The code is needed only while browsers can still send a valid cookie-store
+session, or while pods of both modes can run side by side. Remove it when every
+stack runs redis mode for more than 24 hours, `sessionstore.migrated` stays at
+zero, and no switch back to cookie mode is planned. After the removal, a switch
+between modes costs every user one login, and a login across pods of different
+modes fails with "Unable to find a valid CSRF token".
+
+What to delete: `proxy/apphandler/authproxy/oauthproxy/migration.go` and
+`migration_csrf.go`, `proxy/sessionmigration_test.go`, the `migration` field and
+its two blocks in `oauthproxy/handler.go`, `MigrateCookieStore` in
+`config/sessionstore.go`, `Migrated` and its counter in `sessionstore/metrics.go`,
+their asserts in `config/sessionstore_test.go` and `sessionstore/metrics_test.go`,
+and the parts of this document about them. Then run `go mod tidy`:
+`github.com/felixge/httpsnoop` becomes an indirect dependency again.
 
 ## 7. Roll back
 
-- Fast: set `sessionStore.type: cookie` and sync. Users whose cookie-store
-  session is less than 24 hours old keep it; the others log in once. The
-  cookie-mode pods do not touch Valkey or the ticket cookie, so switching back
-  to `redis` within 24 hours restores the Valkey sessions without a login.
+- Fast: set `sessionStore.type: cookie` and sync. Users whose session was moved
+  into Valkey have no cookie-store cookie any more (section 6), so they log in
+  once. Users who did not visit an app in redis mode and whose cookie-store
+  session is less than 24 hours old keep it. The cookie-mode pods do not touch
+  Valkey or the ticket cookie, so switching back to `redis` within 24 hours
+  restores the Valkey sessions without a login.
 - Full: also set `valkey.enabled: false`. ArgoCD does not prune, so the Valkey
   pods, Services and PVCs keep running until the app is synced with prune by
   hand. Delete the PVCs only when Valkey is not coming back.
@@ -217,8 +284,9 @@ kubectl -n apps-proxy exec <valkey-pod> -- sh -c \
 | `NOPERM` in the apps-proxy log | The `appsproxy` ACL misses a command or key pattern | ACL in the chart values; the session keys must match `_oauth2_proxy_ticket-*` |
 | Short bursts of 503 for logins and refreshes, reads fine | Writes refused during a failover (`NOREPLICAS`) | Replica `master_link_status`; resolves when a replica reattaches |
 | Users logged out after their session was evicted | Valkey reached `maxmemory` | `evicted_keys` in `INFO stats`; memory alerts |
-| All OAuth users log in once | A switch between `cookie` and `redis` | Expected, section 6 |
-| "Unable to find a valid CSRF token" | Login spanned old and new pods during a switch | Expected during the rollout; try again |
+| Users log in once after a switch to `redis` | Their cookie-store session was older than 24 hours, or `migrateCookieStore` is `false` | Expected, section 6; `sessionstore.migrated` shows the moved sessions |
+| All OAuth users log in once after a rollback to `cookie` | Their sessions were moved into Valkey | Expected, section 7 |
+| "Unable to find a valid CSRF token" during a switch | `migrateCookieStore` is `false`, or the CSRF cookie expired (15 minutes) | Section 6, "Logins across pods of different modes"; try again |
 
 ## 9. Code Map
 
@@ -228,4 +296,5 @@ kubectl -n apps-proxy exec <valkey-pod> -- sh -c \
 | Client, checker, metrics | `sessionstore/` |
 | Client in the service scope, shutdown | `dependencies/dependencies.go` |
 | Store selection, cookie name, 503 hook | `proxy/apphandler/authproxy/oauthproxy/config.go` |
+| Moving cookie-store sessions, CSRF across modes | `proxy/apphandler/authproxy/oauthproxy/migration.go`, `migration_csrf.go` |
 | Redis store, lock, store errors | `github.com/keboola/go-oauth2-proxy` (`pkg/sessions/redis`, `pkg/middleware/stored_session.go`) |
