@@ -57,7 +57,7 @@ func updateObject(t *testing.T, client *k8sfake.FakeDynamicClient, obj *unstruct
 func assertWorkspaceEventually(t *testing.T, watcher *k8sapp.StateWatcher, ref k8sapp.WorkloadRef, expected string) {
 	t.Helper()
 	assert.Eventually(t, func() bool {
-		info, ok := watcher.GetState(t.Context(), ref)
+		info, ok := watcher.GetState(ref)
 		return ok && info.WorkspaceID == expected
 	}, 5*time.Second, 50*time.Millisecond)
 }
@@ -141,7 +141,7 @@ func TestGetState_WorkspaceID_EmptyWithoutLogWhenUnresolved(t *testing.T) {
 			var info k8sapp.AppInfo
 			require.Eventually(t, func() bool {
 				var ok bool
-				info, ok = watcher.GetState(t.Context(), tc.ref)
+				info, ok = watcher.GetState(tc.ref)
 				return ok
 			}, 5*time.Second, 50*time.Millisecond)
 

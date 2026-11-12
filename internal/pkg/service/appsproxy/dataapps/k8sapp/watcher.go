@@ -162,7 +162,7 @@ func (w *StateWatcher) addEventHandler(ctx context.Context, informer cache.Share
 }
 
 // GetState returns the cached AppInfo for the workload. Returns (AppInfo{}, false) if not yet cached.
-func (w *StateWatcher) GetState(_ context.Context, ref WorkloadRef) (AppInfo, bool) {
+func (w *StateWatcher) GetState(ref WorkloadRef) (AppInfo, bool) {
 	e, ok := w.entryFor(ref)
 	if !ok {
 		return AppInfo{}, false

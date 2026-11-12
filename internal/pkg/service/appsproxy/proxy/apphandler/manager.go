@@ -141,7 +141,7 @@ func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResu
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, result.Err)
 	}
 
-	info, cached := m.upstreamManager.AppInfo(ctx, result.Workload)
+	info, cached := m.upstreamManager.AppInfo(result.Workload)
 	if cached && info.NotDeployed {
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, svcErrors.NewResourceNotFoundError("application", result.Workload.AppID.String(), "stack"))
 	}

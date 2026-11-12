@@ -135,7 +135,7 @@ func (e *previewEnv) setDevMode(k8sName string, ref k8sapp.WorkloadRef, enabled 
 	_, err := e.mocked.TestFakeK8sClient().Resource(gvr).Namespace("keboola").Patch(e.t.Context(), k8sName, k8stypes.MergePatchType, patch, metav1.PatchOptions{})
 	require.NoError(e.t, err)
 	require.Eventually(e.t, func() bool {
-		info, ok := e.d.AppStateWatcher().GetState(e.t.Context(), ref)
+		info, ok := e.d.AppStateWatcher().GetState(ref)
 		return ok && info.DevMode == enabled
 	}, 5*time.Second, 50*time.Millisecond)
 }

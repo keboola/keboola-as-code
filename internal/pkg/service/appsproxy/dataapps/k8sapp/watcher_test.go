@@ -88,7 +88,7 @@ func TestStateWatcher_GetState_UnknownWhenEmpty(t *testing.T) {
 	fakeClient := newFakeClient()
 	watcher := k8sapp.NewStateWatcher(newTestDeps(t), fakeClient, testNamespace)
 
-	info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
+	info, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "app-123"})
 	assert.False(t, ok)
 	assert.Empty(t, info.ActualState)
 }
@@ -109,7 +109,7 @@ func TestStateWatcher_GetState_AfterCacheSync(t *testing.T) {
 	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
 
 	assert.Eventually(t, func() bool {
-		info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
+		info, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "app-123"})
 		return ok && info.ActualState == k8sapp.AppActualStateStopped
 	}, 5*time.Second, 50*time.Millisecond)
 }
@@ -130,7 +130,7 @@ func TestStateWatcher_Wakeup(t *testing.T) {
 
 	// Wait for the informer to cache the object.
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "app-123"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -184,7 +184,7 @@ func TestStateWatcher_GetState_UpstreamTarget(t *testing.T) {
 	var info k8sapp.AppInfo
 	assert.Eventually(t, func() bool {
 		var ok bool
-		info, ok = watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
+		info, ok = watcher.GetState(k8sapp.WorkloadRef{AppID: "app-123"})
 		return ok && info.UpstreamTarget != nil
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -209,11 +209,11 @@ func TestStateWatcher_GetState_UpstreamTarget_AbsentWhenMissing(t *testing.T) {
 	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
 
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "app-123"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
-	info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-123"})
+	info, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "app-123"})
 	require.True(t, ok)
 	assert.Nil(t, info.UpstreamTarget)
 }
@@ -239,11 +239,11 @@ func TestStateWatcher_LeftoverE2BAppReadsNoSecret(t *testing.T) {
 	watcher := k8sapp.NewStateWatcher(d, fakeClient, testNamespace)
 
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-e2b"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "app-e2b"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
-	info, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "app-e2b"})
+	info, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "app-e2b"})
 	require.True(t, ok)
 	assert.Equal(t, k8sapp.AppActualStateRunning, info.ActualState)
 	for _, action := range fakeClient.Actions() {
