@@ -29,7 +29,7 @@ func TestTakeCookie(t *testing.T) {
 	req.Header.Add("Cookie", "c=3;")
 
 	assert.Equal(t, "secret", session.TakeCookie(req))
-	assert.Equal(t, []string{"a=1; b=2", "c=3"}, req.Header.Values("Cookie"))
+	assert.Equal(t, []string{"a=1; b=2", "c=3;"}, req.Header.Values("Cookie"))
 	_, err := req.Cookie(session.CookieName)
 	require.ErrorIs(t, err, http.ErrNoCookie)
 

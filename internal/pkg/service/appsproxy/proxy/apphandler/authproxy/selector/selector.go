@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	providerCookie             = "_oauth2_provider"
+	ProviderCookie             = "_oauth2_provider"
 	providerQueryParam         = "provider"
 	continueAuthQueryParam     = "continue_auth"
 	callbackQueryParam         = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
@@ -238,7 +238,7 @@ func (s *Selector) url(req *http.Request, path string, query url.Values) *url.UR
 }
 
 func (s *Selector) providerIDFromCookie(req *http.Request) provider.ID {
-	if cookie, _ := req.Cookie(providerCookie); cookie != nil && cookie.Value != "" {
+	if cookie, _ := req.Cookie(ProviderCookie); cookie != nil && cookie.Value != "" {
 		return provider.ID(cookie.Value)
 	}
 	return ""
@@ -259,7 +259,7 @@ func (s *Selector) cookie(req *http.Request, value string, expires time.Duration
 	}
 
 	v := &http.Cookie{
-		Name:     providerCookie,
+		Name:     ProviderCookie,
 		Value:    value,
 		Path:     "/",
 		Domain:   host,

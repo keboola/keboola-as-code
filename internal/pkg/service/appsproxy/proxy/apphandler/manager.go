@@ -179,6 +179,7 @@ func (m *Manager) newHandler(ctx context.Context, app api.AppConfig, workload k8
 		rejectInternalPaths,
 		m.sessionsManager.Middleware(app, workload),
 		m.appTokenMinter.Inject(app, workload),
+		stripProxyCookies,
 	)
 
 	// Create authentication handlers
