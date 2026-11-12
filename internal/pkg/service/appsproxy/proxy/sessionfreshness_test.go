@@ -255,13 +255,15 @@ func TestSessionFreshness_WebsocketClosedAtRefreshAndReconnectRefreshes(t *testi
 
 		env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
 			require.NotEmpty(t, s.RefreshToken)
-			s.CreatedAt = ago(time.Hour - time.Second)
+			// The margin must cover the time until the dial below; past it the dial itself refreshes the session.
+			s.CreatedAt = ago(time.Hour - 10*time.Second)
 		})
 
 		c, resp := dialIdleWebsocket(t, client)
 		require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 		assert.NotContains(t, setCookieNames(resp), env.oidcCookieName())
-		assert.Less(t, waitForClose(t, c, 30*time.Second), 20*time.Second)
+		// Closed at CreatedAt + 1 h + refreshGrace (5 s), so at most 15 s after the dial.
+		assert.Less(t, waitForClose(t, c, 45*time.Second), 30*time.Second)
 		env.requireWebsocketCloseLog("refresh due")
 
 		_, resp = dialIdleWebsocket(t, client)
