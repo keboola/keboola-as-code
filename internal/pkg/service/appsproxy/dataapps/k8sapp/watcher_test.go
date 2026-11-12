@@ -46,7 +46,7 @@ func newTestDepsWithLogger(t *testing.T, logger log.Logger) *watcherDeps {
 func (d *watcherDeps) Logger() log.Logger           { return d.logger }
 func (d *watcherDeps) Process() *servicectx.Process { return d.proc }
 
-// newFakeClient creates a fake dynamic client with the App, Sandbox and Secret list kinds registered.
+// newFakeClient creates a fake dynamic client with the App and Sandbox list kinds registered.
 func newFakeClient() *k8sfake.FakeDynamicClient {
 	scheme := runtime.NewScheme()
 	return k8sfake.NewSimpleDynamicClientWithCustomListKinds(scheme, map[schema.GroupVersionResource]string{
