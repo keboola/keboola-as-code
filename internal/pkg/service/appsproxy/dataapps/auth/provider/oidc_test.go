@@ -58,6 +58,7 @@ func TestOIDC(t *testing.T) {
 		Type:                "oidc",
 		Name:                "My Name",
 		CodeChallengeMethod: "S256",
+		Scope:               "openid email profile",
 		ClientID:            "6779ef20e75817b79602",
 		ClientSecret:        "f2a1ed52710d4533bde25be6da03b6e3",
 		BackendLogoutURL:    "https://www.linkedin.com/oidc/logout",
@@ -77,4 +78,48 @@ func TestOIDC(t *testing.T) {
 			},
 		},
 	}, proxyOpts)
+}
+
+func TestOIDC_AllowedRoles(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name           string
+		allowedRoles   *[]string
+		expectedGroups []string
+		deniesAll      bool
+	}{
+		{name: "nil: no restriction"},
+		{name: "empty: deny all", allowedRoles: &[]string{}, deniesAll: true},
+		{name: "roles", allowedRoles: &[]string{"admin"}, expectedGroups: []string{"admin"}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			p := OIDC{AllowedRoles: tc.allowedRoles}
+			opts, err := p.ProxyProviderOptions()
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedGroups, opts.AllowedGroups)
+			assert.Equal(t, tc.deniesAll, p.DeniesAll())
+		})
+	}
+}
+
+func TestOIDC_Scopes(t *testing.T) {
+	t.Parallel()
+
+	opts, err := OIDC{Scopes: []string{"groups", " ", "openid email"}, AllowedRoles: &[]string{"admin"}}.ProxyProviderOptions()
+	require.NoError(t, err)
+	assert.Equal(t, "openid email profile groups", opts.Scope)
+}
+
+func TestGitLab_IgnoresAllowedRoles(t *testing.T) {
+	t.Parallel()
+
+	p := GitLab{OIDC: OIDC{AllowedRoles: &[]string{}}, Groups: []string{"group"}}
+	assert.False(t, p.DeniesAll())
+	opts, err := p.ProxyProviderOptions()
+	require.NoError(t, err)
+	assert.Empty(t, opts.Scope)
 }

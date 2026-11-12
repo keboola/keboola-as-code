@@ -29,6 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
 )
 
 const jwksPath = "/.well-known/jwks.json"
@@ -138,7 +139,7 @@ func (e *previewEnv) withOIDCWorkspace() {
 
 // oidcLogin runs the OAuth flow against mockoidc and returns a client holding
 // the oauth2-proxy session cookie for the host.
-func (e *previewEnv) oidcLogin(provider *mockoidc.MockOIDC, user *mockoidc.MockUser, startURL string) *http.Client {
+func (e *previewEnv) oidcLogin(provider *mockoidc.MockOIDC, user mockoidc.User, startURL string) *http.Client {
 	e.t.Helper()
 	jar, err := cookiejar.New(nil)
 	require.NoError(e.t, err)
@@ -224,7 +225,7 @@ func TestAppUserToken_OIDCRequest(t *testing.T) {
 	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
 	env.withOIDCWorkspace()
 	oidc := env.providers[0]
-	client := env.oidcLogin(oidc, &mockoidc.MockUser{Subject: "sub-1", Email: "admin@keboola.com", EmailVerified: new(true), Groups: []string{"admin"}}, oidcOrigin+"/")
+	client := env.oidcLogin(oidc, &testutil.MockUser{Subject: "sub-1", Email: "admin@keboola.com", EmailVerified: new(true), Groups: []string{"admin"}}, oidcOrigin+"/")
 
 	require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/some/path").StatusCode)
 
@@ -251,7 +252,7 @@ func TestAppUserToken_SessionID(t *testing.T) {
 		cfg.Sessions.StreamURL = stream.URL
 	})
 	env.syncClock()
-	client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-6", Email: "a@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
+	client := env.oidcLogin(env.providers[0], &testutil.MockUser{Subject: "sub-6", Email: "a@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
 
 	require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/", "Accept", "text/html").StatusCode)
 
@@ -262,7 +263,7 @@ func TestAppUserToken_SessionID(t *testing.T) {
 func TestAppUserToken_EntraLikeUser(t *testing.T) {
 	t.Parallel()
 	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
-	client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-2", Email: "someone@tenant.example", Groups: []string{"admin"}}, oidcOrigin+"/")
+	client := env.oidcLogin(env.providers[0], &testutil.MockUser{Subject: "sub-2", Email: "someone@tenant.example", Groups: []string{"admin"}}, oidcOrigin+"/")
 
 	require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/").StatusCode)
 
@@ -277,7 +278,7 @@ func TestAppUserToken_EntraLikeUser(t *testing.T) {
 func TestAppUserToken_ForgedHeadersRemoved(t *testing.T) {
 	t.Parallel()
 	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
-	client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-3", Email: "victim@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
+	client := env.oidcLogin(env.providers[0], &testutil.MockUser{Subject: "sub-3", Email: "victim@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
 
 	resp := env.send(client, oidcOrigin+"/", apptoken.HeaderName, "forged", apptoken.EmailVerifiedHeader, "true")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
@@ -320,7 +321,7 @@ func TestAppUserToken_NoTokenWithoutOAuth(t *testing.T) {
 		t.Parallel()
 		env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
 		env.syncClock()
-		client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-4", Email: "a@example.com", EmailVerified: new(true), Groups: []string{"admin"}}, "https://"+prefixHost+"/api")
+		client := env.oidcLogin(env.providers[0], &testutil.MockUser{Subject: "sub-4", Email: "a@example.com", EmailVerified: new(true), Groups: []string{"admin"}}, "https://"+prefixHost+"/api")
 
 		require.Equal(t, http.StatusOK, env.send(client, "https://"+prefixHost+"/api").StatusCode)
 		env.verify(env.lastAppRequest().Header.Get(apptoken.HeaderName))
@@ -358,7 +359,7 @@ func assertNoToken(t *testing.T, upstream *http.Request) {
 func TestAppUserToken_Rotation(t *testing.T) {
 	t.Parallel()
 	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1", "k2"), "k2"))
-	client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-5", Email: "a@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
+	client := env.oidcLogin(env.providers[0], &testutil.MockUser{Subject: "sub-5", Email: "a@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
 
 	require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/").StatusCode)
 	tok := env.verify(env.lastAppRequest().Header.Get(apptoken.HeaderName))
