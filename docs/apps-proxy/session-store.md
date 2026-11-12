@@ -139,6 +139,9 @@ and the store keeps the session with the previous refresh token. An IdP that
 rotates refresh tokens and detects reuse then rejects that token at the next
 refresh, and the user logs in again.
 
+Known limit, not related to the store: an IdP 5xx during a refresh logs the
+user out when the session's tokens have expired (AJDA-3829).
+
 ## 5. Metrics
 
 OpenTelemetry names. In Prometheus and Datadog the dots are underscores and
@@ -216,7 +219,6 @@ kubectl -n apps-proxy exec <valkey-pod> -- sh -c \
 | Users logged out after their session was evicted | Valkey reached `maxmemory` | `evicted_keys` in `INFO stats`; memory alerts |
 | All OAuth users log in once | A switch between `cookie` and `redis` | Expected, section 6 |
 | "Unable to find a valid CSRF token" | Login spanned old and new pods during a switch | Expected during the rollout; try again |
-| A user is logged out while the IdP returns 5xx | A refresh failed and the session's tokens had expired; not the store | apps-proxy log `Unable to refresh session: …`; see [login-session.md](login-session.md) |
 
 ## 9. Code Map
 
