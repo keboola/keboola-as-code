@@ -1,0 +1,297 @@
+package proxy_test
+
+import (
+	"crypto/sha256"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"regexp"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/oauth2-proxy/mockoidc"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+	sessionsapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/encryption"
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/sessions/cookie"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
+)
+
+const migratedCounter = "keboola.go.appsproxy.sessionstore.migrated"
+
+type migrationEnvs struct {
+	cookie *previewEnv
+	redis  *previewEnv
+}
+
+func startMigrationEnvs(t *testing.T, mutate ...envMutator) migrationEnvs {
+	t.Helper()
+	mutate = append([]envMutator{fixedCookieSalt}, mutate...)
+	return migrationEnvs{cookie: startPreviewEnv(t, mutate...), redis: startRedisEnv(t, mutate...)}
+}
+
+// cookieStoreClient logs in at the cookie-mode env and returns a redis-mode client holding the cookie-store session.
+func (m migrationEnvs) cookieStoreClient(user *mockoidc.MockUser) *http.Client {
+	m.cookie.t.Helper()
+	return m.redis.clientWithCookies(m.cookie.oidcLogin(m.cookie.providers[0], user, oidcOrigin+"/"))
+}
+
+// oldCookieClient logs in, then returns a client holding only a cookie-store copy of that session, changed by mutate
+// and signed with the secret of providerID. The env holds no session key afterwards.
+func (e *previewEnv) oldCookieClient(providerID string, mutate func(s *sessionsapi.SessionState)) *http.Client {
+	e.t.Helper()
+	session := e.loadOIDCSession(e.oidcLogin(e.providers[0], freshnessUser(), oidcOrigin+"/"))
+	mutate(session)
+	e.redis.FlushAll()
+
+	store, err := cookie.NewCookieSessionStore(&options.SessionOptions{Type: options.CookieSessionStoreType}, &options.Cookie{
+		Name:     oauthCookieName,
+		Secret:   oidcCookieSecret(e, providerID),
+		Domains:  []string{oidcHost},
+		Path:     "/",
+		Expire:   24 * time.Hour,
+		Secure:   true,
+		HTTPOnly: true,
+		SameSite: "strict",
+	})
+	require.NoError(e.t, err)
+	rec := httptest.NewRecorder()
+	require.NoError(e.t, store.Save(rec, httptest.NewRequestWithContext(e.t.Context(), http.MethodGet, oidcOrigin+"/", nil), session))
+	client := e.clientWithCookies(nil)
+	client.Jar.SetCookies(oidcCookieURL, rec.Result().Cookies())
+	require.Equal(e.t, []string{oauthCookieName}, oldCookieNames(client))
+	return client
+}
+
+func oidcCookieSecret(env *previewEnv, providerID string) string {
+	h := sha256.New()
+	h.Write([]byte("oidc/" + providerID + "/" + env.d.Config().CookieSecretSalt))
+	return fmt.Sprintf("%x", h.Sum(nil)[:16])
+}
+
+func (e *previewEnv) requireLoginRedirect(resp *http.Response) {
+	e.t.Helper()
+	require.Equal(e.t, http.StatusFound, resp.StatusCode)
+	assert.Contains(e.t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
+}
+
+func oldCookieNames(client *http.Client) []string {
+	var names []string
+	for _, c := range client.Jar.Cookies(oidcCookieURL) {
+		if regexp.MustCompile(`^_oauth2_proxy(_\d+)?$`).MatchString(c.Name) {
+			names = append(names, c.Name)
+		}
+	}
+	return names
+}
+
+func TestCookieStoreMigration_SingleCookie(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	client := envs.cookieStoreClient(freshnessUser())
+	require.Equal(t, []string{oauthCookieName}, oldCookieNames(client))
+
+	resp := envs.redis.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.True(t, expiresCookie(resp, oauthCookieName))
+	assert.Contains(t, setCookieNames(resp), ticketCookieName)
+	assert.Equal(t, "admin@keboola.com", envs.redis.lastAppRequest().Header.Get("X-Kbc-User-Email"))
+	assert.Len(t, envs.redis.ticketKeys(), 1)
+	assert.Empty(t, oldCookieNames(client))
+	assert.Equal(t, int64(1), envs.redis.counterValue(migratedCounter))
+
+	resp = envs.redis.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Len(t, envs.redis.ticketKeys(), 1)
+	assert.Equal(t, int64(1), envs.redis.counterValue(migratedCounter))
+}
+
+func TestCookieStoreMigration_SplitCookie(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	client := envs.cookieStoreClient(manyGroupsUser(200))
+	chunks := oldCookieNames(client)
+	require.Contains(t, chunks, oauthCookieName+"_0")
+	require.Contains(t, chunks, oauthCookieName+"_1")
+
+	resp := envs.redis.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	for _, name := range chunks {
+		assert.True(t, expiresCookie(resp, name), name)
+	}
+	assert.Contains(t, envs.redis.lastAppRequest().Header.Get("X-Kbc-User-Roles"), "group-with-a-long-name-198")
+	assert.Len(t, envs.redis.ticketKeys(), 1)
+	assert.Empty(t, oldCookieNames(client))
+	assert.Equal(t, int64(1), envs.redis.counterValue(migratedCounter))
+}
+
+func TestCookieStoreMigration_Disabled(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t, func(cfg *config.Config, _ *previewtest.JWKSServer) {
+		cfg.SessionStore.MigrateCookieStore = false
+	})
+	client := envs.cookieStoreClient(freshnessUser())
+
+	resp := envs.redis.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusFound, resp.StatusCode)
+	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
+	assert.False(t, expiresCookie(resp, oauthCookieName))
+	assert.Empty(t, envs.redis.ticketKeys())
+}
+
+func TestCookieStoreMigration_KeepsCreatedAt(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+	createdAt := ago(23 * time.Hour)
+	client := env.oldCookieClient("oidc", func(s *sessionsapi.SessionState) {
+		s.RefreshToken = ""
+		s.CreatedAt = createdAt
+	})
+
+	resp := env.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.WithinDuration(t, *createdAt, *env.loadOIDCSession(client).CreatedAt, time.Second)
+
+	ticket := jarCookie(client, ticketCookieName)
+	require.NotNil(t, ticket)
+	secret := oidcCookieSecret(env, "oidc")
+	_, _, ok := encryption.Validate(ticket, secret, 24*time.Hour)
+	assert.True(t, ok)
+	_, _, ok = encryption.Validate(ticket, secret, 22*time.Hour)
+	assert.False(t, ok, "the ticket must expire when the old cookie would have")
+}
+
+func TestCookieStoreMigration_RefreshesOldSession(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+	client := env.oldCookieClient("oidc", func(s *sessionsapi.SessionState) {
+		require.NotEmpty(t, s.RefreshToken)
+		s.CreatedAt = ago(2 * time.Hour)
+	})
+
+	resp := env.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.WithinDuration(t, time.Now(), *env.loadOIDCSession(client).CreatedAt, time.Minute)
+	assert.Len(t, env.ticketKeys(), 1)
+	assert.Equal(t, int64(1), env.counterValue(migratedCounter))
+}
+
+func TestCookieStoreMigration_StoreDownKeepsOldCookie(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	client := envs.cookieStoreClient(freshnessUser())
+
+	envs.redis.redis.Close()
+	resp := envs.redis.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.Contains(t, readBody(t, resp), "Sign-in is temporarily unavailable. Please try again in a moment.")
+	assert.False(t, expiresCookie(resp, oauthCookieName))
+	assert.Equal(t, []string{oauthCookieName}, oldCookieNames(client))
+	assert.Equal(t, int64(1), envs.redis.counterValue("keboola.go.appsproxy.sessionstore.unavailable"))
+	assert.Equal(t, int64(0), envs.redis.counterValue(migratedCounter))
+
+	require.NoError(t, envs.redis.redis.Restart())
+	resp = envs.redis.send(client, oidcOrigin+"/some/path")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, int64(1), envs.redis.counterValue(migratedCounter))
+}
+
+func TestCookieStoreMigration_SignOutAfterMigrationSticks(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	client := envs.cookieStoreClient(freshnessUser())
+	require.Equal(t, http.StatusOK, envs.redis.send(client, oidcOrigin+"/some/path").StatusCode)
+
+	envs.redis.send(client, oidcOrigin+"/_proxy/sign_out")
+	assert.Empty(t, envs.redis.ticketKeys())
+
+	envs.redis.requireLoginRedirect(envs.redis.send(client, oidcOrigin+"/some/path"))
+	assert.Empty(t, envs.redis.ticketKeys())
+	assert.Equal(t, int64(1), envs.redis.counterValue(migratedCounter))
+}
+
+func TestCookieStoreMigration_SignOutClearsOldCookie(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	client := envs.cookieStoreClient(freshnessUser())
+
+	resp := envs.redis.send(client, oidcOrigin+"/_proxy/sign_out")
+	assert.True(t, expiresCookie(resp, oauthCookieName))
+	assert.Empty(t, envs.redis.ticketKeys())
+	assert.Empty(t, oldCookieNames(client))
+
+	envs.redis.requireLoginRedirect(envs.redis.send(client, oidcOrigin+"/some/path"))
+	assert.Equal(t, int64(0), envs.redis.counterValue(migratedCounter))
+}
+
+func TestCookieStoreMigration_FatalRefreshLogsOutOnce(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+	client := env.oldCookieClient("oidc", func(s *sessionsapi.SessionState) {
+		require.NotEmpty(t, s.RefreshToken)
+		s.CreatedAt = ago(2 * time.Hour)
+	})
+	// The IdP no longer knows the session, so the refresh gets invalid_grant.
+	clear(env.providers[0].SessionStore.Store)
+
+	env.requireLoginRedirect(env.send(client, oidcOrigin+"/some/path"))
+	assert.Empty(t, oldCookieNames(client))
+	assert.Nil(t, jarCookie(client, ticketCookieName))
+	assert.Empty(t, env.ticketKeys())
+
+	env.requireLoginRedirect(env.send(client, oidcOrigin+"/some/path"))
+	assert.Empty(t, env.ticketKeys())
+	assert.Equal(t, int64(1), env.counterValue(migratedCounter))
+}
+
+func TestCookieStoreMigration_InvalidOldCookie(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name  string
+		build func(env *previewEnv) *http.Client
+	}{
+		{
+			name: "tampered",
+			build: func(env *previewEnv) *http.Client {
+				client := env.oldCookieClient("oidc", func(*sessionsapi.SessionState) {})
+				c := jarCookie(client, oauthCookieName)
+				parts := strings.Split(c.Value, "|")
+				require.Len(env.t, parts, 3)
+				c.Value = parts[0] + "|" + parts[1] + "|" + strings.Repeat("A", len(parts[2]))
+				client.Jar.SetCookies(oidcCookieURL, []*http.Cookie{c})
+				return client
+			},
+		},
+		{
+			name: "older than 24 h",
+			build: func(env *previewEnv) *http.Client {
+				return env.oldCookieClient("oidc", func(s *sessionsapi.SessionState) {
+					s.CreatedAt = ago(24*time.Hour + time.Minute)
+				})
+			},
+		},
+		{
+			name: "other provider",
+			build: func(env *previewEnv) *http.Client {
+				return env.oldCookieClient("other", func(*sessionsapi.SessionState) {})
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			env := startRedisEnv(t)
+			client := tc.build(env)
+
+			env.requireLoginRedirect(env.send(client, oidcOrigin+"/some/path"))
+			assert.Empty(t, env.ticketKeys())
+			assert.Nil(t, jarCookie(client, ticketCookieName))
+			assert.Equal(t, int64(0), env.counterValue(migratedCounter))
+		})
+	}
+}
