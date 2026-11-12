@@ -295,3 +295,102 @@ func TestCookieStoreMigration_InvalidOldCookie(t *testing.T) {
 		})
 	}
 }
+
+// shareIdP points the oidc app of env "to" at the IdP of env "from", so a login started at one env can finish at the other.
+func shareIdP(from, to *previewEnv) {
+	app := to.appsAPI.Apps["oidc"]
+	app.AuthProviders = from.appsAPI.Apps["oidc"].AuthProviders
+	to.appsAPI.Apps["oidc"] = app
+}
+
+// startLogin starts a login at env and returns the callback URL the IdP sends the browser to.
+func (e *previewEnv) startLogin(client *http.Client) string {
+	e.t.Helper()
+	e.providers[0].QueueUser(freshnessUser())
+	resp := e.send(client, oidcOrigin+"/")
+	require.Equal(e.t, http.StatusFound, resp.StatusCode)
+	resp = e.send(client, resp.Header.Get("Location"))
+	require.Equal(e.t, http.StatusFound, resp.StatusCode)
+	resp = e.send(client, resp.Header.Get("Location"))
+	require.Equal(e.t, http.StatusOK, resp.StatusCode)
+	callback := extractMetaRefreshTag(e.t, []byte(readBody(e.t, resp)))
+	require.Contains(e.t, callback, "/_proxy/callback")
+	return callback
+}
+
+func (e *previewEnv) requireLoggedIn(resp *http.Response, client *http.Client) {
+	e.t.Helper()
+	require.Equal(e.t, http.StatusFound, resp.StatusCode)
+	assert.Equal(e.t, "/", resp.Header.Get("Location"))
+	assert.Contains(e.t, setCookieNames(resp), e.oidcCookieName())
+	assert.Equal(e.t, http.StatusOK, e.send(client, oidcOrigin+"/some/path").StatusCode)
+}
+
+func TestCookieStoreMigration_LoginFromCookieModeFinishesInRedisMode(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	shareIdP(envs.cookie, envs.redis)
+	starter := envs.cookie.clientWithCookies(nil)
+	callback := envs.cookie.startLogin(starter)
+
+	client := envs.redis.clientWithCookies(starter)
+	envs.redis.requireLoggedIn(envs.redis.send(client, callback), client)
+	assert.Len(t, envs.redis.ticketKeys(), 1)
+}
+
+func TestCookieStoreMigration_LoginFromRedisModeFinishesInCookieMode(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	shareIdP(envs.redis, envs.cookie)
+	starter := envs.redis.clientWithCookies(nil)
+	callback := envs.redis.startLogin(starter)
+
+	client := envs.cookie.clientWithCookies(starter)
+	envs.cookie.requireLoggedIn(envs.cookie.send(client, callback), client)
+}
+
+func TestCookieStoreMigration_InvalidCookieModeCSRF(t *testing.T) {
+	t.Parallel()
+	const csrfName = oauthCookieName + "_csrf"
+	cases := []struct {
+		name   string
+		change func(env *previewEnv, c *http.Cookie)
+	}{
+		{
+			name: "tampered",
+			change: func(env *previewEnv, c *http.Cookie) {
+				parts := strings.Split(c.Value, "|")
+				require.Len(env.t, parts, 3)
+				c.Value = parts[0] + "|" + parts[1] + "|" + strings.Repeat("A", len(parts[2]))
+			},
+		},
+		{
+			name: "expired",
+			change: func(env *previewEnv, c *http.Cookie) {
+				secret := oidcCookieSecret(env, "oidc")
+				value, _, ok := encryption.Validate(c, secret, 15*time.Minute)
+				require.True(env.t, ok)
+				signed, err := encryption.SignedValue(secret, csrfName, value, time.Now().Add(-16*time.Minute))
+				require.NoError(env.t, err)
+				c.Value = signed
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			envs := startMigrationEnvs(t)
+			shareIdP(envs.cookie, envs.redis)
+			starter := envs.cookie.clientWithCookies(nil)
+			callback := envs.cookie.startLogin(starter)
+			c := jarCookie(starter, csrfName)
+			require.NotNil(t, c)
+			tc.change(envs.cookie, c)
+			starter.Jar.SetCookies(oidcCookieURL, []*http.Cookie{c})
+
+			resp := envs.redis.send(envs.redis.clientWithCookies(starter), callback)
+			assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+			assert.Empty(t, envs.redis.ticketKeys())
+		})
+	}
+}
