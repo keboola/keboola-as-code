@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	appupstream "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
+	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -31,6 +32,12 @@ const (
 	sessionExpire  = 24 * time.Hour
 )
 
+func providerUnavailableError(err error) error {
+	return svcErrors.
+		NewServiceUnavailableError(errors.PrefixError(err, "identity provider unavailable")).
+		WithUserMessage("The identity provider is not reachable. Please try again in a moment.")
+}
+
 func proxyConfig(
 	ctx context.Context,
 	cfg config.Config,
@@ -40,6 +47,7 @@ func proxyConfig(
 	app api.AppConfig,
 	oAuthProvider provider.OAuthProvider,
 	upstream chain.Handler,
+	metrics *Metrics,
 ) (*options.Options, error) {
 	// Generate unique cookies secret
 	secret, err := generateCookieSecret(cfg, app, oAuthProvider.ID())
@@ -77,6 +85,11 @@ func proxyConfig(
 		}
 
 		return selector.OnNeedsLogin(&app, pageWriter.WriteError)(rw, req)
+	}
+
+	v.OnProviderError = func(rw http.ResponseWriter, req *http.Request, err error) {
+		metrics.providerUnavailable.Add(req.Context(), 1)
+		pageWriter.WriteError(rw, req, &app, providerUnavailableError(err))
 	}
 	// Setup
 	domain := app.CookieDomain(cfg.API.PublicURL)
