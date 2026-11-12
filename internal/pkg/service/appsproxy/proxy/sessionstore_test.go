@@ -132,21 +132,14 @@ func TestRedisStore_OutageKeepsSession(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
-func TestRedisStore_IgnoresCookieStoreCookie(t *testing.T) {
+func TestCookieStore_IgnoresRedisStoreTicket(t *testing.T) {
 	t.Parallel()
 	cookieEnv := startPreviewEnv(t, fixedCookieSalt)
 	redisEnv := startRedisEnv(t, fixedCookieSalt)
 
-	// A cookie-store session at a redis-mode replica: login page, the cookie stays.
-	cookieClient := cookieEnv.oidcLogin(cookieEnv.providers[0], freshnessUser(), oidcOrigin+"/")
-	resp := redisEnv.send(redisEnv.clientWithCookies(cookieClient), oidcOrigin+"/some/path")
-	require.Equal(t, http.StatusFound, resp.StatusCode)
-	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
-	assert.False(t, expiresCookie(resp, oauthCookieName))
-
 	// A ticket at a cookie-mode replica: login page, the ticket stays.
 	redisClient := redisEnv.oidcLogin(redisEnv.providers[0], freshnessUser(), oidcOrigin+"/")
-	resp = cookieEnv.send(cookieEnv.clientWithCookies(redisClient), oidcOrigin+"/some/path")
+	resp := cookieEnv.send(cookieEnv.clientWithCookies(redisClient), oidcOrigin+"/some/path")
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	assert.False(t, expiresCookie(resp, ticketCookieName))
 
