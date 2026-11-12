@@ -1,6 +1,7 @@
 package proxy_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,11 +11,14 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/oauth2-proxy/mockoidc"
 	sessionsapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -312,4 +316,54 @@ func TestHealthCheck_IgnoresSessionStore(t *testing.T) {
 	resp = env.send(oidcClient, oidcOrigin+"/some/path")
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	assert.Equal(t, int64(1), env.counterValue("keboola.go.appsproxy.sessionstore.unavailable"))
+}
+
+// stopStoreBeforeNextSet closes miniredis right before the next SET command reaches it.
+type stopStoreBeforeNextSet struct {
+	mr    *miniredis.Miniredis
+	armed atomic.Bool
+}
+
+func (h *stopStoreBeforeNextSet) DialHook(next redis.DialHook) redis.DialHook { return next }
+
+func (h *stopStoreBeforeNextSet) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
+	return func(ctx context.Context, cmd redis.Cmder) error {
+		if cmd.Name() == "set" && h.armed.CompareAndSwap(true, false) {
+			h.mr.Close()
+		}
+		return next(ctx, cmd)
+	}
+}
+
+func (h *stopStoreBeforeNextSet) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.ProcessPipelineHook {
+	return next
+}
+
+func TestRedisStore_SaveAfterRefreshFails_KeepsSession(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+	env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
+		require.NotEmpty(t, s.RefreshToken)
+		s.CreatedAt = ago(2 * time.Hour)
+	})
+	hook := &stopStoreBeforeNextSet{mr: env.redis}
+	env.redisStore.AddHook(hook)
+	hook.armed.Store(true)
+
+	resp := env.send(client, oidcOrigin+"/some/path")
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.False(t, expiresCookie(resp, ticketCookieName), "the session cookie must be kept")
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "Sign-in is temporarily unavailable. Please try again in a moment.")
+	assert.False(t, hook.armed.Load(), "the store stopped before the save of the refreshed session")
+
+	require.NoError(t, env.redis.Restart())
+	// The refresh lock could not be released while the store was down. It expires on its TTL (2 s);
+	// miniredis only lets TTLs run out on FastForward.
+	assert.Len(t, slices.DeleteFunc(env.redis.Keys(), func(k string) bool { return !strings.HasSuffix(k, ".lock") }), 1)
+	env.redis.FastForward(3 * time.Second)
+	resp = env.send(client, oidcOrigin+"/some/path")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
