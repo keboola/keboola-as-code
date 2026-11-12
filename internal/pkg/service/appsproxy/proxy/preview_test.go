@@ -78,16 +78,17 @@ func startPreviewEnv(t *testing.T, mutate ...envMutator) *previewEnv {
 }
 
 // startRedisEnv starts the proxy with the redis login session store on miniredis.
-// The client options match the production defaults of config.SessionStore.
+// The pool and retries match the production defaults of config.SessionStore. The timeouts are longer:
+// a loaded CI runner with -race can stall a miniredis reply past the production 500 ms, which turns into a 503.
 func startRedisEnv(t *testing.T, mutate ...envMutator) *previewEnv {
 	t.Helper()
 	mr := miniredis.RunT(t)
 	defaults := config.New().SessionStore
 	client := redis.NewClient(&redis.Options{
 		Addr:         mr.Addr(),
-		DialTimeout:  defaults.DialTimeout,
-		ReadTimeout:  defaults.ReadTimeout,
-		WriteTimeout: defaults.WriteTimeout,
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
 		PoolSize:     defaults.PoolSize,
 		MaxRetries:   defaults.MaxRetries,
 	})
