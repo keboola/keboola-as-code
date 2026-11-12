@@ -26,7 +26,7 @@ import (
 )
 
 // CookieName is the oauth2-proxy session cookie. Every other cookie oauth2-proxy sets starts with "<CookieName>_":
-// the CSRF cookies and the parts of a split session.
+// the CSRF cookies, the parts of a split session and the redis store ticket.
 const CookieName = "_oauth2_proxy"
 
 // SessionStore selects the login session store: the cookie store when Client is nil.
@@ -39,7 +39,7 @@ const (
 	sessionRefresh = time.Hour
 	sessionExpire  = 24 * time.Hour
 
-	redisSessionCookieName = "_oauth2_proxy_ticket"
+	redisSessionCookieName = CookieName + "_ticket"
 )
 
 func proxyConfig(

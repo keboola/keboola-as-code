@@ -205,3 +205,22 @@ func TestUpstreamCookies(t *testing.T) {
 	env.setDevMode("app-auth", authRef, false)
 	env.assertAppGetsOnlyItsCookies("basic auth", withAllCookies(t, basicClient, authHost, recorded), authHost)
 }
+
+// TestUpstreamCookies_RedisStore checks that the redis store's ticket and CSRF cookies never reach the app.
+func TestUpstreamCookies_RedisStore(t *testing.T) {
+	t.Parallel()
+	env := startRedisEnv(t)
+	recorder := env.recordSetCookies()
+	env.syncClock()
+
+	oidcClient := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+	require.Equal(t, http.StatusOK, env.send(oidcClient, oidcOrigin+"/", "Accept", "text/html").StatusCode)
+
+	recorded := recorder.sorted()
+	t.Logf("cookies set by apps-proxy: %v", recorded)
+	require.Contains(t, recorded, ticketCookieName)
+	require.Contains(t, recorded, ticketCookieName+"_csrf")
+	require.NotNil(t, jarCookie(oidcClient, ticketCookieName))
+
+	env.assertAppGetsOnlyItsCookies("OIDC redis store", withAllCookies(t, oidcClient, oidcHost, recorded), oidcHost)
+}
