@@ -39,8 +39,17 @@ the refresh token:
   so its 24-hour window starts again. An active user is never logged out.
 - `invalid_grant` (user disabled, token revoked): the cookie is deleted and the
   user must log in.
-- Any other error (IdP down): the session is checked as before the refresh and
-  kept if its tokens are still valid. The next request tries again.
+- IdP not reachable (HTTP 5xx or 429, timeout, connection error): the cookie
+  is kept, the request is not served, and the user sees a 503 page "The
+  identity provider is not reachable". The next request tries the refresh again, so the
+  app works again as soon as the IdP answers. The counter
+  `keboola.go.appsproxy.auth.provider_unavailable` counts these pages. If the
+  client has already gone (reload, closed tab), the cookie is kept and nothing
+  is written.
+- Any other error (for example `invalid_request`, `unauthorized_client`, or an
+  ID token in the IdP answer that fails verification): the session is checked
+  as before the refresh and kept only if its tokens are still valid, otherwise
+  the cookie is deleted.
 
 Allowed groups are checked on every request against the groups in the cookie,
 so a user removed from an allowed group loses access at the next refresh.
@@ -141,7 +150,9 @@ response, or the user is sent to log in. apps-proxy never refreshes inside a
 websocket: an IdP that rotates refresh tokens would cancel the token the cookie
 still holds.
 
-If a refresh failed without ending the session, the next close is 1 hour later.
+While the IdP is not reachable, the reconnect gets the 503 page and the
+browser retries. If a refresh failed for another reason and the session was
+kept, the next close is 1 hour later.
 
 Each close writes one info log line:
 
@@ -166,9 +177,13 @@ Side effects of the close:
 - **Users see the app reconnect (a short "CONNECTING" label in Streamlit) about
   once an hour.** This is expected for a session with a refresh token. Check
   the logs for `websocket closed at its deadline: refresh due` with the app's
-  `proxy.app.id`, about 1 hour apart. If the reconnect fails, look next for
-  `Unable to refresh session` or `Fatal refresh error` (oauth2-proxy) for the
-  same app: the IdP refused the refresh, and the user must log in.
+  `proxy.app.id`, about 1 hour apart. If the reconnect fails, look next at the
+  oauth2-proxy lines for the same app. `Fatal refresh error`: the IdP refused
+  the refresh, and the user must log in. `Unable to refresh session` followed
+  by `Error loading cookied session: ..., keeping session`: the IdP did not
+  answer, the user sees the 503 page, and the next request tries again; the
+  counter `keboola.go.appsproxy.auth.provider_unavailable` rises at the same
+  time.
 - **The close repeats much more often than once an hour.** Look for many
   `refresh due` lines for one app within minutes. The likely cause is a refresh
   that does not reset the session time, for example clock skew between
