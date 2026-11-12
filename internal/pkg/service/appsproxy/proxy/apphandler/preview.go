@@ -81,7 +81,7 @@ func (h *appHandler) serveSessionRequiredPage(w http.ResponseWriter, req *http.R
 	})
 }
 
-func (h *appHandler) previewSessionValid(w http.ResponseWriter, req *http.Request, raw string) bool {
+func (h *appHandler) previewSessionValid(w http.ResponseWriter, raw string) bool {
 	if raw == "" || h.manager.preview == nil {
 		return false
 	}

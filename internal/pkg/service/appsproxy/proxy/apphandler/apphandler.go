@@ -157,7 +157,7 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 	// Removed from every request, so no upstream path ever sees it.
 	previewCookie := session.TakeCookie(req)
 
-	if h.previewSessionValid(w, req, previewCookie) {
+	if h.previewSessionValid(w, previewCookie) {
 		return h.upstream.ServeHTTPOrError(w, req)
 	}
 
