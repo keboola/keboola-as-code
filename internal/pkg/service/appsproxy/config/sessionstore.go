@@ -17,12 +17,14 @@ type SessionStore struct {
 	SentinelPassword   string   `configKey:"sentinelPassword" configUsage:"Sentinel ACL password." sensitive:"true"`
 	RedisUsername      string   `configKey:"redisUsername" configUsage:"Session store ACL user."`
 	RedisPassword      string   `configKey:"redisPassword" configUsage:"Session store ACL password." sensitive:"true"`
+	MigrateCookieStore bool     `configKey:"migrateCookieStore" configUsage:"When type is redis, move a valid cookie-store session into the store instead of asking for a new login."`
 }
 
 func newSessionStore() SessionStore {
 	return SessionStore{
-		Type:             SessionStoreCookie,
-		SentinelUsername: "sentinel",
+		Type:               SessionStoreCookie,
+		SentinelUsername:   "sentinel",
+		MigrateCookieStore: true,
 	}
 }
 

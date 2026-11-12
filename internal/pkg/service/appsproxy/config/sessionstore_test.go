@@ -25,6 +25,7 @@ func TestSessionStoreConfig_Defaults(t *testing.T) {
 	cfg := config.New()
 	assert.Equal(t, config.SessionStoreCookie, cfg.SessionStore.Type)
 	assert.Equal(t, "sentinel", cfg.SessionStore.SentinelUsername)
+	assert.True(t, cfg.SessionStore.MigrateCookieStore)
 
 	valid := requiredConfig(t)
 	require.NoError(t, configmap.ValidateAndNormalize(&valid))
