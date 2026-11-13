@@ -261,16 +261,106 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "empty-allowed-roles-array-app",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				// Request to app with invalid rule type
+				m[0].QueueUser(&testutil.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				// An empty array of allowed roles denies everyone, the login itself works
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://invalid3.hub.keboola.local/", nil)
 				require.NoError(t, err)
 				response, err := client.Do(request)
 				require.NoError(t, err)
-				require.Equal(t, http.StatusServiceUnavailable, response.StatusCode)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header.Get("Location")
+				assert.Contains(t, location, "/oidc/authorize?client_id=")
+
+				// Request to the OIDC provider
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header.Get("Location")
+
+				// Request to proxy callback
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
 				body, err := io.ReadAll(response.Body)
 				require.NoError(t, err)
-				assert.Contains(t, string(body), html.EscapeString(`Application "invalid3" has invalid configuration for authentication provider "oidc"`))
+
+				// Request to proxy callback - meta tag redirect
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+
+				// The logged-in user is denied and the app is never reached
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://invalid3.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+				body, err = io.ReadAll(response.Body)
+				require.NoError(t, err)
+				assert.Contains(t, string(body), "no group is currently allowed to open this application")
+				assert.Contains(t, string(body), `href="/_proxy/sign_out"`)
 				assert.Contains(t, string(body), pagewriter.ExceptionIDPrefix)
+				assert.NotContains(t, string(body), "Hello, client")
+
+				// Other paths and websocket upgrades are denied as well
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, "https://invalid3.hub.keboola.local/some/path", nil)
+				require.NoError(t, err)
+				request.Header.Set("Connection", "Upgrade")
+				request.Header.Set("Upgrade", "websocket")
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
+
+				assert.Empty(t, *appServer.Requests, "the app must not be reached")
+			},
+		},
+		{
+			name: "private-app-groups-only-with-scope",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				// This IdP sends groups only for the "groups" scope, which is not requested by default:
+				// the allowed group is not seen, the provider would need "scopes": ["groups"].
+				m[0].QueueUser(&mockoidc.MockUser{
+					Email:  "admin@keboola.com",
+					Groups: []string{"admin"},
+				})
+
+				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://oidc.hub.keboola.local/", nil)
+				require.NoError(t, err)
+				response, err := client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location := response.Header.Get("Location")
+
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusFound, response.StatusCode)
+				location = response.Header.Get("Location")
+
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, location, nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+				body, err := io.ReadAll(response.Body)
+				require.NoError(t, err)
+
+				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, extractMetaRefreshTag(t, body), nil)
+				require.NoError(t, err)
+				response, err = client.Do(request)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusForbidden, response.StatusCode)
 			},
 		},
 		{
@@ -518,7 +608,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-verified-email",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[0].QueueUser(&mockoidc.MockUser{
+				m[0].QueueUser(&testutil.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: new(true),
 					Groups:        []string{"admin"},
@@ -634,7 +724,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-missing-csrf-token",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[0].QueueUser(&mockoidc.MockUser{
+				m[0].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -703,7 +793,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-group-mismatch",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[0].QueueUser(&mockoidc.MockUser{
+				m[0].QueueUser(&testutil.MockUser{
 					Email:  "manager@keboola.com",
 					Groups: []string{"manager"},
 				})
@@ -716,6 +806,11 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				location := response.Header.Get("Location")
 				assert.Contains(t, location, "/oidc/authorize?client_id=")
+
+				// The groups scope is not requested, even with allowed roles (AJDA-3233)
+				authorizeURL, err := url.Parse(location)
+				require.NoError(t, err)
+				assert.Equal(t, "openid email profile", authorizeURL.Query().Get("scope"))
 
 				// Request to the OIDC provider
 				request, err = http.NewRequestWithContext(t.Context(), http.MethodGet, location, nil)
@@ -766,7 +861,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-unverified-email",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[0].QueueUser(&mockoidc.MockUser{
+				m[0].QueueUser(&testutil.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: new(false),
 					Groups:        []string{"admin"},
@@ -869,7 +964,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				appServer.Close()
 
-				m[0].QueueUser(&mockoidc.MockUser{
+				m[0].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -957,7 +1052,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "multi-app-basic-flow",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[1].QueueUser(&mockoidc.MockUser{
+				m[1].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin", "manager"},
 				})
@@ -1070,7 +1165,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "multi-app-redirect-to-selection-page",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[1].QueueUser(&mockoidc.MockUser{
+				m[1].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -1100,7 +1195,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "multi-app-unverified-email",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[1].QueueUser(&mockoidc.MockUser{
+				m[1].QueueUser(&testutil.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: new(false),
 					Groups:        []string{"admin"},
@@ -1169,7 +1264,7 @@ func TestAppProxyRouter(t *testing.T) {
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				appServer.Close()
 
-				m[1].QueueUser(&mockoidc.MockUser{
+				m[1].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -1310,7 +1405,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-websocket",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[0].QueueUser(&mockoidc.MockUser{
+				m[0].QueueUser(&testutil.MockUser{
 					Email:         "admin@keboola.com",
 					EmailVerified: new(true),
 					Groups:        []string{"admin"},
@@ -1406,7 +1501,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "multi-app-websocket",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[1].QueueUser(&mockoidc.MockUser{
+				m[1].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -1527,7 +1622,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "prefix-app-api-auth",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[0].QueueUser(&mockoidc.MockUser{
+				m[0].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -1586,7 +1681,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "prefix-app-web-auth",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[1].QueueUser(&mockoidc.MockUser{
+				m[1].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -1664,7 +1759,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "shared-provider",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[1].QueueUser(&mockoidc.MockUser{
+				m[1].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -1798,7 +1893,7 @@ func TestAppProxyRouter(t *testing.T) {
 				counter := atomic.NewInt64(0)
 				for range 100 {
 					wg.Go(func() {
-						m[0].QueueUser(&mockoidc.MockUser{
+						m[0].QueueUser(&testutil.MockUser{
 							Email:         "admin@keboola.com",
 							EmailVerified: new(true),
 							Groups:        []string{"admin"},
@@ -1965,7 +2060,7 @@ func TestAppProxyRouter(t *testing.T) {
 				}, 5*time.Second, 50*time.Millisecond)
 			},
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[0].QueueUser(&mockoidc.MockUser{
+				m[0].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -2051,7 +2146,7 @@ func TestAppProxyRouter(t *testing.T) {
 				}, 5*time.Second, 50*time.Millisecond)
 			},
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[0].QueueUser(&mockoidc.MockUser{
+				m[0].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -2111,7 +2206,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-no-wakeup",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[0].QueueUser(&mockoidc.MockUser{
+				m[0].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})
@@ -2594,7 +2689,7 @@ func TestAppProxyRouter(t *testing.T) {
 		return testCase{
 			name: "private-app-oidc-" + method,
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				m[0].QueueUser(&mockoidc.MockUser{
+				m[0].QueueUser(&testutil.MockUser{
 					Email:  "admin@keboola.com",
 					Groups: []string{"admin"},
 				})

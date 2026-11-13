@@ -13,7 +13,6 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
-	"github.com/oauth2-proxy/mockoidc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -24,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/session"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
 )
 
 const publicHost = "public-123.hub.keboola.local"
@@ -73,13 +73,13 @@ func (e *previewEnv) recordSetCookies() *setCookieRecorder {
 }
 
 // largeSessionUser has enough groups to split the oauth2-proxy session cookie into parts.
-func largeSessionUser() *mockoidc.MockUser {
+func largeSessionUser() *testutil.MockUser {
 	groups := make([]string, 0, 201)
 	groups = append(groups, "admin")
 	for range 200 {
 		groups = append(groups, rand.Text())
 	}
-	return &mockoidc.MockUser{Subject: "sub-1", Email: "admin@keboola.com", EmailVerified: new(true), Groups: groups}
+	return &testutil.MockUser{Subject: "sub-1", Email: "admin@keboola.com", EmailVerified: new(true), Groups: groups}
 }
 
 func cookieNames(header string) []string {

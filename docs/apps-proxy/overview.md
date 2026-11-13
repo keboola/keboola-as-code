@@ -17,6 +17,7 @@
 
 ## Further docs
 
+- [allowed-roles.md](allowed-roles.md) — `allowedRoles`, the login scope, and how a denied access is logged.
 - [login-session.md](login-session.md) — how long a login lasts, refresh, and websocket closes.
 - [app-cookies.md](app-cookies.md) — the cookies the app receives, and the apps-proxy cookies removed before it.
 - [app-user-token.md](app-user-token.md) — the signed `X-Kbc-App-User-Token` passed to apps, and its JWKS.

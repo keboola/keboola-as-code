@@ -11,6 +11,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -33,9 +34,18 @@ func newScopeResolver(logger log.Logger, client client.Client) scopeResolver {
 }
 
 // scope returns the scope to request at login, or "" to keep the oauth2-proxy default.
+// The OIDC scope is always explicit: the oauth2-proxy default adds "groups" whenever allowed groups are set.
 func (r scopeResolver) scope(ctx context.Context, p options.Provider) string {
 	if p.Type != options.OIDCProvider {
-		return ""
+		return p.Scope
+	}
+
+	scope := p.Scope
+	if scope == "" {
+		scope = provider.DefaultOIDCScope
+	}
+	if slices.Contains(strings.Fields(scope), offlineAccessScope) {
+		return scope
 	}
 
 	// The handler built here is cached, so a cancelled triggering request must not decide its scope.
@@ -49,17 +59,12 @@ func (r scopeResolver) scope(ctx context.Context, p options.Provider) string {
 		Send(ctx)
 	if err != nil {
 		r.logger.Warnf(ctx, `cannot read OIDC discovery of "%s", "%s" scope not requested: %s`, p.OIDCConfig.IssuerURL, offlineAccessScope, err)
-		return ""
+		return scope
 	}
 
 	if !slices.Contains(doc.ScopesSupported, offlineAccessScope) {
-		return ""
+		return scope
 	}
 
-	// Must match the oauth2-proxy OIDC default, which applies only while Scope is empty.
-	scope := "openid email profile"
-	if len(p.AllowedGroups) > 0 {
-		scope += " groups"
-	}
 	return scope + " " + offlineAccessScope
 }

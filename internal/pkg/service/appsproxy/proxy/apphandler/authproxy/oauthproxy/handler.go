@@ -42,6 +42,16 @@ func NewHandler(
 	var err error
 	handler := &Handler{providerName: auth.Name()}
 
+	// An empty list of allowed roles: the user logs in as usual, so the denial can name them, but never reaches the app.
+	var denyPage *pageWriter
+	if d, ok := auth.(interface{ DeniesAll() bool }); ok && d.DeniesAll() {
+		upstream = chain.HandlerFunc(func(w http.ResponseWriter, req *http.Request) error {
+			exceptionID := pagewriter.ExceptionIDPrefix + req.Header.Get(config.RequestIDHeader)
+			denyPage.writeAccessDenied(w, req, pagewriter.AccessDeniedAll, "No group is allowed to access this application.", exceptionID)
+			return nil
+		})
+	}
+
 	// Create proxy configuration
 	handler.proxyConfig, err = proxyConfig(ctx, cfg, newScopeResolver(logger, httpClient), selector, pw, app, auth, upstream)
 	if err != nil {
@@ -55,6 +65,7 @@ func NewHandler(
 		handler.initErr = wrapHandlerInitErr(app, auth, err)
 		return handler
 	}
+	denyPage = pageWriter
 
 	// Create proxy HTTP handler
 	authValidator := func(email string) bool { return true } // there is no need to verify individual users
