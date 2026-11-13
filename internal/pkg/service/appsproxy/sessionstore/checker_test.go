@@ -3,6 +3,7 @@ package sessionstore
 import (
 	"context"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -22,6 +23,28 @@ type checkerHarness struct {
 	clock   *clockwork.FakeClock
 	logger  log.DebugLogger
 	checker *Checker
+	pings   *atomic.Int64
+}
+
+// countPings counts the pings that have returned, so a test can wait until a check has run.
+type countPings struct {
+	pings *atomic.Int64
+}
+
+func (h countPings) DialHook(next redis.DialHook) redis.DialHook { return next }
+
+func (h countPings) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
+	return func(ctx context.Context, cmd redis.Cmder) error {
+		err := next(ctx, cmd)
+		if cmd.Name() == "ping" {
+			h.pings.Add(1)
+		}
+		return err
+	}
+}
+
+func (h countPings) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.ProcessPipelineHook {
+	return next
 }
 
 func newCheckerHarness(t *testing.T) *checkerHarness {
@@ -29,16 +52,28 @@ func newCheckerHarness(t *testing.T) *checkerHarness {
 	mr := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr(), MaxRetries: -1, DialTimeout: 200 * time.Millisecond})
 	t.Cleanup(func() { _ = client.Close() })
+	pings := &atomic.Int64{}
+	client.AddHook(countPings{pings: pings})
 	clock := clockwork.NewFakeClock()
 	logger := log.NewDebugLogger()
-	return &checkerHarness{mr: mr, client: client, clock: clock, logger: logger, checker: NewChecker(logger, clock, client)}
+	return &checkerHarness{mr: mr, client: client, clock: clock, logger: logger, checker: NewChecker(logger, clock, client), pings: pings}
 }
 
-// tick advances the fake clock by one interval, once the checker waits on its ticker.
+// tick advances the fake clock by one interval and waits until the check it triggers has pinged.
+// The ticker counts as a waiter from its creation, so BlockUntil alone does not wait for a check.
 func (h *checkerHarness) tick(t *testing.T) {
 	t.Helper()
+	before := h.pings.Load()
 	require.NoError(t, h.clock.BlockUntilContext(t.Context(), 1))
 	h.clock.Advance(checkInterval)
+	require.Eventually(t, func() bool { return h.pings.Load() > before }, 5*time.Second, 10*time.Millisecond)
+}
+
+// waitLogged waits until the messages contain the line exactly n times; the state is stored before it is logged.
+func waitLogged(t *testing.T, messages func() string, substr string, n int) {
+	t.Helper()
+	require.Eventually(t, func() bool { return countLines(messages(), substr) == n }, 5*time.Second, 10*time.Millisecond,
+		"expected %d %q lines in %s", n, substr, messages())
 }
 
 func (h *checkerHarness) waitUp(t *testing.T, up bool) {
@@ -82,7 +117,7 @@ func TestChecker_Recovers(t *testing.T) {
 	require.NoError(t, h.mr.Restart())
 	h.tick(t)
 	h.waitUp(t, true)
-	assert.Equal(t, 1, countLines(h.logger.InfoMessages(), "session store is up"))
+	waitLogged(t, h.logger.InfoMessages, "session store is up", 1)
 }
 
 func TestChecker_UpAtStartup(t *testing.T) {
@@ -98,13 +133,15 @@ func TestChecker_LogsOnlyStateChanges(t *testing.T) {
 	h := newCheckerHarness(t)
 	h.checker.Start(t.Context())
 	h.waitUp(t, true)
+	waitLogged(t, h.logger.InfoMessages, "session store is up", 1)
 
 	h.mr.Close()
 	for range 5 {
 		h.tick(t)
 	}
-	h.waitUp(t, false)
-	require.NoError(t, h.clock.BlockUntilContext(t.Context(), 1))
+	// One more check: the checks run one after another, so the five before it have logged.
+	h.tick(t)
+	assert.False(t, h.checker.Up())
 	assert.Equal(t, 1, countLines(h.logger.WarnMessages(), "session store is down"))
 	assert.Equal(t, 1, countLines(h.logger.InfoMessages(), "session store is up"))
 }
