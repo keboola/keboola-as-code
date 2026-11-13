@@ -17,9 +17,6 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/sessions/cookie"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
 )
 
 const migratedCounter = "keboola.go.appsproxy.sessionstore.migrated"
@@ -29,10 +26,9 @@ type migrationEnvs struct {
 	redis  *previewEnv
 }
 
-func startMigrationEnvs(t *testing.T, mutate ...envMutator) migrationEnvs {
+func startMigrationEnvs(t *testing.T) migrationEnvs {
 	t.Helper()
-	mutate = append([]envMutator{fixedCookieSalt}, mutate...)
-	return migrationEnvs{cookie: startPreviewEnv(t, mutate...), redis: startRedisEnv(t, mutate...)}
+	return migrationEnvs{cookie: startPreviewEnv(t, fixedCookieSalt), redis: startRedisEnv(t, fixedCookieSalt)}
 }
 
 // cookieStoreClient logs in at the cookie-mode env and returns a redis-mode client holding the cookie-store session.
@@ -128,20 +124,6 @@ func TestCookieStoreMigration_SplitCookie(t *testing.T) {
 	assert.Len(t, envs.redis.ticketKeys(), 1)
 	assert.Empty(t, oldCookieNames(client))
 	assert.Equal(t, int64(1), envs.redis.counterValue(migratedCounter))
-}
-
-func TestCookieStoreMigration_Disabled(t *testing.T) {
-	t.Parallel()
-	envs := startMigrationEnvs(t, func(cfg *config.Config, _ *previewtest.JWKSServer) {
-		cfg.SessionStore.MigrateCookieStore = false
-	})
-	client := envs.cookieStoreClient(freshnessUser())
-
-	resp := envs.redis.send(client, oidcOrigin+"/some/path")
-	require.Equal(t, http.StatusFound, resp.StatusCode)
-	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
-	assert.False(t, expiresCookie(resp, oauthCookieName))
-	assert.Empty(t, envs.redis.ticketKeys())
 }
 
 func TestCookieStoreMigration_KeepsCreatedAt(t *testing.T) {

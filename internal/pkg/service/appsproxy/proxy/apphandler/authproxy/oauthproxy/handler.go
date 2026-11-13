@@ -51,7 +51,7 @@ func NewHandler(
 		return handler
 	}
 
-	if sessionStore.Client != nil && cfg.SessionStore.MigrateCookieStore {
+	if sessionStore.Client != nil {
 		handler.migration, err = newCookieStoreMigration(logger, handler.proxyConfig, sessionStore)
 		if err != nil {
 			handler.initErr = wrapHandlerInitErr(app, auth, err)
