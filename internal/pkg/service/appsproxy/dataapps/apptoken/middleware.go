@@ -55,7 +55,7 @@ func (m *Minter) mint(ctx context.Context, app api.AppConfig, workload k8sapp.Wo
 		IDP:       id.idp,
 		Email:     id.email,
 		Groups:    id.groups,
-		Kbc:       sdk.KbcClaims{ProjectID: app.ProjectID, AppID: app.ID.String(), WorkspaceID: m.workspaceID(ctx, workload)},
+		Kbc:       sdk.KbcClaims{ProjectID: app.ProjectID, AppID: app.ID.String(), WorkspaceID: m.workspaceID(workload)},
 		ID:        jti,
 		IssuedAt:  jwt.NewNumericDate(now),
 		ExpiresAt: jwt.NewNumericDate(now.Add(m.ttl)),
@@ -72,8 +72,8 @@ func (m *Minter) mint(ctx context.Context, app api.AppConfig, workload k8sapp.Wo
 
 // workspaceID is read per request: a promotion moves the App to another
 // Sandbox without rebuilding the handler.
-func (m *Minter) workspaceID(ctx context.Context, workload k8sapp.WorkloadRef) string {
-	info, ok := m.apps.GetState(ctx, workload)
+func (m *Minter) workspaceID(workload k8sapp.WorkloadRef) string {
+	info, ok := m.apps.GetState(workload)
 	if !ok {
 		return ""
 	}

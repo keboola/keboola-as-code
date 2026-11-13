@@ -97,8 +97,7 @@ wrongly mean "known, no groups", so it is never sent.
 - **`kbc.workspace_id`** comes from `status.workspace.id` of the Sandbox CR that
   runs the app: the draft Sandbox itself, or the App's `status.productionSandbox`.
   It is omitted when that Sandbox has no workspace or is not cached. This is a
-  valid state and is not logged. E2B apps do not run as Sandboxes yet, so they
-  get no `kbc.workspace_id`.
+  valid state and is not logged.
 
 ## 5. JWKS
 
