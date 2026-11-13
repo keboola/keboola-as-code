@@ -79,7 +79,7 @@ func TestProxyConfig_SessionLifetime(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			v, err := proxyConfig(t.Context(), cfg, SessionStore{}, scopes, nil, nil, app, tc.auth, nil)
+			v, err := proxyConfig(t.Context(), cfg, SessionStore{}, scopes, nil, nil, app, tc.auth, nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedRefresh, v.Cookie.Refresh)
 			assert.Equal(t, 24*time.Hour, v.Cookie.Expire)
@@ -129,7 +129,7 @@ func TestProxyConfig_Scope(t *testing.T) {
 			if tc.gitlab {
 				auth = provider.GitLab{OIDC: testOIDC(issuer, tc.allowedRoles)}
 			}
-			v, err := proxyConfig(t.Context(), cfg, SessionStore{}, scopes, nil, nil, app, auth, nil)
+			v, err := proxyConfig(t.Context(), cfg, SessionStore{}, scopes, nil, nil, app, auth, nil, nil)
 			require.NoError(t, err)
 			require.Len(t, v.Providers, 1)
 			assert.Equal(t, tc.expected, v.Providers[0].Scope)
