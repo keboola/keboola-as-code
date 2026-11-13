@@ -37,13 +37,7 @@ func TestNewClient_RedisOpensNoConnection(t *testing.T) {
 func TestFailoverOptions(t *testing.T) {
 	t.Parallel()
 
-	cfg := redisConfig()
-	cfg.DialTimeout = 100 * time.Millisecond
-	cfg.ReadTimeout = 200 * time.Millisecond
-	cfg.WriteTimeout = 300 * time.Millisecond
-	cfg.PoolSize = 7
-
-	o := failoverOptions(cfg)
+	o := failoverOptions(redisConfig())
 	assert.Equal(t, []string{"a:26379", "b:26379"}, o.SentinelAddrs)
 	assert.Equal(t, "mymaster", o.MasterName)
 	assert.Equal(t, "sentinel", o.SentinelUsername)
@@ -51,16 +45,8 @@ func TestFailoverOptions(t *testing.T) {
 	assert.Equal(t, "appsproxy", o.Username)
 	assert.Equal(t, "appsproxy-secret", o.Password)
 	assert.Equal(t, 1, o.MaxRetries)
-	assert.Equal(t, 100*time.Millisecond, o.DialTimeout)
-	assert.Equal(t, 200*time.Millisecond, o.ReadTimeout)
-	assert.Equal(t, 300*time.Millisecond, o.WriteTimeout)
-	assert.Equal(t, 7, o.PoolSize)
-}
-
-func TestFailoverOptions_ZeroRetriesDisablesRetries(t *testing.T) {
-	t.Parallel()
-
-	cfg := redisConfig()
-	cfg.MaxRetries = 0
-	assert.Equal(t, -1, failoverOptions(cfg).MaxRetries)
+	assert.Equal(t, 500*time.Millisecond, o.DialTimeout)
+	assert.Equal(t, 500*time.Millisecond, o.ReadTimeout)
+	assert.Equal(t, 500*time.Millisecond, o.WriteTimeout)
+	assert.Equal(t, 20, o.PoolSize)
 }

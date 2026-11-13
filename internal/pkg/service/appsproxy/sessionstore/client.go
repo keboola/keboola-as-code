@@ -1,9 +1,20 @@
 package sessionstore
 
 import (
+	"time"
+
 	"github.com/redis/go-redis/v9"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
+)
+
+// A short timeout and one retry let a request fail to the 503 page within about a second.
+const (
+	dialTimeout  = 500 * time.Millisecond
+	readTimeout  = 500 * time.Millisecond
+	writeTimeout = 500 * time.Millisecond
+	poolSize     = 20
+	maxRetries   = 1
 )
 
 func NewClient(cfg config.SessionStore) *redis.Client {
@@ -14,11 +25,6 @@ func NewClient(cfg config.SessionStore) *redis.Client {
 }
 
 func failoverOptions(cfg config.SessionStore) *redis.FailoverOptions {
-	// go-redis reads MaxRetries 0 as its default of 3; -1 disables retries.
-	maxRetries := -1
-	if cfg.MaxRetries > 0 {
-		maxRetries = cfg.MaxRetries
-	}
 	return &redis.FailoverOptions{
 		MasterName:       cfg.SentinelMasterName,
 		SentinelAddrs:    cfg.SentinelAddrs,
@@ -26,10 +32,10 @@ func failoverOptions(cfg config.SessionStore) *redis.FailoverOptions {
 		SentinelPassword: cfg.SentinelPassword,
 		Username:         cfg.RedisUsername,
 		Password:         cfg.RedisPassword,
-		DialTimeout:      cfg.DialTimeout,
-		ReadTimeout:      cfg.ReadTimeout,
-		WriteTimeout:     cfg.WriteTimeout,
-		PoolSize:         cfg.PoolSize,
+		DialTimeout:      dialTimeout,
+		ReadTimeout:      readTimeout,
+		WriteTimeout:     writeTimeout,
+		PoolSize:         poolSize,
 		MaxRetries:       maxRetries,
 	}
 }

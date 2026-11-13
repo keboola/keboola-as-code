@@ -2,7 +2,6 @@ package config_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,11 +25,6 @@ func TestSessionStoreConfig_Defaults(t *testing.T) {
 	cfg := config.New()
 	assert.Equal(t, config.SessionStoreCookie, cfg.SessionStore.Type)
 	assert.Equal(t, "sentinel", cfg.SessionStore.SentinelUsername)
-	assert.Equal(t, 500*time.Millisecond, cfg.SessionStore.DialTimeout)
-	assert.Equal(t, 500*time.Millisecond, cfg.SessionStore.ReadTimeout)
-	assert.Equal(t, 500*time.Millisecond, cfg.SessionStore.WriteTimeout)
-	assert.Equal(t, 20, cfg.SessionStore.PoolSize)
-	assert.Equal(t, 1, cfg.SessionStore.MaxRetries)
 
 	valid := requiredConfig(t)
 	require.NoError(t, configmap.ValidateAndNormalize(&valid))
@@ -48,9 +42,6 @@ func TestSessionStoreConfig_RedisNeedsSentinel(t *testing.T) {
 		{name: "no master name", mutate: func(c *config.SessionStore) { c.SentinelMasterName = "" }, wantErr: "sessionStore.sentinelMasterName"},
 		{name: "no sentinel username", mutate: func(c *config.SessionStore) { c.SentinelUsername = "" }, wantErr: "sessionStore.sentinelUsername"},
 		{name: "unknown type", mutate: func(c *config.SessionStore) { c.Type = "memory" }, wantErr: "sessionStore.type"},
-		{name: "zero dial timeout", mutate: func(c *config.SessionStore) { c.DialTimeout = 0 }, wantErr: "sessionStore.dialTimeout"},
-		{name: "zero pool size", mutate: func(c *config.SessionStore) { c.PoolSize = 0 }, wantErr: "sessionStore.poolSize"},
-		{name: "negative retries", mutate: func(c *config.SessionStore) { c.MaxRetries = -1 }, wantErr: "sessionStore.maxRetries"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

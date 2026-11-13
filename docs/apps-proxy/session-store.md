@@ -55,7 +55,7 @@ in the Secret `apps-proxy-valkey-credentials`, keys `default`, `appsproxy`,
 
 ## 3. Configuration
 
-ENV prefix `APPS_PROXY_`. The chart sets the first seven keys only when
+ENV prefix `APPS_PROXY_`. The chart sets these keys only when
 `sessionStore.type` is `redis`.
 
 | Config key | ENV | Default | Set by the chart |
@@ -67,15 +67,13 @@ ENV prefix `APPS_PROXY_`. The chart sets the first seven keys only when
 | `sessionStore.sentinelPassword` | `SESSION_STORE_SENTINEL_PASSWORD` | – | `sessionStore.sentinelPassword` |
 | `sessionStore.redisUsername` | `SESSION_STORE_REDIS_USERNAME` | – | `appsproxy` |
 | `sessionStore.redisPassword` | `SESSION_STORE_REDIS_PASSWORD` | – | `sessionStore.appsproxyPassword` |
-| `sessionStore.dialTimeout` | `SESSION_STORE_DIAL_TIMEOUT` | `500ms` | – |
-| `sessionStore.readTimeout` | `SESSION_STORE_READ_TIMEOUT` | `500ms` | – |
-| `sessionStore.writeTimeout` | `SESSION_STORE_WRITE_TIMEOUT` | `500ms` | – |
-| `sessionStore.poolSize` | `SESSION_STORE_POOL_SIZE` | `20` | – |
-| `sessionStore.maxRetries` | `SESSION_STORE_MAX_RETRIES` | `1` | – |
 
 `sentinelAddrs` is a comma-separated `host:port` list; one Service address is
-enough. `maxRetries: 0` means no retry. The short timeouts and the single retry
-make a request fail to the 503 page within about a second instead of waiting.
+enough.
+
+The client timeouts are fixed in code (`sessionstore/client.go`): dial, read
+and write 500 ms, one retry, a pool of 20 connections. They make a request fail
+to the 503 page within about a second instead of waiting.
 
 The startup log shows the mode: `Cookie settings: name:_oauth2_proxy_ticket …`
 in redis mode, `name:_oauth2_proxy …` in cookie mode. It is written when an
