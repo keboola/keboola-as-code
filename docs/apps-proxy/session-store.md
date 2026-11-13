@@ -277,7 +277,10 @@ the parts of this document about them. Then run `go mod tidy`:
 
 - Fast: set `sessionStore.type: cookie` and sync. Users whose cookie-store
   session is less than 24 hours old keep it, also when it was moved into Valkey
-  (section 6); the others log in once. The cookie-mode pods do not touch
+  (section 6); the others log in once. A moved session that was refreshed in
+  redis mode keeps the old refresh token in its cookie-store cookie; with an
+  IdP that rotates refresh tokens, that user logs in once at the next refresh
+  in cookie mode. The cookie-mode pods do not touch
   Valkey or the ticket cookie, so switching back to `redis` within 24 hours
   restores the Valkey sessions without a login.
 - Full: also set `valkey.enabled: false`. ArgoCD does not prune, so the Valkey
