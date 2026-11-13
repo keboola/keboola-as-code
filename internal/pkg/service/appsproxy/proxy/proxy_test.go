@@ -331,7 +331,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "public-app-down",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				appServer.Close()
+				appServer.Down()
 
 				// Request to public app
 				request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://public-123.hub.keboola.local/", nil)
@@ -867,7 +867,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "private-app-down",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				appServer.Close()
+				appServer.Down()
 
 				m[0].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",
@@ -1167,7 +1167,7 @@ func TestAppProxyRouter(t *testing.T) {
 		{
 			name: "multi-app-down",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
-				appServer.Close()
+				appServer.Down()
 
 				m[1].QueueUser(&mockoidc.MockUser{
 					Email:  "admin@keboola.com",

@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -24,6 +25,13 @@ import (
 type AppServer struct {
 	*httptest.Server
 	Requests *[]*http.Request
+	down     *atomic.Bool
+}
+
+// Down makes the app drop every connection without a response. Unlike Close, it keeps the port
+// taken, so no other test server can start on it and answer in the app's place.
+func (s *AppServer) Down() {
+	s.down.Store(true)
 }
 
 func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
@@ -137,14 +145,21 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 		l, err = lc.Listen(t.Context(), "tcp", fmt.Sprintf("[::1]:%d", port))
 	}
 
+	down := &atomic.Bool{}
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if down.Load() {
+			panic(http.ErrAbortHandler)
+		}
+		mux.ServeHTTP(w, r)
+	})
 	ts := &httptest.Server{
 		Listener:    l,
-		Config:      &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second},
+		Config:      &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second},
 		EnableHTTP2: true,
 	}
 	ts.Start()
 
-	return &AppServer{ts, &requests}
+	return &AppServer{Server: ts, Requests: &requests, down: down}
 }
 
 // AppServerURL returns the URL of the app server for use as the upstream target.

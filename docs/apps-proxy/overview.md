@@ -18,6 +18,7 @@
 ## Further docs
 
 - [login-session.md](login-session.md) — how long a login lasts, refresh, and websocket closes.
+- [session-store.md](session-store.md) — the login session store (cookie or Valkey): config, metrics, the 503 page, failover, switch and rollback.
 - [app-cookies.md](app-cookies.md) — the cookies the app receives, and the apps-proxy cookies removed before it.
 - [app-user-token.md](app-user-token.md) — the signed `X-Kbc-App-User-Token` passed to apps, and its JWKS.
 - [idle-suspend.md](idle-suspend.md) — what counts as activity for idle suspend, and how to check it.
