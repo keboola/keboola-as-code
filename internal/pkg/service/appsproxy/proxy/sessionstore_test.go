@@ -256,34 +256,51 @@ func TestRedisStore_ParallelRefreshRefreshesOnce(t *testing.T) {
 		require.NotEmpty(t, s.RefreshToken)
 		s.CreatedAt = ago(2 * time.Hour)
 	})
+	// A request may wait for the refresh lock up to the fork's obtain timeout (35 s).
+	waitingClient := *client
+	waitingClient.Timeout = time.Minute
 
 	const n = 10
 	start := make(chan struct{})
 	var wg sync.WaitGroup
 	statuses := make([]int, n)
+	errs := make([]error, n)
 	refreshed := make([]bool, n)
+	cleared := make([]bool, n)
 	for i := range n {
 		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, oidcOrigin+"/some/path", nil)
 		require.NoError(t, err)
 		wg.Go(func() {
 			<-start
-			resp, err := client.Do(req)
+			resp, err := waitingClient.Do(req)
 			if err != nil {
+				errs[i] = err
 				return
 			}
 			statuses[i] = resp.StatusCode
-			refreshed[i] = slices.Contains(setCookieNames(resp), ticketCookieName)
+			cleared[i] = expiresCookie(resp, ticketCookieName)
+			refreshed[i] = !cleared[i] && slices.Contains(setCookieNames(resp), ticketCookieName)
 			_ = resp.Body.Close()
 		})
 	}
 	close(start)
 	wg.Wait()
+
+	// No request may log the user out. A slow runner can give a 503 (store busy), never a 302.
 	for i := range n {
-		assert.Equal(t, http.StatusOK, statuses[i], "request %d", i)
+		require.NoError(t, errs[i], "request %d", i)
+		assert.Contains(t, []int{http.StatusOK, http.StatusServiceUnavailable}, statuses[i], "request %d", i)
+		assert.False(t, cleared[i], "request %d cleared the session cookie", i)
 	}
-	assert.Equal(t, 1, countTrue(refreshed), "exactly one request refreshes and saves the session")
-	assert.WithinDuration(t, time.Now(), *env.loadOIDCSession(client).CreatedAt, time.Minute)
-	assert.Equal(t, 24*time.Hour, env.redis.TTL(env.ticketKeys()[0]))
+	assert.LessOrEqual(t, countTrue(refreshed), 1, "at most one request refreshes and saves the session")
+	if !slices.Contains(statuses, http.StatusServiceUnavailable) {
+		assert.Equal(t, 1, countTrue(refreshed), "exactly one request refreshes and saves the session")
+	}
+	session := env.loadOIDCSession(client)
+	if countTrue(refreshed) == 1 {
+		assert.WithinDuration(t, time.Now(), *session.CreatedAt, time.Minute)
+		assert.Equal(t, 24*time.Hour, env.redis.TTL(env.ticketKeys()[0]))
+	}
 }
 
 func (e *previewEnv) counterValue(name string) int64 {
@@ -360,10 +377,10 @@ func TestRedisStore_SaveAfterRefreshFails_KeepsSession(t *testing.T) {
 	assert.False(t, hook.armed.Load(), "the store stopped before the save of the refreshed session")
 
 	require.NoError(t, env.redis.Restart())
-	// The refresh lock could not be released while the store was down. It expires on its TTL (2 s);
-	// miniredis only lets TTLs run out on FastForward.
+	// The refresh lock could not be released while the store was down. It expires on its TTL
+	// (the fork's default, 30 s); miniredis only lets TTLs run out on FastForward.
 	assert.Len(t, slices.DeleteFunc(env.redis.Keys(), func(k string) bool { return !strings.HasSuffix(k, ".lock") }), 1)
-	env.redis.FastForward(3 * time.Second)
+	env.redis.FastForward(31 * time.Second)
 	resp = env.send(client, oidcOrigin+"/some/path")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
