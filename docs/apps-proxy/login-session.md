@@ -187,11 +187,11 @@ Side effects of the close:
   the logs for `websocket closed at its deadline: refresh due` with the app's
   `proxy.app.id`, about 1 hour apart. If the reconnect fails, look next at the
   oauth2-proxy lines for the same app. `Fatal refresh error`: the IdP refused
-  the refresh, and the user must log in. `Unable to refresh session` followed
-  by `Error loading cookied session: ..., keeping session`: the IdP did not
-  answer, the user sees the 503 page, and the next request tries again; the
-  counter `keboola.go.appsproxy.auth.provider_unavailable` rises at the same
-  time.
+  the refresh, and the user must log in. `Unable to refresh session` with
+  `identity provider unavailable`, then `Error loading cookied session: ...,
+  keeping session`: the IdP did not answer, the user sees the 503 page, and the
+  next request tries again; the counter
+  `keboola.go.appsproxy.auth.provider_unavailable` rises at the same time.
 - **The close repeats much more often than once an hour.** Look for many
   `refresh due` lines for one app within minutes. The likely cause is a refresh
   that does not reset the session time, for example clock skew between
