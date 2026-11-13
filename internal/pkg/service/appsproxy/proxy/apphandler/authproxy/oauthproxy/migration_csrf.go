@@ -1,8 +1,11 @@
 package oauthproxy
 
 import (
+	"encoding/base64"
 	"net/http"
+	"strings"
 
+	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/cookies"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/encryption"
 )
 
@@ -11,18 +14,54 @@ const (
 	redisStoreCSRFName  = redisSessionCookieName + "_csrf"
 )
 
-// renameCSRF re-signs a valid cookie-store CSRF cookie under the redis-store name, so a login started at a
-// cookie-mode replica finishes at a redis-mode one. The CSRF payload is encrypted with the secret only.
+// renameCSRF keeps, for the callback, only a CSRF cookie that belongs to the login in its state, under the
+// redis-store name: the redis-store cookie if it belongs, else a valid cookie-store cookie re-signed, else none.
+// The CSRF payload is encrypted with the secret only.
 func (m *cookieStoreMigration) renameCSRF(req *http.Request) {
-	if req.URL.Path != m.callbackPath || hasCookie(req, redisStoreCSRFName) {
+	if req.URL.Path != m.callbackPath {
 		return
 	}
-	old, err := req.Cookie(cookieStoreCSRFName)
-	if err != nil {
+	nonce, ok := m.stateNonce(req)
+	if !ok || m.csrfMatches(req, redisStoreCSRFName, nonce) {
 		return
 	}
-	if signed, ok := m.resignCSRF(old, redisStoreCSRFName); ok {
-		req.AddCookie(&http.Cookie{Name: redisStoreCSRFName, Value: signed}) //nolint:gosec // G124: a request cookie carries only the name and value
+	var signed string
+	if m.csrfMatches(req, cookieStoreCSRFName, nonce) {
+		old, _ := req.Cookie(cookieStoreCSRFName)
+		signed, _ = m.resignCSRF(old, redisStoreCSRFName)
+	}
+	replaceRequestCookie(req, redisStoreCSRFName, signed)
+}
+
+func (m *cookieStoreMigration) stateNonce(req *http.Request) (string, bool) {
+	state := req.URL.Query().Get("state")
+	if m.proxyConfig.EncodeState {
+		decoded, err := base64.RawURLEncoding.DecodeString(state)
+		if err != nil {
+			return "", false
+		}
+		state = string(decoded)
+	}
+	nonce, _, ok := strings.Cut(state, ":")
+	return nonce, ok
+}
+
+func (m *cookieStoreMigration) csrfMatches(req *http.Request, name, nonce string) bool {
+	csrf, err := cookies.LoadCSRFCookie(req, name, &m.proxyConfig.Cookie)
+	return err == nil && csrf.CheckOAuthState(nonce)
+}
+
+// replaceRequestCookie removes all request cookies with the name and adds one with the value, if the value is not empty.
+func replaceRequestCookie(req *http.Request, name, value string) {
+	kept := req.Cookies()
+	req.Header.Del("Cookie")
+	for _, c := range kept {
+		if c.Name != name {
+			req.AddCookie(c)
+		}
+	}
+	if value != "" {
+		req.AddCookie(&http.Cookie{Name: name, Value: value}) //nolint:gosec // G124: a request cookie carries only the name and value
 	}
 }
 

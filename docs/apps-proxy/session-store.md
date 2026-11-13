@@ -245,17 +245,17 @@ the two names:
 
 - When a login starts, the response sets both names, so the callback finds its
   CSRF cookie on a cookie-mode pod too.
-- On `/_proxy/callback` without `_oauth2_proxy_ticket_csrf`, a valid
-  `_oauth2_proxy_csrf` is signed again under the redis-mode name with its
-  original time, so it expires as before (15 minutes).
+- On `/_proxy/callback`, the pod uses the CSRF cookie that belongs to the
+  login in the callback's `state` parameter. If `_oauth2_proxy_ticket_csrf`
+  belongs to it, nothing changes. Else, if `_oauth2_proxy_csrf` belongs to it,
+  it is signed again under the redis-mode name with its original time, so it
+  expires as before (15 minutes). Else the callback gets no CSRF cookie. So a
+  CSRF cookie left by a login that was given up on a pod of the other mode does
+  not break the next login.
 
-A tampered or expired CSRF cookie still ends in "Unable to find a valid CSRF
-token". This applies to a rollback as well as to a switch.
-
-A login started on a redis-mode pod, given up and started again within 15
-minutes on a cookie-mode pod, fails when its callback lands on a redis-mode pod:
-the older `_oauth2_proxy_ticket_csrf` is used instead of the newer
-`_oauth2_proxy_csrf`. The user sees an error page; the next login works.
+A tampered or expired CSRF cookie, or one of another login, still ends in
+"Unable to find a valid CSRF token". This applies to a rollback as well as to a
+switch.
 
 ### Removing the migration code
 
@@ -313,7 +313,6 @@ kubectl -n apps-proxy exec <valkey-pod> -- sh -c \
 | Users log in once after a switch to `redis` | Their cookie-store session was older than 24 hours, or of another provider | Expected, section 6; `sessionstore.migrated` shows the moved sessions |
 | Users log in once after a rollback to `cookie` | Their cookie-store session was older than 24 hours | Expected, section 7 |
 | "Unable to find a valid CSRF token" during a switch | The CSRF cookie expired (15 minutes) | Section 6, "Logins across pods of different modes"; try again |
-| An error page right after the login callback during a switch | A login started on a redis-mode pod was started again on a cookie-mode pod within 15 minutes | Section 6, "Logins across pods of different modes"; try again |
 
 ## 9. Code Map
 
