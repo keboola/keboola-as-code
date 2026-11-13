@@ -17,7 +17,7 @@ The mode is set per stack by `sessionStore.type` in the kbc-stacks chart
 | Where the session is | in the browser cookie (tokens, email, groups) | in Valkey, under the key `_oauth2_proxy_ticket-<id>` with a TTL of 24 hours |
 | Cookie | `_oauth2_proxy`, split into `_oauth2_proxy_0`, `_1`, … above 4 KiB | `_oauth2_proxy_ticket`: a ticket under 512 B, the same size for every user |
 | CSRF cookie of a login in progress | `_oauth2_proxy_csrf` | `_oauth2_proxy_ticket_csrf` |
-| Refresh lock | none: parallel requests each refresh | one refresh per session, under a Valkey lock (`<key>.lock`, 2 s) |
+| Refresh lock | none: parallel requests each refresh | one refresh per session, under a Valkey lock (`<key>.lock`, 30 s) |
 | Depends on Valkey | no | yes, for OAuth/OIDC apps only |
 
 In `redis` mode the browser cookie stays small whatever the number of groups,
@@ -119,16 +119,29 @@ twice that time after the first one began.
 
 ### Lock contention
 
-A session older than 1 hour is refreshed under a Valkey lock. Parallel requests
-of the same user that find the lock taken poll for it every 10 ms (up to 5 s)
-and then read the refreshed session. Every poll is a store command with the
-500 ms read timeout, so a store that stalls for more than 500 ms while several
-requests wait gives some of them the 503 page. The cookie is kept, and the next
-request works.
+A session older than 1 hour is refreshed under a Valkey lock. The request that
+takes the lock asks the IdP for new tokens and saves the session; the IdP call
+is cut off after 24 s. Parallel requests of the same user that find the lock
+taken poll for it, first every 10 ms and then less often, up to every 100 ms,
+and then read the refreshed session.
 
-A lock that cannot be released because the store went down stays until its
-2-second TTL ends. Until then a request of that user that needs a refresh waits
-for the lock.
+| Setting | Value |
+|---|---|
+| Lock duration (TTL) | 30 s |
+| Wait for the lock | 35 s (lock duration + 5 s) |
+| IdP refresh call cut off | 24 s (4/5 of the lock duration) |
+
+These are the oauth2-proxy fork defaults; apps-proxy does not change them. They
+only matter if an IdP is unusually slow: with a normal IdP the refresh takes well
+under a second and nobody waits for long.
+
+A request that does not get the lock within the wait gets the 503 page. So does
+a waiting request whose poll is not answered within the 500 ms read timeout. In
+both cases the cookie is kept, and the next request works.
+
+A lock that cannot be released because the store went down stays until its TTL
+ends (30 s). Until then a request of that user that needs a refresh waits for
+the lock.
 
 ### Refresh tokens
 
