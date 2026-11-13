@@ -105,8 +105,8 @@ func TestSessionStoreConfig_ENV(t *testing.T) {
 			envs.Set("APPS_PROXY_SESSION_STORE_SENTINEL_MASTER_NAME", "mymaster")
 			envs.Set("APPS_PROXY_SESSION_STORE_SENTINEL_USERNAME", "sentinel")
 			envs.Set("APPS_PROXY_SESSION_STORE_SENTINEL_PASSWORD", "sentinel-secret")
-			envs.Set("APPS_PROXY_SESSION_STORE_USERNAME", "appsproxy")
-			envs.Set("APPS_PROXY_SESSION_STORE_PASSWORD", "appsproxy-secret")
+			envs.Set("APPS_PROXY_SESSION_STORE_REDIS_USERNAME", "appsproxy")
+			envs.Set("APPS_PROXY_SESSION_STORE_REDIS_PASSWORD", "appsproxy-secret")
 			require.NoError(t, configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
 				EnvNaming: env.NewNamingConvention("APPS_PROXY_"),
 				Envs:      envs,
@@ -117,8 +117,8 @@ func TestSessionStoreConfig_ENV(t *testing.T) {
 			assert.Equal(t, "mymaster", cfg.SessionStore.SentinelMasterName)
 			assert.Equal(t, "sentinel", cfg.SessionStore.SentinelUsername)
 			assert.Equal(t, "sentinel-secret", cfg.SessionStore.SentinelPassword)
-			assert.Equal(t, "appsproxy", cfg.SessionStore.Username)
-			assert.Equal(t, "appsproxy-secret", cfg.SessionStore.Password)
+			assert.Equal(t, "appsproxy", cfg.SessionStore.RedisUsername)
+			assert.Equal(t, "appsproxy-secret", cfg.SessionStore.RedisPassword)
 		})
 	}
 }

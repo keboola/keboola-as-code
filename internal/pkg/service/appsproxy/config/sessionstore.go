@@ -17,8 +17,8 @@ type SessionStore struct {
 	SentinelMasterName string        `configKey:"sentinelMasterName" configUsage:"Sentinel master set name. Required when type is redis."`
 	SentinelUsername   string        `configKey:"sentinelUsername" configUsage:"Sentinel ACL user. Required when type is redis."`
 	SentinelPassword   string        `configKey:"sentinelPassword" configUsage:"Sentinel ACL password." sensitive:"true"`
-	Username           string        `configKey:"username" configUsage:"Session store ACL user."`
-	Password           string        `configKey:"password" configUsage:"Session store ACL password." sensitive:"true"`
+	RedisUsername      string        `configKey:"redisUsername" configUsage:"Session store ACL user."`
+	RedisPassword      string        `configKey:"redisPassword" configUsage:"Session store ACL password." sensitive:"true"`
 	DialTimeout        time.Duration `configKey:"dialTimeout" configUsage:"Session store dial timeout." validate:"required,minDuration=1ms"`
 	ReadTimeout        time.Duration `configKey:"readTimeout" configUsage:"Session store read timeout." validate:"required,minDuration=1ms"`
 	WriteTimeout       time.Duration `configKey:"writeTimeout" configUsage:"Session store write timeout." validate:"required,minDuration=1ms"`

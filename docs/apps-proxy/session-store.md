@@ -65,8 +65,8 @@ ENV prefix `APPS_PROXY_`. The chart sets the first seven keys only when
 | `sessionStore.sentinelMasterName` | `SESSION_STORE_SENTINEL_MASTER_NAME` | – (required in redis mode) | `mymaster` |
 | `sessionStore.sentinelUsername` | `SESSION_STORE_SENTINEL_USERNAME` | `sentinel` | `sentinel` |
 | `sessionStore.sentinelPassword` | `SESSION_STORE_SENTINEL_PASSWORD` | – | `sessionStore.sentinelPassword` |
-| `sessionStore.username` | `SESSION_STORE_USERNAME` | – | `appsproxy` |
-| `sessionStore.password` | `SESSION_STORE_PASSWORD` | – | `sessionStore.appsproxyPassword` |
+| `sessionStore.redisUsername` | `SESSION_STORE_REDIS_USERNAME` | – | `appsproxy` |
+| `sessionStore.redisPassword` | `SESSION_STORE_REDIS_PASSWORD` | – | `sessionStore.appsproxyPassword` |
 | `sessionStore.dialTimeout` | `SESSION_STORE_DIAL_TIMEOUT` | `500ms` | – |
 | `sessionStore.readTimeout` | `SESSION_STORE_READ_TIMEOUT` | `500ms` | – |
 | `sessionStore.writeTimeout` | `SESSION_STORE_WRITE_TIMEOUT` | `500ms` | – |

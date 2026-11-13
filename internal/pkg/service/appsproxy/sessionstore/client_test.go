@@ -16,8 +16,8 @@ func redisConfig() config.SessionStore {
 	cfg.SentinelAddrs = []string{"a:26379", "b:26379"}
 	cfg.SentinelMasterName = "mymaster"
 	cfg.SentinelPassword = "sentinel-secret"
-	cfg.Username = "appsproxy"
-	cfg.Password = "appsproxy-secret"
+	cfg.RedisUsername = "appsproxy"
+	cfg.RedisPassword = "appsproxy-secret"
 	return cfg
 }
 
