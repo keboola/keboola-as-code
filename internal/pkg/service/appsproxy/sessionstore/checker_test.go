@@ -69,16 +69,16 @@ func (h *checkerHarness) tick(t *testing.T) {
 	require.Eventually(t, func() bool { return h.pings.Load() > before }, 5*time.Second, 10*time.Millisecond)
 }
 
-// waitLogged waits until the messages contain the line exactly n times; the state is stored before it is logged.
-func waitLogged(t *testing.T, messages func() string, substr string, n int) {
+// waitLoggedOnce waits until the messages contain the line exactly once; the state is stored before it is logged.
+func waitLoggedOnce(t *testing.T, messages func() string, substr string) {
 	t.Helper()
-	require.Eventually(t, func() bool { return countLines(messages(), substr) == n }, 5*time.Second, 10*time.Millisecond,
-		"expected %d %q lines in %s", n, substr, messages())
+	require.Eventually(t, func() bool { return countLines(messages(), substr) == 1 }, 5*time.Second, 10*time.Millisecond,
+		"expected one %q line in %s", substr, messages())
 }
 
-func (h *checkerHarness) waitUp(t *testing.T, up bool) {
+func (h *checkerHarness) waitUp(t *testing.T) {
 	t.Helper()
-	require.Eventually(t, func() bool { return h.checker.Up() == up }, 5*time.Second, 10*time.Millisecond)
+	require.Eventually(t, h.checker.Up, 5*time.Second, 10*time.Millisecond)
 }
 
 func countLines(messages, substr string) int {
@@ -116,15 +116,15 @@ func TestChecker_Recovers(t *testing.T) {
 
 	require.NoError(t, h.mr.Restart())
 	h.tick(t)
-	h.waitUp(t, true)
-	waitLogged(t, h.logger.InfoMessages, "session store is up", 1)
+	h.waitUp(t)
+	waitLoggedOnce(t, h.logger.InfoMessages, "session store is up")
 }
 
 func TestChecker_UpAtStartup(t *testing.T) {
 	t.Parallel()
 	h := newCheckerHarness(t)
 	h.checker.Start(t.Context())
-	h.waitUp(t, true)
+	h.waitUp(t)
 	assert.Empty(t, h.logger.WarnMessages())
 }
 
@@ -132,8 +132,8 @@ func TestChecker_LogsOnlyStateChanges(t *testing.T) {
 	t.Parallel()
 	h := newCheckerHarness(t)
 	h.checker.Start(t.Context())
-	h.waitUp(t, true)
-	waitLogged(t, h.logger.InfoMessages, "session store is up", 1)
+	h.waitUp(t)
+	waitLoggedOnce(t, h.logger.InfoMessages, "session store is up")
 
 	h.mr.Close()
 	for range 5 {
@@ -151,7 +151,7 @@ func TestChecker_StopsWithContext(t *testing.T) {
 	h := newCheckerHarness(t)
 	ctx, cancel := context.WithCancelCause(t.Context())
 	h.checker.Start(ctx)
-	h.waitUp(t, true)
+	h.waitUp(t)
 	require.NoError(t, h.clock.BlockUntilContext(t.Context(), 1))
 
 	cancel(errors.New("test done"))
