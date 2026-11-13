@@ -3,7 +3,6 @@
 package apphandler
 
 import (
-	"context"
 	"net/http"
 	"net/url"
 	"strings"
@@ -158,7 +157,7 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 	// Removed from every request, so no upstream path ever sees it.
 	previewCookie := session.TakeCookie(req)
 
-	if h.previewSessionValid(w, req, previewCookie) {
+	if h.previewSessionValid(w, previewCookie) {
 		return h.upstream.ServeHTTPOrError(w, req)
 	}
 
@@ -193,7 +192,7 @@ func (h *appHandler) serveRule(w http.ResponseWriter, req *http.Request, index r
 // isDevMode reports whether this app currently has DevMode enabled.
 // It reads from the live K8s state cache so toggling DevMode on the App CRD takes
 // effect on the next request without requiring handler recreation.
-func (h *appHandler) isDevMode(ctx context.Context) bool {
-	info, ok := h.manager.upstreamManager.AppInfo(ctx, h.workload)
+func (h *appHandler) isDevMode() bool {
+	info, ok := h.manager.upstreamManager.AppInfo(h.workload)
 	return ok && info.DevMode
 }

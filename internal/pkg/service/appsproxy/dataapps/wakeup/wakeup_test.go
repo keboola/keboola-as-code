@@ -74,7 +74,7 @@ func TestManager_Wakeup(t *testing.T) {
 
 	// Wait for watcher cache to sync.
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(ctx, k8sapp.WorkloadRef{AppID: appID})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: appID})
 		return ok
 	}, 10*time.Second, 50*time.Millisecond)
 
@@ -122,7 +122,7 @@ func TestManager_Wakeup_Race(t *testing.T) {
 
 	// Wait for watcher cache to sync.
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(ctx, k8sapp.WorkloadRef{AppID: appID})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: appID})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -168,7 +168,7 @@ func TestManager_Wakeup_LogsTheWake(t *testing.T) {
 
 	watcher := d.AppStateWatcher()
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(ctx, k8sapp.WorkloadRef{AppID: appID})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: appID})
 		return ok
 	}, 10*time.Second, 50*time.Millisecond)
 
@@ -196,7 +196,7 @@ func TestManager_EvictWorkload(t *testing.T) {
 
 	watcher := d.AppStateWatcher()
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(ctx, k8sapp.WorkloadRef{AppID: appID})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: appID})
 		return ok
 	}, 10*time.Second, 50*time.Millisecond)
 

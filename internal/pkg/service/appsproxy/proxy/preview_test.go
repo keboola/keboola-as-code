@@ -14,11 +14,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/jonboulle/clockwork"
 	"github.com/oauth2-proxy/mockoidc"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,11 +62,42 @@ type previewEnv struct {
 	client    *http.Client
 	appServer *testutil.AppServer
 	providers []*mockoidc.MockOIDC
+	appsAPI   *testutil.DataAppsAPI
 	d         proxyDependencies.ServiceScope
 	mocked    proxyDependencies.Mocked
+	// Set only in redis mode.
+	redis      *miniredis.Miniredis
+	redisStore *redis.Client
 }
 
-func startPreviewEnv(t *testing.T, mutate ...func(cfg *config.Config, jwks *previewtest.JWKSServer)) *previewEnv {
+type envMutator = func(cfg *config.Config, jwks *previewtest.JWKSServer)
+
+func startPreviewEnv(t *testing.T, mutate ...envMutator) *previewEnv {
+	t.Helper()
+	return startEnv(t, nil, mutate...)
+}
+
+// startRedisEnv starts the proxy with the redis login session store on miniredis.
+// The pool size and retries match the production client (sessionstore). The timeouts are longer:
+// a loaded CI runner with -race can stall a miniredis reply past the production 500 ms, which turns into a 503.
+func startRedisEnv(t *testing.T, mutate ...envMutator) *previewEnv {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{
+		Addr:         mr.Addr(),
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		PoolSize:     20,
+		MaxRetries:   1,
+	})
+	env := startEnv(t, client, mutate...)
+	env.redis = mr
+	env.redisStore = client
+	return env
+}
+
+func startEnv(t *testing.T, sessionStore *redis.Client, mutate ...envMutator) *previewEnv {
 	t.Helper()
 	ctx := t.Context()
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 9, 27, 10, 0, 0, 0, time.UTC))
@@ -96,8 +129,8 @@ func startPreviewEnv(t *testing.T, mutate ...func(cfg *config.Config, jwks *prev
 		m(&cfg, jwks)
 	}
 
-	d, mocked := proxyDependencies.NewMockedServiceScopeWithK8sObjects(
-		t, ctx, cfg, makeDefaultK8sObjects(apps, appURL.String()),
+	d, mocked := proxyDependencies.NewMockedServiceScopeWithSessionStore(
+		t, ctx, cfg, sessionStore, makeDefaultK8sObjects(apps, appURL.String()),
 		dependencies.WithRealHTTPClient(), dependencies.WithClock(clock),
 	)
 	t.Cleanup(func() {
@@ -113,7 +146,8 @@ func startPreviewEnv(t *testing.T, mutate ...func(cfg *config.Config, jwks *prev
 	var lc net.ListenConfig
 	l, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	srv := &httptest.Server{Listener: l, Config: &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ErrorLog: log.NewStdErrorLogger(d.Logger())}}
+	// The header timeout also covers the TLS handshake, which takes seconds on a loaded Windows CI runner with -race.
+	srv := &httptest.Server{Listener: l, Config: &http.Server{Handler: handler, ReadHeaderTimeout: time.Minute, ErrorLog: log.NewStdErrorLogger(d.Logger())}}
 	srv.StartTLS()
 	t.Cleanup(srv.Close)
 	proxyURL, err := url.Parse(srv.URL)
@@ -122,7 +156,7 @@ func startPreviewEnv(t *testing.T, mutate ...func(cfg *config.Config, jwks *prev
 	client.Jar = nil
 
 	registerDefaultK8sApps(t, d.AppStateWatcher())
-	return &previewEnv{t: t, clock: clock, signer: signer, jwks: jwks, client: client, appServer: appServer, providers: providers, d: d, mocked: mocked}
+	return &previewEnv{t: t, clock: clock, signer: signer, jwks: jwks, client: client, appServer: appServer, providers: providers, appsAPI: appsAPI, d: d, mocked: mocked}
 }
 
 func (e *previewEnv) setDevMode(k8sName string, ref k8sapp.WorkloadRef, enabled bool) {
@@ -135,7 +169,7 @@ func (e *previewEnv) setDevMode(k8sName string, ref k8sapp.WorkloadRef, enabled 
 	_, err := e.mocked.TestFakeK8sClient().Resource(gvr).Namespace("keboola").Patch(e.t.Context(), k8sName, k8stypes.MergePatchType, patch, metav1.PatchOptions{})
 	require.NoError(e.t, err)
 	require.Eventually(e.t, func() bool {
-		info, ok := e.d.AppStateWatcher().GetState(e.t.Context(), ref)
+		info, ok := e.d.AppStateWatcher().GetState(ref)
 		return ok && info.DevMode == enabled
 	}, 5*time.Second, 50*time.Millisecond)
 }

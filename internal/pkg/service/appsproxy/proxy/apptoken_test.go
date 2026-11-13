@@ -131,7 +131,7 @@ func (e *previewEnv) withOIDCWorkspace() {
 	_, err = client.Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(e.t.Context(), "app-oidc", k8stypes.MergePatchType, patch, metav1.PatchOptions{})
 	require.NoError(e.t, err)
 	require.Eventually(e.t, func() bool {
-		info, ok := e.d.AppStateWatcher().GetState(e.t.Context(), oidcRef)
+		info, ok := e.d.AppStateWatcher().GetState(oidcRef)
 		return ok && info.WorkspaceID == oidcWorkspaceID
 	}, 5*time.Second, 50*time.Millisecond)
 }

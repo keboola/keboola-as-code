@@ -130,7 +130,7 @@ func (e *testEnv) promote(name, workspaceID string) {
 func (e *testEnv) waitForWorkspace(workspaceID string) {
 	e.t.Helper()
 	require.Eventually(e.t, func() bool {
-		info, ok := e.d.AppStateWatcher().GetState(e.t.Context(), e.ref)
+		info, ok := e.d.AppStateWatcher().GetState(e.ref)
 		return ok && info.WorkspaceID == workspaceID
 	}, 5*time.Second, 10*time.Millisecond)
 }

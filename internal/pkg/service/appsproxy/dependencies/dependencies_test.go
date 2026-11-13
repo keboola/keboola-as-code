@@ -39,7 +39,6 @@ func TestNewServiceScope_InvalidAppUserTokenKeysStopStartup(t *testing.T) {
 	fakeClient := k8sfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
 		k8sapp.AppGVR():       "AppList",
 		k8sapp.SandboxGVR():   "SandboxList",
-		k8sapp.SecretGVR():    "SecretList",
 		k8sapp.IdleTimerGVR(): "IdleTimerList",
 	})
 	mock := &mocked{Mocked: dependencies.NewMocked(t, t.Context()), config: cfg, fakeK8sClient: fakeClient}

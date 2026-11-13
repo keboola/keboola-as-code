@@ -1,7 +1,6 @@
 package apptoken
 
 import (
-	"context"
 	"time"
 
 	"github.com/jonboulle/clockwork"
@@ -21,7 +20,7 @@ type Minter struct {
 }
 
 type appStates interface {
-	GetState(ctx context.Context, ref k8sapp.WorkloadRef) (k8sapp.AppInfo, bool)
+	GetState(ref k8sapp.WorkloadRef) (k8sapp.AppInfo, bool)
 }
 
 type dependencies interface {

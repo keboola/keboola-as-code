@@ -19,10 +19,16 @@ Both values are constants in
 
 ## 2. The session cookie
 
-The session is the oauth2-proxy cookie. There is no server-side store. The
-cookie carries the tokens, the email and the groups, and it is signed with the
-session's creation time. A cookie older than 24 hours is rejected and the user
-logs in again.
+Where the session is kept depends on the stack's store mode, see
+[session-store.md](session-store.md):
+
+- `cookie` (default): the session is the oauth2-proxy cookie `_oauth2_proxy`.
+  It carries the tokens, the email and the groups.
+- `redis`: the session is in Valkey for 24 hours, and the browser holds a small
+  ticket cookie `_oauth2_proxy_ticket`.
+
+In both modes the cookie is signed with the session's creation time. A cookie
+older than 24 hours is rejected and the user logs in again.
 
 An app with several providers also sets `_oauth2_provider`, which only
 remembers the chosen provider and grants no access. It is set again on every
@@ -132,8 +138,10 @@ Revisit this when one of these is true:
 - GitLab accepts a used refresh token for a grace period (for example
   `refresh_token_revoked_on_use`, or reuse detection with
   `previous_refresh_token`).
-- apps-proxy stores sessions server-side with a lock shared by all replicas,
-  so only one request refreshes.
+- A stack runs the `redis` store mode, see [session-store.md](session-store.md).
+  Its refresh lock is shared by all replicas, so only one request refreshes.
+  GitLab refresh is off in both modes; turning it on for `redis` mode only is
+  a separate change.
 
 ## 7. Websockets
 

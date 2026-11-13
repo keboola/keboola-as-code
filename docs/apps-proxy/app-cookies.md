@@ -10,6 +10,7 @@ that apps-proxy sets.
 | `_oauth2_proxy` | oauth2-proxy | The login session: tokens, email, groups. See [login-session.md](login-session.md). |
 | `_oauth2_proxy_0`, `_oauth2_proxy_1`, … | oauth2-proxy | The same session, split into parts when it is larger than 4 KiB. |
 | `_oauth2_proxy_csrf` | oauth2-proxy | CSRF state of a login in progress. Deleted at the callback. |
+| `_oauth2_proxy_ticket`, `_oauth2_proxy_ticket_csrf` | oauth2-proxy | The session ticket and the CSRF cookie in the `redis` store mode. See [session-store.md](session-store.md). |
 | `_oauth2_provider` | provider selector | The login provider the user chose. |
 | `proxyBasicAuth` | password provider | The password login. |
 | `_kbc_dasid` | session tracking | The session id. See [sessions.md](sessions.md). |

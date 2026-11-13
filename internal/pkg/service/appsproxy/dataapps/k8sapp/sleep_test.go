@@ -24,7 +24,7 @@ func TestStateWatcher_Sleep_PatchesTheAppCRForAnAppRoute(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "123"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -50,7 +50,7 @@ func TestStateWatcher_Sleep_PatchesTheSandboxCRForADraftRoute(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -76,7 +76,7 @@ func TestStateWatcher_Sleep_SendsAResourceVersionPrecondition(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "123"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -100,7 +100,7 @@ func TestStateWatcher_Sleep_NeverWritesAutoRestartEnabled(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "123"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -124,7 +124,7 @@ func TestStateWatcher_Sleep_SkipsAWorkloadNoLongerRunning(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "123"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -176,7 +176,7 @@ func TestStateWatcher_Sleep_SkipsWhenTheMemberChanged(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "123"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -203,7 +203,7 @@ func TestStateWatcher_Sleep_PatchesWhenTheMemberStillMatches(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "123"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -229,7 +229,7 @@ func TestStateWatcher_Sleep_SkipsAWorkloadAlreadyStopped(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 	assert.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "123"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 

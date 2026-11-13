@@ -21,6 +21,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/management"
+	"github.com/redis/go-redis/v9"
 	"k8s.io/client-go/dynamic"
 	k8sfake "k8s.io/client-go/dynamic/fake"
 
@@ -38,10 +39,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/transport"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/sessionstore"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ulid"
 )
 
@@ -87,6 +90,9 @@ type ServiceScope interface {
 	SessionsManager() *sessions.Manager
 	IdleTimerRecorder() *idletimer.Recorder
 	AppTokenMinter() *apptoken.Minter
+	SessionStoreClient() *redis.Client
+	SessionStoreChecker() *sessionstore.Checker
+	SessionStoreMetrics() *sessionstore.Metrics
 }
 
 type Mocked interface {
@@ -111,6 +117,9 @@ type serviceScope struct {
 	sessionsManager   *sessions.Manager
 	idleTimerRecorder *idletimer.Recorder
 	appTokenMinter    *apptoken.Minter
+	sessionStore      *redis.Client
+	storeChecker      *sessionstore.Checker
+	storeMetrics      *sessionstore.Metrics
 }
 
 type parentScopes interface {
@@ -121,6 +130,10 @@ type parentScopes interface {
 // dynamic client (used in tests to inject a fake client without real kubeconfig).
 type k8sClientProvider interface {
 	K8sDynamicClient() dynamic.Interface
+}
+
+type sessionStoreClientProvider interface {
+	SessionStoreClient() *redis.Client
 }
 
 type parentScopesImpl struct {
@@ -224,6 +237,15 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 		return nil, err
 	}
 
+	if provider, ok := parentScp.(sessionStoreClientProvider); ok && provider.SessionStoreClient() != nil {
+		d.sessionStore = provider.SessionStoreClient()
+	} else {
+		d.sessionStore = sessionstore.NewClient(cfg.SessionStore)
+	}
+	if d.sessionStore != nil {
+		d.startSessionStore(ctx)
+	}
+
 	d.wakeupManager = wakeup.NewManager(d)
 	d.idleTimerRecorder = idletimer.NewRecorder(d, k8sClient)
 	idletimer.NewSuspender(d, k8sClient, d.idleTimerRecorder)
@@ -285,4 +307,31 @@ func (v *serviceScope) AppTokenMinter() *apptoken.Minter {
 
 func (v *serviceScope) SessionsManager() *sessions.Manager {
 	return v.sessionsManager
+}
+
+func (v *serviceScope) SessionStoreClient() *redis.Client {
+	return v.sessionStore
+}
+
+func (v *serviceScope) startSessionStore(ctx context.Context) {
+	// Registered before the HTTP server, so it runs after the server has drained (LIFO).
+	v.Process().OnShutdown(func(ctx context.Context) {
+		if err := v.sessionStore.Close(); err != nil {
+			v.Logger().Warnf(ctx, "cannot close session store client: %s", err)
+		}
+	})
+
+	v.storeChecker = sessionstore.NewChecker(v.Logger().WithComponent("sessionstore"), v.Clock(), v.sessionStore)
+	v.storeMetrics = sessionstore.NewMetrics(v.Telemetry().Meter(), v.sessionStore, v.storeChecker)
+	checkerCtx, cancel := context.WithCancelCause(context.WithoutCancel(ctx))
+	v.Process().OnShutdown(func(context.Context) { cancel(errors.New("shutdown")) })
+	v.storeChecker.Start(checkerCtx)
+}
+
+func (v *serviceScope) SessionStoreChecker() *sessionstore.Checker {
+	return v.storeChecker
+}
+
+func (v *serviceScope) SessionStoreMetrics() *sessionstore.Metrics {
+	return v.storeMetrics
 }

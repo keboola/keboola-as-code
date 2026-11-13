@@ -2,13 +2,11 @@ package k8sapp
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"net/url"
 	"sync"
 	"time"
 
-	"golang.org/x/sync/singleflight"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,8 +32,6 @@ type entry struct {
 	autoRestartEnabled bool
 	devMode            bool
 	upstreamTarget     *url.URL // pre-parsed; nil when appsProxy.upstreamUrl absent/invalid
-	e2bAccessToken     string   // loaded from K8s Secret; empty for non-E2B apps
-	e2bSecretName      string   // Secret name for lazy token loading; empty for non-E2B apps
 	workspaceID        string   // read on Sandbox entries only; an App resolves it through productionSandbox
 	notDeployed        bool
 
@@ -54,11 +50,8 @@ type StateWatcher struct {
 	hasSynced           cache.InformerSynced
 	sandboxesHaveSynced cache.InformerSynced
 	apps                map[api.AppID]entry // guarded by routeLock
-	tokenLoadGroup      singleflight.Group  // coalesces concurrent lazy-load K8s API calls per secret
 
-	// routeLock guards all three caches, for reads as well as writes. A write
-	// takes the write lock even when it changes one field, because the lazy E2B
-	// token path makes it read-modify-write.
+	// routeLock guards all three caches, for reads as well as writes.
 	routeLock    sync.RWMutex
 	sandboxes    map[string]entry  // Sandbox K8s object name → entry
 	sandboxHosts map[string]string // exact hostname → Sandbox K8s object name
@@ -169,27 +162,10 @@ func (w *StateWatcher) addEventHandler(ctx context.Context, informer cache.Share
 }
 
 // GetState returns the cached AppInfo for the workload. Returns (AppInfo{}, false) if not yet cached.
-// If the E2B access token is missing but a secret name is known, it attempts to load the token lazily.
-func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, bool) {
+func (w *StateWatcher) GetState(ref WorkloadRef) (AppInfo, bool) {
 	e, ok := w.entryFor(ref)
 	if !ok {
 		return AppInfo{}, false
-	}
-
-	// Lazy-load E2B token: the Secret may not have existed when the CRD event was processed.
-	// a singleflight coalesces concurrent requests for the same secret into a single K8s API call.
-	if e.e2bAccessToken == "" && e.e2bSecretName != "" {
-		fetchCtx := context.WithoutCancel(ctx)
-		token, err, _ := w.tokenLoadGroup.Do(e.e2bSecretName, func() (any, error) {
-			return w.loadSecretToken(fetchCtx, e.e2bSecretName)
-		})
-		if err != nil {
-			w.logger.Warnf(ctx, "workload %s: failed to lazy-load E2B access token from secret %q: %s", ref, e.e2bSecretName, err)
-		} else if t, ok := token.(string); t != "" && ok {
-			e.e2bAccessToken = t
-			w.storeLoadedToken(ref, t)
-			w.logger.Infof(ctx, "workload %s: lazy-loaded E2B access token from secret %q", ref, e.e2bSecretName)
-		}
 	}
 
 	return AppInfo{
@@ -198,7 +174,6 @@ func (w *StateWatcher) GetState(ctx context.Context, ref WorkloadRef) (AppInfo, 
 		AutoRestartEnabled: e.autoRestartEnabled,
 		DevMode:            e.devMode,
 		UpstreamTarget:     e.upstreamTarget,
-		E2BAccessToken:     e.e2bAccessToken,
 		WorkspaceID:        w.workspaceFor(ref, e),
 		NotDeployed:        e.notDeployed,
 	}, true
@@ -321,27 +296,6 @@ func (w *StateWatcher) productionMemberLocked(app entry) (entry, bool) {
 	return member, ok
 }
 
-// storeLoadedToken writes only the token, onto the entry the cache holds now:
-// writing back the whole entry the caller read would lose a CRD event that
-// landed while the token was being fetched.
-func (w *StateWatcher) storeLoadedToken(ref WorkloadRef, token string) {
-	w.routeLock.Lock()
-	defer w.routeLock.Unlock()
-
-	if ref.IsSandbox() {
-		if current, ok := w.sandboxes[ref.SandboxName]; ok {
-			current.e2bAccessToken = token
-			w.sandboxes[ref.SandboxName] = current
-		}
-		return
-	}
-
-	if current, ok := w.apps[ref.AppID]; ok {
-		current.e2bAccessToken = token
-		w.apps[ref.AppID] = current
-	}
-}
-
 func (w *StateWatcher) handleUpsert(ctx context.Context, obj any) {
 	parsed, ok := w.parseObject(ctx, "App", obj)
 	if !ok {
@@ -414,18 +368,6 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 		}
 	}
 
-	var e2bAccessToken string
-	var e2bSecretName string
-	if appObj.Spec.Runtime.Backend.Type == BackendTypeE2BSandbox {
-		e2bSecretName = appObj.Status.E2BSandbox.AccessTokenSecretName
-		if e2bSecretName != "" {
-			token, err := w.loadSecretToken(ctx, e2bSecretName)
-			if err == nil {
-				e2bAccessToken = token
-			}
-		}
-	}
-
 	var autoSuspendAfter *time.Duration
 	if secs := appObj.Spec.AutoSuspendAfterSeconds; secs != nil {
 		d := time.Duration(*secs) * time.Second
@@ -451,8 +393,6 @@ func (w *StateWatcher) parseObject(ctx context.Context, kind string, obj any) (p
 			autoRestartEnabled: autoRestartEnabled,
 			devMode:            devMode,
 			upstreamTarget:     upstreamTarget,
-			e2bAccessToken:     e2bAccessToken,
-			e2bSecretName:      e2bSecretName,
 			workspaceID:        appObj.Status.Workspace.ID,
 			notDeployed:        isNotDeployed(appObj.Status.Conditions, u.GetGeneration()),
 		},
@@ -573,33 +513,4 @@ func (w *StateWatcher) handleDelete(ctx context.Context, obj any) {
 
 	w.logger.Debugf(ctx, "App CRD %q (appID=%s) removed from cache", k8sName, removed)
 	w.workloadRemovalNotifier.notify(WorkloadRef{AppID: removed})
-}
-
-// loadSecretToken fetches a K8s Secret by name and returns the value of the "token" key.
-// The dynamic client returns Secret data values as base64-encoded strings.
-func (w *StateWatcher) loadSecretToken(ctx context.Context, secretName string) (string, error) {
-	obj, err := w.client.Resource(SecretGVR()).Namespace(w.namespace).Get(ctx, secretName, metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	data, found, err := unstructured.NestedMap(obj.Object, "data")
-	if err != nil {
-		return "", errors.Errorf("secret %q: failed to read data field: %s", secretName, err)
-	}
-	if !found {
-		return "", errors.Errorf("secret %q has no data field", secretName)
-	}
-
-	token, ok := data["token"].(string)
-	if !ok || token == "" {
-		return "", errors.Errorf("secret %q has no \"token\" key in data", secretName)
-	}
-
-	tokenBytes, err := base64.StdEncoding.DecodeString(token)
-	if err != nil {
-		return "", errors.Errorf("secret %q: failed to base64-decode token: %s", secretName, err)
-	}
-
-	return string(tokenBytes), nil
 }

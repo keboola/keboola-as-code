@@ -29,9 +29,9 @@ type Config struct {
 	CsrfTokenSalt    string            `configKey:"csrfTokenSalt" configUsage:"Salt used for generating CSRF tokens" validate:"required" sensitive:"true"`
 	Preview          Preview           `configKey:"preview" configUsage:"Dev-mode app preview links minted by sandboxes-service."`
 	K8s              K8s               `configKey:"k8s" configUsage:"Kubernetes configuration."`
-	E2bWebhook       E2BWebhook        `configKey:"e2bWebhook"`
 	Sessions         Sessions          `configKey:"sessions" configUsage:"End-user session tracking for data apps."`
 	AppUserToken     AppUserToken      `configKey:"appUserToken" configUsage:"Signed X-Kbc-App-User-Token passed to data apps."`
+	SessionStore     SessionStore      `configKey:"sessionStore" configUsage:"Store of OAuth/OIDC login sessions."`
 
 	ConnectionServiceAccountTokenPath string `configKey:"connectionServiceAccountTokenPath" configUsage:"Path to the projected Kubernetes ServiceAccount token used to authenticate to the Keboola APIs. Read per request, so a rotated token needs no restart." validate:"required"`
 }
@@ -158,14 +158,6 @@ type K8s struct {
 	Kubeconfig    string `configKey:"kubeconfig" configUsage:"Path to kubeconfig file. Uses in-cluster config if empty."`
 }
 
-// E2BWebhook configures the reverse-proxy endpoint that forwards E2B sandbox
-// lifecycle webhooks to the keboola-operator webhook server.
-// Signature verification is handled by the operator, not by the proxy.
-// When UpstreamURL is empty the endpoint is disabled.
-type E2BWebhook struct {
-	UpstreamURL string `configKey:"upstreamUrl" configUsage:"Operator internal webhook URL (e.g. http://keboola-operator-e2b-webhook.keboola-operator.svc.cluster.local:19200/webhook/e2b). Empty disables the endpoint."`
-}
-
 func New() Config {
 	return Config{
 		DebugLog:        false,
@@ -197,6 +189,7 @@ func New() Config {
 		AppUserToken: AppUserToken{
 			TTL: 5 * time.Minute,
 		},
+		SessionStore:                      newSessionStore(),
 		ConnectionServiceAccountTokenPath: management.DefaultServiceAccountTokenPath,
 	}
 }

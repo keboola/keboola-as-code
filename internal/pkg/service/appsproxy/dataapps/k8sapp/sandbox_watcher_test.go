@@ -79,7 +79,7 @@ func TestStateWatcher_ResolveWorkloadForHost_SandboxOwnsExactHostname(t *testing
 	}, 5*time.Second, 50*time.Millisecond)
 
 	ref := resolveHost(watcher, "draft-abc.hub.example.com")
-	info, ok := watcher.GetState(t.Context(), ref)
+	info, ok := watcher.GetState(ref)
 	require.True(t, ok)
 	require.NotNil(t, info.UpstreamTarget)
 	assert.Equal(t, "http://draft-abc.keboola.svc.cluster.local:8888", info.UpstreamTarget.String())
@@ -248,7 +248,7 @@ func TestStateWatcher_ResolveWorkloadForHost_DraftAndAppCoexist(t *testing.T) {
 		return sandboxNameFor(watcher, "draft-abc-123.hub.example.com") == "draft-abc"
 	}, 5*time.Second, 50*time.Millisecond)
 
-	draftInfo, ok := watcher.GetState(t.Context(), resolveHost(watcher, "draft-abc-123.hub.example.com"))
+	draftInfo, ok := watcher.GetState(resolveHost(watcher, "draft-abc-123.hub.example.com"))
 	require.True(t, ok)
 	require.NotNil(t, draftInfo.UpstreamTarget)
 	assert.Equal(t, "http://draft-abc.keboola.svc.cluster.local:8888", draftInfo.UpstreamTarget.String())
@@ -257,7 +257,7 @@ func TestStateWatcher_ResolveWorkloadForHost_DraftAndAppCoexist(t *testing.T) {
 	// falls through to hostname normalisation.
 	_, claimed := watcher.ResolveWorkloadForHost("public-123.hub.example.com")
 	assert.False(t, claimed)
-	appInfo, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123"})
+	appInfo, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "123"})
 	require.True(t, ok)
 	require.NotNil(t, appInfo.UpstreamTarget)
 	assert.Equal(t, "http://prod.keboola.svc.cluster.local:8888", appInfo.UpstreamTarget.String())
@@ -313,7 +313,7 @@ func TestStateWatcher_ResolveWorkloadForHost_NeverPublishedAppDoesNotBlockUnrela
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 
 	require.Eventually(t, func() bool {
-		_, ok := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "7327412"})
+		_, ok := watcher.GetState(k8sapp.WorkloadRef{AppID: "7327412"})
 		return ok
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -363,8 +363,8 @@ func TestStateWatcher_OnWorkloadRemoved(t *testing.T) {
 
 	require.True(t, watcher.WaitForCacheSync(t.Context()))
 	require.Eventually(t, func() bool {
-		_, sandbox := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"})
-		_, app := watcher.GetState(t.Context(), k8sapp.WorkloadRef{AppID: "456"})
+		_, sandbox := watcher.GetState(k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"})
+		_, app := watcher.GetState(k8sapp.WorkloadRef{AppID: "456"})
 		return sandbox && app
 	}, 5*time.Second, 50*time.Millisecond)
 

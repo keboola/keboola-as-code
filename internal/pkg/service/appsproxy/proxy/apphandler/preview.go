@@ -1,7 +1,6 @@
 package apphandler
 
 import (
-	"context"
 	"net"
 	"net/http"
 
@@ -18,12 +17,12 @@ import (
 const pageNonceLength = 24
 
 // previewOrigin never uses h.baseURL for a Sandbox: there it names the parent App.
-func (h *appHandler) previewOrigin(ctx context.Context) (string, bool) {
+func (h *appHandler) previewOrigin() (string, bool) {
 	if !h.workload.IsSandbox() {
 		origin, err := preview.NormalizeOrigin(h.baseURL.Scheme + "://" + h.baseURL.Host)
 		return origin, err == nil
 	}
-	info, ok := h.manager.upstreamManager.AppInfo(ctx, h.workload)
+	info, ok := h.manager.upstreamManager.AppInfo(h.workload)
 	if !ok || info.PublicHost == "" {
 		return "", false
 	}
@@ -69,7 +68,7 @@ func (h *appHandler) previewSessionRequired(req *http.Request) bool {
 	if h.manager.preview == nil || len(h.manager.preview.FrameAncestors()) == 0 {
 		return false
 	}
-	return preview.IsFrameDocumentLoad(req) && h.isDevMode(req.Context())
+	return preview.IsFrameDocumentLoad(req) && h.isDevMode()
 }
 
 // serveSessionRequiredPage tells the parent to open a new preview link.
@@ -82,15 +81,14 @@ func (h *appHandler) serveSessionRequiredPage(w http.ResponseWriter, req *http.R
 	})
 }
 
-func (h *appHandler) previewSessionValid(w http.ResponseWriter, req *http.Request, raw string) bool {
+func (h *appHandler) previewSessionValid(w http.ResponseWriter, raw string) bool {
 	if raw == "" || h.manager.preview == nil {
 		return false
 	}
-	ctx := req.Context()
-	if !h.isDevMode(ctx) {
+	if !h.isDevMode() {
 		return false
 	}
-	origin, ok := h.previewOrigin(ctx)
+	origin, ok := h.previewOrigin()
 	if !ok {
 		return false
 	}
@@ -124,8 +122,8 @@ func (h *appHandler) redeemPreviewLink(w http.ResponseWriter, req *http.Request)
 		h.writePreviewError(w, req, http.StatusUnauthorized, preview.InvalidLinkMessage)
 		return
 	}
-	origin, ok := h.previewOrigin(ctx)
-	if !ok || !h.isDevMode(ctx) {
+	origin, ok := h.previewOrigin()
+	if !ok || !h.isDevMode() {
 		h.manager.logger.Info(ctx, "preview: redeem rejected, host is not a dev-mode workload")
 		h.writePreviewError(w, req, http.StatusUnauthorized, preview.InvalidLinkMessage)
 		return

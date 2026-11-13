@@ -25,6 +25,7 @@ type Handler struct {
 	providerName string
 	proxyConfig  *proxyOptions.Options
 	proxyHandler *oauthproxy.OAuthProxy
+	migration    *cookieStoreMigration
 	initErr      error
 }
 
@@ -33,6 +34,7 @@ func NewHandler(
 	logger log.Logger,
 	httpClient client.Client,
 	cfg config.Config,
+	sessionStore SessionStore,
 	selector *selector.Selector,
 	pw *pagewriter.Writer,
 	app api.AppConfig,
@@ -44,10 +46,18 @@ func NewHandler(
 	handler := &Handler{providerName: auth.Name()}
 
 	// Create proxy configuration
-	handler.proxyConfig, err = proxyConfig(ctx, cfg, newScopeResolver(logger, httpClient), selector, pw, app, auth, upstream, metrics)
+	handler.proxyConfig, err = proxyConfig(ctx, cfg, sessionStore, newScopeResolver(logger, httpClient), selector, pw, app, auth, upstream, metrics)
 	if err != nil {
 		handler.initErr = wrapHandlerInitErr(app, auth, err)
 		return handler
+	}
+
+	if sessionStore.Client != nil {
+		handler.migration, err = newCookieStoreMigration(logger, handler.proxyConfig, sessionStore)
+		if err != nil {
+			handler.initErr = wrapHandlerInitErr(app, auth, err)
+			return handler
+		}
 	}
 
 	// Create proxy page writer adapter
@@ -89,6 +99,13 @@ func (h *Handler) SignInPath() string {
 func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) error {
 	if h.initErr != nil {
 		return h.initErr
+	}
+
+	if h.migration != nil {
+		var written bool
+		if w, written = h.migration.serve(w, req); written {
+			return nil
+		}
 	}
 
 	// Pass request to OAuth2Proxy

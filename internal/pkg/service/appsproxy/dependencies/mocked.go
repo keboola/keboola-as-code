@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/management"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -25,6 +26,13 @@ type mocked struct {
 	dependencies.Mocked
 	config        config.Config
 	fakeK8sClient *k8sfake.FakeDynamicClient
+	sessionStore  *redis.Client
+}
+
+// SessionStoreClient implements sessionStoreClientProvider: a test injects a plain client,
+// because miniredis cannot answer the Sentinel commands of the production failover client.
+func (v *mocked) SessionStoreClient() *redis.Client {
+	return v.sessionStore
 }
 
 func (v *mocked) TestConfig() config.Config {
@@ -56,7 +64,14 @@ func writeTestServiceAccountToken(tb testing.TB) string {
 // NewMockedServiceScope creates a mocked ServiceScope for tests.
 func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
 	tb.Helper()
-	return newMockedServiceScope(tb, ctx, cfg, nil, opts...)
+	return newMockedServiceScope(tb, ctx, cfg, nil, nil, opts...)
+}
+
+// NewMockedServiceScopeWithSessionStore creates a mocked ServiceScope that uses the given login session store client.
+// The scope closes the client on shutdown.
+func NewMockedServiceScopeWithSessionStore(tb testing.TB, ctx context.Context, cfg config.Config, client *redis.Client, initialK8sObjects []runtime.Object, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+	tb.Helper()
+	return newMockedServiceScope(tb, ctx, cfg, client, initialK8sObjects, opts...)
 }
 
 // NewMockedServiceScopeWithK8sObjects creates a mocked ServiceScope with the fake Kubernetes client
@@ -65,10 +80,10 @@ func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 // objects created via Create() immediately after WaitForCacheSync() to be silently dropped.
 func NewMockedServiceScopeWithK8sObjects(tb testing.TB, ctx context.Context, cfg config.Config, initialK8sObjects []runtime.Object, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
 	tb.Helper()
-	return newMockedServiceScope(tb, ctx, cfg, initialK8sObjects, opts...)
+	return newMockedServiceScope(tb, ctx, cfg, nil, initialK8sObjects, opts...)
 }
 
-func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config, initialK8sObjects []runtime.Object, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
+func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config, sessionStore *redis.Client, initialK8sObjects []runtime.Object, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
 	tb.Helper()
 
 	commonMock := dependencies.NewMocked(tb, ctx, opts...)
@@ -106,7 +121,6 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	fakeClient := k8sfake.NewSimpleDynamicClientWithCustomListKinds(scheme, map[schema.GroupVersionResource]string{
 		k8sapp.AppGVR():     "AppList",
 		k8sapp.SandboxGVR(): "SandboxList",
-		k8sapp.SecretGVR():  "SecretList",
 		// The idle timer loop lists this kind; without it the reflector panics.
 		k8sapp.IdleTimerGVR(): "IdleTimerList",
 	}, initialK8sObjects...)
@@ -114,7 +128,7 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	// Validate config
 	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))
 
-	mock := &mocked{Mocked: commonMock, config: cfg, fakeK8sClient: fakeClient}
+	mock := &mocked{Mocked: commonMock, config: cfg, fakeK8sClient: fakeClient, sessionStore: sessionStore}
 
 	scope, err := newServiceScope(ctx, mock, cfg)
 	require.NoError(tb, err)

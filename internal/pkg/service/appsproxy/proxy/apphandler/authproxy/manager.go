@@ -5,6 +5,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -17,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/sessionstore"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -27,6 +29,7 @@ type Manager struct {
 	clock            clockwork.Clock
 	httpClient       client.Client
 	providerSelector *selector.Selector
+	sessionStore     oauthproxy.SessionStore
 	oauthMetrics     *oauthproxy.Metrics
 }
 
@@ -36,6 +39,8 @@ type dependencies interface {
 	HTTPClient() client.Client
 	Config() config.Config
 	PageWriter() *pagewriter.Writer
+	SessionStoreClient() *redis.Client
+	SessionStoreMetrics() *sessionstore.Metrics
 	Telemetry() telemetry.Telemetry
 }
 
@@ -47,6 +52,7 @@ func NewManager(d dependencies) *Manager {
 		clock:            d.Clock(),
 		httpClient:       d.HTTPClient(),
 		providerSelector: selector.New(d),
+		sessionStore:     oauthproxy.SessionStore{Client: d.SessionStoreClient(), Metrics: d.SessionStoreMetrics()},
 		oauthMetrics:     oauthproxy.NewMetrics(d.Telemetry().Meter()),
 	}
 }
@@ -64,7 +70,7 @@ func (m *Manager) NewHandlers(ctx context.Context, app api.AppConfig, upstream c
 		providerUpstream := sessions.WithAuthProvider(upstream, auth.ID(), auth.Type())
 		switch p := auth.(type) {
 		case provider.OAuthProvider:
-			authHandlers[auth.ID()] = oauthproxy.NewHandler(ctx, m.logger, m.httpClient, m.config, m.providerSelector, m.pageWriter, app, p, apptoken.WithIdentity(providerUpstream, p.IdentityProviderURL()), m.oauthMetrics)
+			authHandlers[auth.ID()] = oauthproxy.NewHandler(ctx, m.logger, m.httpClient, m.config, m.sessionStore, m.providerSelector, m.pageWriter, app, p, apptoken.WithIdentity(providerUpstream, p.IdentityProviderURL()), m.oauthMetrics)
 		case provider.Basic:
 			authHandlers[auth.ID()] = basicauth.NewHandler(m.logger, m.config, m.clock, m.pageWriter, app, p, providerUpstream)
 		default:

@@ -106,8 +106,8 @@ func (m *Manager) Shutdown(ctx context.Context) {
 
 // AppInfo returns the cached AppInfo for the workload from the K8s cache in a single call.
 // Returns (AppInfo{}, false) when the workload is not cached.
-func (m *Manager) AppInfo(ctx context.Context, ref k8sapp.WorkloadRef) (k8sapp.AppInfo, bool) {
-	return m.stateWatcher.GetState(ctx, ref)
+func (m *Manager) AppInfo(ref k8sapp.WorkloadRef) (k8sapp.AppInfo, bool) {
+	return m.stateWatcher.GetState(ref)
 }
 
 func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig, workload k8sapp.WorkloadRef) (upstream *AppUpstream, err error) {
@@ -117,7 +117,7 @@ func (m *Manager) NewUpstream(ctx context.Context, app api.AppConfig, workload k
 	// Resolve target URL at creation time; immutable after this point.
 	var target *url.URL
 	var publicHost string
-	if info, ok := m.stateWatcher.GetState(ctx, workload); ok {
+	if info, ok := m.stateWatcher.GetState(workload); ok {
 		target = info.UpstreamTarget // pre-parsed by watcher on CRD event; may be nil
 		publicHost = info.PublicHost
 	}
@@ -153,7 +153,7 @@ func (u *AppUpstream) ServeHTTPOrError(rw http.ResponseWriter, req *http.Request
 
 	// K8s state pre-check: if we know the app is not running, handle it synchronously
 	// without attempting DNS/upstream. Falls through if state is unknown or Running.
-	if appInfo, ok := u.manager.stateWatcher.GetState(ctx, u.workload); ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
+	if appInfo, ok := u.manager.stateWatcher.GetState(u.workload); ok && appInfo.ActualState != k8sapp.AppActualStateRunning {
 		switch {
 		case appInfo.ActualState == k8sapp.AppActualStateStarting:
 			u.manager.pageWriter.WriteSpinnerPage(rw, req, u.app)
@@ -220,14 +220,6 @@ func (u *AppUpstream) newReverseProxy() *httputil.ReverseProxy {
 				r.Out.Header.Set("X-Forwarded-Proto", p)
 			} else if s := r.In.Header.Get("X-Forwarded-Scheme"); s != "" {
 				r.Out.Header.Set("X-Forwarded-Proto", s)
-			}
-
-			// Inject E2B access token for E2B sandbox apps.
-			// Always fetch the latest token from the state watcher to handle
-			// secret recreation (updates propagate asynchronously).
-			r.Out.Header.Del("e2b-traffic-access-token")
-			if info, ok := u.manager.AppInfo(r.Out.Context(), u.workload); ok && info.E2BAccessToken != "" {
-				r.Out.Header.Set("e2b-traffic-access-token", info.E2BAccessToken)
 			}
 		},
 		Transport:    u.manager.transport,
@@ -303,8 +295,8 @@ func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	//
 	// Streamlit (Tornado) checks WebSocket origin by comparing the Origin header
 	// against the Host header. Since apps-proxy rewrites Host to the upstream
-	// hostname (required for LB routing), Origin (the public domain set by the
-	// browser) no longer matches and Tornado rejects the connection with 403.
+	// hostname, Origin (the public domain set by the browser) no longer matches
+	// and Tornado rejects the connection with 403.
 	//
 	// Rewriting Origin to the upstream hostname makes the request look like a
 	// direct browser connection, which is what every framework expects.

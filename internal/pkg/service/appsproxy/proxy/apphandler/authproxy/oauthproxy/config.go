@@ -10,6 +10,7 @@ import (
 	middlewareapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/middleware"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
@@ -19,17 +20,26 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 	appupstream "github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/upstream"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/sessionstore"
 	svcErrors "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // CookieName is the oauth2-proxy session cookie. Every other cookie oauth2-proxy sets starts with "<CookieName>_":
-// the CSRF cookies and the parts of a split session.
+// the CSRF cookies, the parts of a split session and the redis store ticket.
 const CookieName = "_oauth2_proxy"
+
+// SessionStore selects the login session store: the cookie store when Client is nil.
+type SessionStore struct {
+	Client  *redis.Client
+	Metrics *sessionstore.Metrics
+}
 
 const (
 	sessionRefresh = time.Hour
 	sessionExpire  = 24 * time.Hour
+
+	redisSessionCookieName = CookieName + "_ticket"
 )
 
 func providerUnavailableError(err error) error {
@@ -41,6 +51,7 @@ func providerUnavailableError(err error) error {
 func proxyConfig(
 	ctx context.Context,
 	cfg config.Config,
+	sessionStore SessionStore,
 	scopes scopeResolver,
 	selector *selector.Selector,
 	pageWriter *pagewriter.Writer,
@@ -111,6 +122,14 @@ func proxyConfig(
 	v.Providers = options.Providers{proxyProvider}
 	v.SkipProviderButton = true
 	v.Session = options.SessionOptions{Type: options.CookieSessionStoreType}
+	if sessionStore.Client != nil {
+		v.Cookie.Name = redisSessionCookieName
+		v.Session = options.SessionOptions{Type: options.RedisSessionStoreType, Redis: options.RedisStoreOptions{Client: sessionStore.Client}}
+		v.OnSessionStoreError = func(rw http.ResponseWriter, req *http.Request, err error) {
+			sessionStore.Metrics.StoreUnavailable(req.Context())
+			pageWriter.WriteError(rw, req, &app, sessionStoreUnavailableError(err))
+		}
+	}
 	v.EmailDomains = []string{"*"}
 	v.InjectRequestHeaders = []options.Header{
 		// New, and the only one session tracking records.
@@ -132,6 +151,12 @@ func proxyConfig(
 	}
 
 	return v, nil
+}
+
+func sessionStoreUnavailableError(err error) error {
+	return svcErrors.
+		NewServiceUnavailableError(errors.PrefixError(err, "session store unavailable")).
+		WithUserMessage("Sign-in is temporarily unavailable. Please try again in a moment.")
 }
 
 // generateCookieSecret creates a unique cookie secret for each app and provider.

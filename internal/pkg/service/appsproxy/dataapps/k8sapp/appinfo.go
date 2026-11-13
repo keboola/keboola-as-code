@@ -24,8 +24,6 @@ const (
 
 	IdleTimerVersion  = "v1"
 	IdleTimerResource = "idletimers"
-
-	BackendTypeE2BSandbox = "e2bSandbox"
 )
 
 // AppGVR returns the GroupVersionResource for the App CRD.
@@ -59,11 +57,6 @@ func NormalizeHost(host string) string {
 		host = h
 	}
 	return strings.ToLower(host)
-}
-
-// SecretGVR returns the GroupVersionResource for core/v1 Secrets.
-func SecretGVR() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "secrets"}
 }
 
 // AppActualState is the observed state of the app, read from .status.currentState.
@@ -110,7 +103,6 @@ type appSpec struct {
 	AppID              string          `json:"appId"`
 	AutoRestartEnabled *bool           `json:"autoRestartEnabled,omitempty"`
 	DevMode            *appDevModeSpec `json:"devMode,omitempty"`
-	Runtime            appRuntime      `json:"runtime"`
 	// AutoSuspendAfterSeconds is set on Sandbox CRs only. Absent means the
 	// workload is never auto-suspended, which is why it is a pointer: zero is
 	// not the same answer as unset.
@@ -123,14 +115,6 @@ type appSpec struct {
 // runtime, not by apps-proxy.
 type appDevModeSpec struct {
 	Enabled bool `json:"enabled"`
-}
-
-type appRuntime struct {
-	Backend appBackend `json:"backend"`
-}
-
-type appBackend struct {
-	Type string `json:"type,omitempty"`
 }
 
 // AppInfo is the cached state for an app, read from the K8s watcher.
@@ -146,10 +130,6 @@ type AppInfo struct {
 	// PublicHost is the exact hostname the workload published at
 	// .status.appsProxy.publicUrl. Empty when it published none.
 	PublicHost string
-	// E2BAccessToken is the access token loaded from the K8s Secret
-	// referenced by .status.e2bSandbox.accessTokenSecretName.
-	// Empty when the app is not an E2B sandbox or the secret is unavailable.
-	E2BAccessToken string
 	// WorkspaceID comes from the Sandbox that runs the workload: the draft
 	// Sandbox itself, or the App's status.productionSandbox. Empty when that
 	// Sandbox has none or is not cached; both are valid states and not logged.
@@ -160,7 +140,6 @@ type AppInfo struct {
 type appStatus struct {
 	CurrentState AppActualState `json:"currentState"`
 	AppsProxy    appsProxy      `json:"appsProxy"`
-	E2BSandbox   e2bSandbox     `json:"e2bSandbox"`
 	// ProductionSandbox is set on App CRs only: the member Sandbox that runs
 	// the workload the App routes to.
 	ProductionSandbox string `json:"productionSandbox,omitempty"`
@@ -193,10 +172,6 @@ func isNotDeployed(conditions []appCondition, generation int64) bool {
 
 type appWorkspace struct {
 	ID string `json:"id,omitempty"`
-}
-
-type e2bSandbox struct {
-	AccessTokenSecretName string `json:"accessTokenSecretName,omitempty"`
 }
 
 type appsProxy struct {
