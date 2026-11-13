@@ -3,7 +3,6 @@ package oauthproxy
 import (
 	"net/http"
 
-	"github.com/felixge/httpsnoop"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/encryption"
 )
 
@@ -27,42 +26,21 @@ func (m *cookieStoreMigration) renameCSRF(req *http.Request) {
 	}
 }
 
-// copyCSRF wraps w, so a redis-store CSRF cookie set in the response also gets a cookie-store copy,
+// copyCSRF gives a redis-store CSRF cookie set in the response a cookie-store copy,
 // for a callback that lands at a cookie-mode replica.
-func (m *cookieStoreMigration) copyCSRF(w http.ResponseWriter) http.ResponseWriter {
-	done := false
-	addCopy := func() {
-		if done {
-			return
-		}
-		done = true
-		c, ok := responseCookie(w, redisStoreCSRFName)
-		if !ok || c.Value == "" || c.MaxAge < 0 {
-			return
-		}
-		signed, ok := m.resignCSRF(c, cookieStoreCSRFName)
-		if !ok {
-			return
-		}
-		copied := *c //nolint:gosec // G124: a copy of the CSRF cookie oauth2-proxy set, with its attributes
-		copied.Name = cookieStoreCSRFName
-		copied.Value = signed
-		http.SetCookie(w, &copied)
+func (m *cookieStoreMigration) copyCSRF(w http.ResponseWriter) {
+	c, ok := responseCookie(w, redisStoreCSRFName)
+	if !ok || c.Value == "" || c.MaxAge < 0 {
+		return
 	}
-	return httpsnoop.Wrap(w, httpsnoop.Hooks{
-		WriteHeader: func(next httpsnoop.WriteHeaderFunc) httpsnoop.WriteHeaderFunc {
-			return func(code int) {
-				addCopy()
-				next(code)
-			}
-		},
-		Write: func(next httpsnoop.WriteFunc) httpsnoop.WriteFunc {
-			return func(b []byte) (int, error) {
-				addCopy()
-				return next(b)
-			}
-		},
-	})
+	signed, ok := m.resignCSRF(c, cookieStoreCSRFName)
+	if !ok {
+		return
+	}
+	copied := *c //nolint:gosec // G124: a copy of the CSRF cookie oauth2-proxy set, with its attributes
+	copied.Name = cookieStoreCSRFName
+	copied.Value = signed
+	http.SetCookie(w, &copied)
 }
 
 func (m *cookieStoreMigration) resignCSRF(c *http.Cookie, name string) (string, bool) {

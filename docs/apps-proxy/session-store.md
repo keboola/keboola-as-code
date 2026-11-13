@@ -182,7 +182,8 @@ passwords in `secrets.yaml`), all 6 pods are Ready, and
 
 1. Set `sessionStore.type: redis` in `<stack>/apps-proxy/values.yaml` and sync.
 2. apps-proxy pods restart one by one. During the rollout old and new pods serve
-   side by side; neither clears the other's cookie.
+   side by side; neither clears the other's cookie, so a user can move between
+   them without a login.
 3. Users with a valid cookie-store session do not log in again. On their first
    request to a redis-mode pod, the session is moved into Valkey (see below).
 4. A login can start on a pod of one mode and finish on a pod of the other mode
@@ -204,21 +205,32 @@ the cookies of the app's domain fixes it at once.
 
 ### Moving cookie-store sessions into the store
 
-In redis mode, a request that carries `_oauth2_proxy` or `_oauth2_proxy_0`, `_1`, … and no
-`_oauth2_proxy_ticket` is handled before oauth2-proxy:
+In redis mode, a request that carries `_oauth2_proxy` or `_oauth2_proxy_0`,
+`_1`, … and no `_oauth2_proxy_ticket` is handled before oauth2-proxy:
 
 - The cookie-store session is read with the app's cookie secret. A cookie with a
   bad signature, older than 24 hours or of another provider is ignored, and the
   user goes to the login page.
-- The session is saved to Valkey with its original creation time, so it expires
-  when the cookie-store session would have. Older than 1 hour, it is refreshed in
-  the same request, as any Valkey session.
-- The same response sets `_oauth2_proxy_ticket` and deletes `_oauth2_proxy` and
-  all its parts. Sign-out then sticks, and the request headers shrink at once.
+- The session is saved to Valkey with its original creation time, so the ticket
+  expires when the cookie-store session would have. The Valkey key has a TTL of
+  24 hours from the move. Older than 1 hour, the session is refreshed in the
+  same request, as any Valkey session.
+- The same response sets `_oauth2_proxy_ticket` and keeps `_oauth2_proxy`, so a
+  cookie-mode pod still reads the session during the rollout.
+- A response that deletes the ticket (sign-out, a failed refresh, a session
+  missing from the store) also deletes `_oauth2_proxy` and all its parts, so the
+  session is not moved again.
 - On `/_proxy/sign_out` the cookie-store cookies are only deleted, not moved.
 - When the store is unavailable, the user gets the 503 page and keeps the
   cookie-store cookie. The next request after the store is back moves it.
 - Each moved session counts in `sessionstore.migrated`.
+
+After the rollout no pod renews `_oauth2_proxy`, so it expires within 24 hours.
+Until then it stays in the request headers next to the ticket.
+
+During the rollout, a cookie-mode pod can refresh the cookie-store session. With
+an IdP that rotates refresh tokens, the refresh token in Valkey is then no
+longer valid, and the user logs in once at the next refresh in redis mode.
 
 Parallel requests with the same cookie-store session (several tabs, websocket
 reconnects) each move it, so one user can leave a few extra keys. The browser
@@ -258,10 +270,9 @@ the parts of this document about them. Then run `go mod tidy`:
 
 ## 7. Roll back
 
-- Fast: set `sessionStore.type: cookie` and sync. Users whose session was moved
-  into Valkey have no cookie-store cookie any more (section 6), so they log in
-  once. Users who did not visit an app in redis mode and whose cookie-store
-  session is less than 24 hours old keep it. The cookie-mode pods do not touch
+- Fast: set `sessionStore.type: cookie` and sync. Users whose cookie-store
+  session is less than 24 hours old keep it, also when it was moved into Valkey
+  (section 6); the others log in once. The cookie-mode pods do not touch
   Valkey or the ticket cookie, so switching back to `redis` within 24 hours
   restores the Valkey sessions without a login.
 - Full: also set `valkey.enabled: false`. ArgoCD does not prune, so the Valkey
@@ -292,7 +303,7 @@ kubectl -n apps-proxy exec <valkey-pod> -- sh -c \
 | Short bursts of 503 for logins and refreshes, reads fine | Writes refused during a failover (`NOREPLICAS`) | Replica `master_link_status`; resolves when a replica reattaches |
 | Users logged out after their session was evicted | Valkey reached `maxmemory` | `evicted_keys` in `INFO stats`; memory alerts |
 | Users log in once after a switch to `redis` | Their cookie-store session was older than 24 hours, or of another provider | Expected, section 6; `sessionstore.migrated` shows the moved sessions |
-| All OAuth users log in once after a rollback to `cookie` | Their sessions were moved into Valkey | Expected, section 7 |
+| Users log in once after a rollback to `cookie` | Their cookie-store session was older than 24 hours | Expected, section 7 |
 | "Unable to find a valid CSRF token" during a switch | The CSRF cookie expired (15 minutes) | Section 6, "Logins across pods of different modes"; try again |
 
 ## 9. Code Map

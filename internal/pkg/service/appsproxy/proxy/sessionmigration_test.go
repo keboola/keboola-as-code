@@ -94,11 +94,11 @@ func TestCookieStoreMigration_SingleCookie(t *testing.T) {
 
 	resp := envs.redis.send(client, oidcOrigin+"/some/path")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.True(t, expiresCookie(resp, oauthCookieName))
+	assert.False(t, expiresCookie(resp, oauthCookieName))
 	assert.Contains(t, setCookieNames(resp), ticketCookieName)
 	assert.Equal(t, "admin@keboola.com", envs.redis.lastAppRequest().Header.Get("X-Kbc-User-Email"))
 	assert.Len(t, envs.redis.ticketKeys(), 1)
-	assert.Empty(t, oldCookieNames(client))
+	assert.Equal(t, []string{oauthCookieName}, oldCookieNames(client))
 	assert.Equal(t, int64(1), envs.redis.counterValue(migratedCounter))
 
 	resp = envs.redis.send(client, oidcOrigin+"/some/path")
@@ -118,11 +118,45 @@ func TestCookieStoreMigration_SplitCookie(t *testing.T) {
 	resp := envs.redis.send(client, oidcOrigin+"/some/path")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	for _, name := range chunks {
-		assert.True(t, expiresCookie(resp, name), name)
+		assert.False(t, expiresCookie(resp, name), name)
 	}
 	assert.Contains(t, envs.redis.lastAppRequest().Header.Get("X-Kbc-User-Roles"), "group-with-a-long-name-198")
 	assert.Len(t, envs.redis.ticketKeys(), 1)
+	assert.ElementsMatch(t, chunks, oldCookieNames(client))
+	assert.Equal(t, int64(1), envs.redis.counterValue(migratedCounter))
+}
+
+func TestCookieStoreMigration_CookieModeReplicaAfterMove(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	client := envs.cookieStoreClient(freshnessUser())
+	require.Equal(t, http.StatusOK, envs.redis.send(client, oidcOrigin+"/some/path").StatusCode)
+
+	cookieClient := envs.cookie.clientWithCookies(client)
+	assert.Equal(t, http.StatusOK, envs.cookie.send(cookieClient, oidcOrigin+"/some/path").StatusCode)
+
+	assert.Equal(t, http.StatusOK, envs.redis.send(envs.redis.clientWithCookies(cookieClient), oidcOrigin+"/some/path").StatusCode)
+	assert.Len(t, envs.redis.ticketKeys(), 1)
+	assert.Equal(t, int64(1), envs.redis.counterValue(migratedCounter))
+}
+
+func TestCookieStoreMigration_EvictedKeyClearsOldCookie(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	client := envs.cookieStoreClient(freshnessUser())
+	require.Equal(t, http.StatusOK, envs.redis.send(client, oidcOrigin+"/some/path").StatusCode)
+	keys := envs.redis.ticketKeys()
+	require.Len(t, keys, 1)
+	envs.redis.redis.Del(keys[0])
+
+	resp := envs.redis.send(client, oidcOrigin+"/some/path")
+	envs.redis.requireLoginRedirect(resp)
+	assert.True(t, expiresCookie(resp, ticketCookieName))
+	assert.True(t, expiresCookie(resp, oauthCookieName))
 	assert.Empty(t, oldCookieNames(client))
+
+	envs.redis.requireLoginRedirect(envs.redis.send(client, oidcOrigin+"/some/path"))
+	assert.Empty(t, envs.redis.ticketKeys())
 	assert.Equal(t, int64(1), envs.redis.counterValue(migratedCounter))
 }
 
@@ -191,6 +225,7 @@ func TestCookieStoreMigration_SignOutAfterMigrationSticks(t *testing.T) {
 
 	envs.redis.send(client, oidcOrigin+"/_proxy/sign_out")
 	assert.Empty(t, envs.redis.ticketKeys())
+	assert.Empty(t, oldCookieNames(client))
 
 	envs.redis.requireLoginRedirect(envs.redis.send(client, oidcOrigin+"/some/path"))
 	assert.Empty(t, envs.redis.ticketKeys())

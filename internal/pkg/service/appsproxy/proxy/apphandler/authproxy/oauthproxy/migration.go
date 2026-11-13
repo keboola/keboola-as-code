@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/felixge/httpsnoop"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	sessionsapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/sessions/cookie"
@@ -53,7 +54,43 @@ func (m *cookieStoreMigration) serve(w http.ResponseWriter, req *http.Request) (
 	if m.migrate(w, req) {
 		return w, true
 	}
-	return m.copyCSRF(w), false
+	return m.wrap(w, req), false
+}
+
+// wrap adjusts the cookies of oauth2-proxy's response before its headers are written.
+func (m *cookieStoreMigration) wrap(w http.ResponseWriter, req *http.Request) http.ResponseWriter {
+	done := false
+	beforeHeaders := func() {
+		if done {
+			return
+		}
+		done = true
+		m.copyCSRF(w)
+		m.clearWithTicket(w, req)
+	}
+	return httpsnoop.Wrap(w, httpsnoop.Hooks{
+		WriteHeader: func(next httpsnoop.WriteHeaderFunc) httpsnoop.WriteHeaderFunc {
+			return func(code int) {
+				beforeHeaders()
+				next(code)
+			}
+		},
+		Write: func(next httpsnoop.WriteFunc) httpsnoop.WriteFunc {
+			return func(b []byte) (int, error) {
+				beforeHeaders()
+				return next(b)
+			}
+		},
+	})
+}
+
+// clearWithTicket expires the cookie-store session when the response expires the ticket, so a cleared session is not moved again.
+func (m *cookieStoreMigration) clearWithTicket(w http.ResponseWriter, req *http.Request) {
+	ticket, ok := responseCookie(w, redisSessionCookieName)
+	if !ok || ticket.MaxAge >= 0 {
+		return
+	}
+	m.clearCookieStore(req.Context(), w, req)
 }
 
 func (m *cookieStoreMigration) migrate(w http.ResponseWriter, req *http.Request) bool {
@@ -88,7 +125,6 @@ func (m *cookieStoreMigration) migrate(w http.ResponseWriter, req *http.Request)
 		return false
 	}
 	req.AddCookie(&http.Cookie{Name: ticket.Name, Value: ticket.Value}) //nolint:gosec // G124: a request cookie carries only the name and value
-	m.clearCookieStore(req.Context(), w, req)
 	m.metrics.Migrated(req.Context())
 	return false
 }
