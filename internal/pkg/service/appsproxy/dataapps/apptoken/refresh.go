@@ -25,6 +25,12 @@ const (
 	refreshAudience  = "apps-proxy"
 )
 
+// missingKeyTTL is what PTTL answers for a key that does not exist.
+const missingKeyTTL = -2 * time.Nanosecond
+
+// ErrSessionStoreUnavailable means the login session of a refresh token could not be checked.
+var ErrSessionStoreUnavailable = errors.New("login session store unavailable")
+
 type refreshClaims struct {
 	Issuer    string           `json:"iss"`
 	Audience  string           `json:"aud"`
@@ -44,6 +50,7 @@ type refreshKbcClaims struct {
 	AppID          string `json:"app_id"`     //nolint:tagliatelle // the same names as the kbc claim of the app user token
 	Sandbox        string `json:"sandbox,omitempty"`
 	AuthProviderID string `json:"auth_provider_id"` //nolint:tagliatelle // the same names as the kbc claim of the app user token
+	LoginSession   string `json:"login_session"`    //nolint:tagliatelle // snake case like the other kbc claims
 }
 
 func (c refreshClaims) GetExpirationTime() (*jwt.NumericDate, error) { return c.ExpiresAt, nil }
@@ -66,16 +73,20 @@ func (c refreshClaims) identity() identity {
 
 // RefreshEnabled reports whether refresh tokens are issued. Their keys are derived from the signing keys.
 func (m *Minter) RefreshEnabled() bool {
-	return m.keyring.Configured()
+	return m.keyring.Configured() && m.store != nil
 }
 
 // injectRefresh adds the refresh token and the public URL the app sends it to. The refresh token expires when
 // apps-proxy closes the websocket, so the reconnect authenticates again.
 func (m *Minter) injectRefresh(req *http.Request, app api.AppConfig, workload k8sapp.WorkloadRef, id identity, sid string) {
-	if !m.keyring.Configured() {
+	if !m.RefreshEnabled() {
 		return
 	}
 	ctx := req.Context()
+	loginSession, ok := loginSessionFrom(ctx)
+	if !ok {
+		return
+	}
 	info, known := m.apps.GetState(workload)
 	origin, ok := k8sapp.PublicOrigin(m.publicURL, app, workload, info, known)
 	if !ok {
@@ -85,7 +96,7 @@ func (m *Minter) injectRefresh(req *http.Request, app api.AppConfig, workload k8
 
 	now := m.clock.Now()
 	exp, _ := upstream.WebsocketDeadline(ctx, now, m.wsTimeout)
-	token, err := m.signRefresh(app, workload, id, sid, now, exp)
+	token, err := m.signRefresh(app, workload, id, sid, loginSession, now, exp)
 	if err != nil {
 		m.logger.Errorf(ctx, "cannot sign the app user refresh token, the websocket continues without it: %s", err)
 		return
@@ -94,7 +105,7 @@ func (m *Minter) injectRefresh(req *http.Request, app api.AppConfig, workload k8
 	req.Header.Set(PublicURLHeaderName, origin)
 }
 
-func (m *Minter) signRefresh(app api.AppConfig, workload k8sapp.WorkloadRef, id identity, sid string, now, exp time.Time) (string, error) {
+func (m *Minter) signRefresh(app api.AppConfig, workload k8sapp.WorkloadRef, id identity, sid, loginSession string, now, exp time.Time) (string, error) {
 	jti, err := randomID()
 	if err != nil {
 		return "", err
@@ -111,6 +122,7 @@ func (m *Minter) signRefresh(app api.AppConfig, workload k8sapp.WorkloadRef, id 
 			AppID:          app.ID.String(),
 			Sandbox:        workload.SandboxName,
 			AuthProviderID: id.providerID,
+			LoginSession:   loginSession,
 		},
 		ID:        jti,
 		SID:       sid,
@@ -126,8 +138,8 @@ func (m *Minter) signRefresh(app api.AppConfig, workload k8sapp.WorkloadRef, id 
 // Refresh mints a new app user token from a refresh token issued for this workload.
 // The error never contains the token.
 func (m *Minter) Refresh(ctx context.Context, app api.AppConfig, workload k8sapp.WorkloadRef, refreshToken string) (string, time.Time, error) {
-	if !m.keyring.Configured() {
-		return "", time.Time{}, errors.New("app user token is disabled")
+	if !m.RefreshEnabled() {
+		return "", time.Time{}, errors.New("app user token refresh is disabled")
 	}
 	claims, err := m.verifyRefresh(refreshToken)
 	if err != nil {
@@ -137,6 +149,9 @@ func (m *Minter) Refresh(ctx context.Context, app api.AppConfig, workload k8sapp
 		return "", time.Time{}, err
 	}
 	if err := checkProvider(claims, app); err != nil {
+		return "", time.Time{}, err
+	}
+	if err := m.checkLoginSession(ctx, claims.Kbc.LoginSession); err != nil {
 		return "", time.Time{}, err
 	}
 	return m.mint(app, workload, claims.identity(), claims.SID, claims.ExpiresAt.Time)
@@ -196,6 +211,21 @@ func checkProvider(claims refreshClaims, app api.AppConfig) error {
 	})
 	if !requiresLogin {
 		return errors.New("auth provider no longer required")
+	}
+	return nil
+}
+
+// checkLoginSession refuses a refresh token whose login session was signed out, expired or ended by a refused IdP refresh.
+func (m *Minter) checkLoginSession(ctx context.Context, key string) error {
+	if key == "" {
+		return errors.New("refresh token has no login session")
+	}
+	ttl, err := m.store.PTTL(ctx, key).Result()
+	if err != nil {
+		return errors.PrefixError(ErrSessionStoreUnavailable, err.Error())
+	}
+	if ttl == missingKeyTTL {
+		return errors.New("login session ended")
 	}
 	return nil
 }

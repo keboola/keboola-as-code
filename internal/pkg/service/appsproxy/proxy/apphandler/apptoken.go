@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type appUserTokenResponse struct {
@@ -35,6 +38,11 @@ func (h *appHandler) serveAppUserTokenRefresh(w http.ResponseWriter, req *http.R
 	}
 
 	token, expiresAt, err := minter.Refresh(ctx, h.app, h.workload, refreshToken)
+	if errors.Is(err, apptoken.ErrSessionStoreUnavailable) {
+		h.manager.logger.Warnf(ctx, "app user token refresh failed: %s", err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return nil
+	}
 	if err != nil {
 		h.manager.logger.Infof(ctx, "app user token refresh refused: %s", err)
 		writeRefreshRefused(w)

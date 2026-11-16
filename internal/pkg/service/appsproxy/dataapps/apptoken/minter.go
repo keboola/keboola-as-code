@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -20,6 +21,8 @@ type Minter struct {
 	clock     clockwork.Clock
 	logger    log.Logger
 	apps      appStates
+	// store is the login session store, nil in cookie mode.
+	store *redis.Client
 }
 
 type appStates interface {
@@ -31,6 +34,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Config() config.Config
 	AppStateWatcher() *k8sapp.StateWatcher
+	SessionStoreClient() *redis.Client
 }
 
 func NewMinter(d dependencies) (*Minter, error) {
@@ -48,6 +52,7 @@ func NewMinter(d dependencies) (*Minter, error) {
 		clock:     d.Clock(),
 		logger:    d.Logger().WithComponent("app-user-token"),
 		apps:      d.AppStateWatcher(),
+		store:     d.SessionStoreClient(),
 	}, nil
 }
 

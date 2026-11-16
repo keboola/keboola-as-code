@@ -16,10 +16,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jonboulle/clockwork"
 	sdk "github.com/keboola/keboola-sdk-go/v2/pkg/apptoken"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,20 +41,23 @@ import (
 )
 
 const (
-	testAppID       = "app-1"
-	testSandbox     = "app-1-sbx"
-	testWorkspaceID = "91011"
-	testIssuer      = "https://hub.keboola.local"
-	testIDP         = "https://idp.example.com"
-	testProviderID  = "oidc-1"
-	testAppHost     = "app-1.hub.keboola.local"
+	testAppID        = "app-1"
+	testSandbox      = "app-1-sbx"
+	testWorkspaceID  = "91011"
+	testIssuer       = "https://hub.keboola.local"
+	testIDP          = "https://idp.example.com"
+	testProviderID   = "oidc-1"
+	testAppHost      = "app-1.hub.keboola.local"
+	testLoginSession = "_oauth2_proxy_ticket-0011aabb"
 )
 
 type envOptions struct {
-	noKeys      bool
-	sessions    bool
-	noWorkspace bool
-	ttl         time.Duration
+	noKeys         bool
+	sessions       bool
+	noWorkspace    bool
+	ttl            time.Duration
+	cookieMode     bool
+	noLoginSession bool
 }
 
 type testEnv struct {
@@ -64,6 +69,10 @@ type testEnv struct {
 	// refreshKeys are the HS256 keys derived from the signing keys, by kid.
 	refreshKeys map[string][]byte
 	ref         k8sapp.WorkloadRef
+	// store is the login session store, nil in cookie mode.
+	store *miniredis.Miniredis
+	// loginSession is put into every request context, as the oauth2-proxy handler does for a ticket cookie.
+	loginSession string
 }
 
 type upstreamRequest struct {
@@ -94,7 +103,14 @@ func newEnv(t *testing.T, opts envOptions) *testEnv {
 	}
 
 	clock := clockwork.NewFakeClockAt(time.Now())
-	d, mocked := dependencies.NewMockedServiceScopeWithK8sObjects(t, t.Context(), cfg, []runtime.Object{appObject()}, commonDeps.WithClock(clock))
+	var store *miniredis.Miniredis
+	var client *redis.Client
+	if !opts.cookieMode {
+		store = miniredis.RunT(t)
+		client = redis.NewClient(&redis.Options{Addr: store.Addr(), MaxRetries: -1})
+		require.NoError(t, store.Set(testLoginSession, "session"))
+	}
+	d, mocked := dependencies.NewMockedServiceScopeWithSessionStore(t, t.Context(), cfg, client, []runtime.Object{appObject()}, commonDeps.WithClock(clock))
 	require.True(t, d.AppStateWatcher().WaitForCacheSync(t.Context()))
 
 	e := &testEnv{
@@ -106,6 +122,10 @@ func newEnv(t *testing.T, opts envOptions) *testEnv {
 		ref:    k8sapp.WorkloadRef{AppID: testAppID},
 
 		refreshKeys: refreshKeys,
+		store:       store,
+	}
+	if !opts.cookieMode && !opts.noLoginSession {
+		e.loginSession = testLoginSession
 	}
 	if !opts.noWorkspace {
 		e.createSandbox()
@@ -253,6 +273,9 @@ func (h *testHandler) serve(headers map[string]string) upstreamRequest {
 func (h *testHandler) serveCtx(ctx context.Context, headers map[string]string) upstreamRequest {
 	h.e.t.Helper()
 	*h.got = upstreamRequest{}
+	if h.e.loginSession != "" {
+		ctx = apptoken.WithLoginSession(ctx, h.e.loginSession)
+	}
 	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "https://"+testAppHost+"/", nil)
 	req.Header.Set("Accept", "text/html")
 	for k, v := range headers {

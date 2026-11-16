@@ -113,7 +113,7 @@ func TestInjectRefresh_WebsocketHandshake(t *testing.T) {
 		"idp":    testIDP,
 		"email":  "jane@example.com",
 		"groups": []any{"a", "b"},
-		"kbc":    map[string]any{"project_id": "123", "app_id": testAppID, "auth_provider_id": testProviderID},
+		"kbc":    map[string]any{"project_id": "123", "app_id": testAppID, "auth_provider_id": testProviderID, "login_session": testLoginSession},
 		"sid":    got.session.ID,
 	}, tok.payload)
 }
@@ -160,7 +160,7 @@ func TestInjectRefresh_Sandbox(t *testing.T) {
 	got := e.handshake(ref)
 	assert.Equal(t, "https://"+testSandbox+".hub.keboola.local", got.header.Get(apptoken.PublicURLHeaderName))
 	tok := e.parseRefresh(got.header.Get(apptoken.RefreshHeaderName))
-	assert.Equal(t, map[string]any{"project_id": "123", "app_id": testAppID, "sandbox": testSandbox, "auth_provider_id": testProviderID}, tok.payload["kbc"])
+	assert.Equal(t, map[string]any{"project_id": "123", "app_id": testAppID, "sandbox": testSandbox, "auth_provider_id": testProviderID, "login_session": testLoginSession}, tok.payload["kbc"])
 }
 
 func TestInjectRefresh_OnlyOnWebsocketWithToken(t *testing.T) {
@@ -303,6 +303,33 @@ func TestRefresh_Enabled(t *testing.T) {
 	t.Parallel()
 	assert.True(t, newEnv(t, envOptions{noWorkspace: true}).d.AppTokenMinter().RefreshEnabled())
 	assert.False(t, newEnv(t, envOptions{noWorkspace: true, noKeys: true}).d.AppTokenMinter().RefreshEnabled())
+	assert.False(t, newEnv(t, envOptions{noWorkspace: true, cookieMode: true}).d.AppTokenMinter().RefreshEnabled())
+}
+
+func TestInjectRefresh_NoLoginSessionNoRefresh(t *testing.T) {
+	t.Parallel()
+	got := newEnv(t, envOptions{noLoginSession: true}).serve(testIDP, wsHeaders(identityHeaders()))
+	require.NotEmpty(t, got.header.Get(apptoken.HeaderName))
+	assert.Empty(t, got.header.Values(apptoken.RefreshHeaderName))
+	assert.Empty(t, got.header.Values(apptoken.PublicURLHeaderName))
+}
+
+func TestInjectRefresh_CookieModeNoRefresh(t *testing.T) {
+	t.Parallel()
+	got := newEnv(t, envOptions{cookieMode: true}).serve(testIDP, wsHeaders(identityHeaders()))
+	require.NotEmpty(t, got.header.Get(apptoken.HeaderName))
+	assert.Empty(t, got.header.Values(apptoken.RefreshHeaderName))
+}
+
+func TestRefresh_SessionStoreDown(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t, envOptions{})
+	refresh := e.handshake(e.ref).header.Get(apptoken.RefreshHeaderName)
+	e.store.Close()
+
+	token, _, err := e.refresh(e.app, e.ref, refresh)
+	require.ErrorIs(t, err, apptoken.ErrSessionStoreUnavailable)
+	assert.Empty(t, token)
 }
 
 func TestRefresh_Refused(t *testing.T) {
@@ -369,6 +396,13 @@ func TestRefresh_Refused(t *testing.T) {
 		}},
 		{name: "secret of another kid", token: func(e *testEnv, refresh, _ string) string {
 			return e.resign(refresh, jwt.SigningMethodHS256, e.refreshKeys["k1"], nil, nil)
+		}},
+		{name: "login session ended", setup: func(e *testEnv) { e.store.Del(testLoginSession) }},
+		{name: "no login session claim", token: func(e *testEnv, refresh, _ string) string {
+			return e.resign(refresh, jwt.SigningMethodHS256, e.refreshKeys["k2"], nil, func(c jwt.MapClaims) {
+				kbc, _ := c["kbc"].(map[string]any)
+				delete(kbc, "login_session")
+			})
 		}},
 		{name: "alg none", token: func(e *testEnv, refresh, _ string) string {
 			return e.resign(refresh, jwt.SigningMethodNone, jwt.UnsafeAllowNoneSignatureType, nil, nil)
