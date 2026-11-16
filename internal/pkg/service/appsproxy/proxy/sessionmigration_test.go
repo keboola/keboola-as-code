@@ -411,3 +411,50 @@ func TestCookieStoreMigration_InvalidCookieModeCSRF(t *testing.T) {
 		})
 	}
 }
+
+func TestCookieStoreMigration_LoginFromCookieModeAfterAbandonedRedisModeLogin(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	shareIDP(envs.cookie, envs.redis)
+	abandoned := envs.redis.clientWithCookies(nil)
+	require.Equal(t, http.StatusFound, envs.redis.send(abandoned, oidcOrigin+"/").StatusCode)
+	require.NotNil(t, jarCookie(abandoned, ticketCookieName+"_csrf"))
+
+	starter := envs.cookie.clientWithCookies(abandoned)
+	callback := envs.cookie.startLogin(starter)
+
+	client := envs.redis.clientWithCookies(starter)
+	envs.redis.requireLoggedIn(envs.redis.send(client, callback), client)
+	assert.Len(t, envs.redis.ticketKeys(), 1)
+}
+
+func TestCookieStoreMigration_NoCSRFMatchesState(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	shareIDP(envs.cookie, envs.redis)
+	abandoned := envs.redis.clientWithCookies(nil)
+	require.Equal(t, http.StatusFound, envs.redis.send(abandoned, oidcOrigin+"/").StatusCode)
+
+	starter := envs.cookie.clientWithCookies(abandoned)
+	callback := envs.cookie.startLogin(starter)
+	require.Equal(t, http.StatusFound, envs.cookie.send(starter, oidcOrigin+"/").StatusCode)
+
+	resp := envs.redis.send(envs.redis.clientWithCookies(starter), callback)
+	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+	assert.Empty(t, envs.redis.ticketKeys())
+}
+
+func TestCookieStoreMigration_LoginFromRedisModeAfterAbandonedCookieModeLogin(t *testing.T) {
+	t.Parallel()
+	envs := startMigrationEnvs(t)
+	shareIDP(envs.redis, envs.cookie)
+	starter := envs.redis.clientWithCookies(nil)
+	callback := envs.redis.startLogin(starter)
+
+	abandoned := envs.cookie.clientWithCookies(starter)
+	require.Equal(t, http.StatusFound, envs.cookie.send(abandoned, oidcOrigin+"/").StatusCode)
+
+	client := envs.redis.clientWithCookies(abandoned)
+	envs.redis.requireLoggedIn(envs.redis.send(client, callback), client)
+	assert.Len(t, envs.redis.ticketKeys(), 1)
+}
