@@ -40,13 +40,12 @@ func NewHandler(
 	app api.AppConfig,
 	auth provider.OAuthProvider,
 	upstream chain.Handler,
-	metrics *Metrics,
 ) *Handler {
 	var err error
 	handler := &Handler{providerName: auth.Name()}
 
 	// Create proxy configuration
-	handler.proxyConfig, err = proxyConfig(ctx, cfg, sessionStore, newScopeResolver(logger, httpClient), selector, pw, app, auth, upstream, metrics)
+	handler.proxyConfig, err = proxyConfig(ctx, cfg, sessionStore, newScopeResolver(logger, httpClient), selector, pw, app, auth, upstream)
 	if err != nil {
 		handler.initErr = wrapHandlerInitErr(app, auth, err)
 		return handler

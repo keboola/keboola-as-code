@@ -12,27 +12,7 @@ import (
 	sessionsapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
-
-const providerUnavailableMetric = "keboola.go.appsproxy.auth.provider_unavailable"
-
-func (e *previewEnv) providerUnavailableCount() int64 {
-	e.t.Helper()
-	for _, m := range e.mocked.TestTelemetry().Metrics(e.t) {
-		if m.Name != providerUnavailableMetric {
-			continue
-		}
-		sum, ok := m.Data.(metricdata.Sum[int64])
-		require.True(e.t, ok)
-		var total int64
-		for _, dp := range sum.DataPoints {
-			total += dp.Value
-		}
-		return total
-	}
-	return 0
-}
 
 // queueTokenError fails the next refresh: the oauth2 client retries a failed token request once with the other client auth style.
 func queueTokenError(m *mockoidc.MockOIDC, se *mockoidc.ServerError) {
@@ -71,14 +51,12 @@ func TestSessionFreshness_IdPDownKeepsSessionAndShows503(t *testing.T) {
 	kept := env.loadOIDCSession(client)
 	assert.Equal(t, before.RefreshToken, kept.RefreshToken)
 	assert.Equal(t, before.CreatedAt.Unix(), kept.CreatedAt.Unix())
-	assert.Equal(t, int64(1), env.providerUnavailableCount())
 
 	// The IdP is back: the same cookie refreshes and the request is served.
 	resp = env.send(client, oidcOrigin+"/some/path")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Contains(t, setCookieNames(resp), oauthCookieName)
 	assert.WithinDuration(t, time.Now(), *env.loadOIDCSession(client).CreatedAt, time.Minute)
-	assert.Equal(t, int64(1), env.providerUnavailableCount())
 }
 
 func TestSessionFreshness_InvalidGrantAtRefreshLogsOut(t *testing.T) {
@@ -93,5 +71,4 @@ func TestSessionFreshness_InvalidGrantAtRefreshLogsOut(t *testing.T) {
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
 	assert.Contains(t, setCookieNames(resp), oauthCookieName)
-	assert.Equal(t, int64(0), env.providerUnavailableCount())
 }

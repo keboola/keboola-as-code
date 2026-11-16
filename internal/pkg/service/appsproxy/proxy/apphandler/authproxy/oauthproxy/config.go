@@ -58,7 +58,6 @@ func proxyConfig(
 	app api.AppConfig,
 	oAuthProvider provider.OAuthProvider,
 	upstream chain.Handler,
-	metrics *Metrics,
 ) (*options.Options, error) {
 	// Generate unique cookies secret
 	secret, err := generateCookieSecret(cfg, app, oAuthProvider.ID())
@@ -99,7 +98,6 @@ func proxyConfig(
 	}
 
 	v.OnProviderError = func(rw http.ResponseWriter, req *http.Request, err error) {
-		metrics.providerUnavailable.Add(req.Context(), 1)
 		pageWriter.WriteError(rw, req, &app, providerUnavailableError(err))
 	}
 	// Setup
