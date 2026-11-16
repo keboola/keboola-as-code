@@ -121,9 +121,11 @@ twice that time after the first one began.
 
 A session older than 1 hour is refreshed under a Valkey lock. The request that
 takes the lock asks the IdP for new tokens and saves the session; the IdP call
-is cut off after 24 s. Parallel requests of the same user that find the lock
-taken poll for it, first every 10 ms and then less often, up to every 100 ms,
-and then read the refreshed session.
+is cut off after 24 s, and a cut-off call counts as an IdP outage: the user gets
+the 503 page and keeps the cookie (see [login-session.md](login-session.md) §3).
+Parallel requests of the same user that find the lock taken poll for it, first
+every 10 ms and then less often, up to every 100 ms, and then read the
+refreshed session.
 
 | Setting | Value |
 |---|---|
