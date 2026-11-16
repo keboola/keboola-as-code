@@ -130,8 +130,10 @@ apps-proxy ends every non-WebSocket response at `upstream.httpTimeout` (4 min
 30 s), before its token expires, so they need no refresh. This holds only while
 `upstream.httpTimeout` stays below `appUserToken.ttl`: with a longer timeout a
 streamed response outlives its token.
-When the app user token is off, or the Sandbox has no public host, the
-handshake gets neither header.
+
+The handshake gets neither header when the app user token is off, when the
+stack runs the `cookie` session store, when the handshake has no valid ticket
+cookie of the `redis` store, or when the Sandbox has no public host.
 
 The app calls:
 
@@ -151,13 +153,14 @@ The answer is `200`, `Content-Type: application/json`, `Cache-Control: no-store`
 - The app must take the URL only from `X-Kbc-App-Public-Url`. apps-proxy passes
   an inbound `X-Forwarded-Host` on to the app, so a client controls it, and
   `Host` is the internal address.
-- Any replica answers. The refresh token is self-contained.
+- Any replica answers. The refresh token carries everything apps-proxy needs;
+  it only checks in the session store that the login session still exists.
 - No cookie and no login run on this path. It never reaches the app, so a
   refresh call is neither [session](sessions.md) nor
   [idle-suspend](idle-suspend.md) activity.
 - No CORS headers. A browser never holds the refresh token.
-- App user token off (no signing keys): `404` for every method. Otherwise other
-  methods get `405`.
+- App user token off (no signing keys) or the `cookie` session store: `404` for
+  every method. Otherwise other methods get `405`.
 
 The new token is minted like the injected one: the identity from the
 handshake, a new `jti`, `iat` and `exp`, and `kbc.workspace_id` read again. Its
@@ -174,9 +177,16 @@ in the body:
 - `kbc.app_id`, `kbc.project_id` or `kbc.sandbox` differ from the app and the
   workload the host routes to (the App and each of its Sandboxes are separate);
 - the auth provider in the token is no longer configured for the app, no longer
-  guards any path that requires login, or has another issuer now.
+  guards any path that requires login, or has another issuer now;
+- the login session of the handshake has ended: signed out, expired, or ended
+  by a refused IdP refresh. apps-proxy checks it with one `PTTL` on the
+  session key.
 
 After a `401` the app gets no new token until the websocket reconnects.
+
+When the session store cannot be reached, the answer is `503` with
+`Cache-Control: no-store` and an empty body. The app may try again later; the
+refresh token stays valid until its `exp`.
 
 ### Refresh token
 
@@ -210,6 +220,7 @@ its `kid`.
 | `kbc.project_id`, `kbc.app_id` | As in the app user token |
 | `kbc.sandbox` | Name of the Sandbox the host routes to. Omitted for the App. |
 | `kbc.auth_provider_id` | Id of the auth provider that admitted the handshake |
+| `kbc.login_session` | Session store key of the handshake's login session (`_oauth2_proxy_ticket-<id>`). Never the ticket secret, so it cannot read the session. |
 | `jti` | Random, 32 hex characters |
 | `sid` | Session id, only when session tracking is on |
 | `iat` | Time of the handshake |
@@ -228,7 +239,9 @@ The refresh token has no `kbc.workspace_id`; each refresh reads it again.
 `signingKeys` is a JSON list of `{"kid": "...", "pem": "..."}` entries, each an
 EC P-256 private key (`openssl ecparam -name prime256v1 -genkey -noout`). It is a
 secret. `activeKid` names the key that signs. The signing keys are also the
-source of the refresh keys (§6). Both empty turn the feature off: no tokens, no
+source of the refresh keys (§6). The refresh also needs the `redis` session store
+(see [session-store.md](session-store.md)); in `cookie` mode it is off. Both empty
+turn the feature off: no tokens, no
 refresh tokens, empty JWKS. Only one of them set is a startup error.
 
 Startup refuses: invalid JSON, an entry without `kid` or `pem`, a `kid` that does
@@ -278,7 +291,7 @@ The token, the refresh token, the claims and the keys are never logged. The
   must call the refresh endpoint (§6) for a new one.
 - **Refresh outlives the tab.** After the user closes the tab, the app can still
   refresh until the refresh token expires, at most 1 hour after the handshake.
-  Sign-out does not revoke a refresh token already issued.
+  Sign-out ends it at once: the refresh checks that the login session exists.
 - **Refresh identity.** A refreshed token carries the identity of the
   handshake. Group or email changes at the IdP reach it only after the next
   handshake.
@@ -293,6 +306,5 @@ The token, the refresh token, the claims and the keys are never logged. The
   24 hours old for one without, see [login-session.md](login-session.md).
 - **Replay.** App code can reuse a token of a user who visited the app until it
   expires, and so can anyone the app sends it to. With the refresh token this
-  is at most 1 hour after the user's last WebSocket handshake. apps-proxy also
-  passes its own login cookies on to the app, so app code can replay the login
-  itself for up to 24 hours ([AJDA-3825](https://linear.app/keboola/issue/AJDA-3825)).
+  is at most 1 hour after the user's last WebSocket handshake, and ends at
+  sign-out.
