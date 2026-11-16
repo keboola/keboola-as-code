@@ -41,7 +41,7 @@ func TestSessionFreshness_IdPDownKeepsSessionAndShows503(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
-	assert.Contains(t, string(body), "The identity provider is not reachable. Please try again in a moment.")
+	assert.Contains(t, string(body), "The identity provider is temporarily unavailable. Please try again in a moment.")
 	exceptionID := regexp.MustCompile(`id="exceptionId">([^<]+)<`).FindStringSubmatch(string(body))
 	require.Len(t, exceptionID, 2)
 	assert.Contains(t, env.mocked.DebugLogger().AllMessages(), `"exceptionId":"`+exceptionID[1]+`"`)

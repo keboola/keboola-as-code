@@ -45,13 +45,13 @@ the refresh token:
   so its 24-hour window starts again. An active user is never logged out.
 - `invalid_grant` (user disabled, token revoked): the cookie is deleted and the
   user must log in.
-- IdP not reachable (HTTP 5xx or 429, timeout, connection error): the cookie
-  is kept, the request is not served, and the user sees a 503 page "The
-  identity provider is not reachable". The next request tries the refresh again, so the
-  app works again as soon as the IdP answers. Each such page writes a warning
-  log line with `identity provider unavailable` and the exception ID shown on
-  the page. If the client has already gone (reload, closed tab), the cookie is
-  kept and nothing is written.
+- IdP unavailable (HTTP 5xx or 429, timeout, connection error): the cookie is
+  kept, the request is not served, and the user sees a 503 page "The identity
+  provider is temporarily unavailable". The next request tries the refresh
+  again, so the app works again as soon as the IdP answers. Each such page
+  writes a warning log line with `identity provider unavailable` and the
+  exception ID shown on the page. If the client has already gone (reload,
+  closed tab), the cookie is kept and nothing is written.
 - Any other error (for example `invalid_request`, `unauthorized_client`, or an
   ID token in the IdP answer that fails verification): the session is checked
   as before the refresh and kept only if its tokens are still valid, otherwise
@@ -158,7 +158,7 @@ response, or the user is sent to log in. apps-proxy never refreshes inside a
 websocket: an IdP that rotates refresh tokens would cancel the token the cookie
 still holds.
 
-While the IdP is not reachable, the reconnect gets the 503 page and the
+While the IdP is unavailable, the reconnect gets the 503 page and the
 browser retries. If a refresh failed for another reason and the session was
 kept, the next close is 1 hour later.
 
