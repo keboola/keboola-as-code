@@ -53,7 +53,7 @@ func (e *previewEnv) post(target string, headers ...string) *http.Response {
 
 func startRefreshEnv(t *testing.T) *previewEnv {
 	t.Helper()
-	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
+	env := startRedisEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
 	env.withOIDCWorkspace()
 	env.syncClock()
 	return env
@@ -214,8 +214,48 @@ func TestAppUserTokenRefresh_EndpointRefuses(t *testing.T) {
 
 func TestAppUserTokenRefresh_EndpointOff(t *testing.T) {
 	t.Parallel()
-	env := startPreviewEnv(t)
 
-	assert.Equal(t, http.StatusNotFound, env.post(oidcOrigin+apptoken.RefreshPath, "Authorization", "Bearer x").StatusCode)
-	assert.Empty(t, env.websocketHandshake().Header.Values(apptoken.RefreshHeaderName))
+	t.Run("no signing keys", func(t *testing.T) {
+		t.Parallel()
+		env := startRedisEnv(t)
+		assert.Equal(t, http.StatusNotFound, env.post(oidcOrigin+apptoken.RefreshPath, "Authorization", "Bearer x").StatusCode)
+		assert.Empty(t, env.websocketHandshake().Header.Values(apptoken.RefreshHeaderName))
+	})
+
+	t.Run("cookie mode", func(t *testing.T) {
+		t.Parallel()
+		env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
+		env.withOIDCWorkspace()
+		assert.Equal(t, http.StatusNotFound, env.post(oidcOrigin+apptoken.RefreshPath, "Authorization", "Bearer x").StatusCode)
+		handshake := env.websocketHandshake()
+		require.NotEmpty(t, handshake.Header.Get(apptoken.HeaderName))
+		assert.Empty(t, handshake.Header.Values(apptoken.RefreshHeaderName))
+	})
+}
+
+func TestAppUserTokenRefresh_RefusedAfterSignOut(t *testing.T) {
+	t.Parallel()
+	env := startRefreshEnv(t)
+	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
+	handshake := env.dialWebsocket(client, nil)
+	refresh := handshake.Header.Get(apptoken.RefreshHeaderName)
+	endpoint := handshake.Header.Get(apptoken.PublicURLHeaderName) + apptoken.RefreshPath
+	require.Equal(t, http.StatusOK, env.post(endpoint, "Authorization", "Bearer "+refresh).StatusCode)
+
+	env.send(client, oidcOrigin+"/_proxy/sign_out")
+
+	assertRefused(t, env.post(endpoint, "Authorization", "Bearer "+refresh))
+}
+
+func TestAppUserTokenRefresh_SessionStoreDown(t *testing.T) {
+	t.Parallel()
+	env := startRefreshEnv(t)
+	handshake := env.websocketHandshake()
+	refresh := handshake.Header.Get(apptoken.RefreshHeaderName)
+	env.redis.Close()
+
+	resp := env.post(handshake.Header.Get(apptoken.PublicURLHeaderName)+apptoken.RefreshPath, "Authorization", "Bearer "+refresh)
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.Equal(t, "no-store", resp.Header.Get("Cache-Control"))
+	assert.Empty(t, readBody(t, resp))
 }
