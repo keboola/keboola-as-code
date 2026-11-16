@@ -21,32 +21,34 @@ func TestTicketKey(t *testing.T) {
 	secret := base64.RawURLEncoding.EncodeToString([]byte("ticket-secret-16"))
 	v2 := "v2." + base64.RawURLEncoding.EncodeToString([]byte(id)) + "." + secret
 
-	sign := func(t *testing.T, value string, at time.Time, seed string) *http.Cookie {
-		t.Helper()
-		signed, err := encryption.SignedValue(seed, cookie.Name, []byte(value), at)
-		require.NoError(t, err)
-		return &http.Cookie{Name: cookie.Name, Value: signed}
-	}
-
+	otherSeed := "another-secret-another-secret-00"
 	cases := []struct {
 		name   string
-		cookie func(t *testing.T) *http.Cookie
+		value  string
+		seed   string
+		age    time.Duration
 		want   string
 		wantOK bool
 	}{
-		{name: "valid v2 ticket", cookie: func(t *testing.T) *http.Cookie { return sign(t, v2, time.Now(), cookie.Secret) }, want: id, wantOK: true},
-		{name: "bad signature", cookie: func(t *testing.T) *http.Cookie { return sign(t, v2, time.Now(), "another-secret-another-secret-00") }},
-		{name: "older than the expiry", cookie: func(t *testing.T) *http.Cookie { return sign(t, v2, time.Now().Add(-25*time.Hour), cookie.Secret) }},
-		{name: "old ticket format", cookie: func(t *testing.T) *http.Cookie { return sign(t, id+"."+secret, time.Now(), cookie.Secret) }},
-		{name: "not base64 id", cookie: func(t *testing.T) *http.Cookie { return sign(t, "v2.!!!."+secret, time.Now(), cookie.Secret) }},
+		{name: "valid v2 ticket", value: v2, want: id, wantOK: true},
+		{name: "bad signature", value: v2, seed: otherSeed},
+		{name: "older than the expiry", value: v2, age: 25 * time.Hour},
+		{name: "old ticket format", value: id + "." + secret},
+		{name: "not base64 id", value: "v2.!!!." + secret},
 		{name: "no cookie"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://app.hub.keboola.local/ws", nil)
-			if tc.cookie != nil {
-				req.AddCookie(tc.cookie(t))
+			if tc.value != "" {
+				seed := cookie.Secret
+				if tc.seed != "" {
+					seed = tc.seed
+				}
+				signed, err := encryption.SignedValue(seed, cookie.Name, []byte(tc.value), time.Now().Add(-tc.age))
+				require.NoError(t, err)
+				req.AddCookie(&http.Cookie{Name: cookie.Name, Value: signed})
 			}
 			got, ok := ticketKey(req, cookie)
 			assert.Equal(t, tc.wantOK, ok)
