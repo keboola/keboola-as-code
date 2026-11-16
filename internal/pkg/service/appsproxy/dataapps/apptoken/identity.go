@@ -71,3 +71,15 @@ func parseGroups(values []string) []string {
 	}
 	return groups
 }
+
+type loginSessionCtxKey struct{}
+
+// WithLoginSession records the session store key of the request's login session; a refresh token carries it.
+func WithLoginSession(ctx context.Context, key string) context.Context {
+	return context.WithValue(ctx, loginSessionCtxKey{}, key)
+}
+
+func loginSessionFrom(ctx context.Context) (string, bool) {
+	key, ok := ctx.Value(loginSessionCtxKey{}).(string)
+	return key, ok && key != ""
+}

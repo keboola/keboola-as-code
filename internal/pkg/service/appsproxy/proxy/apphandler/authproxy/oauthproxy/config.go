@@ -82,6 +82,11 @@ func proxyConfig(
 				req = req.WithContext(appupstream.WithSessionDeadline(req.Context(), deadline, reason))
 			}
 		}
+		if sessionStore.Client != nil {
+			if key, ok := ticketKey(req, v.Cookie); ok {
+				req = req.WithContext(apptoken.WithLoginSession(req.Context(), key))
+			}
+		}
 		if err := upstream.ServeHTTPOrError(w, req); err != nil {
 			pageWriter.WriteError(w, req, &app, err)
 		}
