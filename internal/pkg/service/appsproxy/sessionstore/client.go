@@ -5,6 +5,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 )
 
@@ -17,10 +18,12 @@ const (
 	maxRetries   = 1
 )
 
-func NewClient(cfg config.SessionStore) *redis.Client {
+func NewClient(cfg config.SessionStore, logger log.Logger) *redis.Client {
 	if cfg.Type != config.SessionStoreRedis {
 		return nil
 	}
+	// go-redis has one process-wide logger; without this it writes plain text to stderr.
+	redis.SetLogger(newRedisLogger(logger))
 	return redis.NewFailoverClient(failoverOptions(cfg))
 }
 

@@ -240,7 +240,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	if provider, ok := parentScp.(sessionStoreClientProvider); ok && provider.SessionStoreClient() != nil {
 		d.sessionStore = provider.SessionStoreClient()
 	} else {
-		d.sessionStore = sessionstore.NewClient(cfg.SessionStore)
+		d.sessionStore = sessionstore.NewClient(cfg.SessionStore, d.Logger().WithComponent("sessionstore.redis"))
 	}
 	if d.sessionStore != nil {
 		d.startSessionStore(ctx)

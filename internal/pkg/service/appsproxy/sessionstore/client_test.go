@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 )
 
@@ -23,12 +24,12 @@ func redisConfig() config.SessionStore {
 
 func TestNewClient_CookieIsNil(t *testing.T) {
 	t.Parallel()
-	assert.Nil(t, NewClient(config.New().SessionStore))
+	assert.Nil(t, NewClient(config.New().SessionStore, log.NewNopLogger()))
 }
 
 func TestNewClient_RedisOpensNoConnection(t *testing.T) {
 	t.Parallel()
-	client := NewClient(redisConfig())
+	client := NewClient(redisConfig(), log.NewNopLogger())
 	require.NotNil(t, client)
 	t.Cleanup(func() { _ = client.Close() })
 	assert.Zero(t, client.PoolStats().TotalConns)
@@ -49,4 +50,18 @@ func TestFailoverOptions(t *testing.T) {
 	assert.Equal(t, 500*time.Millisecond, o.ReadTimeout)
 	assert.Equal(t, 500*time.Millisecond, o.WriteTimeout)
 	assert.Equal(t, 20, o.PoolSize)
+}
+
+// go-redis has one global logger; parallel tests start only after all serial tests have finished.
+func TestNewClient_RedisLogsToServiceLogger(t *testing.T) { //nolint:paralleltest // see above
+	logger := log.NewDebugLogger()
+	cfg := redisConfig()
+	cfg.SentinelAddrs = []string{"127.0.0.1:1"}
+	client := NewClient(cfg, logger)
+	require.NotNil(t, client)
+	t.Cleanup(func() { _ = client.Close() })
+
+	require.Error(t, client.Ping(t.Context()).Err())
+	assert.Contains(t, logger.WarnMessages(), `"message":"sentinel: GetMasterAddrByName addr=127.0.0.1:1, master=\"mymaster\" failed:`)
+	assert.Empty(t, logger.ErrorMessages())
 }
