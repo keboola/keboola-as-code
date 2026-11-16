@@ -48,10 +48,10 @@ the refresh token:
 - IdP not reachable (HTTP 5xx or 429, timeout, connection error): the cookie
   is kept, the request is not served, and the user sees a 503 page "The
   identity provider is not reachable". The next request tries the refresh again, so the
-  app works again as soon as the IdP answers. The counter
-  `keboola.go.appsproxy.auth.provider_unavailable` counts these pages. If the
-  client has already gone (reload, closed tab), the cookie is kept and nothing
-  is written.
+  app works again as soon as the IdP answers. Each such page writes a warning
+  log line with `identity provider unavailable` and the exception ID shown on
+  the page. If the client has already gone (reload, closed tab), the cookie is
+  kept and nothing is written.
 - Any other error (for example `invalid_request`, `unauthorized_client`, or an
   ID token in the IdP answer that fails verification): the session is checked
   as before the refresh and kept only if its tokens are still valid, otherwise
@@ -190,8 +190,7 @@ Side effects of the close:
   the refresh, and the user must log in. `Unable to refresh session` with
   `identity provider unavailable`, then `Error loading cookied session: ...,
   keeping session`: the IdP did not answer, the user sees the 503 page, and the
-  next request tries again; the counter
-  `keboola.go.appsproxy.auth.provider_unavailable` rises at the same time.
+  next request tries again.
 - **The close repeats much more often than once an hour.** Look for many
   `refresh due` lines for one app within minutes. The likely cause is a refresh
   that does not reset the session time, for example clock skew between
