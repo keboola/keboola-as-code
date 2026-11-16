@@ -456,21 +456,6 @@ func TestAppUserToken_Attrs(t *testing.T) {
 	})
 }
 
-// TestAppUserToken_SessionCookieReachesTheApp pins down what the app gets next to the token: apps-proxy does not strip the session
-// cookie of oauth2-proxy, so the largest request an app receives is the token plus the cookie, and the cookie grows with the ID token.
-func TestAppUserToken_SessionCookieReachesTheApp(t *testing.T) {
-	t.Parallel()
-	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
-	client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-11", Email: "a@example.com", Groups: []string{"admin"}, Address: "Main Street 1"}, oidcOrigin+"/")
-
-	require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/").StatusCode)
-
-	upstream := env.lastAppRequest()
-	require.Len(t, upstream.Header.Values("Cookie"), 1)
-	assert.Contains(t, upstream.Header.Get("Cookie"), "_oauth2_proxy=")
-	assert.NotEmpty(t, upstream.Header.Get(apptoken.HeaderName))
-}
-
 // TestAppUserToken_NotInTraces checks that neither the token nor an attribute reaches a span or the logs, also when the client sends a
 // token of its own: the header is redacted next to the cookies and the authorization headers.
 func TestAppUserToken_NotInTraces(t *testing.T) {

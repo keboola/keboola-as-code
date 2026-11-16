@@ -127,7 +127,7 @@ app.
 | `appUserToken.signingKeys` | `APPS_PROXY_APP_USER_TOKEN_SIGNING_KEYS` | *(empty — feature off)* |
 | `appUserToken.activeKid` | `APPS_PROXY_APP_USER_TOKEN_ACTIVE_KID` | *(empty — feature off)* |
 | `appUserToken.ttl` | `APPS_PROXY_APP_USER_TOKEN_TTL` | `5m` (maximum `5m`) |
-| `appUserToken.attrsSessionTtl` | `APPS_PROXY_APP_USER_TOKEN_ATTRS_SESSION_TTL` | `8h` (from `1m` to `168h`) |
+| `appUserToken.attrsSessionTtl` | `APPS_PROXY_APP_USER_TOKEN_ATTRS_SESSION_TTL` | `8h` (from `1m` to `24h`) |
 
 `signingKeys` is a JSON list of `{"kid": "...", "pem": "..."}` entries, each an
 EC P-256 private key (`openssl ecparam -name prime256v1 -genkey -noout`). It is a
@@ -190,24 +190,11 @@ with the app and provider ids and a fixed reason, never a claim.
 - **Header size.** With a large group list the token reaches about 6 KB. With
   `attrs` the token is kept at most 8000 bytes (encoded), because many app
   servers refuse a header line over 8190 bytes and the verifiers parse at most
-  8 KiB: `attrs` is at most 4 KB of JSON and gives way before the groups, see
+  8 KiB: `attrs` is at most 1 KB of JSON and gives way before the groups, see
   §10. App servers with a small header limit (Node.js: 16 KiB for all headers)
-  may need a higher limit. The app gets the session cookie of oauth2-proxy next
-  to the token, in one `Cookie` header line: apps-proxy does not strip it. In the
-  `cookie` store mode it holds the ID token, the access and refresh tokens and
-  the allowlisted claims, encrypted and base64 encoded, and is split into chunks
-  of 4000 bytes only for the browser. Measured on 2026-11-10 with the oauth2-proxy
-  encoder and incompressible filler (an upper bound, real JSON compresses a
-  little): a small ID token gives a cookie of about 2.9 KB (one chunk); an
-  Entra-like ID token of 2.5 KB with a 1.5 KB access token and 1 KB of `attrs`
-  about 7.4 KB (two chunks); a 3.5 KB ID token with 4 KB of `attrs` and 4 KB of
-  groups about 19 KB (five chunks). So the largest request an app receives is the
-  token (up to 8000 bytes) plus that cookie line plus the other headers, which
-  exceeds the 8190 byte line limit and the 16 KiB total of Node.js in the large
-  cases. In the `redis` mode the cookie is a small ticket and this does not
-  apply. An app of such a tenant needs a higher header limit, or apps-proxy has
-  to remove the `_oauth2_proxy*` cookies before the upstream (the app never uses
-  them; this is not done yet and changes the request of every app).
+  may need a higher limit. The cookies of apps-proxy (`_oauth2_proxy*`, which
+  grow with the ID token and the allowlisted claims) are removed before the app,
+  so they do not add to the request.
 - **Group freshness.** The token's groups come from the session cookie. They
   can be up to about 1 hour old for a session with a refresh token, and up to
   24 hours old for one without, see [login-session.md](login-session.md).
@@ -274,5 +261,5 @@ What was checked, not assumed:
   the request, and the token is minted after the request span has taken its
   attributes (`TestAppUserToken_NotInTraces`). The cookie and authorization
   headers are redacted in spans already.
-- **Session cookie.** The oauth2-proxy session cookie is forwarded to the app next
-  to the token (`TestAppUserToken_SessionCookieReachesTheApp`).
+- **Session cookie.** The oauth2-proxy session cookies are removed before the app
+  (`TestUpstreamCookies`).

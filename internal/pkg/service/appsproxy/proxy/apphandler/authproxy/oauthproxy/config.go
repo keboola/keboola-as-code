@@ -108,9 +108,6 @@ func proxyConfig(
 	v.Cookie.Name = CookieName
 	v.Cookie.Secret = secret
 	v.Cookie.Domains = []string{domain}
-	if ttl := attrsSessionTTL(cfg, oAuthProvider); ttl > 0 {
-		v.Cookie.Expire = ttl
-	}
 	v.Cookie.SameSite = "strict"
 	v.Cookie.Refresh = sessionRefresh
 	if oAuthProvider.RefreshTokensSingleUse() {
@@ -118,6 +115,9 @@ func proxyConfig(
 		v.Cookie.Refresh = 0
 	}
 	v.Cookie.Expire = sessionExpire
+	if ttl := attrsSessionTTL(cfg, oAuthProvider); ttl > 0 {
+		v.Cookie.Expire = ttl
+	}
 	v.ProxyPrefix = config.InternalPrefix
 	v.RawRedirectURL = redirectURL
 	v.Providers = options.Providers{proxyProvider}

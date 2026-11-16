@@ -85,7 +85,7 @@ type AppUserToken struct {
 	TTL         time.Duration `configKey:"ttl" configUsage:"Lifetime of one token, from 1s to 5m." validate:"required,minDuration=1s,maxDuration=5m"`
 	// AttrsSessionTTL is how long the login session of a data app lasts when its OIDC provider has attribute claims. The attributes
 	// are read from the ID token once, at login, so this is how long a change of an attribute at the identity provider can take.
-	AttrsSessionTTL time.Duration `configKey:"attrsSessionTtl" configUsage:"Lifetime of the login session of an app whose OIDC provider has attributeClaims, from 1m to 168h (7 days, the default of other apps)." validate:"required,minDuration=1m,maxDuration=168h"`
+	AttrsSessionTTL time.Duration `configKey:"attrsSessionTtl" configUsage:"Lifetime of the login session of an app whose OIDC provider has attributeClaims, from 1m to 24h (24 hours, the default of other apps)." validate:"required,minDuration=1m,maxDuration=24h"`
 }
 
 func (c *AppUserToken) Validate() error {

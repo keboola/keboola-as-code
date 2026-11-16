@@ -60,7 +60,7 @@ func TestAppUserTokenConfig_Validate(t *testing.T) {
 		{name: "ttl under 1 second", mutate: func(c *config.AppUserToken) { c.TTL = time.Millisecond }, wantErr: "appUserToken.ttl"},
 		{name: "ttl zero", mutate: func(c *config.AppUserToken) { c.TTL = 0 }, wantErr: "appUserToken.ttl"},
 		{name: "attrs session ttl under 1 minute", mutate: func(c *config.AppUserToken) { c.AttrsSessionTTL = 30 * time.Second }, wantErr: "appUserToken.attrsSessionTtl"},
-		{name: "attrs session ttl over 7 days", mutate: func(c *config.AppUserToken) { c.AttrsSessionTTL = 169 * time.Hour }, wantErr: "appUserToken.attrsSessionTtl"},
+		{name: "attrs session ttl over 24 hours", mutate: func(c *config.AppUserToken) { c.AttrsSessionTTL = 25 * time.Hour }, wantErr: "appUserToken.attrsSessionTtl"},
 		{name: "attrs session ttl negative", mutate: func(c *config.AppUserToken) { c.AttrsSessionTTL = -time.Hour }, wantErr: "appUserToken.attrsSessionTtl"},
 		{name: "attrs session ttl zero", mutate: func(c *config.AppUserToken) { c.AttrsSessionTTL = 0 }, wantErr: "appUserToken.attrsSessionTtl"},
 		{name: "keys without active kid", mutate: func(c *config.AppUserToken) { c.SigningKeys = "[]" }, wantErr: "appUserToken.signingKeys and appUserToken.activeKid must be set together"},
