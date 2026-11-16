@@ -139,7 +139,7 @@ func (m *Minter) Refresh(ctx context.Context, app api.AppConfig, workload k8sapp
 	if err := checkProvider(claims, app); err != nil {
 		return "", time.Time{}, err
 	}
-	return m.mint(ctx, app, workload, claims.identity(), claims.SID, claims.ExpiresAt.Time)
+	return m.mint(app, workload, claims.identity(), claims.SID, claims.ExpiresAt.Time)
 }
 
 func (m *Minter) verifyRefresh(refreshToken string) (refreshClaims, error) {

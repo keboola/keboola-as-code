@@ -1,7 +1,6 @@
 package apptoken
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
@@ -38,7 +37,7 @@ func (m *Minter) Inject(app api.AppConfig, workload k8sapp.WorkloadRef) chain.Mi
 			if s, ok := sessions.FromContext(ctx); ok {
 				sid = s.ID
 			}
-			token, _, err := m.mint(ctx, app, workload, id, sid, time.Time{})
+			token, _, err := m.mint(app, workload, id, sid, time.Time{})
 			if err != nil {
 				m.logger.Errorf(ctx, "cannot sign the app user token, the request continues without it: %s", err)
 				return next.ServeHTTPOrError(rw, req)
@@ -54,7 +53,7 @@ func (m *Minter) Inject(app api.AppConfig, workload k8sapp.WorkloadRef) chain.Mi
 }
 
 // mint signs an app user token. A non-zero notAfter caps its expiry.
-func (m *Minter) mint(ctx context.Context, app api.AppConfig, workload k8sapp.WorkloadRef, id identity, sid string, notAfter time.Time) (string, time.Time, error) {
+func (m *Minter) mint(app api.AppConfig, workload k8sapp.WorkloadRef, id identity, sid string, notAfter time.Time) (string, time.Time, error) {
 	jti, err := randomID()
 	if err != nil {
 		return "", time.Time{}, err
