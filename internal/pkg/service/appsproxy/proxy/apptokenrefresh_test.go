@@ -247,6 +247,24 @@ func TestAppUserTokenRefresh_RefusedAfterSignOut(t *testing.T) {
 	assertRefused(t, env.post(endpoint, "Authorization", "Bearer "+refresh))
 }
 
+func TestAppUserTokenRefresh_HandshakeThatMovesACookieStoreSession(t *testing.T) {
+	t.Parallel()
+	env := startRefreshEnv(t)
+	client := env.oldCookieClient("oidc", func(*sessionsapi.SessionState) {})
+
+	handshake := env.dialWebsocket(client, nil)
+	keys := env.ticketKeys()
+	require.Len(t, keys, 1)
+	refresh := handshake.Header.Get(apptoken.RefreshHeaderName)
+	parts := strings.Split(refresh, ".")
+	require.Len(t, parts, 3)
+	kbc, _ := jsonSegment(t, parts[1])["kbc"].(map[string]any)
+	assert.Equal(t, keys[0], kbc["login_session"])
+
+	resp := env.post(handshake.Header.Get(apptoken.PublicURLHeaderName)+apptoken.RefreshPath, "Authorization", "Bearer "+refresh)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
 func TestAppUserTokenRefresh_SessionStoreDown(t *testing.T) {
 	t.Parallel()
 	env := startRefreshEnv(t)
