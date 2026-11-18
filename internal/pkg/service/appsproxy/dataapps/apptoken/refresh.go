@@ -46,11 +46,12 @@ type refreshClaims struct {
 }
 
 type refreshKbcClaims struct {
-	ProjectID      string `json:"project_id"` //nolint:tagliatelle // the same names as the kbc claim of the app user token
-	AppID          string `json:"app_id"`     //nolint:tagliatelle // the same names as the kbc claim of the app user token
-	Sandbox        string `json:"sandbox,omitempty"`
-	AuthProviderID string `json:"auth_provider_id"` //nolint:tagliatelle // the same names as the kbc claim of the app user token
-	LoginSession   string `json:"login_session"`    //nolint:tagliatelle // snake case like the other kbc claims
+	ProjectID      string   `json:"project_id"` //nolint:tagliatelle // the same names as the kbc claim of the app user token
+	AppID          string   `json:"app_id"`     //nolint:tagliatelle // the same names as the kbc claim of the app user token
+	Sandbox        string   `json:"sandbox,omitempty"`
+	AuthProviderID string   `json:"auth_provider_id"`         //nolint:tagliatelle // the same names as the kbc claim of the app user token
+	LoginSession   string   `json:"login_session"`            //nolint:tagliatelle // snake case like the other kbc claims
+	MatchedGroups  []string `json:"matched_groups,omitempty"` //nolint:tagliatelle // snake case like the other kbc claims
 }
 
 func (c refreshClaims) GetExpirationTime() (*jwt.NumericDate, error) { return c.ExpiresAt, nil }
@@ -96,7 +97,12 @@ func (m *Minter) injectRefresh(req *http.Request, app api.AppConfig, workload k8
 
 	now := m.clock.Now()
 	exp, _ := upstream.WebsocketDeadline(ctx, now, m.wsTimeout)
-	token, err := m.signRefresh(app, workload, id, sid, loginSession, now, exp)
+	matched, err := handshakeMatchedGroups(app, id)
+	if err != nil {
+		m.logger.Errorf(ctx, "cannot read the allowed groups, the websocket gets no app user refresh token: %s", err)
+		return
+	}
+	token, err := m.signRefresh(app, workload, id, sid, refreshSession{key: loginSession, matchedGroups: matched}, now, exp)
 	if err != nil {
 		m.logger.Errorf(ctx, "cannot sign the app user refresh token, the websocket continues without it: %s", err)
 		return
@@ -105,7 +111,24 @@ func (m *Minter) injectRefresh(req *http.Request, app api.AppConfig, workload k8
 	req.Header.Set(PublicURLHeaderName, origin)
 }
 
-func (m *Minter) signRefresh(app api.AppConfig, workload k8sapp.WorkloadRef, id identity, sid, loginSession string, now, exp time.Time) (string, error) {
+type refreshSession struct {
+	key           string
+	matchedGroups []string
+}
+
+func handshakeMatchedGroups(app api.AppConfig, id identity) ([]string, error) {
+	oauth, ok := oauthProvider(app, provider.ID(id.providerID))
+	if !ok {
+		return nil, nil
+	}
+	allowed, err := allowedGroups(oauth)
+	if err != nil {
+		return nil, err
+	}
+	return matchingGroups(id.allGroups, allowed), nil
+}
+
+func (m *Minter) signRefresh(app api.AppConfig, workload k8sapp.WorkloadRef, id identity, sid string, session refreshSession, now, exp time.Time) (string, error) {
 	jti, err := randomID()
 	if err != nil {
 		return "", err
@@ -122,7 +145,8 @@ func (m *Minter) signRefresh(app api.AppConfig, workload k8sapp.WorkloadRef, id 
 			AppID:          app.ID.String(),
 			Sandbox:        workload.SandboxName,
 			AuthProviderID: id.providerID,
-			LoginSession:   loginSession,
+			LoginSession:   session.key,
+			MatchedGroups:  session.matchedGroups,
 		},
 		ID:        jti,
 		SID:       sid,
@@ -198,13 +222,19 @@ func checkWorkload(claims refreshClaims, app api.AppConfig, workload k8sapp.Work
 // checkProvider requires that the provider which authenticated the user still guards a path of the app, with the same identity provider.
 func checkProvider(claims refreshClaims, app api.AppConfig) error {
 	id := provider.ID(claims.Kbc.AuthProviderID)
-	idx := slices.IndexFunc(app.AuthProviders, func(p provider.Provider) bool { return p.ID() == id })
-	if idx < 0 {
+	if !slices.ContainsFunc(app.AuthProviders, func(p provider.Provider) bool { return p.ID() == id }) {
 		return errors.New("auth provider no longer configured")
 	}
-	oauth, ok := app.AuthProviders[idx].(provider.OAuthProvider)
+	oauth, ok := oauthProvider(app, id)
 	if !ok || oauth.IdentityProviderURL() != claims.IDP {
 		return errors.New("auth provider changed")
+	}
+	allowed, err := allowedGroups(oauth)
+	if err != nil {
+		return err
+	}
+	if len(allowed) > 0 && len(matchingGroups(claims.Kbc.MatchedGroups, allowed)) == 0 {
+		return errors.New("user is in none of the allowed groups")
 	}
 	requiresLogin := slices.ContainsFunc(app.AuthRules, func(rule api.Rule) bool {
 		return (rule.AuthRequired == nil || *rule.AuthRequired) && slices.Contains(rule.Auth, id)
