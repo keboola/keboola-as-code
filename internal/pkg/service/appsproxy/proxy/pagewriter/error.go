@@ -23,7 +23,35 @@ type errorPageData struct {
 	StatusText  string
 	Details     string
 	ExceptionID string
+	SignOutPath string
 	errorCopy
+}
+
+// AccessDeniedReason says why a logged-in user may not open the app.
+type AccessDeniedReason string
+
+const (
+	// AccessDeniedUnknown is used where the session is not known, at the login callback.
+	AccessDeniedUnknown AccessDeniedReason = "unknown"
+	// AccessDeniedNotInGroups means none of the user's groups is allowed.
+	AccessDeniedNotInGroups AccessDeniedReason = "not_in_groups"
+	// AccessDeniedNoGroupsClaim means the identity provider sent no groups for the user.
+	AccessDeniedNoGroupsClaim AccessDeniedReason = "no_groups_claim"
+	// AccessDeniedAll means the list of allowed groups is empty.
+	AccessDeniedAll AccessDeniedReason = "deny_all"
+)
+
+func (r AccessDeniedReason) guidance() string {
+	switch r {
+	case AccessDeniedNotInGroups:
+		return "You are signed in, but your account is not in any group allowed to open this application. Ask the project administrator to add your group."
+	case AccessDeniedNoGroupsClaim:
+		return "You are signed in, but your identity provider sent no groups for your account, so access could not be verified. Ask your IT administrator to check the groups claim."
+	case AccessDeniedAll:
+		return "You are signed in, but no group is currently allowed to open this application. Ask the project administrator to give you access."
+	default:
+		return ""
+	}
 }
 
 // errorCopy is the plain-language version of an HTTP status, for the error page.
@@ -196,6 +224,15 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 }
 
 func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, app *api.AppConfig, status int, details, exceptionID string) {
+	pw.writeErrorPage(w, req, app, status, details, exceptionID, "", "")
+}
+
+// WriteAccessDeniedPage renders the 403 page with the reason; signOutPath is offered when the user has a session.
+func (pw *Writer) WriteAccessDeniedPage(w http.ResponseWriter, req *http.Request, app *api.AppConfig, reason AccessDeniedReason, signOutPath, details, exceptionID string) {
+	pw.writeErrorPage(w, req, app, http.StatusForbidden, details, exceptionID, reason.guidance(), signOutPath)
+}
+
+func (pw *Writer) writeErrorPage(w http.ResponseWriter, req *http.Request, app *api.AppConfig, status int, details, exceptionID, guidance, signOutPath string) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate;")
 	w.Header().Set("pragma", "no-cache")
 
@@ -204,7 +241,11 @@ func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, app *
 		StatusText:  http.StatusText(status),
 		Details:     details,
 		ExceptionID: exceptionID,
+		SignOutPath: signOutPath,
 		errorCopy:   copyForStatus(status),
+	}
+	if guidance != "" {
+		data.Guidance = guidance
 	}
 
 	// App info is filled in for requests/errors related to an app, otherwise it is empty

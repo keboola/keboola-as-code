@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oauth2-proxy/mockoidc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
 )
 
 const publicOrigin = "https://public-123.hub.keboola.local"
@@ -66,7 +66,7 @@ func TestInternalPrefix_UnknownPathNotForwarded(t *testing.T) {
 		t.Parallel()
 		env := startPreviewEnv(t)
 		env.syncClock()
-		client := env.oidcLogin(env.providers[0], &mockoidc.MockUser{Subject: "sub-1", Email: "a@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
+		client := env.oidcLogin(env.providers[0], &testutil.MockUser{Subject: "sub-1", Email: "a@example.com", Groups: []string{"admin"}}, oidcOrigin+"/")
 		require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/").StatusCode)
 
 		env.assertInternalNotFound(client, oidcOrigin+"/_proxy/anything")

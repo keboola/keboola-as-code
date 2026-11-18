@@ -17,6 +17,7 @@
 
 ## Further docs
 
+- [allowed-roles.md](allowed-roles.md) — `allowedRoles`, the login scope, and how a denied access is logged.
 - [login-session.md](login-session.md) — how long a login lasts, refresh, and websocket closes.
 - [session-store.md](session-store.md) — the login session store (cookie or Valkey): config, metrics, the 503 page, failover, switch and rollback.
 - [app-cookies.md](app-cookies.md) — the cookies the app receives, and the apps-proxy cookies removed before it.

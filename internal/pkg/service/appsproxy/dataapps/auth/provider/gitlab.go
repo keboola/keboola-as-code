@@ -15,6 +15,7 @@ func (v GitLab) ProxyProviderOptions() (proxyOptions.Provider, error) {
 	}
 
 	p.Type = proxyOptions.GitLabProvider
+	p.Scope = "" // keep the oauth2-proxy GitLab default
 	p.LoginURLParameters = []proxyOptions.LoginURLParameter{
 		{
 			// GitLab doesn't support "select_account" prompt
@@ -29,6 +30,11 @@ func (v GitLab) ProxyProviderOptions() (proxyOptions.Provider, error) {
 	}
 
 	return p, nil
+}
+
+// DeniesAll is false: GitLab access is decided by Groups and Projects, allowed roles are ignored.
+func (v GitLab) DeniesAll() bool {
+	return false
 }
 
 // RefreshTokensSingleUse is true: see docs/apps-proxy/login-session.md, section "GitLab: no refresh".

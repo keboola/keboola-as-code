@@ -1,12 +1,11 @@
 package provider
 
 import (
+	"slices"
 	"strings"
 
 	proxyOptions "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/providers"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type OIDC struct {
@@ -16,7 +15,14 @@ type OIDC struct {
 	IssuerURL    string    `json:"issuerUrl"`
 	LogoutURL    string    `json:"logoutUrl"`
 	AllowedRoles *[]string `json:"allowedRoles"`
+	// Scopes are requested in addition to DefaultOIDCScope, e.g. "groups" for an IdP
+	// that puts the groups claim in the ID token only when that scope is requested.
+	Scopes []string `json:"scopes"`
 }
+
+// DefaultOIDCScope never contains "groups": the groups claim does not depend on that scope
+// at most IdPs, and an authorization server without it (Okta default) rejects the login.
+const DefaultOIDCScope = "openid email profile"
 
 func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 	p := proxyOptions.Provider{
@@ -24,6 +30,7 @@ func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 		Type:                proxyOptions.OIDCProvider,
 		Name:                v.Name(),
 		CodeChallengeMethod: providers.CodeChallengeMethodS256,
+		Scope:               v.scope(),
 		ClientID:            v.ClientID,
 		ClientSecret:        v.ClientSecret,
 		BackendLogoutURL:    v.LogoutURL,
@@ -51,17 +58,28 @@ func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 		},
 	}
 
-	// AllowedRoles nil means there is no role requirement
-	if v.AllowedRoles != nil {
+	// AllowedRoles nil means there is no role requirement.
+	// An empty array is not passed on: oauth2-proxy reads empty AllowedGroups as "allow all", see DeniesAll.
+	if v.AllowedRoles != nil && len(*v.AllowedRoles) > 0 {
 		p.AllowedGroups = *v.AllowedRoles
 	}
 
-	// AllowedRoles empty array doesn't make sense
-	if v.AllowedRoles != nil && len(*v.AllowedRoles) == 0 {
-		return proxyOptions.Provider{}, errors.Errorf(`unexpected empty array of allowed roles for provider "%s"`, v.ID())
-	}
-
 	return p, nil
+}
+
+// DeniesAll reports an empty array of allowed roles: every user may log in, none may reach the app.
+func (v OIDC) DeniesAll() bool {
+	return v.AllowedRoles != nil && len(*v.AllowedRoles) == 0
+}
+
+func (v OIDC) scope() string {
+	scopes := strings.Fields(DefaultOIDCScope)
+	for _, scope := range strings.Fields(strings.Join(v.Scopes, " ")) {
+		if !slices.Contains(scopes, scope) {
+			scopes = append(scopes, scope)
+		}
+	}
+	return strings.Join(scopes, " ")
 }
 
 func (v OIDC) RefreshTokensSingleUse() bool {

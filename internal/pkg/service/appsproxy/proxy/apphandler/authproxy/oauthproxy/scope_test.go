@@ -23,6 +23,7 @@ func TestScopeResolver(t *testing.T) {
 		name          string
 		providerType  options.ProviderType
 		allowedGroups []string
+		scope         string
 		status        int
 		body          string
 		expected      string
@@ -42,7 +43,7 @@ func TestScopeResolver(t *testing.T) {
 			allowedGroups: []string{"admin"},
 			status:        http.StatusOK,
 			body:          withOffline,
-			expected:      "openid email profile groups offline_access",
+			expected:      "openid email profile offline_access",
 			expectFetch:   true,
 		},
 		{
@@ -50,7 +51,7 @@ func TestScopeResolver(t *testing.T) {
 			providerType: options.OIDCProvider,
 			status:       http.StatusOK,
 			body:         withoutOffline,
-			expected:     "",
+			expected:     "openid email profile",
 			expectFetch:  true,
 		},
 		{
@@ -58,7 +59,7 @@ func TestScopeResolver(t *testing.T) {
 			providerType: options.OIDCProvider,
 			status:       http.StatusOK,
 			body:         `{}`,
-			expected:     "",
+			expected:     "openid email profile",
 			expectFetch:  true,
 		},
 		{
@@ -66,8 +67,26 @@ func TestScopeResolver(t *testing.T) {
 			providerType: options.OIDCProvider,
 			status:       http.StatusInternalServerError,
 			body:         `{}`,
-			expected:     "",
+			expected:     "openid email profile",
 			expectFetch:  true,
+		},
+		{
+			name:         "oidc, extra scopes are kept",
+			providerType: options.OIDCProvider,
+			scope:        "openid email profile groups",
+			status:       http.StatusOK,
+			body:         withOffline,
+			expected:     "openid email profile groups offline_access",
+			expectFetch:  true,
+		},
+		{
+			name:         "oidc, offline_access already requested",
+			providerType: options.OIDCProvider,
+			scope:        "openid email profile offline_access",
+			status:       http.StatusOK,
+			body:         withoutOffline,
+			expected:     "openid email profile offline_access",
+			expectFetch:  false,
 		},
 		{
 			name:         "gitlab is not asked",
@@ -107,6 +126,7 @@ func TestScopeResolver(t *testing.T) {
 			p := options.Provider{
 				Type:          tc.providerType,
 				AllowedGroups: tc.allowedGroups,
+				Scope:         tc.scope,
 				OIDCConfig:    options.OIDCOptions{IssuerURL: srv.URL + "/issuer/"},
 			}
 

@@ -60,6 +60,7 @@ func TestJumpCloud(t *testing.T) {
 		Type:                "oidc",
 		Name:                "My Name",
 		CodeChallengeMethod: "S256",
+		Scope:               "openid email profile",
 		ClientID:            "6779ef20e75817b79602",
 		ClientSecret:        "f2a1ed52710d4533bde25be6da03b6e3",
 		BackendLogoutURL:    "https://www.linkedin.com/oidc/logout",

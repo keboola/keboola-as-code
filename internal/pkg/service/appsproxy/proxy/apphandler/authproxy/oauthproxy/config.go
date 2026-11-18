@@ -69,9 +69,7 @@ func proxyConfig(
 	if err != nil {
 		return nil, err
 	}
-	if scope := scopes.scope(ctx, proxyProvider); scope != "" {
-		proxyProvider.Scope = scope
-	}
+	proxyProvider.Scope = scopes.scope(ctx, proxyProvider)
 
 	v := options.NewOptions()
 
