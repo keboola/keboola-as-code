@@ -125,6 +125,9 @@ func startEnv(t *testing.T, sessionStore *redis.Client, mutate ...envMutator) *p
 	cfg.Preview.JWKSURL = jwks.JWKSURL()
 	cfg.Preview.Issuer = previewtest.Issuer
 	cfg.Preview.SessionSigningKey = strings.Repeat("s", 64)
+	// The test OIDC app has attribute claims, so its session lasts this long. The session lifetime tests expect the 24 hours of any
+	// other app, and the attrs test sets its own.
+	cfg.AppUserToken.AttrsSessionTTL = 24 * time.Hour
 	for _, m := range mutate {
 		m(&cfg, jwks)
 	}
