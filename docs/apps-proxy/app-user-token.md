@@ -178,6 +178,11 @@ in the body:
   workload the host routes to (the App and each of its Sandboxes are separate);
 - the auth provider in the token is no longer configured for the app, no longer
   guards any path that requires login, or has another issuer now;
+- the provider has an allowed group list and none of the token's
+  `kbc.matched_groups` is in it now. This is the check oauth2-proxy runs on
+  every request: OIDC `allowedRoles`, or the GitLab `groups` and `projects`.
+  GitHub organization, team and repository rules are checked only at login,
+  for the browser session as for the refresh;
 - the login session of the handshake has ended: signed out, expired, or ended
   by a refused IdP refresh. apps-proxy checks it with one `PTTL` on the
   session key.
@@ -220,6 +225,7 @@ its `kid`.
 | `kbc.project_id`, `kbc.app_id` | As in the app user token |
 | `kbc.sandbox` | Name of the Sandbox the host routes to. Omitted for the App. |
 | `kbc.auth_provider_id` | Id of the auth provider that admitted the handshake |
+| `kbc.matched_groups` | The user's groups that were in the provider's allowed group list at the handshake. Omitted when the provider has no such list. Taken from the full group list, so it is set even when `groups` is omitted for size. |
 | `kbc.login_session` | Session store key of the handshake's login session (`_oauth2_proxy_ticket-<id>`). Never the ticket secret, so it cannot read the session. |
 | `jti` | Random, 32 hex characters |
 | `sid` | Session id, only when session tracking is on |
@@ -294,7 +300,8 @@ The token, the refresh token, the claims and the keys are never logged. The
   Sign-out ends it at once: the refresh checks that the login session exists.
 - **Refresh identity.** A refreshed token carries the identity of the
   handshake. Group or email changes at the IdP reach it only after the next
-  handshake.
+  handshake. A change of the app's allowed groups applies to the next refresh;
+  a group allowed only after the handshake counts from the next handshake.
 - **Drafts.** A draft gets no OIDC login of its own yet, so it gets no token.
   When it does, its token carries the production `kbc.app_id` and the draft's own
   `kbc.workspace_id`.
