@@ -117,6 +117,37 @@ store outage. A Sentinel failover attempt that stalls waits for the Sentinel
 `failover-timeout` (60 s by default), and the next attempt starts no sooner than
 twice that time after the first one began.
 
+### Sentinel pauses (TILT)
+
+A Sentinel sometimes stops answering for about 5 s. When it wakes up, it logs
+`+tilt` and makes no decisions for the next 30 s; the other Sentinels may log a
+short `+sdown`/`-sdown` for it. This happens every few hours per Sentinel on
+every stack. It does not affect users: apps-proxy talks to the primary
+directly, skips a Sentinel that does not answer within 0.5 s, and the two other
+Sentinels still form the quorum of 2.
+
+Likely cause: the chart enables `sentinel resolve-hostnames`, and Sentinel
+resolves peer and node host names with a blocking DNS lookup on its main thread
+(`src/sentinel.c`, `anetResolve`). A lost DNS packet waits for the 5 s default
+resolver timeout. The pauses measured on a dev stack are almost exactly 5.0 s.
+
+Known effects:
+
+- The Sentinel probes (`sentinel-ping.sh`) have a 1 s timeout and are not
+  configurable in chart `1.0.0`. A pause fails one probe; three failed liveness
+  probes in a row restart the Sentinel container.
+- A failover is delayed only if the primary fails while at least two Sentinels
+  are paused or restarting at the same time. Users then see the 503 page for
+  the length of the pause (5–30 s); nobody is logged out.
+- On GKE 1.35+, exec probes without an explicit `timeoutSeconds` can raise the
+  GKE Recommender exec-probe-timeout alert, which may pause automatic cluster
+  upgrades (upstream `valkey-io/valkey-helm` issue #169; the Valkey container
+  probes are configurable, the Sentinel probes are not).
+
+Possible fixes, not applied: a pod `dnsConfig` with `timeout: 1` and
+`attempts: 2` on the Sentinel pods, and a higher Sentinel liveness
+`failureThreshold`. Both need a chart change.
+
 ### Lock contention
 
 A session older than 1 hour is refreshed under a Valkey lock. The request that
@@ -315,6 +346,8 @@ kubectl -n apps-proxy exec <valkey-pod> -- sh -c \
 | Users log in once after a switch to `redis` | Their cookie-store session was older than 24 hours, or of another provider | Expected, section 6; `sessionstore.migrated` shows the moved sessions |
 | Users log in once after a rollback to `cookie` | Their cookie-store session was older than 24 hours | Expected, section 7 |
 | "Unable to find a valid CSRF token" during a switch | The CSRF cookie expired (15 minutes) | Section 6, "Logins across pods of different modes"; try again |
+| Sentinel logs `+tilt`, peers log `+sdown`/`-sdown` for it, no failover | A Sentinel pause, usually a slow DNS lookup | Section 4, "Sentinel pauses (TILT)"; act only on `+switch-master`/`+odown` or repeated restarts |
+| Sentinel container restarted, event "failed liveness probe" | Several Sentinel pauses close together | Section 4, "Sentinel pauses (TILT)"; check that the other two Sentinels are Ready |
 
 ## 9. Code Map
 
