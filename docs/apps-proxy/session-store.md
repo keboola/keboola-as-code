@@ -67,6 +67,10 @@ section 4.
 `sentinelAddrs` is a comma-separated `host:port` list; one Service address is
 enough.
 
+For local development, `docker-compose.yml` runs one Valkey (`valkey`) and one
+Sentinel (`valkey-sentinel`, no password) and sets these keys in the `dev`
+container.
+
 The client timeouts are fixed in code (`sessionstore/client.go`): dial, read
 and write 500 ms, one retry, a pool of 20 connections. They make a request fail
 to the 503 page within about a second instead of waiting.

@@ -17,6 +17,7 @@ services:
       - etcd
       - redis
       - sandboxesmock
+      - valkey-sentinel
       - prometheus
     networks:
       - prometheus
@@ -56,6 +57,8 @@ services:
       - APPS_PROXY_API_PUBLIC_URL=https://hub.keboola.local
       - APPS_PROXY_SANDBOXES_API_URL=http://sandboxesmock:1080/
       - APPS_PROXY_COOKIE_SECRET_SALT=secret
+      - APPS_PROXY_SESSION_STORE_SENTINEL_ADDRS=valkey-sentinel:26379
+      - APPS_PROXY_SESSION_STORE_SENTINEL_MASTER_NAME=mymaster
       # Disable DataDog integration
       - TEMPLATES_DATADOG_ENABLED=false
       - STREAM_DATADOG_ENABLED=false
@@ -161,6 +164,28 @@ services:
       MOCKSERVER_INITIALIZATION_JSON_PATH: /config/sandboxesMock.json
     volumes:
       - ./provisioning/apps-proxy/dev/sandboxesMock.json:/config/sandboxesMock.json:Z
+    networks:
+      - apps-proxy
+
+  # Login session store of the Apps Proxy, see docs/apps-proxy/session-store.md.
+  valkey:
+    image: valkey/valkey:8.1.1
+    hostname: valkey
+    networks:
+      - apps-proxy
+
+  valkey-sentinel:
+    image: valkey/valkey:8.1.1
+    hostname: valkey-sentinel
+    depends_on:
+      - valkey
+    # Sentinel rewrites its config file, so it is written into the container at start.
+    command:
+      - sh
+      - -c
+      - |
+        printf 'port 26379\nsentinel resolve-hostnames yes\nsentinel announce-hostnames yes\nsentinel monitor mymaster valkey 6379 1\n' > /tmp/sentinel.conf
+        exec valkey-sentinel /tmp/sentinel.conf
     networks:
       - apps-proxy
 
