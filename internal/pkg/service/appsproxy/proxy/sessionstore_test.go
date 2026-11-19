@@ -22,9 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
 )
 
 var oidcCookieURL = &url.URL{Scheme: "https", Host: oidcHost, Path: "/"} //nolint:gochecknoglobals // test fixture
@@ -38,10 +35,6 @@ func manyGroupsUser(n int) *mockoidc.MockUser {
 	return &mockoidc.MockUser{Subject: "sub-1", Email: "admin@keboola.com", EmailVerified: new(true), Groups: groups}
 }
 
-func fixedCookieSalt(cfg *config.Config, _ *previewtest.JWKSServer) {
-	cfg.CookieSecretSalt = strings.Repeat("c", 32)
-}
-
 func (e *previewEnv) ticketKeys() []string {
 	e.t.Helper()
 	var keys []string
@@ -53,22 +46,19 @@ func (e *previewEnv) ticketKeys() []string {
 	return keys
 }
 
-// clientWithCookies returns a client of this env holding a copy of the other client's oidc cookies.
-func (e *previewEnv) clientWithCookies(other *http.Client) *http.Client {
+// clientWithoutCookies returns a client of this env with an empty cookie jar.
+func (e *previewEnv) clientWithoutCookies() *http.Client {
 	e.t.Helper()
 	jar, err := cookiejar.New(nil)
 	require.NoError(e.t, err)
 	client := *e.client
 	client.Jar = jar
-	if other != nil {
-		jar.SetCookies(oidcCookieURL, other.Jar.Cookies(oidcCookieURL))
-	}
 	return &client
 }
 
-func expiresCookie(resp *http.Response, name string) bool {
+func expiresTicket(resp *http.Response) bool {
 	for _, c := range resp.Cookies() {
-		if c.Name == name && (c.MaxAge < 0 || (!c.Expires.IsZero() && c.Expires.Before(time.Now()))) {
+		if c.Name == ticketCookieName && (c.MaxAge < 0 || (!c.Expires.IsZero() && c.Expires.Before(time.Now()))) {
 			return true
 		}
 	}
@@ -86,7 +76,7 @@ func jarCookie(client *http.Client, name string) *http.Cookie {
 
 func TestRedisStore_LoginRoundTrip(t *testing.T) {
 	t.Parallel()
-	env := startRedisEnv(t)
+	env := startPreviewEnv(t)
 	client := env.oidcLogin(env.providers[0], manyGroupsUser(200), oidcOrigin+"/")
 
 	jarCookies := client.Jar.Cookies(oidcCookieURL)
@@ -115,13 +105,13 @@ func TestRedisStore_LoginRoundTrip(t *testing.T) {
 
 func TestRedisStore_OutageKeepsSession(t *testing.T) {
 	t.Parallel()
-	env := startRedisEnv(t)
+	env := startPreviewEnv(t)
 	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 
 	env.redis.Close()
 	resp := env.send(client, oidcOrigin+"/some/path")
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
-	assert.False(t, expiresCookie(resp, ticketCookieName), "the session cookie must be kept")
+	assert.False(t, expiresTicket(resp), "the session cookie must be kept")
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	assert.Contains(t, string(body), "Sign-in is temporarily unavailable. Please try again in a moment.")
@@ -132,20 +122,8 @@ func TestRedisStore_OutageKeepsSession(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
-func TestCookieStore_IgnoresRedisStoreTicket(t *testing.T) {
-	t.Parallel()
-	cookieEnv := startPreviewEnv(t, fixedCookieSalt)
-	redisEnv := startRedisEnv(t, fixedCookieSalt)
-
-	// A ticket at a cookie-mode replica: login page, the ticket stays.
-	redisClient := redisEnv.oidcLogin(redisEnv.providers[0], freshnessUser(), oidcOrigin+"/")
-	resp := cookieEnv.send(cookieEnv.clientWithCookies(redisClient), oidcOrigin+"/some/path")
-	require.Equal(t, http.StatusFound, resp.StatusCode)
-	assert.False(t, expiresCookie(resp, ticketCookieName))
-}
-
 func TestRedisStore_RebuildDoesNotLeak(t *testing.T) { //nolint:paralleltest // compares the goroutine count of the whole process
-	env := startRedisEnv(t)
+	env := startPreviewEnv(t)
 	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 
 	rebuild := func(i int) {
@@ -176,10 +154,10 @@ func TestRedisStore_RebuildDoesNotLeak(t *testing.T) { //nolint:paralleltest // 
 
 func TestRedisStore_HandlerBuildWithStoreDown(t *testing.T) {
 	t.Parallel()
-	env := startRedisEnv(t)
+	env := startPreviewEnv(t)
 
 	env.redis.Close()
-	resp := env.send(env.clientWithCookies(nil), oidcOrigin+"/some/path")
+	resp := env.send(env.clientWithoutCookies(), oidcOrigin+"/some/path")
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
 
@@ -191,7 +169,7 @@ func TestRedisStore_HandlerBuildWithStoreDown(t *testing.T) {
 
 func TestRedisStore_Eviction(t *testing.T) {
 	t.Parallel()
-	env := startRedisEnv(t)
+	env := startPreviewEnv(t)
 	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 
 	keys := env.ticketKeys()
@@ -201,12 +179,12 @@ func TestRedisStore_Eviction(t *testing.T) {
 	resp := env.send(client, oidcOrigin+"/some/path")
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
-	assert.True(t, expiresCookie(resp, ticketCookieName))
+	assert.True(t, expiresTicket(resp))
 }
 
 func TestRedisStore_SignOutDeletesKey(t *testing.T) {
 	t.Parallel()
-	env := startRedisEnv(t)
+	env := startPreviewEnv(t)
 	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 	require.Len(t, env.ticketKeys(), 1)
 
@@ -226,7 +204,7 @@ func countTrue(values []bool) int {
 
 func TestRedisStore_ParallelRefreshRefreshesOnce(t *testing.T) {
 	t.Parallel()
-	env := startRedisEnv(t)
+	env := startPreviewEnv(t)
 	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 	env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
 		require.NotEmpty(t, s.RefreshToken)
@@ -254,7 +232,7 @@ func TestRedisStore_ParallelRefreshRefreshesOnce(t *testing.T) {
 				return
 			}
 			statuses[i] = resp.StatusCode
-			cleared[i] = expiresCookie(resp, ticketCookieName)
+			cleared[i] = expiresTicket(resp)
 			refreshed[i] = !cleared[i] && slices.Contains(setCookieNames(resp), ticketCookieName)
 			_ = resp.Body.Close()
 		})
@@ -294,17 +272,17 @@ func (e *previewEnv) counterValue(name string) int64 {
 
 func TestHealthCheck_IgnoresSessionStore(t *testing.T) {
 	t.Parallel()
-	env := startRedisEnv(t)
+	env := startPreviewEnv(t)
 	oidcClient := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 	basicClient := env.basicAuthLogin()
 	require.Eventually(t, env.d.SessionStoreChecker().Up, 5*time.Second, 10*time.Millisecond)
 
 	env.redis.Close()
 
-	resp := env.send(env.clientWithCookies(nil), "https://hub.keboola.local/health-check")
+	resp := env.send(env.clientWithoutCookies(), "https://hub.keboola.local/health-check")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, http.StatusOK, env.send(basicClient, authOrigin+"/").StatusCode)
-	assert.Equal(t, http.StatusOK, env.send(env.clientWithCookies(nil), publicOrigin+"/").StatusCode)
+	assert.Equal(t, http.StatusOK, env.send(env.clientWithoutCookies(), publicOrigin+"/").StatusCode)
 
 	resp = env.send(oidcClient, oidcOrigin+"/some/path")
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
@@ -334,7 +312,7 @@ func (h *stopStoreBeforeNextSet) ProcessPipelineHook(next redis.ProcessPipelineH
 
 func TestRedisStore_SaveAfterRefreshFails_KeepsSession(t *testing.T) {
 	t.Parallel()
-	env := startRedisEnv(t)
+	env := startPreviewEnv(t)
 	client := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 	env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
 		require.NotEmpty(t, s.RefreshToken)
@@ -346,7 +324,7 @@ func TestRedisStore_SaveAfterRefreshFails_KeepsSession(t *testing.T) {
 
 	resp := env.send(client, oidcOrigin+"/some/path")
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
-	assert.False(t, expiresCookie(resp, ticketCookieName), "the session cookie must be kept")
+	assert.False(t, expiresTicket(resp), "the session cookie must be kept")
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	assert.Contains(t, string(body), "Sign-in is temporarily unavailable. Please try again in a moment.")

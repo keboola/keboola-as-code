@@ -37,6 +37,8 @@ func TestE2bWebhookNotForwarded(t *testing.T) {
 	cfg.CsrfTokenSalt = "abc"
 	cfg.SandboxesAPI.URL = "https://example"
 	cfg.K8s = config.K8s{AppsNamespace: "keboola"}
+	cfg.SessionStore.SentinelAddrs = []string{"sentinel.invalid:26379"}
+	cfg.SessionStore.SentinelMasterName = "mymaster"
 
 	envs := env.Empty()
 	envs.Set("APPS_PROXY_E2B_WEBHOOK_UPSTREAM_URL", operatorServer.URL)

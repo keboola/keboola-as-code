@@ -130,7 +130,8 @@ func TestAppProxyHandler(t *testing.T) {
 	actualMetricsJSON := mocked.TestTelemetry().MetricsJSONString(
 		t,
 		telemetry.WithMetricFilter(func(metric metricdata.Metrics) bool {
-			return strings.HasPrefix(metric.Name, "keboola.")
+			// The session store metrics have their own tests.
+			return strings.HasPrefix(metric.Name, "keboola.") && !strings.HasPrefix(metric.Name, "keboola.go.appsproxy.sessionstore.")
 		}),
 		telemetry.WithDataPointSortKey(func(attrs attribute.Set) string {
 			host, _ := attrs.Value("server.address")

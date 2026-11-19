@@ -1,10 +1,10 @@
 package oauthproxy
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"testing"
 	"time"
 
@@ -15,9 +15,12 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/sessionstore"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -26,17 +29,68 @@ type pageWriterDeps struct{}
 func (pageWriterDeps) Clock() clockwork.Clock { return clockwork.NewRealClock() }
 func (pageWriterDeps) Logger() log.Logger     { return log.NewNopLogger() }
 
-func TestProxyConfig_RedisStoreUnavailableWritesErrorPage(t *testing.T) {
-	t.Parallel()
+func testSessionStore(t *testing.T) SessionStore {
+	t.Helper()
+	store, _ := testSessionStoreWithTelemetry(t)
+	return store
+}
 
+func testSessionStoreWithTelemetry(t *testing.T) (SessionStore, telemetry.ForTest) {
+	t.Helper()
 	mr := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	t.Cleanup(func() { _ = client.Close() })
+	tel := telemetry.NewForTest(t)
+	checker := sessionstore.NewChecker(log.NewNopLogger(), clockwork.NewFakeClock(), client)
+	return SessionStore{Client: client, Metrics: sessionstore.NewMetrics(tel.Meter(), client, checker)}, tel
+}
+
+func unavailableCount(t *testing.T, tel telemetry.ForTest) int64 {
+	t.Helper()
+	for _, m := range tel.Metrics(t) {
+		if m.Name != "keboola.go.appsproxy.sessionstore.unavailable" {
+			continue
+		}
+		sum, ok := m.Data.(metricdata.Sum[int64])
+		require.True(t, ok, "%T", m.Data)
+		var total int64
+		for _, dp := range sum.DataPoints {
+			total += dp.Value
+		}
+		return total
+	}
+	return 0
+}
+
+func TestProxyConfig_StoreErrorOnCanceledRequest(t *testing.T) {
+	t.Parallel()
+
+	pw, err := pagewriter.New(pageWriterDeps{})
+	require.NoError(t, err)
+	store, tel := testSessionStoreWithTelemetry(t)
+	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
+	v, err := proxyConfig(t.Context(), cfg, store, scopes, nil, pw, app, testOIDC(issuer, nil), nil)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancelCause(t.Context())
+	cancel(errors.New("client went away"))
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "https://app.hub.keboola.local/", nil)
+	v.OnSessionStoreError(rec, req, errors.Errorf("load: %w: %w", sessionsapi.ErrStoreUnavailable, context.Canceled))
+	assert.Equal(t, 499, rec.Code)
+	assert.Empty(t, rec.Body.String())
+	assert.Zero(t, unavailableCount(t, tel))
+}
+
+func TestProxyConfig_StoreUnavailableWritesErrorPage(t *testing.T) {
+	t.Parallel()
+
+	store, tel := testSessionStoreWithTelemetry(t)
 	pw, err := pagewriter.New(pageWriterDeps{})
 	require.NoError(t, err)
 
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
-	v, err := proxyConfig(t.Context(), cfg, SessionStore{Client: client}, scopes, nil, pw, app, testOIDC(issuer, nil), nil)
+	v, err := proxyConfig(t.Context(), cfg, store, scopes, nil, pw, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
 	require.NotNil(t, v.OnSessionStoreError)
 
@@ -48,20 +102,10 @@ func TestProxyConfig_RedisStoreUnavailableWritesErrorPage(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(body), "Sign-in is temporarily unavailable. Please try again in a moment.")
 	assert.Empty(t, rec.Result().Cookies())
+	assert.Equal(t, int64(1), unavailableCount(t, tel))
 }
 
-func TestProxyConfig_CookieStoreByDefault(t *testing.T) {
-	t.Parallel()
-
-	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid","offline_access"]`)
-	v, err := proxyConfig(t.Context(), cfg, SessionStore{}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
-	require.NoError(t, err)
-	assert.Equal(t, options.CookieSessionStoreType, v.Session.Type)
-	assert.Equal(t, "_oauth2_proxy", v.Cookie.Name)
-	assert.Nil(t, v.Session.Redis.Client)
-}
-
-func TestProxyConfig_RedisStore(t *testing.T) {
+func TestProxyConfig_SessionStore(t *testing.T) {
 	t.Parallel()
 
 	mr := miniredis.RunT(t)
@@ -80,7 +124,7 @@ func TestProxyConfig_RedisStore(t *testing.T) {
 	assert.Contains(t, v.Providers[0].Scope, "offline_access")
 }
 
-func TestProxyConfig_RedisStoreBuildsWithStoreDown(t *testing.T) {
+func TestProxyConfig_BuildsWithStoreDown(t *testing.T) {
 	t.Parallel()
 
 	mr := miniredis.RunT(t)
@@ -91,14 +135,4 @@ func TestProxyConfig_RedisStoreBuildsWithStoreDown(t *testing.T) {
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
 	_, err := proxyConfig(t.Context(), cfg, SessionStore{Client: client}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
-}
-
-// The cookie store clears every cookie matching its own name pattern, so the two
-// store types must not share a name while old and new replicas run side by side.
-func TestStoreCookieNames_Disjoint(t *testing.T) {
-	t.Parallel()
-
-	cookieStorePattern := regexp.MustCompile(`^_oauth2_proxy(_\d+)?$`)
-	assert.False(t, cookieStorePattern.MatchString(redisSessionCookieName))
-	assert.True(t, cookieStorePattern.MatchString(options.NewOptions().Cookie.Name))
 }

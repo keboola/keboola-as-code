@@ -242,9 +242,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	} else {
 		d.sessionStore = sessionstore.NewClient(cfg.SessionStore)
 	}
-	if d.sessionStore != nil {
-		d.startSessionStore(ctx)
-	}
+	d.startSessionStore(ctx)
 
 	d.wakeupManager = wakeup.NewManager(d)
 	d.idleTimerRecorder = idletimer.NewRecorder(d, k8sClient)

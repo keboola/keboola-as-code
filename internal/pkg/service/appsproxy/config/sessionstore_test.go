@@ -11,26 +11,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 )
 
-func redisSessionStore() config.SessionStore {
-	s := config.New().SessionStore
-	s.Type = config.SessionStoreRedis
-	s.SentinelAddrs = []string{"apps-proxy-valkey-sentinel:26379"}
-	s.SentinelMasterName = "mymaster"
-	return s
-}
-
 func TestSessionStoreConfig_Defaults(t *testing.T) {
 	t.Parallel()
 
 	cfg := config.New()
-	assert.Equal(t, config.SessionStoreCookie, cfg.SessionStore.Type)
 	assert.Equal(t, "sentinel", cfg.SessionStore.SentinelUsername)
 
 	valid := requiredConfig(t)
 	require.NoError(t, configmap.ValidateAndNormalize(&valid))
 }
 
-func TestSessionStoreConfig_RedisNeedsSentinel(t *testing.T) {
+func TestSessionStoreConfig_Required(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
@@ -41,13 +32,11 @@ func TestSessionStoreConfig_RedisNeedsSentinel(t *testing.T) {
 		{name: "no sentinel addrs", mutate: func(c *config.SessionStore) { c.SentinelAddrs = nil }, wantErr: "sessionStore.sentinelAddrs"},
 		{name: "no master name", mutate: func(c *config.SessionStore) { c.SentinelMasterName = "" }, wantErr: "sessionStore.sentinelMasterName"},
 		{name: "no sentinel username", mutate: func(c *config.SessionStore) { c.SentinelUsername = "" }, wantErr: "sessionStore.sentinelUsername"},
-		{name: "unknown type", mutate: func(c *config.SessionStore) { c.Type = "memory" }, wantErr: "sessionStore.type"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := requiredConfig(t)
-			cfg.SessionStore = redisSessionStore()
 			tc.mutate(&cfg.SessionStore)
 			err := configmap.ValidateAndNormalize(&cfg)
 			require.Error(t, err)
@@ -56,24 +45,20 @@ func TestSessionStoreConfig_RedisNeedsSentinel(t *testing.T) {
 	}
 }
 
-func TestSessionStoreConfig_RedisValid(t *testing.T) {
+func TestSessionStoreConfig_DefaultsAreNotEnough(t *testing.T) {
 	t.Parallel()
 
 	cfg := requiredConfig(t)
-	cfg.SessionStore = redisSessionStore()
-	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
-}
-
-func TestSessionStoreConfig_CookieNeedsNoSentinel(t *testing.T) {
-	t.Parallel()
-
-	cfg := requiredConfig(t)
-	cfg.SessionStore.SentinelUsername = ""
-	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
+	cfg.SessionStore = config.New().SessionStore
+	err := configmap.ValidateAndNormalize(&cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "sessionStore.sentinelAddrs")
+	assert.Contains(t, err.Error(), "sessionStore.sentinelMasterName")
 }
 
 // TestSessionStoreConfig_ENV pins the ENV names down: they are what the kbc-stacks chart sets
-// in apps/apps-proxy/templates/secret-config.yaml when sessionStore.type is redis.
+// in apps/apps-proxy/templates/secret-config.yaml.
+// APPS_PROXY_SESSION_STORE_TYPE is no longer a key; stacks may still set it, and it must be ignored.
 func TestSessionStoreConfig_ENV(t *testing.T) {
 	t.Parallel()
 
@@ -103,7 +88,6 @@ func TestSessionStoreConfig_ENV(t *testing.T) {
 				Envs:      envs,
 			}, &cfg))
 
-			assert.Equal(t, config.SessionStoreRedis, cfg.SessionStore.Type)
 			assert.Equal(t, tc.wantAddrs, cfg.SessionStore.SentinelAddrs)
 			assert.Equal(t, "mymaster", cfg.SessionStore.SentinelMasterName)
 			assert.Equal(t, "sentinel", cfg.SessionStore.SentinelUsername)

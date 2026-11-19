@@ -5,7 +5,9 @@ import (
 	"net/url"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/management"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
@@ -61,7 +63,24 @@ func writeTestServiceAccountToken(tb testing.TB) string {
 	return path
 }
 
-// NewMockedServiceScope creates a mocked ServiceScope for tests.
+// NewTestSessionStore starts a login session store on miniredis.
+// The pool size and retries match the production client (sessionstore). The timeouts are longer:
+// a loaded CI runner with -race can stall a miniredis reply past the production 500 ms, which turns into a 503.
+func NewTestSessionStore(tb testing.TB) (*miniredis.Miniredis, *redis.Client) {
+	tb.Helper()
+	mr := miniredis.RunT(tb)
+	client := redis.NewClient(&redis.Options{
+		Addr:         mr.Addr(),
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		PoolSize:     20,
+		MaxRetries:   1,
+	})
+	return mr, client
+}
+
+// NewMockedServiceScope creates a mocked ServiceScope for tests. The login session store runs on miniredis.
 func NewMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config, opts ...dependencies.MockedOption) (ServiceScope, Mocked) {
 	tb.Helper()
 	return newMockedServiceScope(tb, ctx, cfg, nil, nil, opts...)
@@ -112,6 +131,16 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	}
 	if cfg.K8s.AppsNamespace == "" {
 		cfg.K8s.AppsNamespace = "keboola"
+	}
+	if sessionStore == nil {
+		_, sessionStore = NewTestSessionStore(tb)
+	}
+	// The injected client replaces the one built from this configuration, the values only pass the validation.
+	if len(cfg.SessionStore.SentinelAddrs) == 0 {
+		cfg.SessionStore.SentinelAddrs = []string{"sentinel.invalid:26379"}
+	}
+	if cfg.SessionStore.SentinelMasterName == "" {
+		cfg.SessionStore.SentinelMasterName = "mymaster"
 	}
 
 	// Create fake K8s dynamic client. The App list kind is registered so the informer can list CRDs.

@@ -19,6 +19,8 @@ func requiredConfig(t *testing.T) config.Config {
 	cfg.CsrfTokenSalt = "x"
 	cfg.SandboxesAPI.URL = "https://example"
 	cfg.K8s = config.K8s{AppsNamespace: "ns"}
+	cfg.SessionStore.SentinelAddrs = []string{"apps-proxy-valkey-sentinel:26379"}
+	cfg.SessionStore.SentinelMasterName = "mymaster"
 	return cfg
 }
 
