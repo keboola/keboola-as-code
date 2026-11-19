@@ -42,7 +42,7 @@ func (m *Minter) injectRefresh(req *http.Request, app api.AppConfig, workload k8
 
 	now := m.clock.Now()
 	exp, _ := upstream.WebsocketDeadline(ctx, now, m.wsTimeout)
-	matched, err := handshakeMatchedGroups(app, id)
+	matched, err := handshakeMatchedGroups(app, id, sessionGroupsFrom(ctx))
 	if err != nil {
 		m.logger.Errorf(ctx, "cannot read the allowed groups, the websocket gets no app user refresh token: %s", err)
 		return
@@ -87,7 +87,7 @@ func (m *Minter) signRefresh(app api.AppConfig, workload k8sapp.WorkloadRef, id 
 	return token.SignedString(m.keyring.activeRefreshKey())
 }
 
-func handshakeMatchedGroups(app api.AppConfig, id identity) ([]string, error) {
+func handshakeMatchedGroups(app api.AppConfig, id identity, sessionGroups []string) ([]string, error) {
 	oauth, ok := oauthProvider(app, provider.ID(id.providerID))
 	if !ok {
 		return nil, nil
@@ -96,5 +96,5 @@ func handshakeMatchedGroups(app api.AppConfig, id identity) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return matchingGroups(id.allGroups, allowed), nil
+	return matchingGroups(sessionGroups, allowed), nil
 }

@@ -225,7 +225,7 @@ its `kid`.
 | `kbc.project_id`, `kbc.app_id` | As in the app user token |
 | `kbc.sandbox` | Name of the Sandbox the host routes to. Omitted for the App. |
 | `kbc.auth_provider_id` | Id of the auth provider that admitted the handshake |
-| `kbc.matched_groups` | The user's groups that were in the provider's allowed group list at the handshake. Omitted when the provider has no such list. Taken from the full group list, so it is set even when `groups` is omitted for size. |
+| `kbc.matched_groups` | The user's groups that were in the provider's allowed group list at the handshake. Omitted when the provider has no such list. Taken from the groups of the login session, not from the comma-joined `X-Kbc-User-Roles` header, so a group name with a comma stays one group, and it is set even when `groups` is omitted for size. |
 | `kbc.login_session` | Session store key of the handshake's login session (`_oauth2_proxy_ticket-<id>`). Never the ticket secret, so it cannot read the session. |
 | `jti` | Random, 32 hex characters |
 | `sid` | Session id, only when session tracking is on |

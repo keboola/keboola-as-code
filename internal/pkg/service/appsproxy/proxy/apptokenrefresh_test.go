@@ -100,6 +100,15 @@ func TestAppUserTokenRefresh_CappedAtOneHourWithoutIdPRefreshToken(t *testing.T)
 	assert.InDelta(t, time.Hour.Seconds(), exp-iat, 30)
 }
 
+func TestAppUserTokenRefresh_MatchedGroupsFromTheLoginSession(t *testing.T) {
+	t.Parallel()
+	env := startRefreshEnv(t)
+	parts := strings.Split(env.websocketHandshake().Header.Get(apptoken.RefreshHeaderName), ".")
+	require.Len(t, parts, 3)
+	kbc, _ := jsonSegment(t, parts[1])["kbc"].(map[string]any)
+	assert.Equal(t, []any{"admin"}, kbc["matched_groups"])
+}
+
 func TestAppUserTokenRefresh_NotOnPlainRequest(t *testing.T) {
 	t.Parallel()
 	env := startRefreshEnv(t)

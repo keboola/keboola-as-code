@@ -73,6 +73,8 @@ type testEnv struct {
 	store *miniredis.Miniredis
 	// loginSession is put into every request context, as the oauth2-proxy handler does for a ticket cookie.
 	loginSession string
+	// sessionGroups are put into every request context, as the oauth2-proxy handler does from the login session.
+	sessionGroups []string
 }
 
 type upstreamRequest struct {
@@ -275,6 +277,9 @@ func (h *testHandler) serveCtx(ctx context.Context, headers map[string]string) u
 	*h.got = upstreamRequest{}
 	if h.e.loginSession != "" {
 		ctx = apptoken.WithLoginSession(ctx, h.e.loginSession)
+	}
+	if h.e.sessionGroups != nil {
+		ctx = apptoken.WithSessionGroups(ctx, h.e.sessionGroups)
 	}
 	req := httptest.NewRequestWithContext(ctx, http.MethodGet, "https://"+testAppHost+"/", nil)
 	req.Header.Set("Accept", "text/html")

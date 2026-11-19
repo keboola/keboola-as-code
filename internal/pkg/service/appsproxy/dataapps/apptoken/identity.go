@@ -3,6 +3,7 @@ package apptoken
 import (
 	"context"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
@@ -25,8 +26,6 @@ type identity struct {
 	idp        string
 	email      string
 	groups     []string
-	// allGroups is not limited in size: it decides the matched groups of a refresh token, never goes into a token.
-	allGroups []string
 }
 
 type identityCtxKey struct{}
@@ -56,20 +55,22 @@ func captureIdentity(req *http.Request, providerID provider.ID, idpURL, emailVer
 		id.email = req.Header.Get(userEmailHeader)
 	}
 	id.groups = parseGroups(req.Header.Values(userRolesHeader))
-	id.allGroups = splitGroups(req.Header.Values(userRolesHeader))
 	return id, true
 }
 
-// parseGroups is splitGroups limited to maxGroupsBytes of header.
+// parseGroups splits the comma-joined header. A group name containing a comma
+// is split too; accepted, the header format cannot carry it.
 func parseGroups(values []string) []string {
+	groups := make([]string, 0, len(values))
 	size := 0
 	for _, value := range values {
 		size += len(value)
+		groups = append(groups, strings.FieldsFunc(value, func(r rune) bool { return r == ',' })...)
 	}
 	if size > maxGroupsBytes {
 		return nil
 	}
-	return splitGroups(values)
+	return groups
 }
 
 type loginSessionCtxKey struct{}
@@ -84,12 +85,15 @@ func loginSessionFrom(ctx context.Context) (string, bool) {
 	return key, ok && key != ""
 }
 
-// splitGroups splits the comma-joined header. A group name containing a comma
-// is split too; accepted, the header format cannot carry it.
-func splitGroups(values []string) []string {
-	groups := make([]string, 0, len(values))
-	for _, value := range values {
-		groups = append(groups, strings.FieldsFunc(value, func(r rune) bool { return r == ',' })...)
-	}
+type sessionGroupsCtxKey struct{}
+
+// WithSessionGroups records the groups of the request's login session. They decide the matched groups of a
+// refresh token; unlike the X-Kbc-User-Roles header they keep a group name that contains a comma.
+func WithSessionGroups(ctx context.Context, groups []string) context.Context {
+	return context.WithValue(ctx, sessionGroupsCtxKey{}, slices.Clone(groups))
+}
+
+func sessionGroupsFrom(ctx context.Context) []string {
+	groups, _ := ctx.Value(sessionGroupsCtxKey{}).([]string)
 	return groups
 }
