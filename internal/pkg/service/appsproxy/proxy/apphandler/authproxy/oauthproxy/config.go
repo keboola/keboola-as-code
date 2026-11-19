@@ -25,11 +25,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// CookieName is the oauth2-proxy session cookie. Every other cookie oauth2-proxy sets starts with "<CookieName>_":
-// the CSRF cookies, the parts of a split session and the redis store ticket.
+// CookieName is the base name of the oauth2-proxy cookies: the session ticket and the CSRF cookies start with "<CookieName>_".
+// Browsers can still send session cookies named CookieName or "<CookieName>_<n>", which a cookie session store used to set;
+// they must not reach the app either.
 const CookieName = "_oauth2_proxy"
 
-// SessionStore selects the login session store: the cookie store when Client is nil.
 type SessionStore struct {
 	Client  *redis.Client
 	Metrics *sessionstore.Metrics
@@ -39,7 +39,7 @@ const (
 	sessionRefresh = time.Hour
 	sessionExpire  = 24 * time.Hour
 
-	redisSessionCookieName = CookieName + "_ticket"
+	sessionCookieName = CookieName + "_ticket"
 )
 
 func providerUnavailableError(err error) error {
@@ -105,13 +105,13 @@ func proxyConfig(
 	redirectURL := cfg.API.PublicURL.Scheme + "://" + domain + config.InternalPrefix + "/callback"
 	v.Logging.RequestIDHeader = config.RequestIDHeader
 	v.Logging.RequestEnabled = false // we have log middleware for all requests
-	v.Cookie.Name = CookieName
+	v.Cookie.Name = sessionCookieName
 	v.Cookie.Secret = secret
 	v.Cookie.Domains = []string{domain}
 	v.Cookie.SameSite = "strict"
 	v.Cookie.Refresh = sessionRefresh
 	if oAuthProvider.RefreshTokensSingleUse() {
-		// The cookie store has no lock, so parallel requests would refresh with the same token and the losers log the user out.
+		// See docs/apps-proxy/login-session.md, section "GitLab: no refresh".
 		v.Cookie.Refresh = 0
 	}
 	v.Cookie.Expire = sessionExpire
@@ -119,14 +119,10 @@ func proxyConfig(
 	v.RawRedirectURL = redirectURL
 	v.Providers = options.Providers{proxyProvider}
 	v.SkipProviderButton = true
-	v.Session = options.SessionOptions{Type: options.CookieSessionStoreType}
-	if sessionStore.Client != nil {
-		v.Cookie.Name = redisSessionCookieName
-		v.Session = options.SessionOptions{Type: options.RedisSessionStoreType, Redis: options.RedisStoreOptions{Client: sessionStore.Client}}
-		v.OnSessionStoreError = func(rw http.ResponseWriter, req *http.Request, err error) {
-			sessionStore.Metrics.StoreUnavailable(req.Context())
-			pageWriter.WriteError(rw, req, &app, sessionStoreUnavailableError(err))
-		}
+	v.Session = options.SessionOptions{Type: options.RedisSessionStoreType, Redis: options.RedisStoreOptions{Client: sessionStore.Client}}
+	v.OnSessionStoreError = func(rw http.ResponseWriter, req *http.Request, err error) {
+		sessionStore.Metrics.StoreUnavailable(req.Context())
+		pageWriter.WriteError(rw, req, &app, sessionStoreUnavailableError(err))
 	}
 	v.EmailDomains = []string{"*"}
 	v.InjectRequestHeaders = []options.Header{

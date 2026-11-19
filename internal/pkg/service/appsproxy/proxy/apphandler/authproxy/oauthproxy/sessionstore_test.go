@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"testing"
 	"time"
 
@@ -26,17 +25,22 @@ type pageWriterDeps struct{}
 func (pageWriterDeps) Clock() clockwork.Clock { return clockwork.NewRealClock() }
 func (pageWriterDeps) Logger() log.Logger     { return log.NewNopLogger() }
 
-func TestProxyConfig_RedisStoreUnavailableWritesErrorPage(t *testing.T) {
-	t.Parallel()
-
+func testSessionStore(t *testing.T) SessionStore {
+	t.Helper()
 	mr := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	t.Cleanup(func() { _ = client.Close() })
+	return SessionStore{Client: client}
+}
+
+func TestProxyConfig_StoreUnavailableWritesErrorPage(t *testing.T) {
+	t.Parallel()
+
 	pw, err := pagewriter.New(pageWriterDeps{})
 	require.NoError(t, err)
 
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
-	v, err := proxyConfig(t.Context(), cfg, SessionStore{Client: client}, scopes, nil, pw, app, testOIDC(issuer, nil), nil)
+	v, err := proxyConfig(t.Context(), cfg, testSessionStore(t), scopes, nil, pw, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
 	require.NotNil(t, v.OnSessionStoreError)
 
@@ -50,18 +54,7 @@ func TestProxyConfig_RedisStoreUnavailableWritesErrorPage(t *testing.T) {
 	assert.Empty(t, rec.Result().Cookies())
 }
 
-func TestProxyConfig_CookieStoreByDefault(t *testing.T) {
-	t.Parallel()
-
-	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid","offline_access"]`)
-	v, err := proxyConfig(t.Context(), cfg, SessionStore{}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
-	require.NoError(t, err)
-	assert.Equal(t, options.CookieSessionStoreType, v.Session.Type)
-	assert.Equal(t, "_oauth2_proxy", v.Cookie.Name)
-	assert.Nil(t, v.Session.Redis.Client)
-}
-
-func TestProxyConfig_RedisStore(t *testing.T) {
+func TestProxyConfig_SessionStore(t *testing.T) {
 	t.Parallel()
 
 	mr := miniredis.RunT(t)
@@ -80,7 +73,7 @@ func TestProxyConfig_RedisStore(t *testing.T) {
 	assert.Contains(t, v.Providers[0].Scope, "offline_access")
 }
 
-func TestProxyConfig_RedisStoreBuildsWithStoreDown(t *testing.T) {
+func TestProxyConfig_BuildsWithStoreDown(t *testing.T) {
 	t.Parallel()
 
 	mr := miniredis.RunT(t)
@@ -91,14 +84,4 @@ func TestProxyConfig_RedisStoreBuildsWithStoreDown(t *testing.T) {
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
 	_, err := proxyConfig(t.Context(), cfg, SessionStore{Client: client}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
-}
-
-// The cookie store clears every cookie matching its own name pattern, so the two
-// store types must not share a name while old and new replicas run side by side.
-func TestStoreCookieNames_Disjoint(t *testing.T) {
-	t.Parallel()
-
-	cookieStorePattern := regexp.MustCompile(`^_oauth2_proxy(_\d+)?$`)
-	assert.False(t, cookieStorePattern.MatchString(redisSessionCookieName))
-	assert.True(t, cookieStorePattern.MatchString(options.NewOptions().Cookie.Name))
 }

@@ -55,7 +55,7 @@ func TestSessionFreshness_IdPDownKeepsSessionAndShows503(t *testing.T) {
 	// The IdP is back: the same cookie refreshes and the request is served.
 	resp = env.send(client, oidcOrigin+"/some/path")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Contains(t, setCookieNames(resp), oauthCookieName)
+	assert.Contains(t, setCookieNames(resp), ticketCookieName)
 	assert.WithinDuration(t, time.Now(), *env.loadOIDCSession(client).CreatedAt, time.Minute)
 }
 
@@ -70,5 +70,5 @@ func TestSessionFreshness_InvalidGrantAtRefreshLogsOut(t *testing.T) {
 
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get("Location"), "/oidc/authorize?client_id=")
-	assert.Contains(t, setCookieNames(resp), oauthCookieName)
+	assert.Contains(t, setCookieNames(resp), ticketCookieName)
 }

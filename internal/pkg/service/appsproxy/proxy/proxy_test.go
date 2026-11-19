@@ -588,7 +588,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.True(t, cookies[0].Secure)
 					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
-					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
+					assert.Equal(t, "_oauth2_proxy_ticket", cookies[1].Name)
 					assert.Empty(t, cookies[1].Value)
 					assert.Equal(t, "/", cookies[1].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
@@ -665,7 +665,7 @@ func TestAppProxyRouter(t *testing.T) {
 					},
 					[]*http.Cookie{
 						{
-							Name:   "_oauth2_proxy_csrf",
+							Name:   "_oauth2_proxy_ticket_csrf",
 							Value:  "",
 							Path:   "/",
 							Domain: "oidc.hub.keboola.local",
@@ -835,7 +835,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.True(t, cookies[0].Secure)
 					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
-					assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
+					assert.Equal(t, "_oauth2_proxy_ticket_csrf", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)
@@ -892,7 +892,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.True(t, cookies[0].Secure)
 					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
-					assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
+					assert.Equal(t, "_oauth2_proxy_ticket_csrf", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)
@@ -927,7 +927,7 @@ func TestAppProxyRouter(t *testing.T) {
 
 				cookies = response.Cookies()
 				if assert.Len(t, cookies, 2) {
-					assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
+					assert.Equal(t, "_oauth2_proxy_ticket_csrf", cookies[0].Name)
 					assert.Empty(t, cookies[0].Value)
 					assert.Equal(t, "/", cookies[0].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
@@ -935,7 +935,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.True(t, cookies[0].Secure)
 					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
-					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
+					assert.Equal(t, "_oauth2_proxy_ticket", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)
@@ -1003,7 +1003,7 @@ func TestAppProxyRouter(t *testing.T) {
 				assert.Contains(t, location, "/oidc/authorize?client_id=")
 				cookies = response.Cookies()
 				if assert.Len(t, cookies, 1) {
-					assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
+					assert.Equal(t, "_oauth2_proxy_ticket_csrf", cookies[0].Name)
 					assert.Equal(t, "/", cookies[0].Path)
 					assert.Equal(t, "multi.hub.keboola.local", cookies[0].Domain)
 					assert.True(t, cookies[0].HttpOnly)
@@ -2617,7 +2617,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.True(t, cookies[0].Secure)
 					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
-					assert.Equal(t, "_oauth2_proxy_csrf", cookies[1].Name)
+					assert.Equal(t, "_oauth2_proxy_ticket_csrf", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)
@@ -2651,7 +2651,7 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusFound, response.StatusCode)
 				cookies = response.Cookies()
 				if assert.Len(t, cookies, 2) {
-					assert.Equal(t, "_oauth2_proxy_csrf", cookies[0].Name)
+					assert.Equal(t, "_oauth2_proxy_ticket_csrf", cookies[0].Name)
 					assert.Empty(t, cookies[0].Value)
 					assert.Equal(t, "/", cookies[0].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[0].Domain)
@@ -2659,7 +2659,7 @@ func TestAppProxyRouter(t *testing.T) {
 					assert.True(t, cookies[0].Secure)
 					assert.Equal(t, http.SameSiteStrictMode, cookies[0].SameSite)
 
-					assert.Equal(t, "_oauth2_proxy", cookies[1].Name)
+					assert.Equal(t, "_oauth2_proxy_ticket", cookies[1].Name)
 					assert.Equal(t, "/", cookies[1].Path)
 					assert.Equal(t, "oidc.hub.keboola.local", cookies[1].Domain)
 					assert.True(t, cookies[1].HttpOnly)

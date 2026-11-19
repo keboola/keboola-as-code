@@ -18,9 +18,6 @@ const (
 )
 
 func NewClient(cfg config.SessionStore) *redis.Client {
-	if cfg.Type != config.SessionStoreRedis {
-		return nil
-	}
 	return redis.NewFailoverClient(failoverOptions(cfg))
 }
 
