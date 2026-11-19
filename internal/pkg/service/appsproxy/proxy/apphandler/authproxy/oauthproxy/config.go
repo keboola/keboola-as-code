@@ -26,8 +26,7 @@ import (
 )
 
 // CookieName is the base name of the oauth2-proxy cookies: the session ticket and the CSRF cookies start with "<CookieName>_".
-// Browsers can still send session cookies named CookieName or "<CookieName>_<n>", which a cookie session store used to set;
-// they must not reach the app either.
+// Browsers can also send cookie session store cookies, CookieName and "<CookieName>_<n>"; they must not reach the app either.
 const CookieName = "_oauth2_proxy"
 
 type SessionStore struct {
