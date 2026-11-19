@@ -20,6 +20,7 @@
 - [login-session.md](login-session.md) — how long a login lasts, refresh, and websocket closes.
 - [session-store.md](session-store.md) — the login session store (cookie or Valkey): config, metrics, the 503 page, failover, switch and rollback.
 - [app-cookies.md](app-cookies.md) — the cookies the app receives, and the apps-proxy cookies removed before it.
+- [app-headers.md](app-headers.md) — the `X-Kbc-*` headers: where apps-proxy sets and deletes each one, and what the app receives.
 - [app-user-token.md](app-user-token.md) — the signed `X-Kbc-App-User-Token` passed to apps, and its JWKS.
 - [idle-suspend.md](idle-suspend.md) — what counts as activity for idle suspend, and how to check it.
 - [preview-link.md](preview-link.md) — dev-mode preview links minted by sandboxes-service, and the page a frame gets without a preview session.

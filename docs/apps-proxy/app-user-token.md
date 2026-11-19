@@ -25,6 +25,8 @@ A browser cannot send the token: apps-proxy deletes every inbound `X-Kbc-*`
 header before routing, and deletes `X-Kbc-App-User-Token`,
 `X-Kbc-App-User-Refresh-Token` and `X-Kbc-App-Public-Url` again right before it
 sets its own.
+Where each `X-Kbc-*` header is set and deleted is listed in
+[app-headers.md](app-headers.md).
 
 A token is minted only when an OAuth/OIDC provider admitted the request and the
 user id is known. There is no token for:
