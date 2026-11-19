@@ -7,10 +7,8 @@ that apps-proxy sets.
 
 | Cookie | Set by | Purpose |
 |---|---|---|
-| `_oauth2_proxy` | oauth2-proxy | The login session: tokens, email, groups. See [login-session.md](login-session.md). |
-| `_oauth2_proxy_0`, `_oauth2_proxy_1`, … | oauth2-proxy | The same session, split into parts when it is larger than 4 KiB. |
-| `_oauth2_proxy_csrf` | oauth2-proxy | CSRF state of a login in progress. Deleted at the callback. |
-| `_oauth2_proxy_ticket`, `_oauth2_proxy_ticket_csrf` | oauth2-proxy | The session ticket and the CSRF cookie in the `redis` store mode. See [session-store.md](session-store.md). |
+| `_oauth2_proxy_ticket` | oauth2-proxy | The login session ticket. See [login-session.md](login-session.md) and [session-store.md](session-store.md). |
+| `_oauth2_proxy_ticket_csrf` | oauth2-proxy | CSRF state of a login in progress. Deleted at the callback. |
 | `_oauth2_provider` | provider selector | The login provider the user chose. |
 | `proxyBasicAuth` | password provider | The password login. |
 | `_kbc_dasid` | session tracking | The session id. See [sessions.md](sessions.md). |
@@ -24,8 +22,10 @@ the WebSocket handshake included, whichever auth handler served it.
 ## How the cookies are matched
 
 `_oauth2_proxy` and every name that starts with `_oauth2_proxy_` are removed.
-This covers every cookie oauth2-proxy sets: the session, its split parts, the
-CSRF cookie, and the per-request CSRF cookies `_oauth2_proxy_<state>_csrf`.
+This covers every cookie oauth2-proxy sets: the session ticket, the CSRF
+cookie, and the per-request CSRF cookies. It also covers the session cookies
+of a cookie session store (`_oauth2_proxy`, `_oauth2_proxy_0`, `_1`, …), which
+browsers can still send.
 An app cookie whose name starts with `_oauth2_proxy_` therefore does not reach
 the app. The other names are matched exactly. An app cookie with a similar
 name, for example `_streamlit_xsrf` or `_oauth2_proxyapp`, reaches the app
@@ -48,8 +48,8 @@ joined with `; `. A line that contains only apps-proxy cookies is removed.
   the last step of the upstream chain, after session tracking and the app
   user token.
 - `proxy/cookies_test.go` (`TestUpstreamCookies`): runs every flow that sets a
-  cookie (OIDC login with a small and a split session, sign-out, password
-  login, preview link), records every `Set-Cookie` name, sends all of them
-  back and checks that the app receives only its own cookies, for HTTP and the
+  cookie (OIDC login, sign-out, password login, preview link), records every
+  `Set-Cookie` name, sends all of them back together with the cookie session
+  store names, and checks that the app receives only its own cookies, for HTTP and the
   WebSocket handshake. A new cookie that apps-proxy sets in one of these flows
   and does not remove makes this test fail.
