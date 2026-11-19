@@ -80,7 +80,7 @@ type Sessions struct {
 }
 
 type AppUserToken struct {
-	SigningKeys string        `configKey:"signingKeys" configUsage:"JSON list of {\"kid\": \"...\", \"pem\": \"...\"} EC P-256 private keys. All are published in the JWKS. Empty together with activeKid disables the token." sensitive:"true"`
+	SigningKeys string        `configKey:"signingKeys" configUsage:"JSON list of {\"kid\": \"...\", \"pem\": \"...\"} EC P-256 private keys. All are published in the JWKS. They are also the source of the refresh token keys; a removed key ends the refresh tokens made from it. Empty together with activeKid disables the token." sensitive:"true"`
 	ActiveKid   string        `configKey:"activeKid" configUsage:"Kid of the signing key that signs new tokens."`
 	TTL         time.Duration `configKey:"ttl" configUsage:"Lifetime of one token, from 1s to 5m." validate:"required,minDuration=1s,maxDuration=5m"`
 }
@@ -149,7 +149,7 @@ type SandboxesAPI struct {
 }
 
 type Upstream struct {
-	HTTPTimeout time.Duration `configKey:"httpTimeout" configUsage:"Timeout for HTTP request on upstream"`
+	HTTPTimeout time.Duration `configKey:"httpTimeout" configUsage:"Timeout for HTTP request on upstream. Keep it below appUserToken.ttl: a streamed response that outlives its app user token gets no refresh."`
 	WsTimeout   time.Duration `configKey:"wsTimeout" configUsage:"Timeout for websocket request on upstream"`
 }
 

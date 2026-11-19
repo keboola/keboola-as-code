@@ -232,11 +232,6 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	}
 	d.appStateWatcher = k8sapp.NewStateWatcher(d, k8sClient, cfg.K8s.AppsNamespace)
 
-	d.appTokenMinter, err = apptoken.NewMinter(d)
-	if err != nil {
-		return nil, err
-	}
-
 	if provider, ok := parentScp.(sessionStoreClientProvider); ok && provider.SessionStoreClient() != nil {
 		d.sessionStore = provider.SessionStoreClient()
 	} else {
@@ -244,6 +239,11 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	}
 	if d.sessionStore != nil {
 		d.startSessionStore(ctx)
+	}
+
+	d.appTokenMinter, err = apptoken.NewMinter(d)
+	if err != nil {
+		return nil, err
 	}
 
 	d.wakeupManager = wakeup.NewManager(d)

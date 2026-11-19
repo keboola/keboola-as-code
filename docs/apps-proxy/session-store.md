@@ -18,7 +18,7 @@ The mode is set per stack by `sessionStore.type` in the kbc-stacks chart
 | Cookie | `_oauth2_proxy`, split into `_oauth2_proxy_0`, `_1`, … above 4 KiB | `_oauth2_proxy_ticket`: a ticket under 512 B, the same size for every user |
 | CSRF cookie of a login in progress | `_oauth2_proxy_csrf` | `_oauth2_proxy_ticket_csrf` |
 | Refresh lock | none: parallel requests each refresh | one refresh per session, under a Valkey lock (`<key>.lock`, 30 s) |
-| Depends on Valkey | no | yes, for OAuth/OIDC apps only |
+| Depends on Valkey | no | yes, for OAuth/OIDC apps and the app user token refresh |
 
 In `redis` mode the browser cookie stays small whatever the number of groups,
 so large group lists do not break the ingress or the cookie size limit. The
@@ -87,6 +87,9 @@ A request with a ticket cookie that cannot read, lock or write its session
 is kept. When the store answers again, the same cookie works; nobody is logged
 out. This also covers the OAuth callback (a login cannot be saved) and the save
 after a successful token refresh.
+
+The app user token refresh endpoint answers `503` with an empty body when it
+cannot check the login session, see [app-user-token.md](app-user-token.md) §6.
 
 Not affected by a store outage: `/health-check` (the store is not part of it,
 so pods stay Ready), password apps, public apps, preview links.

@@ -1,13 +1,13 @@
 package apphandler
 
 import (
-	"net"
 	"net/http"
 
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/session"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
@@ -16,22 +16,13 @@ import (
 
 const pageNonceLength = 24
 
-// previewOrigin never uses h.baseURL for a Sandbox: there it names the parent App.
 func (h *appHandler) previewOrigin() (string, bool) {
-	if !h.workload.IsSandbox() {
-		origin, err := preview.NormalizeOrigin(h.baseURL.Scheme + "://" + h.baseURL.Host)
-		return origin, err == nil
-	}
-	info, ok := h.manager.upstreamManager.AppInfo(h.workload)
-	if !ok || info.PublicHost == "" {
+	info, known := h.manager.upstreamManager.AppInfo(h.workload)
+	origin, ok := k8sapp.PublicOrigin(h.manager.config.API.PublicURL, h.app, h.workload, info, known)
+	if !ok {
 		return "", false
 	}
-	publicURL := h.manager.config.API.PublicURL
-	host := info.PublicHost
-	if port := publicURL.Port(); port != "" {
-		host = net.JoinHostPort(host, port)
-	}
-	origin, err := preview.NormalizeOrigin(publicURL.Scheme + "://" + host)
+	origin, err := preview.NormalizeOrigin(origin)
 	return origin, err == nil
 }
 

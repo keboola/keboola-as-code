@@ -3,8 +3,10 @@ package apptoken
 import (
 	"context"
 	"net/http"
+	"slices"
 	"strings"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/chain"
 )
 
@@ -19,10 +21,11 @@ const (
 )
 
 type identity struct {
-	subject string
-	idp     string
-	email   string
-	groups  []string
+	providerID string
+	subject    string
+	idp        string
+	email      string
+	groups     []string
 }
 
 type identityCtxKey struct{}
@@ -30,24 +33,24 @@ type identityCtxKey struct{}
 // WithIdentity wraps the upstream of an OAuth provider, so it runs after
 // oauth2-proxy has injected the X-Kbc-User-* headers. Only a request that
 // passed through it gets a token.
-func WithIdentity(next chain.Handler, idpURL string) chain.Handler {
+func WithIdentity(next chain.Handler, providerID provider.ID, idpURL string) chain.Handler {
 	return chain.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) error {
 		emailVerified := req.Header.Get(EmailVerifiedHeader)
 		req.Header.Del(EmailVerifiedHeader)
-		if id, ok := captureIdentity(req, idpURL, emailVerified); ok {
+		if id, ok := captureIdentity(req, providerID, idpURL, emailVerified); ok {
 			req = req.WithContext(context.WithValue(req.Context(), identityCtxKey{}, id))
 		}
 		return next.ServeHTTPOrError(rw, req)
 	})
 }
 
-func captureIdentity(req *http.Request, idpURL, emailVerified string) (identity, bool) {
+func captureIdentity(req *http.Request, providerID provider.ID, idpURL, emailVerified string) (identity, bool) {
 	subject := req.Header.Get(userIDHeader)
 	if subject == "" {
 		return identity{}, false
 	}
 
-	id := identity{subject: subject, idp: idpURL}
+	id := identity{providerID: providerID.String(), subject: subject, idp: idpURL}
 	if emailVerified == "true" {
 		id.email = req.Header.Get(userEmailHeader)
 	}
@@ -67,5 +70,30 @@ func parseGroups(values []string) []string {
 	if size > maxGroupsBytes {
 		return nil
 	}
+	return groups
+}
+
+type loginSessionCtxKey struct{}
+
+// WithLoginSession records the session store key of the request's login session; a refresh token carries it.
+func WithLoginSession(ctx context.Context, key string) context.Context {
+	return context.WithValue(ctx, loginSessionCtxKey{}, key)
+}
+
+func loginSessionFrom(ctx context.Context) (string, bool) {
+	key, ok := ctx.Value(loginSessionCtxKey{}).(string)
+	return key, ok && key != ""
+}
+
+type sessionGroupsCtxKey struct{}
+
+// WithSessionGroups records the groups of the request's login session. They decide the matched groups of a
+// refresh token; unlike the X-Kbc-User-Roles header they keep a group name that contains a comma.
+func WithSessionGroups(ctx context.Context, groups []string) context.Context {
+	return context.WithValue(ctx, sessionGroupsCtxKey{}, slices.Clone(groups))
+}
+
+func sessionGroupsFrom(ctx context.Context) []string {
+	groups, _ := ctx.Value(sessionGroupsCtxKey{}).([]string)
 	return groups
 }

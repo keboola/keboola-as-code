@@ -150,6 +150,8 @@ on it. apps-proxy therefore closes every websocket at the earliest of:
 
 - the next refresh, plus 5 seconds (only for a session that is refreshed),
 - the cookie expiry,
+- 1 hour after it opened, when the handshake got an app user token (see
+  [app-user-token.md](app-user-token.md) §6),
 - 6 hours after it opened (`upstream.wsTimeout`).
 
 The browser reconnects at once. The upgrade request goes through the normal
@@ -162,13 +164,17 @@ While the IdP is unavailable, the reconnect gets the 503 page and the
 browser retries. If a refresh failed for another reason and the session was
 kept, the next close is 1 hour later.
 
+The app user refresh token on the handshake expires at the same moment, see
+[app-user-token.md](app-user-token.md) §6.
+
 Each close writes one info log line:
 
 ```
 websocket closed at its deadline: <reason>
 ```
 
-`<reason>` is `refresh due`, `cookie expiry` or `ws timeout`. The line carries
+`<reason>` is `refresh due`, `cookie expiry`, `app user token cap` or
+`ws timeout`. The line carries
 the app attributes (`proxy.app.id`, `proxy.app.projectId`, …). A websocket closed
 by the browser or the app writes no such line.
 

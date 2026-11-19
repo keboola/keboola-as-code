@@ -1,9 +1,11 @@
 package apptoken
 
 import (
+	"net/url"
 	"time"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
@@ -11,12 +13,16 @@ import (
 )
 
 type Minter struct {
-	keyring *Keyring
-	issuer  string
-	ttl     time.Duration
-	clock   clockwork.Clock
-	logger  log.Logger
-	apps    appStates
+	keyring   *Keyring
+	issuer    string
+	publicURL *url.URL
+	ttl       time.Duration
+	wsTimeout time.Duration
+	clock     clockwork.Clock
+	logger    log.Logger
+	apps      appStates
+	// store is the login session store, nil in cookie mode.
+	store *redis.Client
 }
 
 type appStates interface {
@@ -28,6 +34,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Config() config.Config
 	AppStateWatcher() *k8sapp.StateWatcher
+	SessionStoreClient() *redis.Client
 }
 
 func NewMinter(d dependencies) (*Minter, error) {
@@ -37,12 +44,15 @@ func NewMinter(d dependencies) (*Minter, error) {
 		return nil, err
 	}
 	return &Minter{
-		keyring: keyring,
-		issuer:  cfg.API.PublicURL.String(),
-		ttl:     cfg.AppUserToken.TTL,
-		clock:   d.Clock(),
-		logger:  d.Logger().WithComponent("app-user-token"),
-		apps:    d.AppStateWatcher(),
+		keyring:   keyring,
+		issuer:    cfg.API.PublicURL.String(),
+		publicURL: cfg.API.PublicURL,
+		ttl:       cfg.AppUserToken.TTL,
+		wsTimeout: cfg.Upstream.WsTimeout,
+		clock:     d.Clock(),
+		logger:    d.Logger().WithComponent("app-user-token"),
+		apps:      d.AppStateWatcher(),
+		store:     d.SessionStoreClient(),
 	}, nil
 }
 
