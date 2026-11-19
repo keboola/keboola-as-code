@@ -91,6 +91,8 @@ func (m *Metrics) record(ctx context.Context, name string, start time.Time, err 
 	switch {
 	case errors.Is(err, redis.Nil):
 		result = "miss"
+	case IsCanceled(ctx, err):
+		result = "canceled"
 	case err != nil:
 		result = "error"
 		m.errors.Add(ctx, 1, metric.WithAttributes(attribute.String("command", command)))
@@ -99,6 +101,11 @@ func (m *Metrics) record(ctx context.Context, name string, start time.Time, err 
 		attribute.String("command", command),
 		attribute.String("result", result),
 	))
+}
+
+// IsCanceled reports an error caused by the client aborting its request, not by the store.
+func IsCanceled(ctx context.Context, err error) bool {
+	return err != nil && (errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled))
 }
 
 func commandName(name string) string {

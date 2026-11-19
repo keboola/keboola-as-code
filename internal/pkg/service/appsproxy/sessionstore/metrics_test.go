@@ -15,6 +15,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type metricsHarness struct {
@@ -130,6 +131,17 @@ func TestMetrics_GetErrorCounted(t *testing.T) {
 	require.Error(t, h.client.Get(t.Context(), "k").Err())
 	assert.Equal(t, uint64(1), h.durationCount(t, "get", "error"))
 	assert.Equal(t, int64(1), h.counter(t, "keboola.go.appsproxy.sessionstore.errors", "command", "get"))
+}
+
+func TestMetrics_CanceledIsNoError(t *testing.T) {
+	t.Parallel()
+	h := newMetricsHarness(t)
+	ctx, cancel := context.WithCancelCause(t.Context())
+	cancel(errors.New("client went away"))
+	require.ErrorIs(t, h.client.Get(ctx, "k").Err(), context.Canceled)
+	assert.Equal(t, uint64(1), h.durationCount(t, "get", "canceled"))
+	assert.Zero(t, h.durationCount(t, "get", "error"))
+	assert.Zero(t, h.counter(t, "keboola.go.appsproxy.sessionstore.errors", "command", "get"))
 }
 
 func TestMetrics_CommandNames(t *testing.T) {

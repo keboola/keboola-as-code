@@ -40,6 +40,9 @@ const (
 	sessionExpire  = 24 * time.Hour
 
 	sessionCookieName = CookieName + "_ticket"
+
+	// statusClientClosedRequest is nginx's status for a request the client aborted, so the access log does not show 200.
+	statusClientClosedRequest = 499
 )
 
 func providerUnavailableError(err error) error {
@@ -121,6 +124,10 @@ func proxyConfig(
 	v.SkipProviderButton = true
 	v.Session = options.SessionOptions{Type: options.RedisSessionStoreType, Redis: options.RedisStoreOptions{Client: sessionStore.Client}}
 	v.OnSessionStoreError = func(rw http.ResponseWriter, req *http.Request, err error) {
+		if sessionstore.IsCanceled(req.Context(), err) {
+			rw.WriteHeader(statusClientClosedRequest)
+			return
+		}
 		sessionStore.Metrics.StoreUnavailable(req.Context())
 		pageWriter.WriteError(rw, req, &app, sessionStoreUnavailableError(err))
 	}
