@@ -13,9 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// missingKeyTTL is what PTTL answers for a key that does not exist.
-const missingKeyTTL = -2 * time.Nanosecond
-
 // ErrSessionStoreUnavailable means the login session of a refresh token could not be checked.
 var ErrSessionStoreUnavailable = errors.New("login session store unavailable")
 
@@ -74,11 +71,11 @@ func (m *Minter) checkLoginSession(ctx context.Context, key string) error {
 	if key == "" {
 		return errors.New("refresh token has no login session")
 	}
-	ttl, err := m.store.PTTL(ctx, key).Result()
+	exists, err := m.store.Exists(ctx, key).Result()
 	if err != nil {
 		return errors.PrefixError(ErrSessionStoreUnavailable, err.Error())
 	}
-	if ttl == missingKeyTTL {
+	if exists == 0 {
 		return errors.New("login session ended")
 	}
 	return nil

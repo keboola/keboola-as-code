@@ -184,7 +184,7 @@ in the body:
   GitHub organization, team and repository rules are checked only at login,
   for the browser session as for the refresh;
 - the login session of the handshake has ended: signed out, expired, or ended
-  by a refused IdP refresh. apps-proxy checks it with one `PTTL` on the
+  by a refused IdP refresh. apps-proxy checks it with one `EXISTS` on the
   session key.
 
 After a `401` the app gets no new token until the websocket reconnects.
