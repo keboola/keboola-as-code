@@ -743,7 +743,8 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Equal(t, http.StatusForbidden, response.StatusCode)
 				body, err = io.ReadAll(response.Body)
 				require.NoError(t, err)
-				wildcards.Assert(t, "%AYou do not have permission to access this resource.%A", string(body))
+				assert.Contains(t, string(body), "You are signed in as <b>manager@keboola.com</b>")
+				assert.Contains(t, string(body), "Your account is not in a group that is allowed to open this application.")
 
 				// The page states the cause in plain language rather than leading with
 				// the status code.

@@ -12,6 +12,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/apptoken"
@@ -50,6 +51,7 @@ func providerUnavailableError(err error) error {
 
 func proxyConfig(
 	ctx context.Context,
+	logger log.Logger,
 	cfg config.Config,
 	sessionStore SessionStore,
 	scopes scopeResolver,
@@ -104,6 +106,14 @@ func proxyConfig(
 
 		return selector.OnNeedsLogin(&app, pageWriter.WriteError)(rw, req)
 	}
+
+	v.OnAccessDenied = accessDenied{
+		logger:       logger,
+		pageWriter:   pageWriter,
+		app:          app,
+		provider:     oAuthProvider,
+		providerType: proxyProvider.Type,
+	}.handle
 
 	v.OnProviderError = func(rw http.ResponseWriter, req *http.Request, err error) {
 		pageWriter.WriteError(rw, req, &app, providerUnavailableError(err))

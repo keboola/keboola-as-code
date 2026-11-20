@@ -25,7 +25,7 @@ const (
 	continueAuthQueryParam     = "continue_auth"
 	promptQueryParam           = "prompt"
 	callbackQueryParam         = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
-	selectionPagePath          = config.InternalPrefix + "/selection"
+	SelectionPagePath          = config.InternalPrefix + "/selection"
 	SignOutPath                = config.InternalPrefix + "/sign_out"
 	proxyCallbackPath          = config.InternalPrefix + "/callback"
 	ignoreProviderCookieCtxKey = ctxKey("ignoreProviderCookieCtxKey")
@@ -73,7 +73,7 @@ func (s *Selector) For(app api.AppConfig, handlers map[provider.ID]Handler) (*Se
 // and no handler is selected, or the selected handler is not allowed for the requested path (see api.AuthRule).
 //
 // The selector page is rendered:
-// 1. If it is accessed directly using selectionPagePath, the status code is StatusOK.
+// 1. If it is accessed directly using SelectionPagePath, the status code is StatusOK.
 // 2. If no handler is selected and the path requires authorization, the status code is StatusUnauthorized.
 func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) error {
 	// To make the same site strict cookie work we need to replace the redirect from the auth provider with a page that does the redirect.
@@ -102,7 +102,7 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 	}
 
 	// Render selector page, if it is accessed directly
-	if req.URL.Path == selectionPagePath {
+	if req.URL.Path == SelectionPagePath {
 		return s.writeSelectorPage(w, req, http.StatusOK)
 	}
 
@@ -177,7 +177,7 @@ func (s *SelectorForAppRule) selectorPageData(req *http.Request) *pagewriter.Sel
 	}
 
 	// Base URL for all providers
-	pageURL := s.url(req, selectionPagePath, nil)
+	pageURL := s.url(req, SelectionPagePath, nil)
 
 	// Generate link for each providers
 	data := &pagewriter.SelectorPageData{App: pagewriter.NewAppData(&s.app)}
