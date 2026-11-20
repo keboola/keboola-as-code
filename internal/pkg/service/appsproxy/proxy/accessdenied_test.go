@@ -2,13 +2,16 @@ package proxy_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"html"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/oauth2-proxy/mockoidc"
 	sessionsapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
@@ -74,8 +77,7 @@ func TestSelector_KeepsReturnPathFromQuery(t *testing.T) {
 
 const deniedEmail = "bob@example.com"
 
-// loginUntilDenied follows the login from startURL to the response of the callback that continues the auth.
-func (e *previewEnv) loginUntilDenied(provider *mockoidc.MockOIDC, user *mockoidc.MockUser, startURL string) *http.Response {
+func (e *previewEnv) loginToCallback(provider *mockoidc.MockOIDC, user *mockoidc.MockUser, startURL string, redirects int) *http.Response {
 	e.t.Helper()
 	e.syncClock()
 	jar, err := cookiejar.New(nil)
@@ -85,7 +87,8 @@ func (e *previewEnv) loginUntilDenied(provider *mockoidc.MockOIDC, user *mockoid
 
 	provider.QueueUser(user)
 	resp := e.send(&client, startURL)
-	for resp.StatusCode == http.StatusFound {
+	for range redirects {
+		require.Equal(e.t, http.StatusFound, resp.StatusCode)
 		resp = e.send(&client, resp.Header.Get("Location"))
 	}
 	require.Equal(e.t, http.StatusOK, resp.StatusCode)
@@ -97,7 +100,7 @@ func (e *previewEnv) loginUntilDenied(provider *mockoidc.MockOIDC, user *mockoid
 func (e *previewEnv) accessDeniedLog() map[string]any {
 	e.t.Helper()
 	var found map[string]any
-	for _, line := range strings.Split(e.mocked.DebugLogger().AllMessages(), "\n") {
+	for line := range strings.SplitSeq(e.mocked.DebugLogger().AllMessages(), "\n") {
 		if !strings.Contains(line, `"message":"access denied"`) {
 			continue
 		}
@@ -108,22 +111,53 @@ func (e *previewEnv) accessDeniedLog() map[string]any {
 	return found
 }
 
-func assertDeniedPage(t *testing.T, body, guidance, switchURL string) {
+func assertDeniedPage(t *testing.T, body, providerName, guidance, switchURL string) {
 	t.Helper()
 	assert.Contains(t, body, "<title>Access denied</title>")
 	assert.Contains(t, body, html.EscapeString("You don't have access to this app"))
-	assert.Contains(t, body, "You are signed in as <b>"+deniedEmail+"</b>")
+	assert.Contains(t, body, "You are signed in as <b>"+deniedEmail+"</b> ("+providerName+").")
 	assert.Contains(t, body, html.EscapeString(guidance))
 	assert.Contains(t, body, `<a class="btn btn--inline" href="`+html.EscapeString(switchURL)+`">Sign in with a different account</a>`)
 	assert.NotContains(t, body, "Invalid session")
 	assert.NotContains(t, body, "Try again")
 }
 
+var testGroups = []string{"sales", "admin", "manager"} //nolint:gochecknoglobals // test fixture
+
 func assertNoGroups(t *testing.T, text string) {
 	t.Helper()
-	for _, group := range []string{"sales", "admin", "manager"} {
+	for _, group := range testGroups {
 		assert.NotContains(t, text, group)
 	}
+}
+
+// assertLogHasNoGroups checks only the access denied line: other tests running in parallel share the global oauth2-proxy logger.
+func assertLogHasNoGroups(t *testing.T, log map[string]any) {
+	t.Helper()
+	for key, value := range log {
+		assert.NotContains(t, strings.ToLower(key), "group")
+		for _, group := range testGroups {
+			assert.NotContains(t, fmt.Sprint(value), group, key)
+		}
+	}
+}
+
+func exceptionID(t *testing.T, body string) string {
+	t.Helper()
+	m := regexp.MustCompile(`id="exceptionId">([^<]+)<`).FindStringSubmatch(body)
+	require.Len(t, m, 2)
+	return m[1]
+}
+
+func requireClearedCookie(t *testing.T, resp *http.Response, name string) {
+	t.Helper()
+	for _, c := range resp.Cookies() {
+		if c.Name == name {
+			assert.True(t, c.MaxAge < 0 || (!c.Expires.IsZero() && c.Expires.Before(time.Now())), "cookie %q must be cleared", name)
+			return
+		}
+	}
+	t.Fatalf("cookie %q not cleared", name)
 }
 
 func TestAccessDenied_NotInGroupsAtCallback(t *testing.T) {
@@ -131,21 +165,23 @@ func TestAccessDenied_NotInGroupsAtCallback(t *testing.T) {
 	env := startPreviewEnv(t)
 
 	user := &mockoidc.MockUser{Subject: "sub-bob", Email: deniedEmail, EmailVerified: new(true), Groups: []string{"sales"}}
-	resp := env.loginUntilDenied(env.providers[0], user, oidcOrigin+"/")
+	resp := env.loginToCallback(env.providers[0], user, oidcOrigin+"/", 2)
 	body := readBody(t, resp)
 
 	require.Equal(t, http.StatusForbidden, resp.StatusCode)
-	assertDeniedPage(t, body, "Your account is not in a group that is allowed to open this application.", "/_proxy/sign_in?prompt=login")
+	assertDeniedPage(t, body, "oidc", "Your account is not in a group that is allowed to open this application.", "/_proxy/sign_in?prompt=login")
 	assertNoGroups(t, body)
 	assert.NotContains(t, setCookieNames(resp), oauthCookieName)
+	log := env.accessDeniedLog()
 	assert.Equal(t, map[string]any{
 		"proxy.app.id":          "oidc",
 		"proxy.access.provider": "oidc",
 		"proxy.access.email":    deniedEmail,
 		"proxy.access.reason":   "not_in_groups",
 		"proxy.access.stage":    "callback",
-	}, pick(env.accessDeniedLog(), "proxy.app.id", "proxy.access.provider", "proxy.access.email", "proxy.access.reason", "proxy.access.stage"))
-	assertNoGroups(t, env.mocked.DebugLogger().AllMessages())
+		"exceptionId":           exceptionID(t, body),
+	}, pick(log, "proxy.app.id", "proxy.access.provider", "proxy.access.email", "proxy.access.reason", "proxy.access.stage", "exceptionId"))
+	assertLogHasNoGroups(t, log)
 }
 
 func TestAccessDenied_NoGroupsClaimAtCallback(t *testing.T) {
@@ -153,11 +189,11 @@ func TestAccessDenied_NoGroupsClaimAtCallback(t *testing.T) {
 	env := startPreviewEnv(t)
 
 	user := &mockoidc.MockUser{Subject: "sub-bob", Email: deniedEmail, EmailVerified: new(true)}
-	resp := env.loginUntilDenied(env.providers[0], user, oidcOrigin+"/")
+	resp := env.loginToCallback(env.providers[0], user, oidcOrigin+"/", 2)
 	body := readBody(t, resp)
 
 	require.Equal(t, http.StatusForbidden, resp.StatusCode)
-	assertDeniedPage(t, body, "Your identity provider did not send any groups for your account, so your access could not be checked.", "/_proxy/sign_in?prompt=login")
+	assertDeniedPage(t, body, "oidc", "Your identity provider did not send any groups for your account, so your access could not be checked.", "/_proxy/sign_in?prompt=login")
 	assert.Equal(t, "no_groups_claim", env.accessDeniedLog()["proxy.access.reason"])
 }
 
@@ -175,10 +211,11 @@ func TestAccessDenied_ExistingSession(t *testing.T) {
 	body := readBody(t, resp)
 
 	require.Equal(t, http.StatusForbidden, resp.StatusCode)
-	assertDeniedPage(t, body, "Your account is not in a group that is allowed to open this application.", "/_proxy/sign_in?prompt=login&rd=%2Fsome%2Fpath")
+	assertDeniedPage(t, body, "oidc", "Your account is not in a group that is allowed to open this application.", "/_proxy/sign_in?prompt=login&rd=%2Fsome%2Fpath")
 	assertNoGroups(t, body)
-	assert.Contains(t, setCookieNames(resp), oauthCookieName)
+	requireClearedCookie(t, resp, oauthCookieName)
 	log := env.accessDeniedLog()
+	assertLogHasNoGroups(t, log)
 	assert.Equal(t, "session", log["proxy.access.stage"])
 	assert.Equal(t, "not_in_groups", log["proxy.access.reason"])
 	assert.Equal(t, deniedEmail, log["proxy.access.email"])
@@ -189,11 +226,11 @@ func TestAccessDenied_MultiProviderOffersSelection(t *testing.T) {
 	env := startPreviewEnv(t)
 
 	user := &mockoidc.MockUser{Subject: "sub-bob", Email: deniedEmail, EmailVerified: new(true), Groups: []string{"sales"}}
-	resp := env.loginUntilDenied(env.providers[0], user, multiOrigin+"/_proxy/selection?provider=oidc0")
+	resp := env.loginToCallback(env.providers[0], user, multiOrigin+"/_proxy/selection?provider=oidc0", 3)
 	body := readBody(t, resp)
 
 	require.Equal(t, http.StatusForbidden, resp.StatusCode)
-	assertDeniedPage(t, body, "Your account is not in a group that is allowed to open this application.", "/_proxy/selection?prompt=login")
+	assertDeniedPage(t, body, "oidc0", "Your account is not in a group that is allowed to open this application.", "/_proxy/selection?prompt=login")
 	assert.Equal(t, "oidc0", env.accessDeniedLog()["proxy.access.provider"])
 }
 

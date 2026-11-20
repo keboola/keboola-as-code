@@ -45,19 +45,20 @@ func (d accessDenied) handle(w http.ResponseWriter, req *http.Request, session *
 		stage = "callback"
 	}
 
+	exceptionID := pagewriter.ExceptionIDPrefix
+	if scope := middlewareapi.GetRequestScope(req); scope != nil {
+		exceptionID += scope.RequestID
+	}
+
 	ctx := ctxattr.ContextWith(
 		req.Context(),
+		attribute.String("exceptionId", exceptionID),
 		attribute.String("proxy.access.provider", d.provider.ID().String()),
 		attribute.String("proxy.access.email", email),
 		attribute.String("proxy.access.reason", string(reason)),
 		attribute.String("proxy.access.stage", stage),
 	)
 	d.logger.Warn(ctx, "access denied")
-
-	exceptionID := pagewriter.ExceptionIDPrefix
-	if scope := middlewareapi.GetRequestScope(req); scope != nil {
-		exceptionID += scope.RequestID
-	}
 
 	d.pageWriter.WriteAccessDeniedPage(w, req.WithContext(ctx), &d.app, pagewriter.AccessDenied{
 		Email:            email,
