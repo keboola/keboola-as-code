@@ -2,7 +2,8 @@
 
 What a signed-in user sees when the provider's rules refuse them, and what is logged.
 Applies to `allowedRoles` on the `oidc` and `jumpcloud` provider types, and to the
-`groups` / `projects` rules of the `gitlab` type.
+`groups` / `projects` rules of the `gitlab` type. GitHub `organization` / `team` / `repository` / `users`
+refusals happen earlier, while the session is built, and get the generic error page with status 500.
 
 ## 1. Where the denial happens
 
@@ -48,7 +49,8 @@ The button starts a new login with `prompt=login`:
 | One provider | `/_proxy/sign_in?prompt=login` |
 | More providers | `/_proxy/selection?prompt=login`; the selection page passes `prompt=login` on to the chosen provider |
 
-At the `session` stage the URL also has `rd=<path>`, so the user returns to the page they opened.
+At the `session` stage the URL also has `rd=<path>`, so the user returns to the page they opened. The selection
+page keeps an `rd` it was opened with in its provider links.
 
 `prompt=login` is the only value a sign-in URL may override the provider's default `prompt`
 with (`provider.PromptLogin`, the `Allow` rule of the `prompt` login parameter). Any other value
@@ -70,6 +72,7 @@ One `warn` line per denial, component `oauth2proxy`, with the request context:
 
 ```json
 {"level":"warn","message":"access denied","component":"oauth2proxy",
+ "exceptionId":"keboola-appsproxy-GX6SaiV56ceuonv",
  "proxy.access.provider":"oidc","proxy.access.email":"bob@example.com",
  "proxy.access.reason":"not_in_groups","proxy.access.stage":"callback",
  "proxy.app.id":"oidc","proxy.app.projectId":"123","proxy.app.name":"…","proxy.app.upstream":"…",
@@ -78,6 +81,7 @@ One `warn` line per denial, component `oauth2proxy`, with the request context:
 
 | Field | Value |
 |---|---|
+| `exceptionId` | the exception ID shown on the page |
 | `proxy.access.provider` | provider ID from the app config |
 | `proxy.access.email` | the refused user's email |
 | `proxy.access.reason` | `not_in_groups`, `no_groups_claim` or `not_allowed` |
