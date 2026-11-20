@@ -172,7 +172,10 @@ func (s *SelectorForAppRule) writeSelectorPage(w http.ResponseWriter, req *http.
 func (s *SelectorForAppRule) selectorPageData(req *http.Request) *pagewriter.SelectorPageData {
 	// Pass link back to the current page, if reasonable, otherwise the user will be redirected to /
 	var callback string
-	if req.Method == http.MethodGet {
+	switch {
+	case req.URL.Path == SelectionPagePath:
+		callback = req.URL.Query().Get(callbackQueryParam)
+	case req.Method == http.MethodGet:
 		callback = req.URL.Path
 	}
 

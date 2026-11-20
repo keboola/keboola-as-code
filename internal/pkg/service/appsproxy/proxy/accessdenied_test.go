@@ -59,6 +59,19 @@ func TestSelector_PassesPromptToProvider(t *testing.T) {
 	assert.Equal(t, multiOrigin+"/_proxy/sign_in", resp.Header.Get("Location"))
 }
 
+func TestSelector_KeepsReturnPathFromQuery(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+
+	resp := env.send(env.client, multiOrigin+"/_proxy/selection?prompt=login&rd=%2Freports%2Fx")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Contains(t, readBody(t, resp), htmlLinkTo(multiOrigin+"/_proxy/selection?prompt=login&provider=oidc0&rd=%2Freports%2Fx"))
+
+	resp = env.send(env.client, multiOrigin+"/_proxy/selection?rd=%2F_proxy%2Fsign_out")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Contains(t, readBody(t, resp), htmlLinkTo(multiOrigin+"/_proxy/selection?provider=oidc0"))
+}
+
 const deniedEmail = "bob@example.com"
 
 // loginUntilDenied follows the login from startURL to the response of the callback that continues the auth.
