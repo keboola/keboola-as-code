@@ -12,14 +12,8 @@ func (v JumpCloud) ProxyProviderOptions() (proxyOptions.Provider, error) {
 		return proxyOptions.Provider{}, err
 	}
 
-	p.LoginURLParameters = []proxyOptions.LoginURLParameter{
-		{
-			// JumpCloud doesn't support "select_account" prompt
-			// Returns: "Used unknown value '[select_account]' for prompt parameter"
-			Name:    "prompt",
-			Default: []string{"login"},
-		},
-	}
+	// JumpCloud doesn't support "select_account" prompt: "Used unknown value '[select_account]' for prompt parameter".
+	p.LoginURLParameters = []proxyOptions.LoginURLParameter{promptParameter(PromptLogin)}
 
 	return p, nil
 }

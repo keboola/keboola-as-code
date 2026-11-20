@@ -27,14 +27,7 @@ func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 		ClientID:            v.ClientID,
 		ClientSecret:        v.ClientSecret,
 		BackendLogoutURL:    v.LogoutURL,
-		LoginURLParameters: []proxyOptions.LoginURLParameter{
-			{
-				// https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
-				// See "prompt" options: none, login, consent, select_account
-				Name:    "prompt", // the user can choose a different account on each login attempt
-				Default: []string{"select_account"},
-			},
-		},
+		LoginURLParameters:  []proxyOptions.LoginURLParameter{promptParameter("select_account")},
 		// The subject claim identifies the user without naming them. It is
 		// stable across e-mail and display-name changes, which the email claim
 		// used as the user id is not. Only reachable when the provider issues
@@ -70,4 +63,16 @@ func (v OIDC) RefreshTokensSingleUse() bool {
 
 func (v OIDC) IdentityProviderURL() string {
 	return strings.TrimRight(v.IssuerURL, "/")
+}
+
+// PromptLogin is the only "prompt" a sign-in URL may override the default with.
+// Keycloak does not support "select_account" (Okta is reported not to) and signs the same account in again.
+const PromptLogin = "login"
+
+func promptParameter(defaultValue string) proxyOptions.LoginURLParameter {
+	return proxyOptions.LoginURLParameter{
+		Name:    "prompt",
+		Default: []string{defaultValue},
+		Allow:   []proxyOptions.URLParameterRule{{Value: new(PromptLogin)}},
+	}
 }
