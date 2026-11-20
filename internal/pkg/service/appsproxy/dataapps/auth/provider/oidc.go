@@ -27,7 +27,6 @@ func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 		ClientID:            v.ClientID,
 		ClientSecret:        v.ClientSecret,
 		BackendLogoutURL:    v.LogoutURL,
-		// The user can choose a different account on each login attempt.
 		LoginURLParameters: []proxyOptions.LoginURLParameter{promptParameter("select_account")},
 		// The subject claim identifies the user without naming them. It is
 		// stable across e-mail and display-name changes, which the email claim
@@ -67,7 +66,7 @@ func (v OIDC) IdentityProviderURL() string {
 }
 
 // PromptLogin is the only "prompt" a sign-in URL may override the default with.
-// Keycloak and Okta ignore "select_account" and sign the same account in again.
+// Keycloak does not support "select_account" (Okta is reported not to) and signs the same account in again.
 const PromptLogin = "login"
 
 func promptParameter(defaultValue string) proxyOptions.LoginURLParameter {
