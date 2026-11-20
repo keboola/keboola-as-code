@@ -83,11 +83,13 @@ An OIDC IdP gives a refresh token only when the login asks for the
 `/.well-known/openid-configuration` when it builds an app's handler, and asks
 for the scope only when `scopes_supported` lists it. An IdP that does not know
 the scope therefore cannot reject the login. If the document cannot be read,
-the login uses the default scopes and apps-proxy logs a warning:
+the login uses `openid email profile` and apps-proxy logs a warning:
 
 ```
-cannot read OIDC discovery of "<issuer>", "offline_access" scope not requested: <error>
+cannot read OIDC discovery of "<issuer>", "offline_access" and "groups" scopes not requested: <error>
 ```
+
+The full scope rules, `groups` included, are in [login-scope.md](login-scope.md).
 
 The handler keeps that result until it is rebuilt, which happens only when the
 app config or its upstream changes, or apps-proxy restarts. Until then, new

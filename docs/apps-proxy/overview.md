@@ -18,6 +18,7 @@
 ## Further docs
 
 - [login-session.md](login-session.md) — how long a login lasts, refresh, and websocket closes.
+- [login-scope.md](login-scope.md) — the OIDC login scope, when `groups` is requested, and its known limits.
 - [session-store.md](session-store.md) — the login session store (cookie or Valkey): config, metrics, the 503 page, failover, switch and rollback.
 - [app-cookies.md](app-cookies.md) — the cookies the app receives, and the apps-proxy cookies removed before it.
 - [app-headers.md](app-headers.md) — the `X-Kbc-*` headers: where apps-proxy sets and deletes each one, and what the app receives.
