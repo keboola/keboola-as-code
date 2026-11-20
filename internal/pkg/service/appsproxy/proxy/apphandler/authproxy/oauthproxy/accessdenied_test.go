@@ -12,8 +12,21 @@ import (
 func TestDeniedReason(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, pagewriter.AccessDeniedNotInGroups, deniedReason(options.OIDCProvider, []string{"sales"}))
-	assert.Equal(t, pagewriter.AccessDeniedNoGroupsClaim, deniedReason(options.OIDCProvider, nil))
-	assert.Equal(t, pagewriter.AccessDeniedNotAllowed, deniedReason(options.GitLabProvider, []string{"sales"}))
-	assert.Equal(t, pagewriter.AccessDeniedNotAllowed, deniedReason(options.GitLabProvider, nil))
+	cases := []struct {
+		name         string
+		providerType options.ProviderType
+		groups       []string
+		want         pagewriter.AccessDeniedReason
+	}{
+		{name: "oidc with groups", providerType: options.OIDCProvider, groups: []string{"sales"}, want: pagewriter.AccessDeniedNotInGroups},
+		{name: "oidc without groups", providerType: options.OIDCProvider, want: pagewriter.AccessDeniedNoGroupsClaim},
+		{name: "gitlab with groups", providerType: options.GitLabProvider, groups: []string{"sales"}, want: pagewriter.AccessDeniedNotAllowed},
+		{name: "gitlab without groups", providerType: options.GitLabProvider, want: pagewriter.AccessDeniedNotAllowed},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.want, deniedReason(tc.providerType, tc.groups))
+		})
+	}
 }
