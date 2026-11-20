@@ -27,7 +27,7 @@ func (v OIDC) ProxyProviderOptions() (proxyOptions.Provider, error) {
 		ClientID:            v.ClientID,
 		ClientSecret:        v.ClientSecret,
 		BackendLogoutURL:    v.LogoutURL,
-		LoginURLParameters: []proxyOptions.LoginURLParameter{promptParameter("select_account")},
+		LoginURLParameters:  []proxyOptions.LoginURLParameter{promptParameter("select_account")},
 		// The subject claim identifies the user without naming them. It is
 		// stable across e-mail and display-name changes, which the email claim
 		// used as the user id is not. Only reachable when the provider issues
