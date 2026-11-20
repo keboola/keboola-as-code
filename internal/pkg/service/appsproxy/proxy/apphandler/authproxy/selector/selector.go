@@ -23,6 +23,7 @@ const (
 	ProviderCookie             = "_oauth2_provider"
 	providerQueryParam         = "provider"
 	continueAuthQueryParam     = "continue_auth"
+	promptQueryParam           = "prompt"
 	callbackQueryParam         = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
 	selectionPagePath          = config.InternalPrefix + "/selection"
 	SignOutPath                = config.InternalPrefix + "/sign_out"
@@ -156,6 +157,7 @@ func (s *SelectorForAppRule) writeSelectorPage(w http.ResponseWriter, req *http.
 		if isAcceptedCallbackURL(callback) {
 			query.Set(callbackQueryParam, callback)
 		}
+		passPrompt(req, query)
 
 		// Render sign in page, set callback after login
 		s.redirect(w, req, selected.SignInPath(), query)
@@ -185,6 +187,7 @@ func (s *SelectorForAppRule) selectorPageData(req *http.Request) *pagewriter.Sel
 		if isAcceptedCallbackURL(callback) {
 			query.Set(callbackQueryParam, callback)
 		}
+		passPrompt(req, query)
 		data.Providers = append(data.Providers, pagewriter.ProviderData{
 			Name: handler.Name(),
 			URL:  pageURL.ResolveReference(&url.URL{RawQuery: query.Encode()}).String(),
@@ -285,4 +288,10 @@ func isAcceptedCallbackURL(callback string) bool {
 		callbackPath = callback[:i]
 	}
 	return callback != "" && callback != "/" && !config.IsInternalPath(callbackPath)
+}
+
+func passPrompt(req *http.Request, query url.Values) {
+	if req.URL.Query().Get(promptQueryParam) == provider.PromptLogin {
+		query.Set(promptQueryParam, provider.PromptLogin)
+	}
 }
