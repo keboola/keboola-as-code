@@ -16,8 +16,13 @@ import (
 func TestScopeResolver(t *testing.T) {
 	t.Parallel()
 
-	withOffline := `{"scopes_supported":["openid","email","profile","offline_access"]}`
-	withoutOffline := `{"scopes_supported":["openid","email","profile"]}`
+	const (
+		base       = `"openid","email","profile"`
+		full       = `{"scopes_supported":[` + base + `,"groups","offline_access"]}`
+		withOffl   = `{"scopes_supported":[` + base + `,"offline_access"]}`
+		withGroups = `{"scopes_supported":[` + base + `,"groups"]}`
+		plain      = `{"scopes_supported":[` + base + `]}`
+	)
 
 	cases := []struct {
 		name          string
@@ -29,59 +34,88 @@ func TestScopeResolver(t *testing.T) {
 		expectFetch   bool
 	}{
 		{
-			name:         "oidc, offline_access supported",
+			name:         "no allowed groups, nothing optional listed",
 			providerType: options.OIDCProvider,
 			status:       http.StatusOK,
-			body:         withOffline,
+			body:         plain,
+			expected:     "openid email profile",
+			expectFetch:  true,
+		},
+		{
+			name:         "no allowed groups, groups listed",
+			providerType: options.OIDCProvider,
+			status:       http.StatusOK,
+			body:         withGroups,
+			expected:     "openid email profile",
+			expectFetch:  true,
+		},
+		{
+			name:         "no allowed groups, offline_access listed",
+			providerType: options.OIDCProvider,
+			status:       http.StatusOK,
+			body:         withOffl,
 			expected:     "openid email profile offline_access",
 			expectFetch:  true,
 		},
 		{
-			name:          "oidc with allowed groups, offline_access supported",
+			name:          "allowed groups, groups listed",
 			providerType:  options.OIDCProvider,
 			allowedGroups: []string{"admin"},
 			status:        http.StatusOK,
-			body:          withOffline,
+			body:          withGroups,
+			expected:      "openid email profile groups",
+			expectFetch:   true,
+		},
+		{
+			name:          "allowed groups, groups and offline_access listed",
+			providerType:  options.OIDCProvider,
+			allowedGroups: []string{"admin"},
+			status:        http.StatusOK,
+			body:          full,
 			expected:      "openid email profile groups offline_access",
 			expectFetch:   true,
 		},
 		{
-			name:         "oidc, offline_access not supported",
-			providerType: options.OIDCProvider,
-			status:       http.StatusOK,
-			body:         withoutOffline,
-			expected:     "",
-			expectFetch:  true,
+			name:          "allowed groups, groups not listed",
+			providerType:  options.OIDCProvider,
+			allowedGroups: []string{"admin"},
+			status:        http.StatusOK,
+			body:          plain,
+			expected:      "openid email profile",
+			expectFetch:   true,
 		},
 		{
-			name:         "oidc, no scopes_supported",
-			providerType: options.OIDCProvider,
-			status:       http.StatusOK,
-			body:         `{}`,
-			expected:     "",
-			expectFetch:  true,
+			name:          "allowed groups, groups not listed, offline_access listed",
+			providerType:  options.OIDCProvider,
+			allowedGroups: []string{"admin"},
+			status:        http.StatusOK,
+			body:          withOffl,
+			expected:      "openid email profile offline_access",
+			expectFetch:   true,
 		},
 		{
-			name:         "oidc, discovery fails",
-			providerType: options.OIDCProvider,
-			status:       http.StatusInternalServerError,
-			body:         `{}`,
-			expected:     "",
-			expectFetch:  true,
+			name:          "allowed groups, no scopes_supported",
+			providerType:  options.OIDCProvider,
+			allowedGroups: []string{"admin"},
+			status:        http.StatusOK,
+			body:          `{}`,
+			expected:      "openid email profile",
+			expectFetch:   true,
 		},
 		{
-			name:         "gitlab is not asked",
-			providerType: options.GitLabProvider,
-			status:       http.StatusOK,
-			body:         withOffline,
-			expected:     "",
-			expectFetch:  false,
+			name:          "allowed groups, discovery fails",
+			providerType:  options.OIDCProvider,
+			allowedGroups: []string{"admin"},
+			status:        http.StatusInternalServerError,
+			body:          `{}`,
+			expected:      "openid email profile",
+			expectFetch:   true,
 		},
 		{
 			name:         "github is not asked",
 			providerType: options.GitHubProvider,
 			status:       http.StatusOK,
-			body:         withOffline,
+			body:         full,
 			expected:     "",
 			expectFetch:  false,
 		},

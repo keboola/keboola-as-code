@@ -109,9 +109,21 @@ func TestProxyConfig_Scope(t *testing.T) {
 			expected:        "openid email profile groups offline_access",
 		},
 		{
-			name:            "offline_access not listed: oauth2-proxy default",
+			name:            "offline_access listed, allowed roles, groups not listed",
+			scopesSupported: `["openid","email","profile","offline_access"]`,
+			allowedRoles:    &[]string{"admin"},
+			expected:        "openid email profile offline_access",
+		},
+		{
+			name:            "nothing optional listed",
 			scopesSupported: `["openid","email","profile"]`,
-			expected:        "",
+			expected:        "openid email profile",
+		},
+		{
+			name:            "allowed roles, groups not listed",
+			scopesSupported: `["openid","email","profile"]`,
+			allowedRoles:    &[]string{"admin"},
+			expected:        "openid email profile",
 		},
 		{
 			name:            "gitlab is not asked: oauth2-proxy default",
