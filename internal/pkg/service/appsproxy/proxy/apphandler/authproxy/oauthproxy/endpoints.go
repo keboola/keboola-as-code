@@ -59,7 +59,7 @@ func validateEndpointURL(raw string) error {
 }
 
 func hasInternalSuffix(host string) bool {
-	for _, suffix := range []string{".localhost", ".local", ".internal", ".svc", ".cluster.local"} {
+	for _, suffix := range []string{".localhost", ".local", ".internal", ".svc"} {
 		if strings.HasSuffix(host, suffix) {
 			return true
 		}
