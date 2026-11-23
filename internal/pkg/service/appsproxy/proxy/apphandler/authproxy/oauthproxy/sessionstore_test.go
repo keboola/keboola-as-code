@@ -69,7 +69,7 @@ func TestProxyConfig_StoreErrorOnCanceledRequest(t *testing.T) {
 	require.NoError(t, err)
 	store, tel := testSessionStoreWithTelemetry(t)
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
-	v, err := proxyConfig(t.Context(), cfg, store, scopes, nil, pw, app, testOIDC(issuer, nil), nil)
+	v, err := proxyConfig(t.Context(), log.NewNopLogger(), cfg, store, scopes, nil, pw, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancelCause(t.Context())
@@ -90,7 +90,7 @@ func TestProxyConfig_StoreUnavailableWritesErrorPage(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
-	v, err := proxyConfig(t.Context(), cfg, store, scopes, nil, pw, app, testOIDC(issuer, nil), nil)
+	v, err := proxyConfig(t.Context(), log.NewNopLogger(), cfg, store, scopes, nil, pw, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
 	require.NotNil(t, v.OnSessionStoreError)
 
@@ -113,7 +113,7 @@ func TestProxyConfig_SessionStore(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid","email","profile","offline_access"]`)
-	v, err := proxyConfig(t.Context(), cfg, SessionStore{Client: client}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
+	v, err := proxyConfig(t.Context(), log.NewNopLogger(), cfg, SessionStore{Client: client}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
 	assert.Equal(t, options.RedisSessionStoreType, v.Session.Type)
 	assert.Same(t, client, v.Session.Redis.Client)
@@ -133,6 +133,6 @@ func TestProxyConfig_BuildsWithStoreDown(t *testing.T) {
 	mr.Close()
 
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
-	_, err := proxyConfig(t.Context(), cfg, SessionStore{Client: client}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
+	_, err := proxyConfig(t.Context(), log.NewNopLogger(), cfg, SessionStore{Client: client}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
 }

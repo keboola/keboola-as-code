@@ -161,7 +161,7 @@ The answer is `200`, `Content-Type: application/json`, `Cache-Control: no-store`
   refresh call is neither [session](sessions.md) nor
   [idle-suspend](idle-suspend.md) activity.
 - No CORS headers. A browser never holds the refresh token.
-- App user token off (no signing keys) or the `cookie` session store: `404` for
+- App user token off (no signing keys): `404` for
   every method. Otherwise other methods get `405`.
 
 The new token is minted like the injected one: the identity from the

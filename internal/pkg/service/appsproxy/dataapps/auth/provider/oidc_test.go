@@ -74,6 +74,7 @@ func TestOIDC(t *testing.T) {
 			{
 				Name:    "prompt",
 				Default: []string{"select_account"},
+				Allow:   []proxyOptions.URLParameterRule{{Value: new("login")}},
 			},
 		},
 	}, proxyOpts)
