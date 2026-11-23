@@ -16,12 +16,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
 )
 
 func testProxyConfigEnv(t *testing.T, scopesSupported string) (config.Config, api.AppConfig, scopeResolver, string) {
 	t.Helper()
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	issuer := testutil.StartIDPServer(t, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "/.well-known/openid-configuration" {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -29,14 +30,12 @@ func testProxyConfigEnv(t *testing.T, scopesSupported string) (config.Config, ap
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"scopes_supported":` + scopesSupported + `}`))
 	}))
-	t.Cleanup(srv.Close)
 
 	cfg := config.New()
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CookieSecretSalt = "salt"
-	cfg.AuthProviders.AllowPrivateEndpoints = true
 	app := api.AppConfig{ID: "123", ProjectID: "456", AppSlug: new("app")}
-	return cfg, app, newScopeResolver(log.NewDebugLogger(), client.New()), srv.URL
+	return cfg, app, newScopeResolver(log.NewDebugLogger(), client.New().WithTransport(testutil.IDPTransport())), issuer
 }
 
 func testOIDC(issuer string, allowedRoles *[]string) provider.OIDC {
@@ -161,7 +160,6 @@ func TestProxyConfig_ValidatesEndpointsBeforeDiscovery(t *testing.T) {
 	t.Cleanup(issuer.Close)
 
 	cfg, app, scopes, _ := testProxyConfigEnv(t, `[]`)
-	cfg.AuthProviders.AllowPrivateEndpoints = false
 
 	_, err := proxyConfig(t.Context(), cfg, SessionStore{}, scopes, nil, nil, app, testOIDC(issuer.URL, nil), nil)
 	require.Error(t, err)

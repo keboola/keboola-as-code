@@ -54,7 +54,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/server"
 )
 
 type testCase struct {
@@ -3003,7 +3002,7 @@ func TestAppProxyRouter(t *testing.T) {
 			// channel being established: objects created in that window are silently dropped
 			// by the fake client, causing WaitForCacheSync to succeed but GetState to never
 			// return the expected state.
-			providers := testAuthProviders(t, pm)
+			providers := testAuthProviders(t)
 			appURL := testutil.AppServerURL(t, appServer)
 			apps := testDataApps(appURL, providers)
 			appsAPI.Register(apps)
@@ -3059,15 +3058,15 @@ func TestAppProxyRouter(t *testing.T) {
 	}
 }
 
-func testAuthProviders(t *testing.T, pm server.PortManager) []*mockoidc.MockOIDC {
+func testAuthProviders(t *testing.T) []*mockoidc.MockOIDC {
 	t.Helper()
 
-	oidc0 := testutil.StartOIDCProviderServer(t, pm)
+	oidc0 := testutil.StartOIDCProviderServer(t)
 	t.Cleanup(func() {
 		require.NoError(t, oidc0.Shutdown())
 	})
 
-	oidc1 := testutil.StartOIDCProviderServer(t, pm)
+	oidc1 := testutil.StartOIDCProviderServer(t)
 	t.Cleanup(func() {
 		require.NoError(t, oidc1.Shutdown())
 	})
@@ -3432,7 +3431,7 @@ func createHTTPClient(t *testing.T, proxyURL *url.URL) *http.Client {
 		if strings.HasSuffix(addr, "hub.keboola.local:443") {
 			addr = proxyURL.Host
 		}
-		return dialer.DialContext(ctx, network, addr)
+		return dialer.DialContext(ctx, network, testutil.IDPDialAddr(addr))
 	}
 
 	// Disabled TLS verification since the certificate won't match due to the above change.
@@ -3497,7 +3496,7 @@ func TestIdleTimerRecordsProxiedActivity(t *testing.T) {
 	appServer := testutil.StartAppServer(t, pm)
 	t.Cleanup(func() { appServer.Close() })
 
-	providers := testAuthProviders(t, pm)
+	providers := testAuthProviders(t)
 	appURL := testutil.AppServerURL(t, appServer)
 	apps := testDataApps(appURL, providers)
 	appsAPI.Register(apps)

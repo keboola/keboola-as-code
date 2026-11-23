@@ -109,7 +109,7 @@ func startEnv(t *testing.T, sessionStore *redis.Client, mutate ...envMutator) *p
 	t.Cleanup(func() { appsAPI.Close() })
 	appServer := testutil.StartAppServer(t, pm)
 	t.Cleanup(func() { appServer.Close() })
-	providers := testAuthProviders(t, pm)
+	providers := testAuthProviders(t)
 	appURL := testutil.AppServerURL(t, appServer)
 	apps := testDataApps(appURL, providers)
 	appsAPI.Register(apps)

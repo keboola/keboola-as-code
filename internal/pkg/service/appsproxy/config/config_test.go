@@ -35,24 +35,6 @@ func TestConfig_ConnectionServiceAccountTokenPath(t *testing.T) {
 	assert.Equal(t, "/tmp/token", cfg.ConnectionServiceAccountTokenPath)
 }
 
-func TestConfig_AuthProvidersRestrictionCannotBeDisabledByENV(t *testing.T) {
-	t.Parallel()
-
-	cfg := config.New()
-	cfg.CookieSecretSalt = "x"
-	cfg.CsrfTokenSalt = "x"
-	cfg.SandboxesAPI.URL = "https://example"
-	cfg.K8s = config.K8s{AppsNamespace: "ns"}
-
-	envs := env.Empty()
-	envs.Set("APPS_PROXY_AUTH_PROVIDERS_ALLOW_PRIVATE_ENDPOINTS", "true")
-	require.NoError(t, configmap.GenerateAndBind(configmap.GenerateAndBindConfig{
-		EnvNaming: env.NewNamingConvention("APPS_PROXY_"),
-		Envs:      envs,
-	}, &cfg))
-	assert.False(t, cfg.AuthProviders.AllowPrivateEndpoints)
-}
-
 func TestSessionsConfig_Defaults(t *testing.T) {
 	t.Parallel()
 

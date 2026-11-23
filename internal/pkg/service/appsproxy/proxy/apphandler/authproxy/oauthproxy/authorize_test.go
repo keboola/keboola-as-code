@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
 )
 
 func TestHandler_AuthorizeRedirectScope(t *testing.T) {
@@ -69,7 +70,7 @@ func TestHandler_AuthorizeRedirectScope(t *testing.T) {
 			pw, err := pagewriter.New(pageWriterDeps{})
 			require.NoError(t, err)
 
-			h := NewHandler(t.Context(), log.NewDebugLogger(), client.New(), cfg, SessionStore{}, nil, pw, app, tc.auth(issuer), nil)
+			h := NewHandler(t.Context(), log.NewDebugLogger(), client.New().WithTransport(testutil.IDPTransport()), cfg, SessionStore{}, nil, pw, app, tc.auth(issuer), nil)
 			require.NoError(t, h.initErr)
 
 			domain := app.CookieDomain(cfg.API.PublicURL)
@@ -91,7 +92,7 @@ func testDiscoveryServer(t *testing.T, scopesSupported []string) string {
 	t.Helper()
 
 	var issuer string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	issuer = testutil.StartIDPServer(t, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "/.well-known/openid-configuration" {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -113,7 +114,5 @@ func testDiscoveryServer(t *testing.T, scopesSupported []string) string {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(doc)
 	}))
-	t.Cleanup(srv.Close)
-	issuer = srv.URL
 	return issuer
 }

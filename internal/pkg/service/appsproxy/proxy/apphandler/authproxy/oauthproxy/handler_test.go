@@ -16,17 +16,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/oauthproxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
 )
 
 func TestHandler_InitErrorPageHidesProviderResponse(t *testing.T) {
 	t.Parallel()
 
 	const providerBody = "provider-response-body-7f3a"
-	issuer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	issuer := testutil.StartIDPServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte(providerBody))
 	}))
-	t.Cleanup(issuer.Close)
 
 	d, mocked := dependencies.NewMockedServiceScope(t, t.Context(), config.New())
 	app := api.AppConfig{ID: "app1"}
@@ -34,10 +34,10 @@ func TestHandler_InitErrorPageHidesProviderResponse(t *testing.T) {
 		Base:         provider.Base{Info: provider.Info{ID: "oidc", Type: provider.TypeOIDC}},
 		ClientID:     "client-id",
 		ClientSecret: "client-secret",
-		IssuerURL:    issuer.URL,
+		IssuerURL:    issuer,
 	}
 
-	handler := oauthproxy.NewHandler(t.Context(), d.Logger(), d.HTTPClient(), d.Config(), oauthproxy.SessionStore{}, selector.New(d), d.PageWriter(), app, auth, nil)
+	handler := oauthproxy.NewHandler(t.Context(), d.Logger(), d.AuthProviderHTTPClient(), d.Config(), oauthproxy.SessionStore{}, selector.New(d), d.PageWriter(), app, auth, nil)
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://app1.hub.keboola.local/", nil)
@@ -49,7 +49,7 @@ func TestHandler_InitErrorPageHidesProviderResponse(t *testing.T) {
 	assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
 	assert.Contains(t, body, html.EscapeString(`Application "app1" has invalid configuration for authentication provider "oidc"`))
 	assert.NotContains(t, body, providerBody)
-	assert.NotContains(t, body, issuer.Listener.Addr().String())
+	assert.NotContains(t, body, issuer)
 	assert.Contains(t, mocked.DebugLogger().AllMessages(), providerBody)
 }
 
@@ -63,8 +63,6 @@ func TestHandler_RejectsNonPublicProviderEndpoint(t *testing.T) {
 	t.Cleanup(issuer.Close)
 
 	d, mocked := dependencies.NewMockedServiceScope(t, t.Context(), config.New())
-	cfg := d.Config()
-	cfg.AuthProviders.AllowPrivateEndpoints = false
 	app := api.AppConfig{ID: "app1"}
 	auth := provider.OIDC{
 		Base:         provider.Base{Info: provider.Info{ID: "oidc", Type: provider.TypeOIDC}},
@@ -73,7 +71,7 @@ func TestHandler_RejectsNonPublicProviderEndpoint(t *testing.T) {
 		IssuerURL:    issuer.URL,
 	}
 
-	handler := oauthproxy.NewHandler(t.Context(), d.Logger(), d.HTTPClient(), cfg, oauthproxy.SessionStore{}, selector.New(d), d.PageWriter(), app, auth, nil)
+	handler := oauthproxy.NewHandler(t.Context(), d.Logger(), d.AuthProviderHTTPClient(), d.Config(), oauthproxy.SessionStore{}, selector.New(d), d.PageWriter(), app, auth, nil)
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://app1.hub.keboola.local/", nil)
