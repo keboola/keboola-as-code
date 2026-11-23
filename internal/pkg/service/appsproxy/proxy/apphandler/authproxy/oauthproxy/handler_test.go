@@ -37,7 +37,7 @@ func TestHandler_InitErrorPageHidesProviderResponse(t *testing.T) {
 		IssuerURL:    issuer,
 	}
 
-	handler := oauthproxy.NewHandler(t.Context(), d.Logger(), d.AuthProviderHTTPClient(), d.Config(), oauthproxy.SessionStore{}, selector.New(d), d.PageWriter(), app, auth, nil)
+	handler := oauthproxy.NewHandler(t.Context(), d.Logger(), d.AuthProviderHTTPClient(), d.Config(), oauthproxy.SessionStore{Client: d.SessionStoreClient(), Metrics: d.SessionStoreMetrics()}, selector.New(d), d.PageWriter(), app, auth, nil)
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://app1.hub.keboola.local/", nil)
@@ -71,7 +71,7 @@ func TestHandler_RejectsNonPublicProviderEndpoint(t *testing.T) {
 		IssuerURL:    issuer.URL,
 	}
 
-	handler := oauthproxy.NewHandler(t.Context(), d.Logger(), d.AuthProviderHTTPClient(), d.Config(), oauthproxy.SessionStore{}, selector.New(d), d.PageWriter(), app, auth, nil)
+	handler := oauthproxy.NewHandler(t.Context(), d.Logger(), d.AuthProviderHTTPClient(), d.Config(), oauthproxy.SessionStore{Client: d.SessionStoreClient(), Metrics: d.SessionStoreMetrics()}, selector.New(d), d.PageWriter(), app, auth, nil)
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://app1.hub.keboola.local/", nil)
