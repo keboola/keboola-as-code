@@ -16,14 +16,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/oauthproxy"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil/idptest"
 )
 
 func TestHandler_InitErrorPageHidesProviderResponse(t *testing.T) {
 	t.Parallel()
 
 	const providerBody = "provider-response-body-7f3a"
-	issuer := testutil.StartIDPServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	issuer := idptest.StartServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte(providerBody))
 	}))

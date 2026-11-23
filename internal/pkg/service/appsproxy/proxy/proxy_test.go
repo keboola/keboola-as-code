@@ -51,6 +51,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/oauthproxy/logging"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil/idptest"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -3431,7 +3432,7 @@ func createHTTPClient(t *testing.T, proxyURL *url.URL) *http.Client {
 		if strings.HasSuffix(addr, "hub.keboola.local:443") {
 			addr = proxyURL.Host
 		}
-		return dialer.DialContext(ctx, network, testutil.IDPDialAddr(addr))
+		return dialer.DialContext(ctx, network, idptest.DialAddr(addr))
 	}
 
 	// Disabled TLS verification since the certificate won't match due to the above change.
