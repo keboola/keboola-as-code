@@ -15,14 +15,8 @@ func (v GitLab) ProxyProviderOptions() (proxyOptions.Provider, error) {
 	}
 
 	p.Type = proxyOptions.GitLabProvider
-	p.LoginURLParameters = []proxyOptions.LoginURLParameter{
-		{
-			// GitLab doesn't support "select_account" prompt
-			// https://gitlab.com/gitlab-org/gitlab/-/issues/377368
-			Name:    "prompt",
-			Default: []string{"login"},
-		},
-	}
+	// GitLab doesn't support "select_account" prompt: https://gitlab.com/gitlab-org/gitlab/-/issues/377368
+	p.LoginURLParameters = []proxyOptions.LoginURLParameter{promptParameter(PromptLogin)}
 	p.GitLabConfig = proxyOptions.GitLabOptions{
 		Group:    v.Groups,
 		Projects: v.Projects,

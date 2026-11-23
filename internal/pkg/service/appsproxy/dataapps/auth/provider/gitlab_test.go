@@ -81,6 +81,7 @@ func TestGitLab(t *testing.T) {
 			{
 				Name:    "prompt",
 				Default: []string{"login"},
+				Allow:   []proxyOptions.URLParameterRule{{Value: new("login")}},
 			},
 		},
 	}, proxyOpts)

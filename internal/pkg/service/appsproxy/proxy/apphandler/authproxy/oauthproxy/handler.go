@@ -45,7 +45,7 @@ func NewHandler(
 	handler := &Handler{providerName: auth.Name()}
 
 	// Create proxy configuration
-	handler.proxyConfig, err = proxyConfig(ctx, cfg, sessionStore, newScopeResolver(logger, httpClient), selector, pw, app, auth, upstream)
+	handler.proxyConfig, err = proxyConfig(ctx, logger.WithComponent("oauth2proxy"), cfg, sessionStore, newScopeResolver(logger, httpClient), selector, pw, app, auth, upstream)
 	if err != nil {
 		handler.initErr = wrapHandlerInitErr(app, auth, err)
 		return handler

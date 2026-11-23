@@ -24,6 +24,10 @@ type errorPageData struct {
 	Details     string
 	ExceptionID string
 	errorCopy
+	PageTitle        string
+	Email            string
+	ProviderName     string
+	SwitchAccountURL string
 }
 
 // errorCopy is the plain-language version of an HTTP status, for the error page.
@@ -196,9 +200,10 @@ func (pw *Writer) WriteError(w http.ResponseWriter, req *http.Request, app *api.
 }
 
 func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, app *api.AppConfig, status int, details, exceptionID string) {
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate;")
-	w.Header().Set("pragma", "no-cache")
+	pw.writeErrorPage(w, req, newErrorPageData(app, status, details, exceptionID))
+}
 
+func newErrorPageData(app *api.AppConfig, status int, details, exceptionID string) *errorPageData {
 	data := &errorPageData{
 		Status:      status,
 		StatusText:  http.StatusText(status),
@@ -212,6 +217,11 @@ func (pw *Writer) WriteErrorPage(w http.ResponseWriter, req *http.Request, app *
 		appData := NewAppData(app)
 		data.App = &appData
 	}
+	return data
+}
 
-	pw.writePage(w, req, "error.gohtml", status, data)
+func (pw *Writer) writeErrorPage(w http.ResponseWriter, req *http.Request, data *errorPageData) {
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate;")
+	w.Header().Set("pragma", "no-cache")
+	pw.writePage(w, req, "error.gohtml", data.Status, data)
 }
