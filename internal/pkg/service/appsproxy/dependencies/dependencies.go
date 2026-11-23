@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/management"
 	"github.com/redis/go-redis/v9"
 	"k8s.io/client-go/dynamic"
@@ -90,6 +91,7 @@ type ServiceScope interface {
 	SessionsManager() *sessions.Manager
 	IdleTimerRecorder() *idletimer.Recorder
 	AppTokenMinter() *apptoken.Minter
+	AuthProviderHTTPClient() client.Client
 	SessionStoreClient() *redis.Client
 	SessionStoreChecker() *sessionstore.Checker
 	SessionStoreMetrics() *sessionstore.Metrics
@@ -117,6 +119,7 @@ type serviceScope struct {
 	sessionsManager   *sessions.Manager
 	idleTimerRecorder *idletimer.Recorder
 	appTokenMinter    *apptoken.Minter
+	authProviderHTTP  client.Client
 	sessionStore      *redis.Client
 	storeChecker      *sessionstore.Checker
 	storeMetrics      *sessionstore.Metrics
@@ -246,6 +249,11 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 		return nil, err
 	}
 
+	d.authProviderHTTP = d.HTTPClient()
+	if !cfg.AuthProviders.AllowPrivateEndpoints {
+		d.authProviderHTTP = d.HTTPClient().WithTransport(transport.NewPublicOnlyTransport())
+	}
+
 	d.wakeupManager = wakeup.NewManager(d)
 	d.idleTimerRecorder = idletimer.NewRecorder(d, k8sClient)
 	idletimer.NewSuspender(d, k8sClient, d.idleTimerRecorder)
@@ -279,6 +287,10 @@ func (v *serviceScope) UpstreamTransport() http.RoundTripper {
 
 func (v *serviceScope) UpstreamManager() *upstream.Manager {
 	return v.upstreamManager
+}
+
+func (v *serviceScope) AuthProviderHTTPClient() client.Client {
+	return v.authProviderHTTP
 }
 
 func (v *serviceScope) AuthProxyManager() *authproxy.Manager {
