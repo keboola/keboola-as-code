@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -148,4 +149,22 @@ func TestProxyConfig_Scope(t *testing.T) {
 			assert.Equal(t, tc.expected, v.Providers[0].Scope)
 		})
 	}
+}
+
+func TestProxyConfig_ValidatesEndpointsBeforeDiscovery(t *testing.T) {
+	t.Parallel()
+
+	var called atomic.Bool
+	issuer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		called.Store(true)
+	}))
+	t.Cleanup(issuer.Close)
+
+	cfg, app, scopes, _ := testProxyConfigEnv(t, `[]`)
+	cfg.AuthProviders.AllowPrivateEndpoints = false
+
+	_, err := proxyConfig(t.Context(), cfg, SessionStore{}, scopes, nil, nil, app, testOIDC(issuer.URL, nil), nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "must use https")
+	assert.False(t, called.Load())
 }
