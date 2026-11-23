@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/pagewriter"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/sessionstore"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -135,4 +136,20 @@ func TestProxyConfig_BuildsWithStoreDown(t *testing.T) {
 	cfg, app, scopes, issuer := testProxyConfigEnv(t, `["openid"]`)
 	_, err := proxyConfig(t.Context(), log.NewNopLogger(), cfg, SessionStore{Client: client}, scopes, nil, nil, app, testOIDC(issuer, nil), nil)
 	require.NoError(t, err)
+}
+
+func TestProviderUnavailableError_HidesProviderDetail(t *testing.T) {
+	t.Parallel()
+
+	pw, err := pagewriter.New(pageWriterDeps{})
+	require.NoError(t, err)
+	app := api.AppConfig{ID: "123"}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://app.hub.keboola.local/", nil)
+
+	pw.WriteError(rec, req, &app, providerUnavailableError(errors.New(`connection to "10.1.2.3:443" is not allowed`)))
+
+	assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
+	assert.Contains(t, rec.Body.String(), "The identity provider is temporarily unavailable.")
+	assert.NotContains(t, rec.Body.String(), "10.1.2.3")
 }

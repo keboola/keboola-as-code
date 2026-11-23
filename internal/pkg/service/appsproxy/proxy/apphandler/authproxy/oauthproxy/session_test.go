@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -15,12 +16,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil/idptest"
 )
 
 func testProxyConfigEnv(t *testing.T, scopesSupported string) (config.Config, api.AppConfig, scopeResolver, string) {
 	t.Helper()
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	issuer := idptest.StartServer(t, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "/.well-known/openid-configuration" {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -28,13 +30,12 @@ func testProxyConfigEnv(t *testing.T, scopesSupported string) (config.Config, ap
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"scopes_supported":` + scopesSupported + `}`))
 	}))
-	t.Cleanup(srv.Close)
 
 	cfg := config.New()
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CookieSecretSalt = "salt"
 	app := api.AppConfig{ID: "123", ProjectID: "456", AppSlug: new("app")}
-	return cfg, app, newScopeResolver(log.NewDebugLogger(), client.New()), srv.URL
+	return cfg, app, newScopeResolver(log.NewDebugLogger(), client.New().WithTransport(idptest.Transport())), issuer
 }
 
 func testOIDC(issuer string, allowedRoles *[]string) provider.OIDC {
@@ -147,4 +148,21 @@ func TestProxyConfig_Scope(t *testing.T) {
 			assert.Equal(t, tc.expected, v.Providers[0].Scope)
 		})
 	}
+}
+
+func TestProxyConfig_ValidatesEndpointsBeforeDiscovery(t *testing.T) {
+	t.Parallel()
+
+	var called atomic.Bool
+	issuer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		called.Store(true)
+	}))
+	t.Cleanup(issuer.Close)
+
+	cfg, app, scopes, _ := testProxyConfigEnv(t, `[]`)
+
+	_, err := proxyConfig(t.Context(), log.NewNopLogger(), cfg, SessionStore{}, scopes, nil, nil, app, testOIDC(issuer.URL, nil), nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "must use https")
+	assert.False(t, called.Load())
 }

@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"net/http"
 	"net/url"
 	"os"
 	"testing"
@@ -19,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil/idptest"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
@@ -29,6 +31,12 @@ type mocked struct {
 	config        config.Config
 	fakeK8sClient *k8sfake.FakeDynamicClient
 	sessionStore  *redis.Client
+	idpTransport  http.RoundTripper
+}
+
+// AuthProviderTransport implements authProviderTransportProvider.
+func (v *mocked) AuthProviderTransport() http.RoundTripper {
+	return v.idpTransport
 }
 
 // SessionStoreClient implements sessionStoreClientProvider: a test injects a plain client,
@@ -157,7 +165,7 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	// Validate config
 	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))
 
-	mock := &mocked{Mocked: commonMock, config: cfg, fakeK8sClient: fakeClient, sessionStore: sessionStore}
+	mock := &mocked{Mocked: commonMock, config: cfg, fakeK8sClient: fakeClient, sessionStore: sessionStore, idpTransport: idptest.Transport()}
 
 	scope, err := newServiceScope(ctx, mock, cfg)
 	require.NoError(tb, err)

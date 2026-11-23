@@ -34,7 +34,7 @@ type Manager struct {
 type dependencies interface {
 	Logger() log.Logger
 	Clock() clockwork.Clock
-	HTTPClient() client.Client
+	AuthProviderHTTPClient() client.Client
 	Config() config.Config
 	PageWriter() *pagewriter.Writer
 	SessionStoreClient() *redis.Client
@@ -47,7 +47,7 @@ func NewManager(d dependencies) *Manager {
 		config:           d.Config(),
 		pageWriter:       d.PageWriter(),
 		clock:            d.Clock(),
-		httpClient:       d.HTTPClient(),
+		httpClient:       d.AuthProviderHTTPClient(),
 		providerSelector: selector.New(d),
 		sessionStore:     oauthproxy.SessionStore{Client: d.SessionStoreClient(), Metrics: d.SessionStoreMetrics()},
 	}
