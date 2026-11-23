@@ -13,8 +13,9 @@
 
 The proxy calls the endpoints of an app's authentication provider itself (OIDC discovery, token, userinfo, JWKS).
 
-- Configured provider URLs must use `https` and a public host name. IP addresses, single-label hosts, `localhost`, and the `.localhost`, `.local`, `.internal`, `.svc` and `.cluster.local` suffixes are rejected.
-- Requests to providers connect only to public unicast addresses. The address is checked after DNS resolution.
+- Configured provider URLs must use `https` and a public host name. IP addresses, single-label hosts, `localhost`, and the `.localhost`, `.local`, `.internal`, `.svc` and `.cluster.local` suffixes are rejected. The URLs are checked before the first request to the provider.
+- Requests to providers connect only to public unicast addresses. The address is checked after DNS resolution. Private, loopback, link-local, CGNAT, multicast and cloud metadata addresses (incl. Azure WireServer `168.63.129.16`) are refused, as are IPv6 forms that carry an IPv4 address (IPv4-mapped, IPv4-compatible, NAT64, 6to4, Teredo).
+- The backend logout request is sent by oauth2-proxy through the Go default client, so only the URL check applies to it.
 - A provider that fails to initialize shows a generic error page. The detail is logged with the exception ID.
 
 ## Apps Proxy Options
