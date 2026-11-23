@@ -20,7 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil/idptest"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/configmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
@@ -165,7 +165,7 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 	// Validate config
 	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))
 
-	mock := &mocked{Mocked: commonMock, config: cfg, fakeK8sClient: fakeClient, sessionStore: sessionStore, idpTransport: testutil.IDPTransport()}
+	mock := &mocked{Mocked: commonMock, config: cfg, fakeK8sClient: fakeClient, sessionStore: sessionStore, idpTransport: idptest.Transport()}
 
 	scope, err := newServiceScope(ctx, mock, cfg)
 	require.NoError(tb, err)

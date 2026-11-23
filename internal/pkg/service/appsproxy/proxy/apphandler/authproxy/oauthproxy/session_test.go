@@ -16,13 +16,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/auth/provider"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/testutil/idptest"
 )
 
 func testProxyConfigEnv(t *testing.T, scopesSupported string) (config.Config, api.AppConfig, scopeResolver, string) {
 	t.Helper()
 
-	issuer := testutil.StartIDPServer(t, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	issuer := idptest.StartServer(t, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "/.well-known/openid-configuration" {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -35,7 +35,7 @@ func testProxyConfigEnv(t *testing.T, scopesSupported string) (config.Config, ap
 	cfg.API.PublicURL, _ = url.Parse("https://hub.keboola.local")
 	cfg.CookieSecretSalt = "salt"
 	app := api.AppConfig{ID: "123", ProjectID: "456", AppSlug: new("app")}
-	return cfg, app, newScopeResolver(log.NewDebugLogger(), client.New().WithTransport(testutil.IDPTransport())), issuer
+	return cfg, app, newScopeResolver(log.NewDebugLogger(), client.New().WithTransport(idptest.Transport())), issuer
 }
 
 func testOIDC(issuer string, allowedRoles *[]string) provider.OIDC {
