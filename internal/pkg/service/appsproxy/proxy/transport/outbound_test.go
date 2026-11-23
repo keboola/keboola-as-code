@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -39,6 +40,10 @@ func TestCheckPublicAddress(t *testing.T) {
 		"[2002:a9fe:a9fe::1]:80",
 		"[2001:0:a9fe:a9fe::1]:80",
 		"[100::1]:80",
+		"0.1.2.3:80",
+		"198.18.0.1:80",
+		"240.0.0.1:80",
+		"[fec0::1]:80",
 		"not-an-address:80",
 	}
 	for _, address := range rejected {
@@ -118,4 +123,27 @@ type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
+}
+
+func TestPublicOnlyHTTPClient_RefusesNameResolvingToLoopback(t *testing.T) {
+	t.Parallel()
+
+	var called atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		called.Store(true)
+	}))
+	t.Cleanup(srv.Close)
+
+	_, port, err := net.SplitHostPort(srv.Listener.Addr().String())
+	require.NoError(t, err)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://localhost:"+port, nil)
+	require.NoError(t, err)
+	resp, err := NewPublicOnlyHTTPClient("test-agent").Do(req)
+	if resp != nil {
+		_ = resp.Body.Close()
+	}
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "is not allowed")
+	assert.False(t, called.Load())
 }
