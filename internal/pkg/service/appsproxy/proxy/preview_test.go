@@ -84,7 +84,7 @@ func startPreviewEnv(t *testing.T, mutate ...envMutator) *previewEnv {
 	t.Cleanup(func() { appsAPI.Close() })
 	appServer := testutil.StartAppServer(t, pm)
 	t.Cleanup(func() { appServer.Close() })
-	providers := testAuthProviders(t, pm)
+	providers := testAuthProviders(t)
 	appURL := testutil.AppServerURL(t, appServer)
 	apps := testDataApps(appURL, providers)
 	appsAPI.Register(apps)

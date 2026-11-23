@@ -139,6 +139,12 @@ type sessionStoreClientProvider interface {
 	SessionStoreClient() *redis.Client
 }
 
+// authProviderTransportProvider is optionally implemented by parentScopes to route requests
+// to test identity providers.
+type authProviderTransportProvider interface {
+	AuthProviderTransport() http.RoundTripper
+}
+
 type parentScopesImpl struct {
 	dependencies.BaseScope
 }
@@ -247,10 +253,11 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 		return nil, err
 	}
 
-	d.authProviderHTTP = d.HTTPClient()
-	if !cfg.AuthProviders.AllowPrivateEndpoints {
-		d.authProviderHTTP = d.HTTPClient().WithTransport(transport.NewPublicOnlyTransport())
+	var authProviderTransport http.RoundTripper = transport.NewPublicOnlyTransport()
+	if provider, ok := parentScp.(authProviderTransportProvider); ok && provider.AuthProviderTransport() != nil {
+		authProviderTransport = provider.AuthProviderTransport()
 	}
+	d.authProviderHTTP = d.HTTPClient().WithTransport(authProviderTransport)
 
 	d.wakeupManager = wakeup.NewManager(d)
 	d.idleTimerRecorder = idletimer.NewRecorder(d, k8sClient)

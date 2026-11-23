@@ -73,10 +73,8 @@ func proxyConfig(
 	if err != nil {
 		return nil, err
 	}
-	if !cfg.AuthProviders.AllowPrivateEndpoints {
-		if err := validateProviderEndpoints(proxyProvider); err != nil {
-			return nil, err
-		}
+	if err := validateProviderEndpoints(proxyProvider); err != nil {
+		return nil, err
 	}
 
 	if scope := scopes.scope(ctx, proxyProvider); scope != "" {
