@@ -13,22 +13,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func TestServiceScope_SessionStoreClient_NilInCookieMode(t *testing.T) {
+func TestMockedServiceScope_SessionStore_Default(t *testing.T) {
 	t.Parallel()
 
 	d, _ := NewMockedServiceScope(t, t.Context(), config.New())
-	assert.Nil(t, d.SessionStoreClient())
-}
-
-func TestServiceScope_SessionStoreClient_BuiltInRedisMode(t *testing.T) {
-	t.Parallel()
-
-	cfg := config.New()
-	cfg.SessionStore.Type = config.SessionStoreRedis
-	cfg.SessionStore.SentinelAddrs = []string{"127.0.0.1:1"}
-	cfg.SessionStore.SentinelMasterName = "mymaster"
-	d, _ := NewMockedServiceScope(t, t.Context(), cfg)
-	assert.NotNil(t, d.SessionStoreClient())
+	require.NotNil(t, d.SessionStoreClient())
+	require.NoError(t, d.SessionStoreClient().Ping(t.Context()).Err())
+	assert.NotNil(t, d.SessionStoreChecker())
+	assert.NotNil(t, d.SessionStoreMetrics())
 }
 
 func TestServiceScope_SessionStoreClient_ClosedOnShutdown(t *testing.T) {

@@ -12,7 +12,6 @@ import (
 
 func redisConfig() config.SessionStore {
 	cfg := config.New().SessionStore
-	cfg.Type = config.SessionStoreRedis
 	cfg.SentinelAddrs = []string{"a:26379", "b:26379"}
 	cfg.SentinelMasterName = "mymaster"
 	cfg.SentinelPassword = "sentinel-secret"
@@ -21,12 +20,7 @@ func redisConfig() config.SessionStore {
 	return cfg
 }
 
-func TestNewClient_CookieIsNil(t *testing.T) {
-	t.Parallel()
-	assert.Nil(t, NewClient(config.New().SessionStore))
-}
-
-func TestNewClient_RedisOpensNoConnection(t *testing.T) {
+func TestNewClient_OpensNoConnection(t *testing.T) {
 	t.Parallel()
 	client := NewClient(redisConfig())
 	require.NotNil(t, client)

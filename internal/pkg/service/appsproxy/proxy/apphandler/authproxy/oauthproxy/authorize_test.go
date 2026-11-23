@@ -69,7 +69,7 @@ func TestHandler_AuthorizeRedirectScope(t *testing.T) {
 			pw, err := pagewriter.New(pageWriterDeps{})
 			require.NoError(t, err)
 
-			h := NewHandler(t.Context(), log.NewDebugLogger(), client.New(), cfg, SessionStore{}, nil, pw, app, tc.auth(issuer), nil)
+			h := NewHandler(t.Context(), log.NewDebugLogger(), client.New(), cfg, testSessionStore(t), nil, pw, app, tc.auth(issuer), nil)
 			require.NoError(t, h.initErr)
 
 			domain := app.CookieDomain(cfg.API.PublicURL)

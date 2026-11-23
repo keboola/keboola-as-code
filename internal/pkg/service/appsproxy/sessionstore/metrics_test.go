@@ -15,6 +15,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type metricsHarness struct {
@@ -132,6 +133,17 @@ func TestMetrics_GetErrorCounted(t *testing.T) {
 	assert.Equal(t, int64(1), h.counter(t, "keboola.go.appsproxy.sessionstore.errors", "command", "get"))
 }
 
+func TestMetrics_CanceledIsNoError(t *testing.T) {
+	t.Parallel()
+	h := newMetricsHarness(t)
+	ctx, cancel := context.WithCancelCause(t.Context())
+	cancel(errors.New("client went away"))
+	require.ErrorIs(t, h.client.Get(ctx, "k").Err(), context.Canceled)
+	assert.Equal(t, uint64(1), h.durationCount(t, "get", "canceled"))
+	assert.Zero(t, h.durationCount(t, "get", "error"))
+	assert.Zero(t, h.counter(t, "keboola.go.appsproxy.sessionstore.errors", "command", "get"))
+}
+
 func TestMetrics_CommandNames(t *testing.T) {
 	t.Parallel()
 	h := newMetricsHarness(t)
@@ -156,16 +168,6 @@ func TestMetrics_Unavailable(t *testing.T) {
 
 	var nilMetrics *Metrics
 	nilMetrics.StoreUnavailable(t.Context())
-}
-
-func TestMetrics_Migrated(t *testing.T) {
-	t.Parallel()
-	h := newMetricsHarness(t)
-	h.metrics.Migrated(t.Context())
-	assert.Equal(t, int64(1), h.counter(t, "keboola.go.appsproxy.sessionstore.migrated"))
-
-	var nilMetrics *Metrics
-	nilMetrics.Migrated(t.Context())
 }
 
 func TestMetrics_Up(t *testing.T) {

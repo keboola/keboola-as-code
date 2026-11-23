@@ -53,7 +53,7 @@ func (e *previewEnv) post(target string, headers ...string) *http.Response {
 
 func startRefreshEnv(t *testing.T) *previewEnv {
 	t.Helper()
-	env := startRedisEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
+	env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
 	env.withOIDCWorkspace()
 	env.syncClock()
 	return env
@@ -223,23 +223,9 @@ func TestAppUserTokenRefresh_EndpointRefuses(t *testing.T) {
 
 func TestAppUserTokenRefresh_EndpointOff(t *testing.T) {
 	t.Parallel()
-
-	t.Run("no signing keys", func(t *testing.T) {
-		t.Parallel()
-		env := startRedisEnv(t)
-		assert.Equal(t, http.StatusNotFound, env.post(oidcOrigin+apptoken.RefreshPath, "Authorization", "Bearer x").StatusCode)
-		assert.Empty(t, env.websocketHandshake().Header.Values(apptoken.RefreshHeaderName))
-	})
-
-	t.Run("cookie mode", func(t *testing.T) {
-		t.Parallel()
-		env := startPreviewEnv(t, withAppUserTokenKeys(appTokenSigningKeys(t, "k1"), "k1"))
-		env.withOIDCWorkspace()
-		assert.Equal(t, http.StatusNotFound, env.post(oidcOrigin+apptoken.RefreshPath, "Authorization", "Bearer x").StatusCode)
-		handshake := env.websocketHandshake()
-		require.NotEmpty(t, handshake.Header.Get(apptoken.HeaderName))
-		assert.Empty(t, handshake.Header.Values(apptoken.RefreshHeaderName))
-	})
+	env := startPreviewEnv(t)
+	assert.Equal(t, http.StatusNotFound, env.post(oidcOrigin+apptoken.RefreshPath, "Authorization", "Bearer x").StatusCode)
+	assert.Empty(t, env.websocketHandshake().Header.Values(apptoken.RefreshHeaderName))
 }
 
 func TestAppUserTokenRefresh_RefusedAfterSignOut(t *testing.T) {
@@ -254,24 +240,6 @@ func TestAppUserTokenRefresh_RefusedAfterSignOut(t *testing.T) {
 	env.send(client, oidcOrigin+"/_proxy/sign_out")
 
 	assertRefused(t, env.post(endpoint, "Authorization", "Bearer "+refresh))
-}
-
-func TestAppUserTokenRefresh_HandshakeThatMovesACookieStoreSession(t *testing.T) {
-	t.Parallel()
-	env := startRefreshEnv(t)
-	client := env.oldCookieClient("oidc", func(*sessionsapi.SessionState) {})
-
-	handshake := env.dialWebsocket(client, nil)
-	keys := env.ticketKeys()
-	require.Len(t, keys, 1)
-	refresh := handshake.Header.Get(apptoken.RefreshHeaderName)
-	parts := strings.Split(refresh, ".")
-	require.Len(t, parts, 3)
-	kbc, _ := jsonSegment(t, parts[1])["kbc"].(map[string]any)
-	assert.Equal(t, keys[0], kbc["login_session"])
-
-	resp := env.post(handshake.Header.Get(apptoken.PublicURLHeaderName)+apptoken.RefreshPath, "Authorization", "Bearer "+refresh)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestAppUserTokenRefresh_SessionStoreDown(t *testing.T) {

@@ -56,7 +56,6 @@ type envOptions struct {
 	sessions       bool
 	noWorkspace    bool
 	ttl            time.Duration
-	cookieMode     bool
 	noLoginSession bool
 }
 
@@ -69,7 +68,7 @@ type testEnv struct {
 	// refreshKeys are the HS256 keys derived from the signing keys, by kid.
 	refreshKeys map[string][]byte
 	ref         k8sapp.WorkloadRef
-	// store is the login session store, nil in cookie mode.
+	// store is the login session store.
 	store *miniredis.Miniredis
 	// loginSession is put into every request context, as the oauth2-proxy handler does for a ticket cookie.
 	loginSession string
@@ -105,13 +104,9 @@ func newEnv(t *testing.T, opts envOptions) *testEnv {
 	}
 
 	clock := clockwork.NewFakeClockAt(time.Now())
-	var store *miniredis.Miniredis
-	var client *redis.Client
-	if !opts.cookieMode {
-		store = miniredis.RunT(t)
-		client = redis.NewClient(&redis.Options{Addr: store.Addr(), MaxRetries: -1})
-		require.NoError(t, store.Set(testLoginSession, "session"))
-	}
+	store := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: store.Addr(), MaxRetries: -1})
+	require.NoError(t, store.Set(testLoginSession, "session"))
 	d, mocked := dependencies.NewMockedServiceScopeWithSessionStore(t, t.Context(), cfg, client, []runtime.Object{appObject()}, commonDeps.WithClock(clock))
 	require.True(t, d.AppStateWatcher().WaitForCacheSync(t.Context()))
 
@@ -126,7 +121,7 @@ func newEnv(t *testing.T, opts envOptions) *testEnv {
 		refreshKeys: refreshKeys,
 		store:       store,
 	}
-	if !opts.cookieMode && !opts.noLoginSession {
+	if !opts.noLoginSession {
 		e.loginSession = testLoginSession
 	}
 	if !opts.noWorkspace {

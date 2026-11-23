@@ -134,8 +134,8 @@ apps-proxy ends every non-WebSocket response at `upstream.httpTimeout` (4 min
 streamed response outlives its token.
 
 The handshake gets neither header when the app user token is off, when the
-stack runs the `cookie` session store, when the handshake has no valid ticket
-cookie of the `redis` store, or when the Sandbox has no public host.
+handshake has no valid ticket cookie of the login session store, or when the
+Sandbox has no public host.
 
 The app calls:
 
@@ -161,7 +161,7 @@ The answer is `200`, `Content-Type: application/json`, `Cache-Control: no-store`
   refresh call is neither [session](sessions.md) nor
   [idle-suspend](idle-suspend.md) activity.
 - No CORS headers. A browser never holds the refresh token.
-- App user token off (no signing keys) or the `cookie` session store: `404` for
+- App user token off (no signing keys): `404` for
   every method. Otherwise other methods get `405`.
 
 The new token is minted like the injected one: the identity from the
@@ -247,8 +247,8 @@ The refresh token has no `kbc.workspace_id`; each refresh reads it again.
 `signingKeys` is a JSON list of `{"kid": "...", "pem": "..."}` entries, each an
 EC P-256 private key (`openssl ecparam -name prime256v1 -genkey -noout`). It is a
 secret. `activeKid` names the key that signs. The signing keys are also the
-source of the refresh keys (§6). The refresh also needs the `redis` session store
-(see [session-store.md](session-store.md)); in `cookie` mode it is off. Both empty
+source of the refresh keys (§6). The refresh checks the login session in the
+session store (see [session-store.md](session-store.md)). Both empty
 turn the feature off: no tokens, no
 refresh tokens, empty JWKS. Only one of them set is a startup error.
 

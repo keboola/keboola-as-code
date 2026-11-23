@@ -21,8 +21,7 @@ type Minter struct {
 	clock     clockwork.Clock
 	logger    log.Logger
 	apps      appStates
-	// store is the login session store, nil in cookie mode.
-	store *redis.Client
+	store     *redis.Client
 }
 
 type appStates interface {

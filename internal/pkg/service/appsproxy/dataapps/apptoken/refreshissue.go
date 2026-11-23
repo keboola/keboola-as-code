@@ -19,7 +19,7 @@ type refreshSession struct {
 
 // RefreshEnabled reports whether refresh tokens are issued. Their keys are derived from the signing keys.
 func (m *Minter) RefreshEnabled() bool {
-	return m.keyring.Configured() && m.store != nil
+	return m.keyring.Configured()
 }
 
 // injectRefresh adds the refresh token and the public URL the app sends it to. The refresh token expires when

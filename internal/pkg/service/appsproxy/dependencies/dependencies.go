@@ -237,9 +237,7 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	} else {
 		d.sessionStore = sessionstore.NewClient(cfg.SessionStore)
 	}
-	if d.sessionStore != nil {
-		d.startSessionStore(ctx)
-	}
+	d.startSessionStore(ctx)
 
 	d.appTokenMinter, err = apptoken.NewMinter(d)
 	if err != nil {

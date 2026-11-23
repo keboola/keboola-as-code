@@ -20,11 +20,8 @@ func TestConfig_ConnectionServiceAccountTokenPath(t *testing.T) {
 	cfg := config.New()
 	assert.Equal(t, "/var/run/secrets/connection.keboola.com/serviceaccount/token", cfg.ConnectionServiceAccountTokenPath)
 
-	// Fill in the other required fields, the binding validates the whole configuration.
-	cfg.CookieSecretSalt = "x"
-	cfg.CsrfTokenSalt = "x"
-	cfg.SandboxesAPI.URL = "https://example"
-	cfg.K8s = config.K8s{AppsNamespace: "ns"}
+	// The binding validates the whole configuration.
+	cfg = requiredConfig(t)
 
 	envs := env.Empty()
 	envs.Set("APPS_PROXY_CONNECTION_SERVICE_ACCOUNT_TOKEN_PATH", "/tmp/token")
@@ -61,7 +58,7 @@ func TestSessionsConfig_Defaults(t *testing.T) {
 func TestSessionsConfig_Envs(t *testing.T) {
 	t.Parallel()
 
-	cfg := validConfig(t)
+	cfg := requiredConfig(t)
 
 	envs := env.Empty()
 	envs.Set("APPS_PROXY_SESSIONS_STREAM_URL", "https://stream-in.keboola.local/stream/123/sessions/secret")
@@ -86,20 +83,6 @@ func TestSessionsConfig_Envs(t *testing.T) {
 	assert.Equal(t, 128, cfg.Sessions.QueueSize)
 	assert.Equal(t, 2, cfg.Sessions.Workers)
 	assert.Equal(t, 3*time.Second, cfg.Sessions.SendTimeout)
-}
-
-// validConfig returns a configuration with every required field filled in.
-// Binding validates the whole configuration, not just the bound fields.
-func validConfig(t *testing.T) config.Config {
-	t.Helper()
-
-	cfg := config.New()
-	cfg.CookieSecretSalt = "x"
-	cfg.CsrfTokenSalt = "x"
-	cfg.SandboxesAPI.URL = "https://example"
-	cfg.K8s = config.K8s{AppsNamespace: "ns"}
-
-	return cfg
 }
 
 func TestSessionsConfig_Validate(t *testing.T) {
@@ -156,11 +139,11 @@ func TestSessionsConfig_RejectsMalformedStreamURL(t *testing.T) {
 
 	// Without this the proxy starts happily and then fails on every single
 	// event, logging the bad URL each time.
-	cfg := validConfig(t)
+	cfg := requiredConfig(t)
 	cfg.Sessions.StreamURL = "not-a-url"
 	require.Error(t, configmap.ValidateAndNormalize(&cfg))
 
-	cfg = validConfig(t)
+	cfg = requiredConfig(t)
 	cfg.Sessions.StreamURL = "https://stream-in.keboola.local/stream/123/sessions/secret"
 	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
 }
@@ -172,11 +155,11 @@ func TestSessionsConfig_RejectsShortUserIDHashKey(t *testing.T) {
 	// satisfies "omitempty", including a typo or a placeholder someone forgot
 	// to replace, and the whole privacy guarantee of the hash rests on this
 	// being unpredictable.
-	cfg := validConfig(t)
+	cfg := requiredConfig(t)
 	cfg.Sessions.UserIDHashKey = "too-short"
 	require.Error(t, configmap.ValidateAndNormalize(&cfg))
 
-	cfg = validConfig(t)
+	cfg = requiredConfig(t)
 	cfg.Sessions.UserIDHashKey = "exactly-32-characters-long-abcde"
 	require.Len(t, cfg.Sessions.UserIDHashKey, 32)
 	require.NoError(t, configmap.ValidateAndNormalize(&cfg))
@@ -188,7 +171,7 @@ func TestConfig_ValidateWebsocketFitsInSession(t *testing.T) {
 	// A cross-struct invariant: it cannot live in Sessions.Validate, which
 	// cannot see Upstream. This also proves Config.Validate is reached at all —
 	// an unreached hook would enforce nothing.
-	cfg := validConfig(t)
+	cfg := requiredConfig(t)
 	cfg.Sessions.StreamURL = "https://stream-in.keboola.local/stream/123/sessions/secret"
 	cfg.Sessions.MaxSessionLength = time.Hour
 
@@ -197,7 +180,7 @@ func TestConfig_ValidateWebsocketFitsInSession(t *testing.T) {
 	assert.Contains(t, err.Error(), "must be longer than the upstream websocket timeout")
 
 	// The check is scoped to stacks that actually enable tracking.
-	cfg = validConfig(t)
+	cfg = requiredConfig(t)
 	cfg.Sessions.MaxSessionLength = time.Hour
 	assert.NoError(t, configmap.ValidateAndNormalize(&cfg))
 }

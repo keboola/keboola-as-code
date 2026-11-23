@@ -19,16 +19,12 @@ Both values are constants in
 
 ## 2. The session cookie
 
-Where the session is kept depends on the stack's store mode, see
-[session-store.md](session-store.md):
+The session (tokens, email, groups) is in Valkey for 24 hours, and the browser
+holds a small ticket cookie `_oauth2_proxy_ticket`, see
+[session-store.md](session-store.md).
 
-- `cookie` (default): the session is the oauth2-proxy cookie `_oauth2_proxy`.
-  It carries the tokens, the email and the groups.
-- `redis`: the session is in Valkey for 24 hours, and the browser holds a small
-  ticket cookie `_oauth2_proxy_ticket`.
-
-In both modes the cookie is signed with the session's creation time. A cookie
-older than 24 hours is rejected and the user logs in again.
+The cookie is signed with the session's creation time. A cookie older than 24
+hours is rejected and the user logs in again.
 
 An app with several providers also sets `_oauth2_provider`, which only
 remembers the chosen provider and grants no access. It is set again on every
@@ -120,10 +116,10 @@ Do not turn the refresh on for GitLab without solving the race below first.
   token as soon as it is used. Reuse detection, which needs the
   `previous_refresh_token` column, is not enabled
   ([gitlab-org/gitlab#364111](https://gitlab.com/gitlab-org/gitlab/-/issues/364111)).
-- The cookie session store has no lock, and apps-proxy runs several replicas.
-  A page load sends many requests at once, and a Streamlit reconnect sends
-  `/_stcore/health`, `/_stcore/host-config` and the websocket upgrade together.
-  When the session is due, each of them refreshes with the same token.
+- A page load sends many requests at once, and a Streamlit reconnect sends
+  `/_stcore/health`, `/_stcore/host-config` and the websocket upgrade together,
+  to several apps-proxy replicas. Without a lock shared by all replicas, each
+  of them refreshes with the same token when the session is due.
 - The first refresh wins. The others get `invalid_grant`, which oauth2-proxy
   treats as fatal: it clears the session and sends a cookie deletion. The
   browser keeps whichever cookie it applies last, so users are logged out at
@@ -132,18 +128,18 @@ Do not turn the refresh on for GitLab without solving the race below first.
 
 IdPs that rotate refresh tokens with a grace period (Okta 30 s by default,
 Pocket ID 1 min) are not affected: parallel requests arrive well inside it. An
-Okta admin can set that grace period to 0, which brings the same race back.
-This is not handled.
+Okta admin can set that grace period to 0. Then only the shared refresh lock
+prevents the race; that case is not tested.
 
 Revisit this when one of these is true:
 
 - GitLab accepts a used refresh token for a grace period (for example
   `refresh_token_revoked_on_use`, or reuse detection with
   `previous_refresh_token`).
-- A stack runs the `redis` store mode, see [session-store.md](session-store.md).
-  Its refresh lock is shared by all replicas, so only one request refreshes.
-  GitLab refresh is off in both modes; turning it on for `redis` mode only is
-  a separate change.
+- The Valkey refresh lock is checked against this race. It is shared by all
+  replicas, so only one request should refresh (see
+  [session-store.md](session-store.md), "Lock contention"). Until that is
+  tested with GitLab, the refresh stays off.
 
 ## 7. Websockets
 

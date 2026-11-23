@@ -15,7 +15,7 @@ the `X-Kbc-*` headers.
 | 3. Identity capture | `apptoken.WithIdentity` in `dataapps/apptoken/identity.go` | `X-Kbc-User-Email-Verified` | — | every request through an OAuth provider |
 | 4. Session tracking | `sessions.Middleware` in `dataapps/sessions/sessions.go` | `X-Kbc-User-Id` | — | every request that reaches the app |
 | 5. App user token | `apptoken.Minter.Inject` in `dataapps/apptoken/middleware.go` | `X-Kbc-App-User-Token`, `X-Kbc-App-User-Refresh-Token`, `X-Kbc-App-Public-Url` | `X-Kbc-App-User-Token` | deletes on every request; sets on a request that passed step 3 with a user id, when the signing keys are set |
-| 5b. Refresh token | `apptoken.Minter.injectRefresh` in `dataapps/apptoken/refreshissue.go` | — | `X-Kbc-App-User-Refresh-Token`, `X-Kbc-App-Public-Url` | additionally on a WebSocket handshake with the `redis` session store, a valid ticket cookie and a known public host |
+| 5b. Refresh token | `apptoken.Minter.injectRefresh` in `dataapps/apptoken/refreshissue.go` | — | `X-Kbc-App-User-Refresh-Token`, `X-Kbc-App-Public-Url` | additionally on a WebSocket handshake with a valid ticket cookie and a known public host |
 
 Steps 3 to 5 run only for a request that reaches the app. A path under `/_proxy/`
 is answered by apps-proxy itself and never reaches them.

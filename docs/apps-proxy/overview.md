@@ -20,7 +20,7 @@
 - [login-session.md](login-session.md) — how long a login lasts, refresh, and websocket closes.
 - [login-scope.md](login-scope.md) — the OIDC login scope, when `groups` is requested, and its known limits.
 - [access-denied.md](access-denied.md) — the page and the log line for a user refused by `allowedRoles`, and the switch-account button.
-- [session-store.md](session-store.md) — the login session store (cookie or Valkey): config, metrics, the 503 page, failover, switch and rollback.
+- [session-store.md](session-store.md) — the login session store (Valkey): config, metrics, the 503 page, failover, troubleshooting.
 - [app-cookies.md](app-cookies.md) — the cookies the app receives, and the apps-proxy cookies removed before it.
 - [app-headers.md](app-headers.md) — the `X-Kbc-*` headers: where apps-proxy sets and deletes each one, and what the app receives.
 - [app-user-token.md](app-user-token.md) — the signed `X-Kbc-App-User-Token` passed to apps, and its JWKS.

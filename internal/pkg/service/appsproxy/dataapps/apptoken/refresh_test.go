@@ -303,7 +303,6 @@ func TestRefresh_Enabled(t *testing.T) {
 	t.Parallel()
 	assert.True(t, newEnv(t, envOptions{noWorkspace: true}).d.AppTokenMinter().RefreshEnabled())
 	assert.False(t, newEnv(t, envOptions{noWorkspace: true, noKeys: true}).d.AppTokenMinter().RefreshEnabled())
-	assert.False(t, newEnv(t, envOptions{noWorkspace: true, cookieMode: true}).d.AppTokenMinter().RefreshEnabled())
 }
 
 func TestInjectRefresh_NoLoginSessionNoRefresh(t *testing.T) {
@@ -312,13 +311,6 @@ func TestInjectRefresh_NoLoginSessionNoRefresh(t *testing.T) {
 	require.NotEmpty(t, got.header.Get(apptoken.HeaderName))
 	assert.Empty(t, got.header.Values(apptoken.RefreshHeaderName))
 	assert.Empty(t, got.header.Values(apptoken.PublicURLHeaderName))
-}
-
-func TestInjectRefresh_CookieModeNoRefresh(t *testing.T) {
-	t.Parallel()
-	got := newEnv(t, envOptions{cookieMode: true}).serve(testIDP, wsHeaders(identityHeaders()))
-	require.NotEmpty(t, got.header.Get(apptoken.HeaderName))
-	assert.Empty(t, got.header.Values(apptoken.RefreshHeaderName))
 }
 
 func TestRefresh_SessionStoreDown(t *testing.T) {

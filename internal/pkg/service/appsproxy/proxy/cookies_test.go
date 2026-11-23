@@ -1,7 +1,6 @@
 package proxy_test
 
 import (
-	"crypto/rand"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
-	"github.com/oauth2-proxy/mockoidc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -70,16 +68,6 @@ func (e *previewEnv) recordSetCookies() *setCookieRecorder {
 	client.Transport = recorder
 	e.client = &client
 	return recorder
-}
-
-// largeSessionUser has enough groups to split the oauth2-proxy session cookie into parts.
-func largeSessionUser() *mockoidc.MockUser {
-	groups := make([]string, 0, 201)
-	groups = append(groups, "admin")
-	for range 200 {
-		groups = append(groups, rand.Text())
-	}
-	return &mockoidc.MockUser{Subject: "sub-1", Email: "admin@keboola.com", EmailVerified: new(true), Groups: groups}
 }
 
 func cookieNames(header string) []string {
@@ -165,9 +153,8 @@ func TestUpstreamCookies(t *testing.T) {
 
 	oidcClient := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
 	require.Equal(t, http.StatusOK, env.send(oidcClient, oidcOrigin+"/", "Accept", "text/html").StatusCode)
-	splitClient := env.oidcLogin(env.providers[0], largeSessionUser(), oidcOrigin+"/")
-	require.Equal(t, http.StatusOK, env.send(splitClient, oidcOrigin+"/", "Accept", "text/html").StatusCode)
-	signedOut := withAllCookies(t, splitClient, oidcHost, nil)
+	require.NotNil(t, jarCookie(oidcClient, ticketCookieName))
+	signedOut := withAllCookies(t, env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/"), oidcHost, nil)
 	require.Equal(t, http.StatusFound, env.send(signedOut, oidcOrigin+selector.SignOutPath).StatusCode)
 
 	basicClient := env.basicAuthLogin()
@@ -180,10 +167,8 @@ func TestUpstreamCookies(t *testing.T) {
 	recorded := recorder.sorted()
 	t.Logf("cookies set by apps-proxy: %v", recorded)
 	for _, name := range []string{
-		oauthproxy.CookieName,
-		oauthproxy.CookieName + "_0",
-		oauthproxy.CookieName + "_1",
-		oauthproxy.CookieName + "_csrf",
+		ticketCookieName,
+		ticketCookieName + "_csrf",
 		selector.ProviderCookie,
 		sessions.CookieName,
 		basicauth.CookieName,
@@ -192,35 +177,15 @@ func TestUpstreamCookies(t *testing.T) {
 		require.Contains(t, recorded, name, "no flow above set this cookie")
 	}
 
-	env.assertAppGetsOnlyItsCookies("preview session", withAllCookies(t, env.client, authHost, recorded, previewCookie), authHost)
+	// Session cookies of a cookie session store, which browsers can still send.
+	sent := append(slices.Clone(recorded), oauthproxy.CookieName, oauthproxy.CookieName+"_0", oauthproxy.CookieName+"_1", oauthproxy.CookieName+"_csrf")
 
-	env.assertAppGetsOnlyItsCookies("OIDC", withAllCookies(t, oidcClient, oidcHost, recorded), oidcHost)
+	env.assertAppGetsOnlyItsCookies("preview session", withAllCookies(t, env.client, authHost, sent, previewCookie), authHost)
 
-	// A stale unsplit cookie would hide the split parts from oauth2-proxy.
-	withoutUnsplit := slices.DeleteFunc(slices.Clone(recorded), func(name string) bool { return name == oauthproxy.CookieName })
-	env.assertAppGetsOnlyItsCookies("OIDC split session", withAllCookies(t, splitClient, oidcHost, withoutUnsplit), oidcHost)
+	env.assertAppGetsOnlyItsCookies("OIDC", withAllCookies(t, oidcClient, oidcHost, sent), oidcHost)
 
-	env.assertAppGetsOnlyItsCookies("no auth", withAllCookies(t, env.client, publicHost, recorded), publicHost)
+	env.assertAppGetsOnlyItsCookies("no auth", withAllCookies(t, env.client, publicHost, sent), publicHost)
 
 	env.setDevMode("app-auth", authRef, false)
-	env.assertAppGetsOnlyItsCookies("basic auth", withAllCookies(t, basicClient, authHost, recorded), authHost)
-}
-
-// TestUpstreamCookies_RedisStore checks that the redis store's ticket and CSRF cookies never reach the app.
-func TestUpstreamCookies_RedisStore(t *testing.T) {
-	t.Parallel()
-	env := startRedisEnv(t)
-	recorder := env.recordSetCookies()
-	env.syncClock()
-
-	oidcClient := env.oidcLogin(env.providers[0], freshnessUser(), oidcOrigin+"/")
-	require.Equal(t, http.StatusOK, env.send(oidcClient, oidcOrigin+"/", "Accept", "text/html").StatusCode)
-
-	recorded := recorder.sorted()
-	t.Logf("cookies set by apps-proxy: %v", recorded)
-	require.Contains(t, recorded, ticketCookieName)
-	require.Contains(t, recorded, ticketCookieName+"_csrf")
-	require.NotNil(t, jarCookie(oidcClient, ticketCookieName))
-
-	env.assertAppGetsOnlyItsCookies("OIDC redis store", withAllCookies(t, oidcClient, oidcHost, recorded), oidcHost)
+	env.assertAppGetsOnlyItsCookies("basic auth", withAllCookies(t, basicClient, authHost, sent), authHost)
 }

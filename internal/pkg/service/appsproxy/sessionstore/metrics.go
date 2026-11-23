@@ -17,7 +17,6 @@ type Metrics struct {
 	duration    metric.Float64Histogram
 	errors      metric.Int64Counter
 	unavailable metric.Int64Counter
-	migrated    metric.Int64Counter
 }
 
 // NewMetrics registers the session store metrics and adds a hook to the client that records each command.
@@ -36,11 +35,6 @@ func NewMetrics(meter telemetry.Meter, client *redis.Client, checker *Checker) *
 		unavailable: meter.IntCounter(
 			"keboola.go.appsproxy.sessionstore.unavailable",
 			"Requests answered with 503 because the login session store was unavailable.",
-			"",
-		),
-		migrated: meter.IntCounter(
-			"keboola.go.appsproxy.sessionstore.migrated",
-			"Cookie-store login sessions moved into the login session store.",
 			"",
 		),
 	}
@@ -91,20 +85,14 @@ func (m *Metrics) StoreUnavailable(ctx context.Context) {
 	m.unavailable.Add(ctx, 1)
 }
 
-// Migrated counts a cookie-store session moved into the store. A nil receiver does nothing.
-func (m *Metrics) Migrated(ctx context.Context) {
-	if m == nil {
-		return
-	}
-	m.migrated.Add(ctx, 1)
-}
-
 func (m *Metrics) record(ctx context.Context, name string, start time.Time, err error) {
 	command := commandName(name)
 	result := "ok"
 	switch {
 	case errors.Is(err, redis.Nil):
 		result = "miss"
+	case IsCanceled(ctx, err):
+		result = "canceled"
 	case err != nil:
 		result = "error"
 		m.errors.Add(ctx, 1, metric.WithAttributes(attribute.String("command", command)))
@@ -113,6 +101,11 @@ func (m *Metrics) record(ctx context.Context, name string, start time.Time, err 
 		attribute.String("command", command),
 		attribute.String("result", result),
 	))
+}
+
+// IsCanceled reports an error caused by the client aborting its request, not by the store.
+func IsCanceled(ctx context.Context, err error) bool {
+	return err != nil && (errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled))
 }
 
 func commandName(name string) string {

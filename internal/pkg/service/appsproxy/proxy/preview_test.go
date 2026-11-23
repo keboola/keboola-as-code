@@ -55,17 +55,16 @@ func (osAssignedPorts) GeneratePorts(context.Context) {}
 func (osAssignedPorts) GetFreePort() int              { return 0 }
 
 type previewEnv struct {
-	t         *testing.T
-	clock     *clockwork.FakeClock
-	signer    *previewtest.Signer
-	jwks      *previewtest.JWKSServer
-	client    *http.Client
-	appServer *testutil.AppServer
-	providers []*mockoidc.MockOIDC
-	appsAPI   *testutil.DataAppsAPI
-	d         proxyDependencies.ServiceScope
-	mocked    proxyDependencies.Mocked
-	// Set only in redis mode.
+	t          *testing.T
+	clock      *clockwork.FakeClock
+	signer     *previewtest.Signer
+	jwks       *previewtest.JWKSServer
+	client     *http.Client
+	appServer  *testutil.AppServer
+	providers  []*mockoidc.MockOIDC
+	appsAPI    *testutil.DataAppsAPI
+	d          proxyDependencies.ServiceScope
+	mocked     proxyDependencies.Mocked
 	redis      *miniredis.Miniredis
 	redisStore *redis.Client
 }
@@ -74,32 +73,8 @@ type envMutator = func(cfg *config.Config, jwks *previewtest.JWKSServer)
 
 func startPreviewEnv(t *testing.T, mutate ...envMutator) *previewEnv {
 	t.Helper()
-	return startEnv(t, nil, mutate...)
-}
-
-// startRedisEnv starts the proxy with the redis login session store on miniredis.
-// The pool size and retries match the production client (sessionstore). The timeouts are longer:
-// a loaded CI runner with -race can stall a miniredis reply past the production 500 ms, which turns into a 503.
-func startRedisEnv(t *testing.T, mutate ...envMutator) *previewEnv {
-	t.Helper()
-	mr := miniredis.RunT(t)
-	client := redis.NewClient(&redis.Options{
-		Addr:         mr.Addr(),
-		DialTimeout:  5 * time.Second,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
-		PoolSize:     20,
-		MaxRetries:   1,
-	})
-	env := startEnv(t, client, mutate...)
-	env.redis = mr
-	env.redisStore = client
-	return env
-}
-
-func startEnv(t *testing.T, sessionStore *redis.Client, mutate ...envMutator) *previewEnv {
-	t.Helper()
 	ctx := t.Context()
+	mr, sessionStore := proxyDependencies.NewTestSessionStore(t)
 	clock := clockwork.NewFakeClockAt(time.Date(2026, 9, 27, 10, 0, 0, 0, time.UTC))
 	signer := previewtest.NewSigner(t, "2026-09")
 	jwks := previewtest.NewJWKSServer(t, signer.JWK())
@@ -156,7 +131,7 @@ func startEnv(t *testing.T, sessionStore *redis.Client, mutate ...envMutator) *p
 	client.Jar = nil
 
 	registerDefaultK8sApps(t, d.AppStateWatcher())
-	return &previewEnv{t: t, clock: clock, signer: signer, jwks: jwks, client: client, appServer: appServer, providers: providers, appsAPI: appsAPI, d: d, mocked: mocked}
+	return &previewEnv{t: t, clock: clock, signer: signer, jwks: jwks, client: client, appServer: appServer, providers: providers, appsAPI: appsAPI, d: d, mocked: mocked, redis: mr, redisStore: sessionStore}
 }
 
 func (e *previewEnv) setDevMode(k8sName string, ref k8sapp.WorkloadRef, enabled bool) {

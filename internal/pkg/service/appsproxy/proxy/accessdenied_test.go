@@ -171,7 +171,7 @@ func TestAccessDenied_NotInGroupsAtCallback(t *testing.T) {
 	require.Equal(t, http.StatusForbidden, resp.StatusCode)
 	assertDeniedPage(t, body, "oidc", "Your account is not in a group that is allowed to open this application.", "/_proxy/sign_in?prompt=login")
 	assertNoGroups(t, body)
-	assert.NotContains(t, setCookieNames(resp), oauthCookieName)
+	assert.NotContains(t, setCookieNames(resp), ticketCookieName)
 	log := env.accessDeniedLog()
 	assert.Equal(t, map[string]any{
 		"proxy.app.id":          "oidc",
@@ -213,7 +213,7 @@ func TestAccessDenied_ExistingSession(t *testing.T) {
 	require.Equal(t, http.StatusForbidden, resp.StatusCode)
 	assertDeniedPage(t, body, "oidc", "Your account is not in a group that is allowed to open this application.", "/_proxy/sign_in?prompt=login&rd=%2Fsome%2Fpath")
 	assertNoGroups(t, body)
-	requireClearedCookie(t, resp, oauthCookieName)
+	requireClearedCookie(t, resp, ticketCookieName)
 	log := env.accessDeniedLog()
 	assertLogHasNoGroups(t, log)
 	assert.Equal(t, "session", log["proxy.access.stage"])
