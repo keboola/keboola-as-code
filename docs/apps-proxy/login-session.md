@@ -79,11 +79,13 @@ An OIDC IdP gives a refresh token only when the login asks for the
 `/.well-known/openid-configuration` when it builds an app's handler, and asks
 for the scope only when `scopes_supported` lists it. An IdP that does not know
 the scope therefore cannot reject the login. If the document cannot be read,
-the login uses the default scopes and apps-proxy logs a warning:
+the login uses `openid email profile` and apps-proxy logs a warning:
 
 ```
-cannot read OIDC discovery of "<issuer>", "offline_access" scope not requested: <error>
+cannot read OIDC discovery of "<issuer>", "offline_access" and "groups" scopes not requested: <error>
 ```
+
+The full scope rules, `groups` included, are in [login-scope.md](login-scope.md).
 
 The handler keeps that result until it is rebuilt, which happens only when the
 app config or its upstream changes, or apps-proxy restarts. Until then, new
@@ -146,6 +148,8 @@ on it. apps-proxy therefore closes every websocket at the earliest of:
 
 - the next refresh, plus 5 seconds (only for a session that is refreshed),
 - the cookie expiry,
+- 1 hour after it opened, when the handshake got an app user token (see
+  [app-user-token.md](app-user-token.md) §6),
 - 6 hours after it opened (`upstream.wsTimeout`).
 
 The browser reconnects at once. The upgrade request goes through the normal
@@ -158,13 +162,17 @@ While the IdP is unavailable, the reconnect gets the 503 page and the
 browser retries. If a refresh failed for another reason and the session was
 kept, the next close is 1 hour later.
 
+The app user refresh token on the handshake expires at the same moment, see
+[app-user-token.md](app-user-token.md) §6.
+
 Each close writes one info log line:
 
 ```
 websocket closed at its deadline: <reason>
 ```
 
-`<reason>` is `refresh due`, `cookie expiry` or `ws timeout`. The line carries
+`<reason>` is `refresh due`, `cookie expiry`, `app user token cap` or
+`ws timeout`. The line carries
 the app attributes (`proxy.app.id`, `proxy.app.projectId`, …). A websocket closed
 by the browser or the app writes no such line.
 
