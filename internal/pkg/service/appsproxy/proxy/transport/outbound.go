@@ -11,9 +11,13 @@ import (
 )
 
 // NewPublicOnlyHTTPClient creates a client for requests to authentication providers.
-// It connects only to public unicast addresses.
-// The address is checked after DNS resolution, so it also covers redirects and DNS rebinding.
 func NewPublicOnlyHTTPClient(userAgent string) *http.Client {
+	return &http.Client{Transport: &userAgentTransport{next: NewPublicOnlyTransport(), userAgent: userAgent}}
+}
+
+// NewPublicOnlyTransport creates a transport that connects only to public unicast addresses.
+// The address is checked after DNS resolution, so it also covers redirects and DNS rebinding.
+func NewPublicOnlyTransport() *http.Transport {
 	dialer := &net.Dialer{
 		Timeout:   30 * time.Second,
 		KeepAlive: 30 * time.Second,
@@ -25,7 +29,7 @@ func NewPublicOnlyHTTPClient(userAgent string) *http.Client {
 	httpTransport.Proxy = nil
 	httpTransport.DialContext = dialer.DialContext
 
-	return &http.Client{Transport: &userAgentTransport{next: httpTransport, userAgent: userAgent}}
+	return httpTransport
 }
 
 func checkPublicAddress(_, address string, _ syscall.RawConn) error {
