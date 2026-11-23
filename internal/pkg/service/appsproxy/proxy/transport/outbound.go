@@ -42,11 +42,36 @@ func checkPublicAddress(_, address string, _ syscall.RawConn) error {
 		addr.IsMulticast() ||
 		addr.IsPrivate() ||
 		addr.IsUnspecified() ||
-		netip.MustParsePrefix("100.64.0.0/10").Contains(addr) {
+		inBlockedPrefix(addr) {
 		return errors.Errorf(`connection to "%s" is not allowed, the address is not public`, address)
 	}
 
 	return nil
+}
+
+func inBlockedPrefix(addr netip.Addr) bool {
+	for _, prefix := range blockedPrefixes() {
+		if prefix.Contains(addr) {
+			return true
+		}
+	}
+	return false
+}
+
+// blockedPrefixes are the non-public ranges that the netip.Addr predicates do not cover.
+func blockedPrefixes() []netip.Prefix {
+	return []netip.Prefix{
+		netip.MustParsePrefix("100.64.0.0/10"),    // carrier-grade NAT
+		netip.MustParsePrefix("168.63.129.16/32"), // Azure WireServer
+		netip.MustParsePrefix("192.0.0.0/24"),     // IETF protocol assignments, incl. Oracle Cloud metadata
+		netip.MustParsePrefix("192.88.99.0/24"),   // 6to4 relay anycast
+		netip.MustParsePrefix("::/96"),            // IPv4-compatible
+		netip.MustParsePrefix("64:ff9b::/96"),     // NAT64
+		netip.MustParsePrefix("64:ff9b:1::/48"),   // local-use NAT64
+		netip.MustParsePrefix("100::/64"),         // discard-only
+		netip.MustParsePrefix("2001::/32"),        // Teredo
+		netip.MustParsePrefix("2002::/16"),        // 6to4
+	}
 }
 
 type userAgentTransport struct {
