@@ -43,9 +43,11 @@ const (
 )
 
 func providerUnavailableError(err error) error {
+	const msg = "identity provider unavailable"
 	return svcErrors.
-		NewServiceUnavailableError(errors.PrefixError(err, "identity provider unavailable")).
-		WithUserMessage("The identity provider is temporarily unavailable. Please try again in a moment.")
+		NewServiceUnavailableError(errors.New(msg)).
+		WithUserMessage("The identity provider is temporarily unavailable. Please try again in a moment.").
+		WithLogMessage(errors.Format(errors.PrefixError(err, msg), errors.FormatWithUnwrap(), errors.FormatWithStack()))
 }
 
 func proxyConfig(
