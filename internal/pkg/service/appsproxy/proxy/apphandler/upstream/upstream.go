@@ -286,15 +286,9 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 		)
 }
 
-// rewriteWebsocketOrigin makes a same-site WebSocket upgrade pass the origin
-// check of the app framework (Streamlit/Tornado compares Origin with Host).
-//
-// The outbound Host is the upstream hostname, so the browser's Origin, the public
-// origin of the request, would never match it. Origin is therefore replaced by the
-// upstream origin only when it equals the public origin the request was routed on
-// (the scheme of the public URL and the request Host). Any other Origin, or a
-// request without Origin, is judged by the app as it is. Host is the one
-// apps-proxy routed on; X-Forwarded-Host is client-controlled and must not be used.
+// rewriteWebsocketOrigin replaces Origin with the upstream origin only when Origin
+// is missing or equals the public URL scheme + "://" + the request Host, so the app
+// still checks every other Origin against its Host. It never uses X-Forwarded-Host.
 func (u *AppUpstream) rewriteWebsocketOrigin(r *httputil.ProxyRequest) {
 	origin := r.In.Header.Get("Origin")
 	if origin != "" && origin != u.baseURL.Scheme+"://"+r.In.Host {
