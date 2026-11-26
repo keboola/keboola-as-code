@@ -286,27 +286,31 @@ func (u *AppUpstream) newProxy(timeout time.Duration) *chain.Chain {
 		)
 }
 
+// rewriteWebsocketOrigin makes a same-site WebSocket upgrade pass the origin
+// check of the app framework (Streamlit/Tornado compares Origin with Host).
+//
+// The outbound Host is the upstream hostname, so the browser's Origin, the public
+// origin of the request, would never match it. Origin is therefore replaced by the
+// upstream origin only when it equals the public origin the request was routed on
+// (the scheme of the public URL and the request Host). Any other Origin, or a
+// request without Origin, is judged by the app as it is. Host is the one
+// apps-proxy routed on; X-Forwarded-Host is client-controlled and must not be used.
+func (u *AppUpstream) rewriteWebsocketOrigin(r *httputil.ProxyRequest) {
+	origin := r.In.Header.Get("Origin")
+	if origin != "" && origin != u.baseURL.Scheme+"://"+r.In.Host {
+		return
+	}
+	r.Out.Header.Set("Origin", u.target.Scheme+"://"+u.target.Host)
+}
+
 func (u *AppUpstream) newWebsocketProxy(timeout time.Duration) *chain.Chain {
 	proxy := u.newReverseProxy()
 
-	// ******************************************************************************
-	// TEMPORARY WORKAROUND — remove once Streamlit apps are configured with
-	// STREAMLIT_BROWSER_SERVER_ADDRESS / STREAMLIT_BROWSER_SERVER_PORT env vars.
-	//
-	// Streamlit (Tornado) checks WebSocket origin by comparing the Origin header
-	// against the Host header. Since apps-proxy rewrites Host to the upstream
-	// hostname, Origin (the public domain set by the browser) no longer matches
-	// and Tornado rejects the connection with 403.
-	//
-	// Rewriting Origin to the upstream hostname makes the request look like a
-	// direct browser connection, which is what every framework expects.
-	// ******************************************************************************
 	if u.target != nil {
-		upstreamOrigin := u.target.Scheme + "://" + u.target.Host
 		origRewrite := proxy.Rewrite
 		proxy.Rewrite = func(r *httputil.ProxyRequest) {
 			origRewrite(r)
-			r.Out.Header.Set("Origin", upstreamOrigin)
+			u.rewriteWebsocketOrigin(r)
 		}
 	}
 
