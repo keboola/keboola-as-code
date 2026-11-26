@@ -47,7 +47,10 @@ func StartAppServer(t *testing.T, pm server.PortManager) *AppServer {
 		lock.Unlock()
 
 		c, err := websocket.Accept(w, r, nil)
-		require.NoError(t, err)
+		if err != nil {
+			// The handshake was rejected (e.g. foreign Origin); Accept has written the response.
+			return
+		}
 
 		ctx, cancel := context.WithTimeoutCause(r.Context(), time.Second*10, errors.New("websocket server timeout"))
 		defer cancel()

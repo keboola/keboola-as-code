@@ -474,16 +474,14 @@ func TestAppProxyRouter(t *testing.T) {
 				// X-Forwarded-For contains the client IP.
 				assert.NotEmpty(t, appRequest.Header.Get("X-Forwarded-For"))
 
-				// Origin is rewritten to the upstream hostname (Streamlit/Tornado workaround).
+				// A missing Origin is set to the upstream origin.
 				assert.Equal(t, "http://"+appServer.Listener.Addr().String(), appRequest.Header.Get("Origin"))
 			},
 		},
 		{
-			// Streamlit (Tornado) rejects WebSocket connections when Origin does not match Host.
-			// apps-proxy rewrites Host to the upstream hostname for LB routing, so Origin
-			// (set by the browser to the public domain) would mismatch.
-			// Verify the temporary workaround: Origin is rewritten to the upstream hostname.
-			name: "websocket-origin-rewrite-streamlit-workaround",
+			// The upstream Host is the internal address, so a browser Origin equal to the
+			// public origin is rewritten to the upstream origin to pass the app's Origin check.
+			name: "websocket-origin-same-origin-rewritten",
 			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
 				ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
 				defer cancel()
@@ -510,9 +508,33 @@ func TestAppProxyRouter(t *testing.T) {
 				require.Len(t, *appServer.Requests, 1)
 				appRequest := (*appServer.Requests)[0]
 
-				// Origin must be rewritten to the upstream hostname so Tornado's
-				// check_origin() sees Origin == Host and accepts the connection.
 				assert.Equal(t, "http://"+appServer.Listener.Addr().String(), appRequest.Header.Get("Origin"))
+			},
+		},
+		{
+			// A foreign Origin is passed to the app unchanged, and the app rejects it.
+			name: "websocket-origin-foreign-rejected",
+			run: func(t *testing.T, client *http.Client, m []*mockoidc.MockOIDC, appServer *testutil.AppServer, service *testutil.DataAppsAPI, fakeClient *k8sfake.FakeDynamicClient, watcher *k8sapp.StateWatcher) {
+				ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
+				defer cancel()
+
+				c, resp, err := websocket.Dial(
+					ctx,
+					"wss://public-123.hub.keboola.local/ws",
+					&websocket.DialOptions{
+						HTTPClient: client,
+						HTTPHeader: http.Header{
+							"Origin": []string{"https://evil.example"},
+						},
+					},
+				)
+				require.Error(t, err)
+				require.Nil(t, c)
+				require.NotNil(t, resp)
+				assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+
+				require.Len(t, *appServer.Requests, 1)
+				assert.Equal(t, "https://evil.example", (*appServer.Requests)[0].Header.Get("Origin"))
 			},
 		},
 		{
