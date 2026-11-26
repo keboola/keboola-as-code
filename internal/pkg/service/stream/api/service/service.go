@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distlock"
@@ -17,8 +18,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// Project admin roles allowed to modify streams.
+// The "share" role is the "admin" role plus bucket sharing.
 const (
 	adminRole = "admin"
+	shareRole = "share"
 )
 
 type service struct {
@@ -43,6 +47,12 @@ func New(d dependencies.APIScope, cfg config.Config) api.Service {
 		mapper:     mapper.New(d, cfg),
 		adminError: errors.New("only admin token can do write operations on streams"),
 	}
+}
+
+// canWrite reports whether the token may create, modify or delete streams.
+// Only master tokens of project admins qualify, readOnly and guest roles are refused.
+func canWrite(token keboola.Token) bool {
+	return token.Admin != nil && (token.Admin.Role == adminRole || token.Admin.Role == shareRole)
 }
 
 func (s *service) APIRootIndex(context.Context, dependencies.PublicRequestScope) error {

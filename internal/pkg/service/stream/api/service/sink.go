@@ -25,9 +25,7 @@ import (
 
 //nolint:dupl // CreateSource method is similar
 func (s *service) CreateSink(ctx context.Context, d dependencies.SourceRequestScope, payload *api.CreateSinkPayload) (*api.Task, error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -121,9 +119,7 @@ func (s *service) ListDeletedSinks(ctx context.Context, scope dependencies.Sourc
 }
 
 func (s *service) UpdateSink(ctx context.Context, d dependencies.SinkRequestScope, payload *api.UpdateSinkPayload) (*api.Task, error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -185,9 +181,7 @@ func (s *service) UpdateSink(ctx context.Context, d dependencies.SinkRequestScop
 }
 
 func (s *service) DeleteSink(ctx context.Context, d dependencies.SinkRequestScope, _ *api.DeleteSinkPayload) (*api.Task, error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -229,9 +223,7 @@ func (s *service) GetSinkSettings(ctx context.Context, d dependencies.SinkReques
 }
 
 func (s *service) UpdateSinkSettings(ctx context.Context, d dependencies.SinkRequestScope, payload *api.UpdateSinkSettingsPayload) (*api.Task, error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -363,9 +355,7 @@ func (s *service) SinkStatisticsFiles(ctx context.Context, d dependencies.SinkRe
 }
 
 func (s *service) SinkStatisticsClear(ctx context.Context, d dependencies.SinkRequestScope, payload *api.SinkStatisticsClearPayload) (err error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -380,9 +370,7 @@ func (s *service) SinkStatisticsClear(ctx context.Context, d dependencies.SinkRe
 }
 
 func (s *service) DisableSink(ctx context.Context, d dependencies.SinkRequestScope, payload *api.DisableSinkPayload) (res *api.Task, err error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -414,9 +402,7 @@ func (s *service) DisableSink(ctx context.Context, d dependencies.SinkRequestSco
 }
 
 func (s *service) EnableSink(ctx context.Context, d dependencies.SinkRequestScope, payload *api.EnableSinkPayload) (res *api.Task, err error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -448,9 +434,7 @@ func (s *service) EnableSink(ctx context.Context, d dependencies.SinkRequestScop
 }
 
 func (s *service) UndeleteSink(ctx context.Context, scope dependencies.SinkRequestScope, payload *api.UndeleteSinkPayload) (res *api.Task, err error) {
-	// If user is not admin deny access for write
-	token := scope.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(scope.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -513,9 +497,7 @@ func (s *service) SinkVersionDetail(ctx context.Context, scope dependencies.Sink
 }
 
 func (s *service) RollbackSinkVersion(ctx context.Context, scope dependencies.SinkRequestScope, payload *api.RollbackSinkVersionPayload) (res *api.Task, err error) {
-	// If user is not admin deny access for write
-	token := scope.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(scope.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 

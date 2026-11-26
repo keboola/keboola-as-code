@@ -24,9 +24,7 @@ import (
 
 //nolint:dupl // CreateSink method is similar
 func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequestScope, payload *api.CreateSourcePayload) (*api.Task, error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -97,9 +95,7 @@ func (s *service) CreateSource(ctx context.Context, d dependencies.BranchRequest
 }
 
 func (s *service) UpdateSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourcePayload) (*api.Task, error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -177,9 +173,7 @@ func (s *service) GetSource(ctx context.Context, d dependencies.SourceRequestSco
 }
 
 func (s *service) DeleteSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DeleteSourcePayload) (*api.Task, error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -380,9 +374,7 @@ func (s *service) GetSourceSettings(ctx context.Context, d dependencies.SourceRe
 }
 
 func (s *service) UpdateSourceSettings(ctx context.Context, d dependencies.SourceRequestScope, payload *api.UpdateSourceSettingsPayload) (*api.Task, error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -491,9 +483,7 @@ func filterSinksBySignal(sinks []definition.Sink, signal string) []definition.Si
 }
 
 func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.SourceRequestScope, payload *api.SourceStatisticsClearPayload) (err error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -520,9 +510,7 @@ func (s *service) SourceStatisticsClear(ctx context.Context, d dependencies.Sour
 }
 
 func (s *service) DisableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.DisableSourcePayload) (*api.Task, error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -586,9 +574,7 @@ func (s *service) DisableSource(ctx context.Context, d dependencies.SourceReques
 }
 
 func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequestScope, payload *api.EnableSourcePayload) (*api.Task, error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -652,9 +638,7 @@ func (s *service) EnableSource(ctx context.Context, d dependencies.SourceRequest
 }
 
 func (s *service) RotateSourceSecret(ctx context.Context, d dependencies.SourceRequestScope, _ *api.RotateSourceSecretPayload) (*api.Source, error) {
-	// If user is not admin deny access for write
-	token := d.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(d.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -690,9 +674,7 @@ func rotateSourceSecret(source definition.Source) (definition.Source, error) {
 }
 
 func (s *service) UndeleteSource(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.UndeleteSourcePayload) (*api.Task, error) {
-	// If user is not admin deny access for write
-	token := scope.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(scope.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
@@ -786,9 +768,7 @@ func (s *service) SourceVersionDetail(ctx context.Context, scope dependencies.So
 }
 
 func (s *service) RollbackSourceVersion(ctx context.Context, scope dependencies.SourceRequestScope, payload *api.RollbackSourceVersionPayload) (res *api.Task, err error) {
-	// If user is not admin deny access for write
-	token := scope.StorageAPIToken()
-	if token.Admin == nil || token.Admin.Role != adminRole {
+	if !canWrite(scope.StorageAPIToken()) {
 		return nil, svcerrors.NewForbiddenError(s.adminError)
 	}
 
