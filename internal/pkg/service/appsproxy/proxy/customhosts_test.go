@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
@@ -106,6 +107,7 @@ func TestCustomHostsThroughTheProxy(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "Hello, client", body)
 	require.Len(t, *appServer.Requests, 1)
+	assert.Equal(t, 1, d.AppHandlers().HandlerCount())
 
 	// An unknown host is rejected without reaching an app, and a spoofed X-Forwarded-Host does not make it a known one.
 	resp, body = get("https://unknown.customer.org/", "data.customer.org")
@@ -116,6 +118,19 @@ func TestCustomHostsThroughTheProxy(t *testing.T) {
 	// A claim under the proxy's own host is not indexed.
 	_, ok := d.CustomHosts().Resolve("auth.hub.keboola.local")
 	assert.False(t, ok)
+
+	// An App that publishes a custom URL itself is not routed by it: only a Routed claim routes a host.
+	_, err = mocked.TestFakeK8sClient().Resource(k8sapp.AppGVR()).Namespace("keboola").Patch(ctx, "app-123", k8stypes.MergePatchType,
+		[]byte(`{"status":{"appsProxy":{"publicUrl":"https://other.customer.org"}}}`), metav1.PatchOptions{})
+	require.NoError(t, err)
+	require.Eventually(t, func() bool {
+		info, _ := d.AppStateWatcher().GetState(k8sapp.WorkloadRef{AppID: "123"})
+		return info.PublicHost == "other.customer.org"
+	}, 5*time.Second, 20*time.Millisecond)
+	resp, body = get("https://other.customer.org/", "")
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	assert.Contains(t, body, "Unexpected domain, missing application ID.")
+	assert.Len(t, *appServer.Requests, 1)
 
 	// A stopped app is woken by a request on its custom host.
 	patchStoppedApp("123", `{"spec": {"state": "Stopped", "autoRestartEnabled": true}, "status": {"currentState": "Stopped"}}`)(t, mocked.TestFakeK8sClient(), d.AppStateWatcher())
@@ -133,4 +148,6 @@ func TestCustomHostsThroughTheProxy(t *testing.T) {
 	require.Eventually(t, func() bool { _, ok := d.CustomHosts().Resolve("data.customer.org"); return !ok }, 5*time.Second, 20*time.Millisecond)
 	resp, _ = get("https://data.customer.org/", "")
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	// The handler cached for the host is evicted too.
+	assert.Eventually(t, func() bool { return d.AppHandlers().HandlerCount() == 0 }, 5*time.Second, 20*time.Millisecond)
 }

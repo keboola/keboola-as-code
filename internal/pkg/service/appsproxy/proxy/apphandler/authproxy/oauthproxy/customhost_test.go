@@ -95,6 +95,21 @@ func TestHandler_RedirectURIErrorShowsCallbackOnCustomHost(t *testing.T) {
 
 			assert.Equal(t, http.StatusForbidden, rec.Code)
 			assert.Equal(t, tc.wantURL, strings.Contains(rec.Body.String(), "https://data.customer.org/_proxy/callback"), rec.Body.String())
+			assert.Equal(t, tc.wantURL, strings.Contains(rec.Body.String(), "Callback URL"), rec.Body.String())
 		})
+	}
+}
+
+func TestIsRedirectURIError(t *testing.T) {
+	t.Parallel()
+
+	for text, want := range map[string]bool{
+		"redirect_uri_mismatch":                           true,
+		"The redirect URI is not registered":              true,
+		"AADSTS50011: The reply URL specified ...":        true,
+		"access_denied":                                   false,
+		"Login Failed: Unable to find a valid CSRF token": false,
+	} {
+		assert.Equal(t, want, isRedirectURIError("", text), text)
 	}
 }
