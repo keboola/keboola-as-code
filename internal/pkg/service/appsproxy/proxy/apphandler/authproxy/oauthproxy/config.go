@@ -30,6 +30,9 @@ import (
 // Browsers can also send cookie session store cookies, CookieName and "<CookieName>_<n>"; they must not reach the app either.
 const CookieName = "_oauth2_proxy"
 
+// HostSessionCookieName is the host-only name of the session ticket cookie. The CSRF cookies start with "<HostSessionCookieName>_".
+const HostSessionCookieName = "__Host-kbc-oauth2-ticket"
+
 type SessionStore struct {
 	Client  *redis.Client
 	Metrics *sessionstore.Metrics

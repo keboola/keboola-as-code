@@ -31,6 +31,12 @@ func TestIsProxyCookie(t *testing.T) {
 		"_kbc_dasid",
 		"proxyBasicAuth",
 		"__Host-kbc-app-preview-session",
+		"__Host-kbc-dasid",
+		"__Host-kbc-basic-auth",
+		"__Host-kbc-auth-provider",
+		"__Host-kbc-oauth2-ticket",
+		"__Host-kbc-oauth2-ticket_csrf",
+		"__Host-kbc-oauth2-ticket_x_csrf",
 	}
 	for _, name := range removed {
 		assert.True(t, isProxyCookie(name), name)
@@ -43,6 +49,10 @@ func TestIsProxyCookie(t *testing.T) {
 		"_kbc_dasid_0",
 		"proxybasicauth",
 		"session",
+		"__Host-kbc-dasid_0",
+		"__Host-kbc-oauth2-ticketx",
+		"x__Host-kbc-oauth2-ticket",
+		"__Host-kbc-basic-auth2",
 	}
 	for _, name := range kept {
 		assert.False(t, isProxyCookie(name), name)

@@ -27,8 +27,12 @@ func isProxyCookie(name string) bool {
 		selector.ProviderCookie,
 		basicauth.CookieName,
 		sessions.CookieName,
-		session.CookieName:
+		session.CookieName,
+		selector.HostProviderCookie,
+		basicauth.HostCookieName,
+		sessions.HostCookieName,
+		oauthproxy.HostSessionCookieName:
 		return true
 	}
-	return strings.HasPrefix(name, oauthproxy.CookieName+"_")
+	return strings.HasPrefix(name, oauthproxy.CookieName+"_") || strings.HasPrefix(name, oauthproxy.HostSessionCookieName+"_")
 }
