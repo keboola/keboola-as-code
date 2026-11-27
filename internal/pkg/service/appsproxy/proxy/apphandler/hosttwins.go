@@ -68,7 +68,9 @@ func (w *twinExpiryWriter) Flush() {
 	_ = http.NewResponseController(w.ResponseWriter).Flush()
 }
 
+// Hijack runs the expiry first: a 101 is written from the header map and never goes through WriteHeader.
 func (w *twinExpiryWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	w.expireTwins()
 	return http.NewResponseController(w.ResponseWriter).Hijack()
 }
 

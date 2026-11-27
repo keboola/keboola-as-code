@@ -3,6 +3,7 @@ package proxy_test
 import (
 	"net/http"
 	"net/http/cookiejar"
+	"net/http/httptest"
 	"net/url"
 	"slices"
 	"strings"
@@ -16,9 +17,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/sessions"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/basicauth"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/oauthproxy"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/preview/previewtest"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/proxy/apphandler/authproxy/selector"
 )
 
@@ -285,4 +288,55 @@ func TestHostCookies_MultiProviderUnderHostNames(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, env.send(moved, multiOrigin+"/").StatusCode, "the provider picker is not shown")
 	assert.False(t, slices.ContainsFunc(client.Jar.Cookies(u), func(c *http.Cookie) bool { return c.Name == "" }))
+}
+
+func TestHostCookies_WebsocketRefreshExpiresHostTicket(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+	client := env.oidcLogin(env.providers[0], hostCookieUser(), oidcOrigin+"/")
+	env.rewriteOIDCSession(client, func(s *sessionsapi.SessionState) {
+		require.NotEmpty(t, s.RefreshToken)
+		s.CreatedAt = ago(2 * time.Hour)
+	})
+	moved := env.legacyToHostNames(client, oidcHost, nil)
+
+	_, resp := dialIdleWebsocket(t, moved)
+	require.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+	require.NotNil(t, setCookie(resp, ticketCookieName), "the refresh writes the legacy ticket on the 101")
+	assert.NotNil(t, expiredCookie(resp, oauthproxy.HostSessionCookieName), "and expires the host-only one")
+	assert.Nil(t, cookieIn(moved, oidcURL, oauthproxy.HostSessionCookieName))
+	assert.NotNil(t, cookieIn(moved, oidcURL, ticketCookieName))
+}
+
+func TestHostCookies_BasicAuthExpiresHostTwin(t *testing.T) {
+	t.Parallel()
+	env := startPreviewEnv(t)
+	moved := env.legacyToHostNames(env.basicAuthLogin(), authHost, nil)
+	require.NotNil(t, cookieIn(moved, &url.URL{Scheme: "https", Host: authHost, Path: "/"}, basicauth.HostCookieName))
+
+	resp := env.send(moved, authOrigin+"/some/path")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.NotNil(t, setCookie(resp, basicauth.CookieName), "the sliding cookie is written under the legacy name")
+	assert.NotNil(t, expiredCookie(resp, basicauth.HostCookieName))
+}
+
+func TestHostCookies_SessionCookieExpiresHostTwin(t *testing.T) {
+	t.Parallel()
+	stream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
+	t.Cleanup(stream.Close)
+	env := startPreviewEnv(t, func(cfg *config.Config, _ *previewtest.JWKSServer) {
+		cfg.Sessions.StreamURL = stream.URL
+	})
+	env.syncClock()
+	client := env.oidcLogin(env.providers[0], hostCookieUser(), oidcOrigin+"/")
+	require.Equal(t, http.StatusOK, env.send(client, oidcOrigin+"/", "Accept", "text/html").StatusCode)
+	moved := env.legacyToHostNames(client, oidcHost, nil)
+	require.NotNil(t, cookieIn(moved, oidcURL, sessions.HostCookieName))
+
+	// The cookie deadline moves on the next navigation, which writes the legacy cookie.
+	env.clock.Advance(20 * time.Minute)
+	resp := env.send(moved, oidcOrigin+"/", "Accept", "text/html")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.NotNil(t, setCookie(resp, sessions.CookieName))
+	assert.NotNil(t, expiredCookie(resp, sessions.HostCookieName))
 }
