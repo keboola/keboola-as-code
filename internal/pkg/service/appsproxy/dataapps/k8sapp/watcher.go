@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -67,17 +68,27 @@ type dependencies interface {
 // NewDynamicClient creates a Kubernetes dynamic client from kubeconfig path or in-cluster config.
 // If kubeconfigPath is empty, in-cluster config is used.
 func NewDynamicClient(kubeconfigPath string) (dynamic.Interface, error) {
-	var cfg *rest.Config
-	var err error
-	if kubeconfigPath != "" {
-		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-	} else {
-		cfg, err = rest.InClusterConfig()
-	}
+	cfg, err := restConfig(kubeconfigPath)
 	if err != nil {
 		return nil, err
 	}
 	return dynamic.NewForConfig(withRateLimits(cfg))
+}
+
+// NewDiscoveryClient creates a Kubernetes discovery client from kubeconfig path or in-cluster config.
+func NewDiscoveryClient(kubeconfigPath string) (ResourceDiscovery, error) {
+	cfg, err := restConfig(kubeconfigPath)
+	if err != nil {
+		return nil, err
+	}
+	return discovery.NewDiscoveryClientForConfig(cfg)
+}
+
+func restConfig(kubeconfigPath string) (*rest.Config, error) {
+	if kubeconfigPath != "" {
+		return clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	}
+	return rest.InClusterConfig()
 }
 
 // withRateLimits replaces client-go's 5 QPS and burst 10, which are sized for a
@@ -237,8 +248,9 @@ func (w *StateWatcher) OnWorkloadRemoved(fn func(WorkloadRef)) {
 //
 // Nothing arbitrates between a Sandbox and an App: the platform allocates every
 // published hostname and does not issue one to a Sandbox that an App already
-// answers on. A workload kind with a free-form hostname breaks that assumption
-// and has to be reconsidered here before one exists.
+// answers on. Custom hosts are looked up after the Sandbox hosts, and CustomHosts
+// never indexes a host equal to or under the proxy's own public host, so a claim
+// cannot shadow another app's .hub URL.
 func (w *StateWatcher) ResolveWorkloadForHost(host string) (WorkloadRef, bool) {
 	host = NormalizeHost(host)
 

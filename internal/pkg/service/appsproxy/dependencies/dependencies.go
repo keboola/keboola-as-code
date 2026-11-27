@@ -87,6 +87,7 @@ type ServiceScope interface {
 	PageWriter() *pagewriter.Writer
 	WakeupManager() *wakeup.Manager
 	AppStateWatcher() *k8sapp.StateWatcher
+	CustomHosts() *k8sapp.CustomHosts
 	SessionsManager() *sessions.Manager
 	IdleTimerRecorder() *idletimer.Recorder
 	AppTokenMinter() *apptoken.Minter
@@ -114,6 +115,7 @@ type serviceScope struct {
 	appConfigLoader   appconfig.Loader
 	wakeupManager     *wakeup.Manager
 	appStateWatcher   *k8sapp.StateWatcher
+	customHosts       *k8sapp.CustomHosts
 	sessionsManager   *sessions.Manager
 	idleTimerRecorder *idletimer.Recorder
 	appTokenMinter    *apptoken.Minter
@@ -130,6 +132,11 @@ type parentScopes interface {
 // dynamic client (used in tests to inject a fake client without real kubeconfig).
 type k8sClientProvider interface {
 	K8sDynamicClient() dynamic.Interface
+}
+
+// k8sDiscoveryProvider is optionally implemented by parentScopes to supply an already-constructed discovery client.
+type k8sDiscoveryProvider interface {
+	K8sDiscovery() k8sapp.ResourceDiscovery
 }
 
 type sessionStoreClientProvider interface {
@@ -232,6 +239,17 @@ func newServiceScope(ctx context.Context, parentScp parentScopes, cfg config.Con
 	}
 	d.appStateWatcher = k8sapp.NewStateWatcher(d, k8sClient, cfg.K8s.AppsNamespace)
 
+	var k8sDiscovery k8sapp.ResourceDiscovery
+	if provider, ok := parentScp.(k8sDiscoveryProvider); ok {
+		k8sDiscovery = provider.K8sDiscovery()
+	} else {
+		k8sDiscovery, err = k8sapp.NewDiscoveryClient(cfg.K8s.Kubeconfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+	d.customHosts = k8sapp.NewCustomHosts(d, k8sClient, k8sDiscovery, cfg.K8s.AppsNamespace, cfg.API.PublicURL.Host)
+
 	if provider, ok := parentScp.(sessionStoreClientProvider); ok && provider.SessionStoreClient() != nil {
 		d.sessionStore = provider.SessionStoreClient()
 	} else {
@@ -289,6 +307,10 @@ func (v *serviceScope) PageWriter() *pagewriter.Writer {
 
 func (v *serviceScope) WakeupManager() *wakeup.Manager {
 	return v.wakeupManager
+}
+
+func (v *serviceScope) CustomHosts() *k8sapp.CustomHosts {
+	return v.customHosts
 }
 
 func (v *serviceScope) AppStateWatcher() *k8sapp.StateWatcher {
