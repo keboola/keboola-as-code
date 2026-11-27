@@ -35,10 +35,30 @@ type Manager struct {
 	upstreamManager  *upstream.Manager
 	authProxyManager *authproxy.Manager
 	pageWriter       *pagewriter.Writer
-	handlers         *syncmap.SyncMap[k8sapp.WorkloadRef, appHandlerWrapper]
+	handlers         *syncmap.SyncMap[handlerKey, appHandlerWrapper]
 	sessionsManager  *sessions.Manager
 	appTokenMinter   *apptoken.Minter
 	preview          *preview.Service
+	customHosts      appconfig.CustomHostResolver
+}
+
+// handlerKey identifies a cached handler: one per workload and public host.
+// Host is empty on the hub host. WorkloadRef stays host-free, so the state, wakeup and idle-timer lookups are shared by all hosts.
+type handlerKey struct {
+	Workload k8sapp.WorkloadRef
+	Host     string
+}
+
+// normalizeResult makes the app config's custom host the normalized index key, so every request spelling shares one handler.
+func normalizeResult(result appconfig.AppConfigResult) appconfig.AppConfigResult {
+	if result.AppConfig.CustomHost != "" {
+		result.AppConfig.CustomHost = k8sapp.NormalizeHost(result.AppConfig.CustomHost)
+	}
+	return result
+}
+
+func handlerKeyFor(result appconfig.AppConfigResult) handlerKey {
+	return handlerKey{Workload: result.Workload, Host: result.AppConfig.CustomHost}
 }
 
 type appHandlerWrapper struct {
@@ -70,6 +90,7 @@ type dependencies interface {
 	SessionsManager() *sessions.Manager
 	AppTokenMinter() *apptoken.Minter
 	AppStateWatcher() *k8sapp.StateWatcher
+	CustomHosts() *k8sapp.CustomHosts
 	Process() *servicectx.Process
 }
 
@@ -83,11 +104,12 @@ func NewManager(d dependencies) *Manager {
 		upstreamManager:  d.UpstreamManager(),
 		authProxyManager: d.AuthProxyManager(),
 		pageWriter:       d.PageWriter(),
-		handlers: syncmap.New[k8sapp.WorkloadRef, appHandlerWrapper](func(k8sapp.WorkloadRef) *appHandlerWrapper {
+		handlers: syncmap.New[handlerKey, appHandlerWrapper](func(handlerKey) *appHandlerWrapper {
 			return &appHandlerWrapper{lock: &sync.Mutex{}}
 		}),
 		sessionsManager: d.SessionsManager(),
 		appTokenMinter:  d.AppTokenMinter(),
+		customHosts:     d.CustomHosts(),
 	}
 
 	if cfg.Preview.Enabled() {
@@ -95,32 +117,89 @@ func NewManager(d dependencies) *Manager {
 	}
 
 	d.AppStateWatcher().OnWorkloadRemoved(m.evictWorkload)
+	d.CustomHosts().OnHostRemoved(m.EvictHost)
 
 	return m
 }
 
 // evictWorkload drops the cached handler for a workload that no longer exists.
-// The cache is keyed by workload and a draft is short-lived, so without this it
+// The cache is keyed by workload and host, and a draft is short-lived, so without this it
 // grows with every draft ever served and strands each handler's reverse proxy
 // and its uncancelled context.
 func (m *Manager) evictWorkload(ref k8sapp.WorkloadRef) {
-	wrapper, ok := m.handlers.Delete(ref)
+	m.handlers.Range(func(key handlerKey, _ *appHandlerWrapper) {
+		if key.Workload == ref {
+			m.evict(key, "workload removed")
+		}
+	})
+}
+
+// EvictHost drops the cached handler a workload serves on one custom host. The entry leaves the cache at once;
+// cancelling its handler waits for the handler lock in the background, because the caller is the claim informer
+// and a handler build in progress (OIDC discovery against the customer's IdP) must not delay other hosts' de-routing.
+func (m *Manager) EvictHost(ref k8sapp.WorkloadRef, host string) {
+	wrapper, ok := m.handlers.Delete(handlerKey{Workload: ref, Host: host})
 	if !ok {
 		return
 	}
+	go release(wrapper, "host removed")
+}
 
+// HandlerCount is the number of cached handlers.
+func (m *Manager) HandlerCount() int {
+	count := 0
+	m.handlers.Range(func(handlerKey, *appHandlerWrapper) { count++ })
+	return count
+}
+
+func (m *Manager) evict(key handlerKey, reason string) {
+	wrapper, ok := m.handlers.Delete(key)
+	if !ok {
+		return
+	}
+	release(wrapper, reason)
+}
+
+// release marks the detached entry evicted and cancels its handler.
+func release(wrapper *appHandlerWrapper, reason string) {
 	wrapper.lock.Lock()
 	defer wrapper.lock.Unlock()
-	wrapper.evicted = true
-	if wrapper.cancel != nil {
-		wrapper.cancel(errors.New("workload removed"))
-		wrapper.cancel = nil
+	wrapper.releaseLocked(reason)
+}
+
+// releaseLocked is release for a caller that holds the wrapper lock.
+func (w *appHandlerWrapper) releaseLocked(reason string) {
+	w.evicted = true
+	if w.cancel != nil {
+		w.cancel(errors.New(reason))
+		w.cancel = nil
 	}
-	wrapper.handler = nil
+	w.handler = nil
 }
 
 func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {
-	return m.handlerFor(ctx, result, m.handlers.GetOrInit(result.Workload))
+	result = normalizeResult(result)
+	// An unrouted host builds no handler, so a request cannot repopulate an entry the eviction just removed.
+	if !m.hostRouted(result) {
+		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, hostNotRoutedError(result))
+	}
+	return m.handlerFor(ctx, result, m.handlers.GetOrInit(handlerKeyFor(result)))
+}
+
+// hostRouted reports whether the custom host of the request still routes to its workload. The index is updated
+// before the eviction callback runs, so a check made under the wrapper lock cannot pass for a wrapper that the
+// eviction missed.
+func (m *Manager) hostRouted(result appconfig.AppConfigResult) bool {
+	host := result.AppConfig.CustomHost
+	if host == "" {
+		return true
+	}
+	route, ok := m.customHosts.Resolve(host)
+	return ok && route.Workload == result.Workload
+}
+
+func hostNotRoutedError(result appconfig.AppConfigResult) error {
+	return svcErrors.NewResourceNotFoundError("host", result.AppConfig.CustomHost, "cluster")
 }
 
 func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResult, wrapper *appHandlerWrapper) http.Handler {
@@ -133,7 +212,17 @@ func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResu
 	// Building into it would strand the handler, and the workload it serves is
 	// gone anyway, so the request ends here.
 	if wrapper.evicted {
+		if result.AppConfig.CustomHost != "" {
+			return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, hostNotRoutedError(result))
+		}
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, svcErrors.NewResourceNotFoundError("workload", result.Workload.String(), "cluster"))
+	}
+
+	if !m.hostRouted(result) {
+		// DeleteIf takes the wrapper out of the cache before the eviction callback runs, which then finds nothing to cancel.
+		wrapper.releaseLocked("host not routed")
+		m.handlers.DeleteIf(handlerKeyFor(result), wrapper)
+		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, hostNotRoutedError(result))
 	}
 
 	// Load configuration for the app

@@ -24,6 +24,8 @@ const (
 
 	IdleTimerVersion  = "v1"
 	IdleTimerResource = "idletimers"
+
+	CustomAppDomainResource = "customappdomains"
 )
 
 // AppGVR returns the GroupVersionResource for the App CRD.
@@ -39,6 +41,11 @@ func SandboxGVR() schema.GroupVersionResource {
 // IdleTimerGVR returns the GroupVersionResource for the IdleTimer CRD.
 func IdleTimerGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: Group, Version: IdleTimerVersion, Resource: IdleTimerResource}
+}
+
+// CustomAppDomainGVR returns the GroupVersionResource for the CustomAppDomain CRD, which shares the App CRD's group and version.
+func CustomAppDomainGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{Group: Group, Version: Version, Resource: CustomAppDomainResource}
 }
 
 // gvrFor returns the CRD that owns the workload's route, which is the one a

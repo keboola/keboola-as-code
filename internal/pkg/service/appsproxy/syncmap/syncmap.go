@@ -69,3 +69,16 @@ func (m *SyncMap[K, V]) Delete(key K) (*V, bool) {
 	}
 	return item, ok
 }
+
+// DeleteIf removes the key only while it still holds the given item, so a caller that built into one item
+// never removes a newer item that replaced it.
+func (m *SyncMap[K, V]) DeleteIf(key K, item *V) bool {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	if m.kvs[key] != item {
+		return false
+	}
+	delete(m.kvs, key)
+	return true
+}

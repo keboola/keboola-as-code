@@ -22,6 +22,11 @@ const (
 	// service uses.
 	attrContextAppID = "context.appId"
 	attrSandboxName  = "proxy.sandbox.name"
+	// attrHostKind is a bounded value; the host itself would be unbounded metric cardinality.
+	attrHostKind = "proxy.host_kind"
+
+	hostKindHub    = "hub"
+	hostKindCustom = "custom"
 )
 
 type AppConfigResult struct {
@@ -35,6 +40,11 @@ type WorkloadResolver interface {
 	ResolveWorkloadForHost(host string) (k8sapp.WorkloadRef, bool)
 }
 
+// CustomHostResolver reports the workload that serves a custom host and the normalized host key.
+type CustomHostResolver interface {
+	Resolve(host string) (k8sapp.CustomHostRoute, bool)
+}
+
 func AppConfigFromContext(ctx context.Context) AppConfigResult {
 	if appConfig, ok := ctx.Value(appConfigCtxKey).(AppConfigResult); ok {
 		return appConfig
@@ -42,14 +52,16 @@ func AppConfigFromContext(ctx context.Context) AppConfigResult {
 	return AppConfigResult{}
 }
 
-func Middleware(configLoader Loader, resolver WorkloadResolver, host string) middleware.Middleware {
+func Middleware(configLoader Loader, resolver WorkloadResolver, customHosts CustomHostResolver, host string) middleware.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			workload := resolveWorkload(req, resolver, host)
+			workload, customHost := resolveWorkload(req, resolver, customHosts, host)
 			if workload.AppID != "" {
 				ctx := req.Context()
 
 				appConfig, err := configLoader.GetConfig(ctx, workload.AppID)
+				// GetConfig returns a copy: the loader's cached config is never changed.
+				appConfig.CustomHost = customHost
 				result := AppConfigResult{
 					Workload:  workload,
 					AppConfig: appConfig,
@@ -93,20 +105,28 @@ func Middleware(configLoader Loader, resolver WorkloadResolver, host string) mid
 func requestTelemetryAttrs(workload k8sapp.WorkloadRef, appConfig api.AppConfig) []attribute.KeyValue {
 	attrs := appConfig.Telemetry()
 	attrs = append(attrs, attribute.String(attrContextAppID, workload.AppID.String()))
+	hostKind := hostKindHub
+	if appConfig.CustomHost != "" {
+		hostKind = hostKindCustom
+	}
+	attrs = append(attrs, attribute.String(attrHostKind, hostKind))
 	if workload.IsSandbox() {
 		attrs = append(attrs, attribute.String(attrSandboxName, workload.SandboxName))
 	}
 	return attrs
 }
 
-// resolveWorkload picks the workload for the request hostname. The order is a
-// priority, not a tie-break; see StateWatcher.ResolveWorkloadForHost for why
-// nothing arbitrates between a Sandbox and an App.
-func resolveWorkload(req *http.Request, resolver WorkloadResolver, host string) k8sapp.WorkloadRef {
+// resolveWorkload picks the workload for the request hostname: an exact Sandbox host, then a custom host, then the
+// app id in a .hub hostname. The order is a priority, not a tie-break. The returned custom host is the normalized
+// index key, empty on the other two routes; it never comes from the raw request host or from X-Forwarded-Host.
+func resolveWorkload(req *http.Request, resolver WorkloadResolver, customHosts CustomHostResolver, host string) (k8sapp.WorkloadRef, string) {
 	if ref, ok := resolver.ResolveWorkloadForHost(req.Host); ok {
-		return ref
+		return ref, ""
 	}
-	return workloadForAppID(req, host)
+	if route, ok := customHosts.Resolve(req.Host); ok {
+		return route.Workload, route.Host
+	}
+	return workloadForAppID(req, host), ""
 }
 
 // workloadForAppID does not check that the App exists: an App is validated by

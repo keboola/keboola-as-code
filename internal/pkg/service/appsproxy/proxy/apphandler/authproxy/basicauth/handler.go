@@ -229,6 +229,9 @@ func (h *Handler) setCookie(w http.ResponseWriter, host string, expires time.Dur
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	}
+	if h.app.CustomHost != "" {
+		v.Domain = ""
+	}
 
 	if expires > 0 {
 		// If there is an expiration, set it

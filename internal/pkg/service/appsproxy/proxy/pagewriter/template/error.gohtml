@@ -122,7 +122,8 @@
 {{ end }}  <h1>{{ .Title }}</h1>
 {{ if .Email }}  <p class="lede">You are signed in as <b>{{ .Email }}</b>{{ if .ProviderName }} ({{ .ProviderName }}){{ end }}.</p>
 {{ end }}  <p class="lede">{{ .Guidance }}</p>
-{{ if .SwitchAccountURL }}  <p class="actions"><a class="btn btn--inline" href="{{ .SwitchAccountURL }}">Sign in with a different account</a></p>
+{{ if .CallbackURL }}  <p class="lede">Callback URL: <code>{{ .CallbackURL }}</code></p>
+{{ end }}{{ if .SwitchAccountURL }}  <p class="actions"><a class="btn btn--inline" href="{{ .SwitchAccountURL }}">Sign in with a different account</a></p>
 {{ end }}{{ if .Retryable }}  <!-- Empty href resolves to the current URL, so this reloads whatever the
        user was trying to open, with no script and nothing reflected into the
        markup. Only rendered where a retry can actually succeed. -->

@@ -11,6 +11,8 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola/management"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -29,6 +31,7 @@ type mocked struct {
 	config        config.Config
 	fakeK8sClient *k8sfake.FakeDynamicClient
 	sessionStore  *redis.Client
+	discovery     fakeDiscovery
 }
 
 // SessionStoreClient implements sessionStoreClientProvider: a test injects a plain client,
@@ -50,6 +53,34 @@ func (v *mocked) TestFakeK8sClient() *k8sfake.FakeDynamicClient {
 // K8sDynamicClient implements k8sClientProvider, supplying the fake client to newServiceScope.
 func (v *mocked) K8sDynamicClient() dynamic.Interface {
 	return v.fakeK8sClient
+}
+
+// fakeDiscovery serves the CustomAppDomain resource only when the test created claims, so a stack without the CRD is
+// the default.
+type fakeDiscovery struct {
+	customDomainsServed bool
+}
+
+func (d fakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
+	resources := []metav1.APIResource{{Name: k8sapp.Resource}, {Name: k8sapp.SandboxResource}}
+	if d.customDomainsServed {
+		resources = append(resources, metav1.APIResource{Name: k8sapp.CustomAppDomainResource})
+	}
+	return &metav1.APIResourceList{GroupVersion: groupVersion, APIResources: resources}, nil
+}
+
+// K8sDiscovery implements k8sDiscoveryProvider.
+func (v *mocked) K8sDiscovery() k8sapp.ResourceDiscovery {
+	return v.discovery
+}
+
+func hasClaims(objects []runtime.Object) bool {
+	for _, o := range objects {
+		if u, ok := o.(*unstructured.Unstructured); ok && u.GetKind() == "CustomAppDomain" {
+			return true
+		}
+	}
+	return false
 }
 
 // writeTestServiceAccountToken creates a file with a fake Kubernetes ServiceAccount token,
@@ -152,12 +183,14 @@ func newMockedServiceScope(tb testing.TB, ctx context.Context, cfg config.Config
 		k8sapp.SandboxGVR(): "SandboxList",
 		// The idle timer loop lists this kind; without it the reflector panics.
 		k8sapp.IdleTimerGVR(): "IdleTimerList",
+		// Listed only when discovery serves the resource, which it does when the test creates claims.
+		k8sapp.CustomAppDomainGVR(): "CustomAppDomainList",
 	}, initialK8sObjects...)
 
 	// Validate config
 	require.NoError(tb, configmap.ValidateAndNormalize(&cfg))
 
-	mock := &mocked{Mocked: commonMock, config: cfg, fakeK8sClient: fakeClient, sessionStore: sessionStore}
+	mock := &mocked{Mocked: commonMock, config: cfg, fakeK8sClient: fakeClient, sessionStore: sessionStore, discovery: fakeDiscovery{customDomainsServed: hasClaims(initialK8sObjects)}}
 
 	scope, err := newServiceScope(ctx, mock, cfg)
 	require.NoError(tb, err)

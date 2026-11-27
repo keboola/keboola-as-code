@@ -35,8 +35,11 @@ type AppConfig struct {
 	UpstreamAppURL string             `json:"upstreamAppUrl"`
 	AuthProviders  provider.Providers `json:"authProviders"`
 	AuthRules      []Rule             `json:"authRules"`
-	eTag           string
-	maxAge         time.Duration
+	// CustomHost is the custom domain the app is reached on, empty on the hub host.
+	// It is the normalized index key (lowercase, no port), never the raw req.Host.
+	CustomHost string `json:"-"`
+	eTag       string
+	maxAge     time.Duration
 }
 
 type NotModifiedError struct {
@@ -65,13 +68,19 @@ func (c AppConfig) Domain() string {
 	return strings.ToLower(*c.AppSlug + "-" + c.ID.String())
 }
 
-// CookieDomain without port for cookies.
+// CookieDomain without port for cookies. Empty on a custom host: its cookies are host-only.
 func (c AppConfig) CookieDomain(publicURL *url.URL) string {
+	if c.CustomHost != "" {
+		return ""
+	}
 	return c.Domain() + "." + publicURL.Hostname()
 }
 
 // BaseURL of the app.
 func (c AppConfig) BaseURL(publicURL *url.URL) *url.URL {
+	if c.CustomHost != "" {
+		return &url.URL{Scheme: publicURL.Scheme, Host: c.CustomHost, Path: "/"}
+	}
 	return &url.URL{
 		Scheme: publicURL.Scheme,
 		Host:   c.Domain() + "." + publicURL.Host,
