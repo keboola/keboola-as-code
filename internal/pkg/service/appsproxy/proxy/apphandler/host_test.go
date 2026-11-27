@@ -36,6 +36,30 @@ func TestHandlerKeyFor(t *testing.T) {
 	assert.NotEqual(t, handlerKeyFor(hub), handlerKeyFor(custom))
 }
 
+func TestNormalizeResult(t *testing.T) {
+	t.Parallel()
+
+	ref := k8sapp.WorkloadRef{AppID: "123"}
+	result := appconfig.AppConfigResult{Workload: ref, AppConfig: api.AppConfig{CustomHost: "Data.Customer.ORG:443"}}
+
+	normalized := normalizeResult(result)
+
+	assert.Equal(t, "data.customer.org", normalized.AppConfig.CustomHost)
+	assert.Equal(t, handlerKey{Workload: ref, Host: "data.customer.org"}, handlerKeyFor(normalized))
+	assert.Equal(t, "Data.Customer.ORG:443", result.AppConfig.CustomHost, "the input is not modified")
+}
+
+func TestHubAndCustomHandlersShareTheWorkload(t *testing.T) {
+	t.Parallel()
+
+	ref := k8sapp.WorkloadRef{AppID: "123"}
+	hub := handlerKeyFor(appconfig.AppConfigResult{Workload: ref})
+	custom := handlerKeyFor(appconfig.AppConfigResult{Workload: ref, AppConfig: api.AppConfig{CustomHost: "data.customer.org"}})
+
+	assert.NotEqual(t, hub, custom, "one handler per host")
+	assert.Equal(t, hub.Workload, custom.Workload, "state, wakeup and idle-timer lookups use the same WorkloadRef")
+}
+
 func TestManager_EvictWorkloadDropsEveryHost(t *testing.T) {
 	t.Parallel()
 

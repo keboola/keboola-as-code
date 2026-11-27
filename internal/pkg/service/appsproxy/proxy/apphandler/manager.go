@@ -48,6 +48,14 @@ type handlerKey struct {
 	Host     string
 }
 
+// normalizeResult makes the app config's custom host the normalized index key, so every request spelling shares one handler.
+func normalizeResult(result appconfig.AppConfigResult) appconfig.AppConfigResult {
+	if result.AppConfig.CustomHost != "" {
+		result.AppConfig.CustomHost = k8sapp.NormalizeHost(result.AppConfig.CustomHost)
+	}
+	return result
+}
+
 func handlerKeyFor(result appconfig.AppConfigResult) handlerKey {
 	return handlerKey{Workload: result.Workload, Host: result.AppConfig.CustomHost}
 }
@@ -111,7 +119,7 @@ func NewManager(d dependencies) *Manager {
 }
 
 // evictWorkload drops the cached handler for a workload that no longer exists.
-// The cache is keyed by workload and a draft is short-lived, so without this it
+// The cache is keyed by workload and host, and a draft is short-lived, so without this it
 // grows with every draft ever served and strands each handler's reverse proxy
 // and its uncancelled context.
 func (m *Manager) evictWorkload(ref k8sapp.WorkloadRef) {
@@ -144,6 +152,7 @@ func (m *Manager) evict(key handlerKey, reason string) {
 }
 
 func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {
+	result = normalizeResult(result)
 	return m.handlerFor(ctx, result, m.handlers.GetOrInit(handlerKeyFor(result)))
 }
 
