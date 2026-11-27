@@ -195,7 +195,7 @@ func TestCustomHosts_RoutedClaimResolvesToTheApp(t *testing.T) {
 
 	require.Eventually(t, func() bool { _, ok := routeTo(hosts, "app.customer.example"); return ok }, 5*time.Second, 10*time.Millisecond)
 
-	for _, spelling := range []string{"app.customer.example", "APP.Customer.Example", "app.customer.example:8443"} {
+	for _, spelling := range []string{"app.customer.example", "APP.Customer.Example", "app.customer.example:8443", "app.customer.example."} {
 		route, ok := hosts.Resolve(spelling)
 		require.True(t, ok, spelling)
 		assert.Equal(t, k8sapp.WorkloadRef{AppID: "123"}, route.Workload, spelling)
@@ -427,7 +427,8 @@ func TestCustomHosts_MissingCRDDoesNotStartTheInformer(t *testing.T) {
 	assert.False(t, hosts.HasSynced())
 }
 
-func TestCustomHosts_DiscoveryErrorKeepsRetrying(t *testing.T) {
+// A failed discovery call is retried after 10 s, doubling up to the 5 m re-check interval.
+func TestCustomHosts_DiscoveryErrorRetriesWithBackoff(t *testing.T) {
 	t.Parallel()
 
 	d := newCustomHostsDeps(t)
@@ -436,14 +437,27 @@ func TestCustomHosts_DiscoveryErrorKeepsRetrying(t *testing.T) {
 	discovery.err = assert.AnError
 	hosts, _ := startCustomHosts(t, d, client, discovery, testOwnHost)
 
-	require.Eventually(t, func() bool { return discovery.callCount() == 1 }, 5*time.Second, 10*time.Millisecond)
-	assert.False(t, hosts.Started())
+	waitCalls := func(n int) {
+		t.Helper()
+		require.Eventually(t, func() bool { return discovery.callCount() == n }, 5*time.Second, 10*time.Millisecond)
+		assert.False(t, hosts.Started())
+	}
+	waitCalls(1)
+
+	// Waits: 10 s, 20 s, 40 s.
+	for i, wait := range []time.Duration{10 * time.Second, 20 * time.Second, 40 * time.Second} {
+		require.NoError(t, d.clock.BlockUntilContext(t.Context(), 1))
+		d.clock.Advance(wait - time.Second)
+		assert.Never(t, func() bool { return discovery.callCount() > i+1 }, 50*time.Millisecond, 10*time.Millisecond, "retried before %s", wait)
+		d.clock.Advance(time.Second)
+		waitCalls(i + 2)
+	}
 
 	discovery.lock.Lock()
 	discovery.err = nil
 	discovery.lock.Unlock()
 	require.NoError(t, d.clock.BlockUntilContext(t.Context(), 1))
-	d.clock.Advance(5 * time.Minute)
+	d.clock.Advance(80 * time.Second)
 
 	require.Eventually(t, func() bool { _, ok := routeTo(hosts, "app.customer.example"); return ok }, 5*time.Second, 10*time.Millisecond)
 }

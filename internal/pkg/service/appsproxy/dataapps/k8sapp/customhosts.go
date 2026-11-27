@@ -25,6 +25,9 @@ import (
 // customHostsRecheckInterval is how often discovery is asked for the CustomAppDomain resource until it is served.
 const customHostsRecheckInterval = 5 * time.Minute
 
+// customHostsRetryMin is the first wait after a failed discovery call; it doubles up to customHostsRecheckInterval.
+const customHostsRetryMin = 10 * time.Second
+
 const conditionRouted = "Routed"
 
 // ResourceDiscovery lists the resources the cluster serves for a group version.
@@ -141,28 +144,49 @@ func (c *CustomHosts) routeCount() int64 {
 	return int64(len(c.routes))
 }
 
+type discoveryResult int
+
+const (
+	discoveryStarted discoveryResult = iota
+	discoveryNotServed
+	discoveryFailed
+)
+
+// watchWhenServed waits the re-check interval while the resource is not served, and backs off from
+// customHostsRetryMin up to that interval while discovery fails, so one API server blip does not switch
+// custom hosts off for the full interval.
 func (c *CustomHosts) watchWhenServed(ctx context.Context) {
+	failureWait := customHostsRetryMin
 	for {
-		if c.startIfServed(ctx) {
+		var wait time.Duration
+		switch c.startIfServed(ctx) {
+		case discoveryStarted:
 			return
+		case discoveryFailed:
+			wait = failureWait
+			failureWait = min(failureWait*2, customHostsRecheckInterval)
+		case discoveryNotServed:
+			wait = customHostsRecheckInterval
+			failureWait = customHostsRetryMin
 		}
+
 		select {
 		case <-ctx.Done():
 			return
-		case <-c.clock.After(customHostsRecheckInterval):
+		case <-c.clock.After(wait):
 		}
 	}
 }
 
-func (c *CustomHosts) startIfServed(ctx context.Context) bool {
+func (c *CustomHosts) startIfServed(ctx context.Context) discoveryResult {
 	list, err := c.discovery.ServerResourcesForGroupVersion(Group + "/" + Version)
 	if err != nil {
 		c.logger.Warnf(ctx, "unable to discover the %s resource, custom hosts are not served: %s", CustomAppDomainResource, err)
-		return false
+		return discoveryFailed
 	}
 	if !slices.ContainsFunc(list.APIResources, func(r metav1.APIResource) bool { return r.Name == CustomAppDomainResource }) {
 		c.logger.Debugf(ctx, "the %s resource is not served, custom hosts are not served", CustomAppDomainResource)
-		return false
+		return discoveryNotServed
 	}
 
 	informer := NewCRDInformer(c.client, CustomAppDomainGVR(), c.namespace)
@@ -173,14 +197,14 @@ func (c *CustomHosts) startIfServed(ctx context.Context) bool {
 	})
 	if err != nil {
 		c.logger.Errorf(ctx, "failed to add event handler to the %s informer: %s", CustomAppDomainResource, err)
-		return false
+		return discoveryFailed
 	}
 
 	c.informer.Store(&informer)
 	c.started.Store(true)
 	go informer.Run(ctx.Done())
 	c.logger.Infof(ctx, "watching %s", CustomAppDomainResource)
-	return true
+	return discoveryStarted
 }
 
 type claimObject struct {
