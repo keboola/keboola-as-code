@@ -35,10 +35,21 @@ type Manager struct {
 	upstreamManager  *upstream.Manager
 	authProxyManager *authproxy.Manager
 	pageWriter       *pagewriter.Writer
-	handlers         *syncmap.SyncMap[k8sapp.WorkloadRef, appHandlerWrapper]
+	handlers         *syncmap.SyncMap[handlerKey, appHandlerWrapper]
 	sessionsManager  *sessions.Manager
 	appTokenMinter   *apptoken.Minter
 	preview          *preview.Service
+}
+
+// handlerKey identifies a cached handler: one per workload and public host.
+// Host is empty on the hub host. WorkloadRef stays host-free, so the state, wakeup and idle-timer lookups are shared by all hosts.
+type handlerKey struct {
+	Workload k8sapp.WorkloadRef
+	Host     string
+}
+
+func handlerKeyFor(result appconfig.AppConfigResult) handlerKey {
+	return handlerKey{Workload: result.Workload, Host: result.AppConfig.CustomHost}
 }
 
 type appHandlerWrapper struct {
@@ -83,7 +94,7 @@ func NewManager(d dependencies) *Manager {
 		upstreamManager:  d.UpstreamManager(),
 		authProxyManager: d.AuthProxyManager(),
 		pageWriter:       d.PageWriter(),
-		handlers: syncmap.New[k8sapp.WorkloadRef, appHandlerWrapper](func(k8sapp.WorkloadRef) *appHandlerWrapper {
+		handlers: syncmap.New[handlerKey, appHandlerWrapper](func(handlerKey) *appHandlerWrapper {
 			return &appHandlerWrapper{lock: &sync.Mutex{}}
 		}),
 		sessionsManager: d.SessionsManager(),
@@ -104,7 +115,20 @@ func NewManager(d dependencies) *Manager {
 // grows with every draft ever served and strands each handler's reverse proxy
 // and its uncancelled context.
 func (m *Manager) evictWorkload(ref k8sapp.WorkloadRef) {
-	wrapper, ok := m.handlers.Delete(ref)
+	m.handlers.Range(func(key handlerKey, _ *appHandlerWrapper) {
+		if key.Workload == ref {
+			m.evict(key, "workload removed")
+		}
+	})
+}
+
+// EvictHost drops the cached handler a workload serves on one custom host.
+func (m *Manager) EvictHost(ref k8sapp.WorkloadRef, host string) {
+	m.evict(handlerKey{Workload: ref, Host: host}, "host removed")
+}
+
+func (m *Manager) evict(key handlerKey, reason string) {
+	wrapper, ok := m.handlers.Delete(key)
 	if !ok {
 		return
 	}
@@ -113,14 +137,14 @@ func (m *Manager) evictWorkload(ref k8sapp.WorkloadRef) {
 	defer wrapper.lock.Unlock()
 	wrapper.evicted = true
 	if wrapper.cancel != nil {
-		wrapper.cancel(errors.New("workload removed"))
+		wrapper.cancel(errors.New(reason))
 		wrapper.cancel = nil
 	}
 	wrapper.handler = nil
 }
 
 func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {
-	return m.handlerFor(ctx, result, m.handlers.GetOrInit(result.Workload))
+	return m.handlerFor(ctx, result, m.handlers.GetOrInit(handlerKeyFor(result)))
 }
 
 func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResult, wrapper *appHandlerWrapper) http.Handler {
