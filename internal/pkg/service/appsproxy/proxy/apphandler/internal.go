@@ -23,6 +23,7 @@ func (h *appHandler) serveInternal(w http.ResponseWriter, req *http.Request) err
 
 	previewCookie := session.TakeCookie(req)
 	if path == selector.SignOutPath {
+		expireHostCookies(w)
 		h.clearPreviewSession(w, previewCookie)
 		// A sign-out ends the session explicitly. Internal paths never reach
 		// the upstream, so this cannot be handled by the sessions middleware.

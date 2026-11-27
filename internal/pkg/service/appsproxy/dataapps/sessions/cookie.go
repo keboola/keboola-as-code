@@ -21,6 +21,9 @@ import (
 // cookie: this one also exists for apps with no authentication at all.
 const CookieName = "_kbc_dasid"
 
+// HostCookieName is the host-only name of the session cookie.
+const HostCookieName = "__Host-kbc-dasid"
+
 // keyPrefix namespaces the cookie signing key away from other keys derived
 // from the same salt.
 const keyPrefix = "data-app-session/"

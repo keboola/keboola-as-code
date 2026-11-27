@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -578,7 +579,8 @@ func TestAppProxyRouter(t *testing.T) {
 				response, err = client.Do(request)
 				require.NoError(t, err)
 				require.Equal(t, http.StatusFound, response.StatusCode)
-				cookies := response.Cookies()
+				// Sign-out also expires every host-only name, see TestHostCookies_SignOutExpiresEveryHostNameEvenWhenAbsent.
+				cookies := slices.DeleteFunc(response.Cookies(), func(c *http.Cookie) bool { return strings.HasPrefix(c.Name, "__Host-kbc-") })
 				if assert.Len(t, cookies, 2) {
 					assert.Equal(t, "_oauth2_provider", cookies[0].Name)
 					assert.Empty(t, cookies[0].Value)
