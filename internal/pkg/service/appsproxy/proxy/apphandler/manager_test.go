@@ -4,14 +4,12 @@ import (
 	"context"
 	"net/http"
 	"net/url"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/syncmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 )
 
@@ -52,23 +50,19 @@ func TestAppHandlerWrapper_NeedsRebuild(t *testing.T) {
 func TestManager_EvictWorkload(t *testing.T) {
 	t.Parallel()
 
-	m := &Manager{
-		handlers: syncmap.New[k8sapp.WorkloadRef, appHandlerWrapper](func(k8sapp.WorkloadRef) *appHandlerWrapper {
-			return &appHandlerWrapper{lock: &sync.Mutex{}}
-		}),
-	}
+	m := newTestManager()
 
 	ref := k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"}
 
 	cancelled := false
-	wrapper := m.handlers.GetOrInit(ref)
+	wrapper := m.handlers.GetOrInit(handlerKey{Workload: ref})
 	wrapper.handler = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 	wrapper.cancel = func(error) { cancelled = true }
 
 	m.evictWorkload(ref)
 
 	assert.True(t, cancelled, "the handler's context must be cancelled when its workload is gone")
-	assert.Nil(t, m.handlers.GetOrInit(ref).handler, "the entry must be gone, so the key re-initialises empty")
+	assert.Nil(t, m.handlers.GetOrInit(handlerKey{Workload: ref}).handler, "the entry must be gone, so the key re-initialises empty")
 }
 
 // A request takes the wrapper pointer before it takes the wrapper's lock. If the
@@ -78,16 +72,12 @@ func TestManager_EvictWorkload(t *testing.T) {
 func TestManager_EvictedWrapperIsNotRepopulated(t *testing.T) {
 	t.Parallel()
 
-	m := &Manager{
-		handlers: syncmap.New[k8sapp.WorkloadRef, appHandlerWrapper](func(k8sapp.WorkloadRef) *appHandlerWrapper {
-			return &appHandlerWrapper{lock: &sync.Mutex{}}
-		}),
-	}
+	m := newTestManager()
 
 	ref := k8sapp.WorkloadRef{AppID: "123", SandboxName: "draft-abc"}
 
 	// The request has the pointer but has not locked it yet.
-	stale := m.handlers.GetOrInit(ref)
+	stale := m.handlers.GetOrInit(handlerKey{Workload: ref})
 
 	m.evictWorkload(ref)
 

@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -178,4 +179,15 @@ func TestSigningKey_PerApp(t *testing.T) {
 	// Derivation must be stable, otherwise every proxy restart would invalidate
 	// all live session cookies.
 	assert.Equal(t, app1, app1Again)
+}
+
+func TestNewCookie_Domain(t *testing.T) {
+	t.Parallel()
+
+	publicURL := &url.URL{Scheme: "https", Host: "hub.example.com"}
+	hub := api.AppConfig{ID: "123"}
+	custom := api.AppConfig{ID: "123", CustomHost: "data.customer.org"}
+
+	assert.Equal(t, "123.hub.example.com", newCookie(hub, publicURL, "v", 60).Domain)
+	assert.Empty(t, newCookie(custom, publicURL, "v", 60).Domain, "a custom host gets a host-only cookie")
 }
