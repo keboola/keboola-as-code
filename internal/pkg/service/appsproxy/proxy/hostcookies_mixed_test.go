@@ -55,8 +55,8 @@ func setCookie(resp *http.Response, name string) *http.Cookie {
 	return nil
 }
 
-// startLoginAtIdP starts a login on the "oidc" app and stops before the IdP: the jar holds a legacy CSRF cookie.
-func (e *previewEnv) startLoginAtIdP() (*http.Client, string) {
+// startLoginAtIDP starts a login on the "oidc" app and stops before the IdP: the jar holds a legacy CSRF cookie.
+func (e *previewEnv) startLoginAtIDP() (*http.Client, string) {
 	e.t.Helper()
 	jar, err := cookiejar.New(nil)
 	require.NoError(e.t, err)
@@ -93,7 +93,7 @@ func TestHostCookies_WebsocketWithHostCSRF(t *testing.T) {
 	env := startPreviewEnv(t)
 	client := env.oidcLogin(env.providers[0], hostCookieUser(), oidcOrigin+"/")
 
-	other, _ := env.startLoginAtIdP()
+	other, _ := env.startLoginAtIDP()
 	hostCSRF := cookieIn(env.legacyToHostNames(other, oidcHost, nil), oidcURL, oauthproxy.HostSessionCookieName+"_csrf")
 	require.NotNil(t, hostCSRF)
 	client.Jar.SetCookies(oidcURL, []*http.Cookie{hostOnly(hostCSRF.Name, hostCSRF.Value)})
@@ -110,7 +110,7 @@ func TestHostCookies_NormalRequestKeepsHostCSRF(t *testing.T) {
 	t.Parallel()
 	env := startPreviewEnv(t)
 	client := env.oidcLogin(env.providers[0], hostCookieUser(), oidcOrigin+"/")
-	other, _ := env.startLoginAtIdP()
+	other, _ := env.startLoginAtIDP()
 	hostCSRF := cookieIn(env.legacyToHostNames(other, oidcHost, nil), oidcURL, oauthproxy.HostSessionCookieName+"_csrf")
 	require.NotNil(t, hostCSRF)
 	client.Jar.SetCookies(oidcURL, []*http.Cookie{hostOnly(hostCSRF.Name, hostCSRF.Value)})
@@ -193,12 +193,12 @@ func TestHostCookies_FreshHostCSRFBeatsStaleLegacy(t *testing.T) {
 	t.Parallel()
 	env := startPreviewEnv(t)
 
-	abandoned, _ := env.startLoginAtIdP()
+	abandoned, _ := env.startLoginAtIDP()
 	staleLegacy := cookieIn(abandoned, oidcURL, oauthproxy.CookieName+"_ticket_csrf")
 	require.NotNil(t, staleLegacy)
 
 	env.providers[0].QueueUser(hostCookieUser())
-	fresh, authorize := env.startLoginAtIdP()
+	fresh, authorize := env.startLoginAtIDP()
 	resp := env.send(fresh, authorize)
 	require.Equal(t, http.StatusFound, resp.StatusCode)
 	callback := resp.Header.Get("Location")
