@@ -82,7 +82,7 @@ func (w *csrfExpiryWriter) expireHostCSRF() {
 			MaxAge:   -1,
 			Secure:   true,
 			HttpOnly: true,
-			SameSite: http.SameSiteNoneMode,
+			SameSite: http.SameSiteStrictMode,
 		})
 	}
 }

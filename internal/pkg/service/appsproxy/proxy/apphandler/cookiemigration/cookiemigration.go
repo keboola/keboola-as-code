@@ -19,7 +19,7 @@ func Copy(req *http.Request, from, to string) *http.Request {
 		return req
 	}
 	req = req.Clone(req.Context())
-	req.AddCookie(&http.Cookie{Name: to, Value: c.Value})
+	req.AddCookie(&http.Cookie{Name: to, Value: c.Value}) //nolint:gosec // G124: a request cookie, only its name and value are sent
 	return req
 }
 
@@ -44,6 +44,6 @@ func Resign(req *http.Request, from, to, secret string, expire time.Duration) (*
 		return req, false
 	}
 	req = req.Clone(req.Context())
-	req.AddCookie(&http.Cookie{Name: to, Value: resigned})
+	req.AddCookie(&http.Cookie{Name: to, Value: resigned}) //nolint:gosec // G124: a request cookie, only its name and value are sent
 	return req, true
 }

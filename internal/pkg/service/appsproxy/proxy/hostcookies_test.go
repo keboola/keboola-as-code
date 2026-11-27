@@ -36,18 +36,19 @@ func (e *previewEnv) legacyToHostNames(client *http.Client, host string, issuedA
 	u := &url.URL{Scheme: "https", Host: host, Path: "/"}
 	secret := e.oidcCookieSecret()
 
-	var out []*http.Cookie
-	for _, c := range client.Jar.Cookies(u) {
+	existing := client.Jar.Cookies(u)
+	out := make([]*http.Cookie, 0, len(existing))
+	for _, c := range existing {
 		name := c.Name
 		value := c.Value
-		switch {
-		case name == sessions.CookieName:
+		switch name {
+		case sessions.CookieName:
 			name = sessions.HostCookieName
-		case name == selector.ProviderCookie:
+		case selector.ProviderCookie:
 			name = selector.HostProviderCookie
-		case name == basicauth.CookieName:
+		case basicauth.CookieName:
 			name = basicauth.HostCookieName
-		case name == oauthproxy.CookieName+"_ticket" || name == oauthproxy.CookieName+"_ticket_csrf":
+		case oauthproxy.CookieName + "_ticket", oauthproxy.CookieName + "_ticket_csrf":
 			newName := oauthproxy.HostSessionCookieName + strings.TrimPrefix(name, oauthproxy.CookieName+"_ticket")
 			plain, ts, ok := encryption.Validate(c, secret, 24*time.Hour)
 			require.True(e.t, ok, name)
@@ -112,8 +113,9 @@ func TestHostCookies_TicketCopiedWithoutResigningIsRejected(t *testing.T) {
 	client := env.oidcLogin(env.providers[0], hostCookieUser(), oidcOrigin+"/")
 
 	u := &url.URL{Scheme: "https", Host: oidcHost, Path: "/"}
-	var copied []*http.Cookie
-	for _, c := range client.Jar.Cookies(u) {
+	existing := client.Jar.Cookies(u)
+	copied := make([]*http.Cookie, 0, len(existing))
+	for _, c := range existing {
 		if c.Name == oauthproxy.CookieName+"_ticket" {
 			c = &http.Cookie{Name: oauthproxy.HostSessionCookieName, Value: c.Value, Path: "/", Secure: true}
 		}
@@ -168,8 +170,9 @@ func TestHostCookies_LoginStartedUnderNewNamesCompletes(t *testing.T) {
 }
 
 func cookieNamesIn(client *http.Client, host string) []string {
-	var names []string
-	for _, c := range client.Jar.Cookies(&url.URL{Scheme: "https", Host: host, Path: "/"}) {
+	cookies := client.Jar.Cookies(&url.URL{Scheme: "https", Host: host, Path: "/"})
+	names := make([]string, 0, len(cookies))
+	for _, c := range cookies {
 		names = append(names, c.Name)
 	}
 	return names
