@@ -78,6 +78,8 @@ func (e *previewEnv) assertNoProxyCookiesReachApp(path string) {
 		assert.False(e.t, strings.HasPrefix(name, "__Host-kbc-"), name)
 		assert.False(e.t, strings.HasPrefix(name, "_oauth2_proxy"), name)
 		assert.NotEqual(e.t, sessions.CookieName, name)
+		assert.NotEqual(e.t, selector.ProviderCookie, name)
+		assert.NotEqual(e.t, basicauth.CookieName, name)
 	}
 }
 
@@ -95,7 +97,7 @@ func TestHostCookies_OIDCSessionUnderNewNames(t *testing.T) {
 	env.assertNoProxyCookiesReachApp("/some/path")
 }
 
-func TestHostCookies_TicketKeepsItsOriginalAge(t *testing.T) {
+func TestHostCookies_TicketOlderThanSessionLifetimeIsRejected(t *testing.T) {
 	t.Parallel()
 	env := startPreviewEnv(t)
 	client := env.oidcLogin(env.providers[0], hostCookieUser(), oidcOrigin+"/")

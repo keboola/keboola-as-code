@@ -16,8 +16,8 @@ import (
 func TestTicketKey(t *testing.T) {
 	t.Parallel()
 
-	cookie := options.Cookie{Name: sessionCookieName, Secret: "0123456789abcdef0123456789abcdef", Expire: 24 * time.Hour}
-	id := sessionCookieName + "-0011aabb"
+	cookie := options.Cookie{Name: SessionCookieName, Secret: "0123456789abcdef0123456789abcdef", Expire: 24 * time.Hour}
+	id := SessionCookieName + "-0011aabb"
 	secret := base64.RawURLEncoding.EncodeToString([]byte("ticket-secret-16"))
 	v2 := "v2." + base64.RawURLEncoding.EncodeToString([]byte(id)) + "." + secret
 

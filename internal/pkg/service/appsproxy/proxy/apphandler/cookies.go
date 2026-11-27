@@ -30,21 +30,28 @@ func copyHostCookies(req *http.Request) *http.Request {
 	return cookiemigration.Copy(req, selector.HostProviderCookie, selector.ProviderCookie)
 }
 
-// expireHostCookies expires the host-only cookies the request carries, so a sign-out leaves no session behind
-// even when the browser got the cookies from a pod that writes the host-only names.
-func expireHostCookies(w http.ResponseWriter, req *http.Request) {
-	for _, c := range req.Cookies() {
-		if !isHostCookie(c.Name) {
-			continue
-		}
-		http.SetCookie(w, &http.Cookie{
-			Name:     c.Name,
-			Path:     "/",
-			MaxAge:   -1,
-			Secure:   true,
-			HttpOnly: true,
-			SameSite: http.SameSiteStrictMode,
-		})
+// expireHostCookies expires every host-only cookie, so a sign-out leaves no session behind
+// even when the browser got the cookies from a pod that writes the host-only names and does not send them here.
+func expireHostCookies(w http.ResponseWriter) {
+	for _, name := range []string{
+		sessions.HostCookieName,
+		basicauth.HostCookieName,
+		selector.HostProviderCookie,
+		oauthproxy.HostSessionCookieName,
+		oauthproxy.HostSessionCookieName + "_csrf",
+	} {
+		http.SetCookie(w, hostCookieExpiry(name))
+	}
+}
+
+func hostCookieExpiry(name string) *http.Cookie {
+	return &http.Cookie{
+		Name:     name,
+		Path:     "/",
+		MaxAge:   -1,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
 	}
 }
 

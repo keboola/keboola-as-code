@@ -126,11 +126,34 @@ func TestResign(t *testing.T) {
 		assert.False(t, ok)
 	})
 
-	t.Run("target wins when both are present", func(t *testing.T) {
+	t.Run("the newer cookie is used when both are present", func(t *testing.T) {
 		t.Parallel()
-		req := newRequest(t, signed(t, "new", []byte("n"), time.Now()), signed(t, "old", []byte("o"), time.Now()))
-		out, ok := cookiemigration.Resign(req, "new", "old", secret, expire)
+		now := time.Now().Truncate(time.Second)
+
+		newer := newRequest(t, signed(t, "new", []byte("n"), now), signed(t, "old", []byte("o"), now.Add(-time.Minute)))
+		out, ok := cookiemigration.Resign(newer, "new", "old", secret, expire)
+		require.True(t, ok)
+		c, err := out.Cookie("old")
+		require.NoError(t, err)
+		value, ts, valid := encryption.Validate(c, secret, expire)
+		require.True(t, valid)
+		assert.Equal(t, []byte("n"), value)
+		assert.Equal(t, now, ts)
+		assert.Len(t, out.Cookies(), 2, "the replaced cookie is gone")
+
+		older := newRequest(t, signed(t, "new", []byte("n"), now.Add(-time.Minute)), signed(t, "old", []byte("o"), now))
+		out, ok = cookiemigration.Resign(older, "new", "old", secret, expire)
 		assert.False(t, ok)
-		assert.Same(t, req, out)
+		assert.Same(t, older, out)
+	})
+
+	t.Run("an invalid target is replaced", func(t *testing.T) {
+		t.Parallel()
+		req := newRequest(t, signed(t, "new", []byte("n"), time.Now()), &http.Cookie{Name: "old", Value: "garbage"})
+		out, ok := cookiemigration.Resign(req, "new", "old", secret, expire)
+		require.True(t, ok)
+		c, _ := out.Cookie("old")
+		_, _, valid := encryption.Validate(c, secret, expire)
+		assert.True(t, valid)
 	})
 }

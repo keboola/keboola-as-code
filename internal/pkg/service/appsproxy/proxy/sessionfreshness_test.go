@@ -40,6 +40,14 @@ func (e *previewEnv) oidcCookieSecret() string {
 	return fmt.Sprintf("%x", h.Sum(nil)[:16])
 }
 
+// multiCookieSecret is the secret oauth2-proxy signs the cookies of the "multi" app, provider "oidc0", with.
+func multiCookieSecret(e *previewEnv) string {
+	e.t.Helper()
+	h := sha256.New()
+	h.Write([]byte("multi/oidc0/" + e.d.Config().CookieSecretSalt))
+	return fmt.Sprintf("%x", h.Sum(nil)[:16])
+}
+
 // oidcSessionStore reads and writes the oauth2-proxy session of the "oidc" app,
 // so a test can move a session back in time.
 func (e *previewEnv) oidcSessionStore() sessionsapi.SessionStore {

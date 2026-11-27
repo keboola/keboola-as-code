@@ -132,6 +132,7 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 	req = req.WithContext(ctx)
 
 	req = copyHostCookies(req)
+	w = withTwinExpiry(w, req)
 
 	// Add request ID header, for OAuth2Proxy internals and app itself
 	if id := middleware.RequestIDFromContext(req.Context()); id != "" { //nolint:contextcheck // false positive
