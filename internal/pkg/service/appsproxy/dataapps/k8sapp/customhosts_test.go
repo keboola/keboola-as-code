@@ -427,7 +427,7 @@ func TestCustomHosts_MissingCRDDoesNotStartTheInformer(t *testing.T) {
 	assert.False(t, hosts.HasSynced())
 }
 
-// A failed discovery call is retried after 10 s, doubling up to the 5 m re-check interval.
+// A failed discovery call is retried after 10 s, doubling up to the 5 m re-check interval, where it stays.
 func TestCustomHosts_DiscoveryErrorRetriesWithBackoff(t *testing.T) {
 	t.Parallel()
 
@@ -444,8 +444,7 @@ func TestCustomHosts_DiscoveryErrorRetriesWithBackoff(t *testing.T) {
 	}
 	waitCalls(1)
 
-	// Waits: 10 s, 20 s, 40 s.
-	for i, wait := range []time.Duration{10 * time.Second, 20 * time.Second, 40 * time.Second} {
+	for i, wait := range []time.Duration{10 * time.Second, 20 * time.Second, 40 * time.Second, 80 * time.Second, 160 * time.Second, 5 * time.Minute, 5 * time.Minute} {
 		require.NoError(t, d.clock.BlockUntilContext(t.Context(), 1))
 		d.clock.Advance(wait - time.Second)
 		assert.Never(t, func() bool { return discovery.callCount() > i+1 }, 50*time.Millisecond, 10*time.Millisecond, "retried before %s", wait)
@@ -457,7 +456,7 @@ func TestCustomHosts_DiscoveryErrorRetriesWithBackoff(t *testing.T) {
 	discovery.err = nil
 	discovery.lock.Unlock()
 	require.NoError(t, d.clock.BlockUntilContext(t.Context(), 1))
-	d.clock.Advance(80 * time.Second)
+	d.clock.Advance(5 * time.Minute)
 
 	require.Eventually(t, func() bool { _, ok := routeTo(hosts, "app.customer.example"); return ok }, 5*time.Second, 10*time.Millisecond)
 }

@@ -190,8 +190,8 @@ func TestManager_HostMovedToAnotherApp(t *testing.T) {
 	assert.True(t, m.hostRouted(appconfig.AppConfigResult{Workload: k8sapp.WorkloadRef{AppID: "123"}}), "the hub host needs no index")
 }
 
-// A handler that was already built is cancelled and cleared when the re-check fails, because the eviction callback
-// may have run before the wrapper was cached and found nothing to cancel.
+// A handler that was already built is cancelled and cleared when the re-check fails: this request removes the wrapper
+// from the cache before the eviction callback runs, so the callback finds nothing to cancel.
 func TestManager_FailedRecheckCancelsABuiltHandler(t *testing.T) {
 	t.Parallel()
 

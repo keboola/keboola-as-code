@@ -212,11 +212,14 @@ func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResu
 	// Building into it would strand the handler, and the workload it serves is
 	// gone anyway, so the request ends here.
 	if wrapper.evicted {
+		if result.AppConfig.CustomHost != "" {
+			return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, hostNotRoutedError(result))
+		}
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, svcErrors.NewResourceNotFoundError("workload", result.Workload.String(), "cluster"))
 	}
 
 	if !m.hostRouted(result) {
-		// The eviction callback may have found nothing to cancel: it can run before this wrapper was cached.
+		// DeleteIf takes the wrapper out of the cache before the eviction callback runs, which then finds nothing to cancel.
 		wrapper.releaseLocked("host not routed")
 		m.handlers.DeleteIf(handlerKeyFor(result), wrapper)
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, hostNotRoutedError(result))

@@ -121,6 +121,7 @@ func (c *CustomHosts) Resolve(host string) (CustomHostRoute, bool) {
 
 // OnHostRemoved registers a callback fired when a workload stops being served on a host:
 // its claim is not Routed any more, is deleted, or lost the host to another claim.
+// Callbacks run on the claim informer goroutine and must not block: a slow one delays every later claim event.
 func (c *CustomHosts) OnHostRemoved(fn func(ref WorkloadRef, host string)) {
 	c.removedLock.Lock()
 	defer c.removedLock.Unlock()
