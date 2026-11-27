@@ -27,7 +27,7 @@ func TestAppConfig_PublicOrigin(t *testing.T) {
 		custom := app
 		custom.CustomHost = "data.customer.org"
 		assert.Equal(t, "https://data.customer.org/", custom.BaseURL(publicURL).String())
-		assert.Equal(t, "data.customer.org", custom.CookieDomain(publicURL))
+		assert.Empty(t, custom.CookieDomain(publicURL), "cookies on a custom host are host-only")
 	})
 
 	t.Run("custom host takes the scheme from the public URL", func(t *testing.T) {

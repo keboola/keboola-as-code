@@ -98,7 +98,7 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 		// This clears provider selection cookie while oauth2-proxy clears the session cookie.
 		// The user isn't logged out on the provider's side, but when redirected to the provider they're
 		// forced to select their account again because of the "select_account" flag in LoginURLParameters.
-		s.clearCookie(w, req)
+		s.clearCookie(w, req, s.app.CustomHost != "")
 	}
 
 	// Render selector page, if it is accessed directly
@@ -112,7 +112,7 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 		for id, handler := range s.handlers {
 			// Set cookie if needed
 			if providerID := s.providerIDFromCookie(req); providerID != id {
-				s.setCookie(w, req, id, handler)
+				s.setCookie(w, req, s.app.CustomHost != "", id, handler)
 			}
 
 			// Get path for redirect after sign in, it must not refer to an external URL
@@ -135,7 +135,7 @@ func (s *SelectorForAppRule) ServeHTTPOrError(w http.ResponseWriter, req *http.R
 	if handler := s.handlers[providerID]; handler != nil {
 		// Re-set on app requests so the choice expires no sooner than the sliding login session.
 		if !config.IsInternalPath(req.URL.Path) {
-			s.setCookie(w, req, providerID, handler)
+			s.setCookie(w, req, s.app.CustomHost != "", providerID, handler)
 		}
 		return handler.ServeHTTPOrError(w, req)
 	}
@@ -149,7 +149,7 @@ func (s *SelectorForAppRule) writeSelectorPage(w http.ResponseWriter, req *http.
 	id := provider.ID(req.URL.Query().Get(providerQueryParam))
 	if selected, found := s.handlers[id]; found {
 		// Set cookie with the same expiration as other provider cookies
-		s.setCookie(w, req, id, selected)
+		s.setCookie(w, req, s.app.CustomHost != "", id, selected)
 
 		// Get path for redirect after sign in, it must not refer to an external URL
 		query := make(url.Values)
@@ -227,7 +227,7 @@ func (s *Selector) OnNeedsLogin(
 
 		// Fallback, the selector instance is not found, it shouldn't happen.
 		// Clear the cookie and redirect to the same path, so the selector page is rendered.
-		s.clearCookie(w, req)
+		s.clearCookie(w, req, app.CustomHost != "")
 		w.Header().Set("Location", req.URL.Path)
 		w.WriteHeader(http.StatusFound)
 		return true
@@ -250,15 +250,15 @@ func (s *Selector) providerIDFromCookie(req *http.Request) provider.ID {
 	return ""
 }
 
-func (s *Selector) clearCookie(w http.ResponseWriter, req *http.Request) {
-	http.SetCookie(w, s.cookie(req, "", -1))
+func (s *Selector) clearCookie(w http.ResponseWriter, req *http.Request, hostOnly bool) {
+	http.SetCookie(w, s.cookie(req, hostOnly, "", -1))
 }
 
-func (s *Selector) setCookie(w http.ResponseWriter, req *http.Request, id provider.ID, handler Handler) {
-	http.SetCookie(w, s.cookie(req, id.String(), handler.CookieExpiration()))
+func (s *Selector) setCookie(w http.ResponseWriter, req *http.Request, hostOnly bool, id provider.ID, handler Handler) {
+	http.SetCookie(w, s.cookie(req, hostOnly, id.String(), handler.CookieExpiration()))
 }
 
-func (s *Selector) cookie(req *http.Request, value string, expires time.Duration) *http.Cookie {
+func (s *Selector) cookie(req *http.Request, hostOnly bool, value string, expires time.Duration) *http.Cookie {
 	host, _ := util.SplitHostPort(req.Host)
 	if host == "" {
 		panic(errors.New("host cannot be empty"))
@@ -272,6 +272,9 @@ func (s *Selector) cookie(req *http.Request, value string, expires time.Duration
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
+	}
+	if hostOnly {
+		v.Domain = ""
 	}
 
 	if expires > 0 {

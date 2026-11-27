@@ -46,6 +46,15 @@ const (
 	statusClientClosedRequest = 499
 )
 
+// cookieDomains is the oauth2-proxy cookie domain list; empty gives host-only cookies.
+func cookieDomains(app api.AppConfig, publicURL *url.URL) []string {
+	domain := app.CookieDomain(publicURL)
+	if domain == "" {
+		return nil
+	}
+	return []string{domain}
+}
+
 // callbackURL is the OIDC redirect URI registered with the provider for the host the app is reached on.
 func callbackURL(app api.AppConfig, publicURL *url.URL) string {
 	return app.BaseURL(publicURL).ResolveReference(&url.URL{Path: config.InternalPrefix + "/callback"}).String()
@@ -125,13 +134,12 @@ func proxyConfig(
 		pageWriter.WriteError(rw, req, &app, providerUnavailableError(err))
 	}
 	// Setup
-	domain := app.CookieDomain(cfg.API.PublicURL)
 	redirectURL := callbackURL(app, cfg.API.PublicURL)
 	v.Logging.RequestIDHeader = config.RequestIDHeader
 	v.Logging.RequestEnabled = false // we have log middleware for all requests
 	v.Cookie.Name = sessionCookieName
 	v.Cookie.Secret = secret
-	v.Cookie.Domains = []string{domain}
+	v.Cookie.Domains = cookieDomains(app, cfg.API.PublicURL)
 	v.Cookie.SameSite = "strict"
 	v.Cookie.Refresh = sessionRefresh
 	if oAuthProvider.RefreshTokensSingleUse() {

@@ -35,7 +35,8 @@ type AppConfig struct {
 	UpstreamAppURL string             `json:"upstreamAppUrl"`
 	AuthProviders  provider.Providers `json:"authProviders"`
 	AuthRules      []Rule             `json:"authRules"`
-	// CustomHost is the routed request host when the app is reached on a custom domain; empty on the hub host.
+	// CustomHost is the custom domain the app is reached on, empty on the hub host.
+	// It is the normalized index key (lowercase, no port), never the raw req.Host.
 	CustomHost string `json:"-"`
 	eTag       string
 	maxAge     time.Duration
@@ -67,10 +68,10 @@ func (c AppConfig) Domain() string {
 	return strings.ToLower(*c.AppSlug + "-" + c.ID.String())
 }
 
-// CookieDomain without port for cookies.
+// CookieDomain without port for cookies. Empty on a custom host: its cookies are host-only.
 func (c AppConfig) CookieDomain(publicURL *url.URL) string {
 	if c.CustomHost != "" {
-		return c.CustomHost
+		return ""
 	}
 	return c.Domain() + "." + publicURL.Hostname()
 }

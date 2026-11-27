@@ -22,3 +22,16 @@ func TestCallbackURL(t *testing.T) {
 	custom.CustomHost = "data.customer.org"
 	assert.Equal(t, "https://data.customer.org/_proxy/callback", callbackURL(custom, publicURL))
 }
+
+func TestCookieDomains(t *testing.T) {
+	t.Parallel()
+
+	publicURL := &url.URL{Scheme: "https", Host: "hub.example.com"}
+	slug := "my-app"
+	hub := api.AppConfig{ID: "123", AppSlug: &slug}
+	custom := hub
+	custom.CustomHost = "data.customer.org"
+
+	assert.Equal(t, []string{"my-app-123.hub.example.com"}, cookieDomains(hub, publicURL))
+	assert.Empty(t, cookieDomains(custom, publicURL), "a custom host gets host-only cookies")
+}
