@@ -39,6 +39,7 @@ type Manager struct {
 	sessionsManager  *sessions.Manager
 	appTokenMinter   *apptoken.Minter
 	preview          *preview.Service
+	customHosts      appconfig.CustomHostResolver
 }
 
 // handlerKey identifies a cached handler: one per workload and public host.
@@ -89,6 +90,7 @@ type dependencies interface {
 	SessionsManager() *sessions.Manager
 	AppTokenMinter() *apptoken.Minter
 	AppStateWatcher() *k8sapp.StateWatcher
+	CustomHosts() *k8sapp.CustomHosts
 	Process() *servicectx.Process
 }
 
@@ -107,6 +109,7 @@ func NewManager(d dependencies) *Manager {
 		}),
 		sessionsManager: d.SessionsManager(),
 		appTokenMinter:  d.AppTokenMinter(),
+		customHosts:     d.CustomHosts(),
 	}
 
 	if cfg.Preview.Enabled() {
@@ -114,6 +117,7 @@ func NewManager(d dependencies) *Manager {
 	}
 
 	d.AppStateWatcher().OnWorkloadRemoved(m.evictWorkload)
+	d.CustomHosts().OnHostRemoved(m.EvictHost)
 
 	return m
 }
@@ -153,7 +157,27 @@ func (m *Manager) evict(key handlerKey, reason string) {
 
 func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {
 	result = normalizeResult(result)
+	// An unrouted host builds no handler, so a request cannot repopulate an entry the eviction just removed.
+	if !m.hostRouted(result) {
+		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, hostNotRoutedError(result))
+	}
 	return m.handlerFor(ctx, result, m.handlers.GetOrInit(handlerKeyFor(result)))
+}
+
+// hostRouted reports whether the custom host of the request still routes to its workload. The index is updated
+// before the eviction callback runs, so a check made under the wrapper lock cannot pass for a wrapper that the
+// eviction missed.
+func (m *Manager) hostRouted(result appconfig.AppConfigResult) bool {
+	host := result.AppConfig.CustomHost
+	if host == "" {
+		return true
+	}
+	route, ok := m.customHosts.Resolve(host)
+	return ok && route.Workload == result.Workload
+}
+
+func hostNotRoutedError(result appconfig.AppConfigResult) error {
+	return svcErrors.NewResourceNotFoundError("host", result.AppConfig.CustomHost, "cluster")
 }
 
 func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResult, wrapper *appHandlerWrapper) http.Handler {
@@ -167,6 +191,11 @@ func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResu
 	// gone anyway, so the request ends here.
 	if wrapper.evicted {
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, svcErrors.NewResourceNotFoundError("workload", result.Workload.String(), "cluster"))
+	}
+
+	if !m.hostRouted(result) {
+		m.handlers.DeleteIf(handlerKeyFor(result), wrapper)
+		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, hostNotRoutedError(result))
 	}
 
 	// Load configuration for the app

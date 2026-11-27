@@ -4,10 +4,12 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/api"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/appconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/appsproxy/dataapps/k8sapp"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
@@ -114,4 +116,81 @@ func TestUpstreamKey_ChangesWhenTheWorkloadBecomesCached(t *testing.T) {
 	t.Parallel()
 
 	assert.NotEqual(t, upstreamKeyFor(k8sapp.AppInfo{}, false), upstreamKeyFor(k8sapp.AppInfo{}, true))
+}
+
+type testHostRoutes struct {
+	lock   sync.Mutex
+	routes map[string]k8sapp.WorkloadRef
+}
+
+func (r *testHostRoutes) Resolve(host string) (k8sapp.CustomHostRoute, bool) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	ref, ok := r.routes[host]
+	return k8sapp.CustomHostRoute{Workload: ref, Host: host}, ok
+}
+
+func (r *testHostRoutes) drop(host string) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	delete(r.routes, host)
+}
+
+func customHostResult(ref k8sapp.WorkloadRef, host string) appconfig.AppConfigResult {
+	return appconfig.AppConfigResult{Workload: ref, AppConfig: api.AppConfig{CustomHost: host}}
+}
+
+func handlerCount(m *Manager) int {
+	count := 0
+	m.handlers.Range(func(handlerKey, *appHandlerWrapper) { count++ })
+	return count
+}
+
+// A host that is not in the index creates no handler, so an evicted host cannot rebuild one.
+func TestManager_UnroutedCustomHostCreatesNoHandler(t *testing.T) {
+	t.Parallel()
+
+	m := newTestManager()
+	m.customHosts = &testHostRoutes{routes: map[string]k8sapp.WorkloadRef{}}
+	ref := k8sapp.WorkloadRef{AppID: "123"}
+
+	ctx := context.WithValue(t.Context(), middleware.RequestIDCtxKey, "test-request-id")
+	h := m.HandlerFor(ctx, customHostResult(ref, "gone.customer.org"))
+	assert.NotNil(t, h)
+	assert.Equal(t, 0, handlerCount(m))
+}
+
+// The host leaves the index after the request resolved it and after the eviction ran, but before the request took
+// the wrapper: the re-check under the wrapper lock must stop the build and remove the wrapper it created.
+func TestManager_HostEvictedBetweenResolveAndBuild(t *testing.T) {
+	t.Parallel()
+
+	m := newTestManager()
+	routes := &testHostRoutes{routes: map[string]k8sapp.WorkloadRef{"data.customer.org": {AppID: "123"}}}
+	m.customHosts = routes
+	ref := k8sapp.WorkloadRef{AppID: "123"}
+	result := customHostResult(ref, "data.customer.org")
+	ctx := context.WithValue(t.Context(), middleware.RequestIDCtxKey, "test-request-id")
+
+	// The request passed the first check and holds a fresh wrapper.
+	assert.True(t, m.hostRouted(result))
+	routes.drop("data.customer.org")
+	m.EvictHost(ref, "data.customer.org") // finds nothing to delete
+	wrapper := m.handlers.GetOrInit(handlerKeyFor(result))
+
+	assert.NotNil(t, m.handlerFor(ctx, result, wrapper))
+	assert.Nil(t, wrapper.handler, "nothing may be built for an unrouted host")
+	assert.Equal(t, 0, handlerCount(m), "the wrapper must leave the cache")
+}
+
+// The host now belongs to another app: the workload is compared, not only the host.
+func TestManager_HostMovedToAnotherApp(t *testing.T) {
+	t.Parallel()
+
+	m := newTestManager()
+	m.customHosts = &testHostRoutes{routes: map[string]k8sapp.WorkloadRef{"data.customer.org": {AppID: "999"}}}
+
+	assert.False(t, m.hostRouted(customHostResult(k8sapp.WorkloadRef{AppID: "123"}, "data.customer.org")))
+	assert.True(t, m.hostRouted(customHostResult(k8sapp.WorkloadRef{AppID: "999"}, "data.customer.org")))
+	assert.True(t, m.hostRouted(appconfig.AppConfigResult{Workload: k8sapp.WorkloadRef{AppID: "123"}}), "the hub host needs no index")
 }
