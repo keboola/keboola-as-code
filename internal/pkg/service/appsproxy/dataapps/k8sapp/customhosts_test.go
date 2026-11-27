@@ -319,8 +319,9 @@ func TestCustomHosts_ConflictLatestRoutedAtWins(t *testing.T) {
 	require.NoError(t, client.Resource(k8sapp.CustomAppDomainGVR()).Namespace(testNamespace).Delete(t.Context(), "222-aaaa", metav1.DeleteOptions{}))
 	require.Eventually(t, func() bool { app, _ := routeTo(hosts, "shared.example"); return app == "111" }, 5*time.Second, 10*time.Millisecond)
 
-	var evictedApps []string
-	for _, r := range gone.all() {
+	removed := gone.all()
+	evictedApps := make([]string, 0, len(removed))
+	for _, r := range removed {
 		assert.Equal(t, "shared.example", r.host)
 		evictedApps = append(evictedApps, r.ref.AppID.String())
 	}

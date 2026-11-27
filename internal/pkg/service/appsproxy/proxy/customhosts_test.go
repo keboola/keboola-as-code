@@ -119,7 +119,13 @@ func TestCustomHostsThroughTheProxy(t *testing.T) {
 
 	// A stopped app is woken by a request on its custom host.
 	patchStoppedApp("123", `{"spec": {"state": "Stopped", "autoRestartEnabled": true}, "status": {"currentState": "Stopped"}}`)(t, mocked.TestFakeK8sClient(), d.AppStateWatcher())
-	expectWoken("123", "https://data.customer.org/")(t, client, nil, nil, nil, mocked.TestFakeK8sClient(), d.AppStateWatcher())
+	patchesBefore := appPatchCount(mocked.TestFakeK8sClient(), "123")
+	resp, body = get("https://data.customer.org/", "")
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.Contains(t, body, "<title>Starting</title>")
+	require.Eventually(t, func() bool {
+		return appPatchCount(mocked.TestFakeK8sClient(), "123") > patchesBefore
+	}, 5*time.Second, 50*time.Millisecond, "expected a wake patch of the App CR")
 
 	// A claim that stops being Routed stops routing.
 	_, err = mocked.TestFakeK8sClient().Resource(k8sapp.CustomAppDomainGVR()).Namespace("keboola").Update(ctx, routedClaim("123-aaaa", "data.customer.org", "123", false), metav1.UpdateOptions{})

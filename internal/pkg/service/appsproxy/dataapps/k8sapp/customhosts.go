@@ -285,7 +285,7 @@ func (c *CustomHosts) update(ctx context.Context, name string, next *claimRoute)
 		hosts = append(hosts, next.host)
 	}
 
-	var removals []hostRemoval
+	removals := make([]hostRemoval, 0, len(hosts))
 	for _, host := range slices.Compact(slices.Sorted(slices.Values(hosts))) {
 		removals = append(removals, c.electLocked(ctx, host, next != nil && next.host == host)...)
 	}
