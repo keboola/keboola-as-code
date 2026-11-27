@@ -31,6 +31,12 @@ import (
 // Browsers can also send cookie session store cookies, CookieName and "<CookieName>_<n>"; they must not reach the app either.
 const CookieName = "_oauth2_proxy"
 
+// SessionCookieName is the name of the session ticket cookie. The CSRF cookies start with "<SessionCookieName>_".
+const SessionCookieName = CookieName + "_ticket"
+
+// HostSessionCookieName is the host-only name of the session ticket cookie. The CSRF cookies start with "<HostSessionCookieName>_".
+const HostSessionCookieName = "__Host-kbc-oauth2-ticket"
+
 type SessionStore struct {
 	Client  *redis.Client
 	Metrics *sessionstore.Metrics
@@ -39,8 +45,6 @@ type SessionStore struct {
 const (
 	sessionRefresh = time.Hour
 	sessionExpire  = 24 * time.Hour
-
-	sessionCookieName = CookieName + "_ticket"
 
 	// statusClientClosedRequest is nginx's status for a request the client aborted, so the access log does not show 200.
 	statusClientClosedRequest = 499
@@ -137,7 +141,7 @@ func proxyConfig(
 	redirectURL := callbackURL(app, cfg.API.PublicURL)
 	v.Logging.RequestIDHeader = config.RequestIDHeader
 	v.Logging.RequestEnabled = false // we have log middleware for all requests
-	v.Cookie.Name = sessionCookieName
+	v.Cookie.Name = SessionCookieName
 	v.Cookie.Secret = secret
 	v.Cookie.Domains = cookieDomains(app, cfg.API.PublicURL)
 	v.Cookie.SameSite = "strict"

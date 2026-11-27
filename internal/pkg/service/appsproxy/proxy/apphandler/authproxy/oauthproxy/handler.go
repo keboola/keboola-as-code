@@ -91,6 +91,8 @@ func (h *Handler) ServeHTTPOrError(w http.ResponseWriter, req *http.Request) err
 		return h.initErr
 	}
 
+	req = h.withLegacyCookies(req)
+
 	// Pass request to OAuth2Proxy
 	h.proxyHandler.ServeHTTP(w, req) // errors are handled by the page writer
 	return nil

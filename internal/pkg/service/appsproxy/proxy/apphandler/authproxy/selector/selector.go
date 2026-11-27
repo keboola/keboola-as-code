@@ -21,6 +21,7 @@ import (
 
 const (
 	ProviderCookie             = "_oauth2_provider"
+	HostProviderCookie         = "__Host-kbc-auth-provider"
 	providerQueryParam         = "provider"
 	continueAuthQueryParam     = "continue_auth"
 	promptQueryParam           = "prompt"

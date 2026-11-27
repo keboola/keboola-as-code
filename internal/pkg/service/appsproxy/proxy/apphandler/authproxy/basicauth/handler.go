@@ -25,6 +25,7 @@ import (
 
 const (
 	CookieName         = "proxyBasicAuth"
+	HostCookieName     = "__Host-kbc-basic-auth"
 	callbackQueryParam = "rd" // value match OAuth2Proxy internals and shouldn't be modified (see AppDirector there)
 	formPagePath       = config.InternalPrefix + "/form"
 	csrfTokenKey       = "_csrf"

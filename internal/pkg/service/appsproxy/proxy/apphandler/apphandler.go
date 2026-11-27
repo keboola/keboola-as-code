@@ -103,6 +103,7 @@ func newAppHandler(manager *Manager, app api.AppConfig, workload k8sapp.Workload
 }
 
 func (h *appHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	w = withTwinExpiry(w, req)
 	if err := h.serveHTTPOrError(w, req); err != nil {
 		h.manager.pageWriter.WriteError(w, req, &h.app, err)
 	}
@@ -130,6 +131,8 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 	defer span.End(&err)
 
 	req = req.WithContext(ctx)
+
+	req = copyHostCookies(req)
 
 	// Add request ID header, for OAuth2Proxy internals and app itself
 	if id := middleware.RequestIDFromContext(req.Context()); id != "" { //nolint:contextcheck // false positive
