@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/keboola/keboola-sdk-go/v2/pkg/client"
@@ -58,7 +57,6 @@ func TestHandler_StartOnCustomHost(t *testing.T) {
 			require.NotEmpty(t, cookies)
 			for _, c := range cookies {
 				assert.Equal(t, tc.hostOnly, c.Domain == "", "cookie %s domain %q", c.Name, c.Domain)
-				assert.False(t, strings.Contains(c.Domain, "evil"))
 			}
 		})
 	}

@@ -114,7 +114,7 @@ func TestAppHandler_CanonicalRedirect(t *testing.T) {
 		return &appHandler{app: app, workload: k8sapp.WorkloadRef{AppID: "123"}, baseURL: app.BaseURL(publicURL)}
 	}
 	newReq := func(host string) *http.Request {
-		req := httptest.NewRequest(http.MethodGet, "http://"+host+"/path?q=1", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+host+"/path?q=1", nil)
 		req.Host = host
 		return req
 	}
