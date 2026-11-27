@@ -134,9 +134,22 @@ func (m *Manager) evictWorkload(ref k8sapp.WorkloadRef) {
 	})
 }
 
-// EvictHost drops the cached handler a workload serves on one custom host.
+// EvictHost drops the cached handler a workload serves on one custom host. The entry leaves the cache at once;
+// cancelling its handler waits for the handler lock in the background, because the caller is the claim informer
+// and a handler build in progress (OIDC discovery against the customer's IdP) must not delay other hosts' de-routing.
 func (m *Manager) EvictHost(ref k8sapp.WorkloadRef, host string) {
-	m.evict(handlerKey{Workload: ref, Host: host}, "host removed")
+	wrapper, ok := m.handlers.Delete(handlerKey{Workload: ref, Host: host})
+	if !ok {
+		return
+	}
+	go release(wrapper, "host removed")
+}
+
+// HandlerCount is the number of cached handlers.
+func (m *Manager) HandlerCount() int {
+	count := 0
+	m.handlers.Range(func(handlerKey, *appHandlerWrapper) { count++ })
+	return count
 }
 
 func (m *Manager) evict(key handlerKey, reason string) {
@@ -144,15 +157,24 @@ func (m *Manager) evict(key handlerKey, reason string) {
 	if !ok {
 		return
 	}
+	release(wrapper, reason)
+}
 
+// release marks the detached entry evicted and cancels its handler.
+func release(wrapper *appHandlerWrapper, reason string) {
 	wrapper.lock.Lock()
 	defer wrapper.lock.Unlock()
-	wrapper.evicted = true
-	if wrapper.cancel != nil {
-		wrapper.cancel(errors.New(reason))
-		wrapper.cancel = nil
+	wrapper.releaseLocked(reason)
+}
+
+// releaseLocked is release for a caller that holds the wrapper lock.
+func (w *appHandlerWrapper) releaseLocked(reason string) {
+	w.evicted = true
+	if w.cancel != nil {
+		w.cancel(errors.New(reason))
+		w.cancel = nil
 	}
-	wrapper.handler = nil
+	w.handler = nil
 }
 
 func (m *Manager) HandlerFor(ctx context.Context, result appconfig.AppConfigResult) http.Handler {
@@ -194,6 +216,8 @@ func (m *Manager) handlerFor(ctx context.Context, result appconfig.AppConfigResu
 	}
 
 	if !m.hostRouted(result) {
+		// The eviction callback may have found nothing to cancel: it can run before this wrapper was cached.
+		wrapper.releaseLocked("host not routed")
 		m.handlers.DeleteIf(handlerKeyFor(result), wrapper)
 		return m.newErrorHandler(ctx, api.AppConfig{ID: result.Workload.AppID}, hostNotRoutedError(result))
 	}

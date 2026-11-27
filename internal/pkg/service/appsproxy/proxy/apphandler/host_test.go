@@ -5,7 +5,9 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -90,17 +92,21 @@ func TestManager_EvictHostKeepsOtherHosts(t *testing.T) {
 	hubKey := handlerKey{Workload: ref}
 	customKey := handlerKey{Workload: ref, Host: "a.customer.org"}
 
-	cancelled := false
+	var cancelled atomic.Bool
 	for _, key := range []handlerKey{hubKey, customKey} {
 		w := m.handlers.GetOrInit(key)
 		w.handler = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
-		w.cancel = func(error) { cancelled = cancelled || key == customKey }
+		w.cancel = func(error) {
+			if key == customKey {
+				cancelled.Store(true)
+			}
+		}
 	}
 
 	m.EvictHost(ref, "a.customer.org")
 
-	assert.True(t, cancelled)
-	assert.Nil(t, m.handlers.GetOrInit(customKey).handler)
+	assert.Eventually(t, cancelled.Load, 5*time.Second, 5*time.Millisecond)
+	assert.Equal(t, 1, m.HandlerCount())
 	assert.NotNil(t, m.handlers.GetOrInit(hubKey).handler)
 }
 

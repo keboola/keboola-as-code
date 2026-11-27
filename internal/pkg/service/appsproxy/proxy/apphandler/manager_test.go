@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -140,12 +141,6 @@ func customHostResult(ref k8sapp.WorkloadRef, host string) appconfig.AppConfigRe
 	return appconfig.AppConfigResult{Workload: ref, AppConfig: api.AppConfig{CustomHost: host}}
 }
 
-func handlerCount(m *Manager) int {
-	count := 0
-	m.handlers.Range(func(handlerKey, *appHandlerWrapper) { count++ })
-	return count
-}
-
 // A host that is not in the index creates no handler, so an evicted host cannot rebuild one.
 func TestManager_UnroutedCustomHostCreatesNoHandler(t *testing.T) {
 	t.Parallel()
@@ -157,7 +152,7 @@ func TestManager_UnroutedCustomHostCreatesNoHandler(t *testing.T) {
 	ctx := context.WithValue(t.Context(), middleware.RequestIDCtxKey, "test-request-id")
 	h := m.HandlerFor(ctx, customHostResult(ref, "gone.customer.org"))
 	assert.NotNil(t, h)
-	assert.Equal(t, 0, handlerCount(m))
+	assert.Equal(t, 0, m.HandlerCount())
 }
 
 // The host leaves the index after the request resolved it and after the eviction ran, but before the request took
@@ -180,7 +175,7 @@ func TestManager_HostEvictedBetweenResolveAndBuild(t *testing.T) {
 
 	assert.NotNil(t, m.handlerFor(ctx, result, wrapper))
 	assert.Nil(t, wrapper.handler, "nothing may be built for an unrouted host")
-	assert.Equal(t, 0, handlerCount(m), "the wrapper must leave the cache")
+	assert.Equal(t, 0, m.HandlerCount(), "the wrapper must leave the cache")
 }
 
 // The host now belongs to another app: the workload is compared, not only the host.
@@ -193,4 +188,70 @@ func TestManager_HostMovedToAnotherApp(t *testing.T) {
 	assert.False(t, m.hostRouted(customHostResult(k8sapp.WorkloadRef{AppID: "123"}, "data.customer.org")))
 	assert.True(t, m.hostRouted(customHostResult(k8sapp.WorkloadRef{AppID: "999"}, "data.customer.org")))
 	assert.True(t, m.hostRouted(appconfig.AppConfigResult{Workload: k8sapp.WorkloadRef{AppID: "123"}}), "the hub host needs no index")
+}
+
+// A handler that was already built is cancelled and cleared when the re-check fails, because the eviction callback
+// may have run before the wrapper was cached and found nothing to cancel.
+func TestManager_FailedRecheckCancelsABuiltHandler(t *testing.T) {
+	t.Parallel()
+
+	m := newTestManager()
+	routes := &testHostRoutes{routes: map[string]k8sapp.WorkloadRef{}}
+	m.customHosts = routes
+	ref := k8sapp.WorkloadRef{AppID: "123"}
+	result := customHostResult(ref, "data.customer.org")
+
+	cancelled := false
+	wrapper := m.handlers.GetOrInit(handlerKeyFor(result))
+	wrapper.handler = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	wrapper.cancel = func(error) { cancelled = true }
+
+	ctx := context.WithValue(t.Context(), middleware.RequestIDCtxKey, "test-request-id")
+	assert.NotNil(t, m.handlerFor(ctx, result, wrapper))
+
+	assert.True(t, cancelled, "the built handler must be cancelled")
+	assert.Nil(t, wrapper.handler)
+	assert.True(t, wrapper.evicted)
+	assert.Equal(t, 0, m.HandlerCount())
+}
+
+// The claim informer calls EvictHost: a handler build that holds the wrapper lock must not block it,
+// and the cancel runs once the build ends.
+func TestManager_EvictHostDoesNotWaitForTheHandlerLock(t *testing.T) {
+	t.Parallel()
+
+	m := newTestManager()
+	ref := k8sapp.WorkloadRef{AppID: "123"}
+	key := handlerKey{Workload: ref, Host: "data.customer.org"}
+
+	cancelled := make(chan struct{})
+	wrapper := m.handlers.GetOrInit(key)
+	wrapper.handler = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	wrapper.cancel = func(error) { close(cancelled) }
+
+	wrapper.lock.Lock() // a handler build in progress
+	returned := make(chan struct{})
+	go func() {
+		m.EvictHost(ref, "data.customer.org")
+		close(returned)
+	}()
+
+	select {
+	case <-returned:
+	case <-time.After(5 * time.Second):
+		t.Fatal("EvictHost blocked on the handler lock")
+	}
+	assert.Equal(t, 0, m.HandlerCount(), "the entry leaves the cache at once")
+	select {
+	case <-cancelled:
+		t.Fatal("cancelled while the lock is held")
+	default:
+	}
+
+	wrapper.lock.Unlock()
+	select {
+	case <-cancelled:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the handler was never cancelled")
+	}
 }
