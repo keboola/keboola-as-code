@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	middlewareapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/middleware"
@@ -44,6 +45,11 @@ const (
 	// statusClientClosedRequest is nginx's status for a request the client aborted, so the access log does not show 200.
 	statusClientClosedRequest = 499
 )
+
+// callbackURL is the OIDC redirect URI registered with the provider for the host the app is reached on.
+func callbackURL(app api.AppConfig, publicURL *url.URL) string {
+	return app.BaseURL(publicURL).ResolveReference(&url.URL{Path: config.InternalPrefix + "/callback"}).String()
+}
 
 func providerUnavailableError(err error) error {
 	return svcErrors.
@@ -120,7 +126,7 @@ func proxyConfig(
 	}
 	// Setup
 	domain := app.CookieDomain(cfg.API.PublicURL)
-	redirectURL := cfg.API.PublicURL.Scheme + "://" + domain + config.InternalPrefix + "/callback"
+	redirectURL := callbackURL(app, cfg.API.PublicURL)
 	v.Logging.RequestIDHeader = config.RequestIDHeader
 	v.Logging.RequestEnabled = false // we have log middleware for all requests
 	v.Cookie.Name = sessionCookieName

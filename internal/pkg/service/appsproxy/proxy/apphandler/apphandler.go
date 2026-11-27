@@ -143,8 +143,8 @@ func (h *appHandler) serveHTTPOrError(w http.ResponseWriter, req *http.Request) 
 	// sent to another. A Sandbox owns exactly one hostname and is reached only by
 	// matching it exactly, before parseAppID is consulted, so it has nothing to
 	// canonicalise and needs no canonical host of its own.
-	if !h.workload.IsSandbox() && strings.ToLower(req.Host) != h.baseURL.Host {
-		w.Header().Set("Location", h.baseURL.ResolveReference(&url.URL{Path: req.URL.Path, RawQuery: req.URL.RawQuery}).String())
+	if location, ok := h.canonicalRedirect(req); ok {
+		w.Header().Set("Location", location)
 		w.WriteHeader(http.StatusPermanentRedirect)
 		return nil
 	}
@@ -195,4 +195,14 @@ func (h *appHandler) serveRule(w http.ResponseWriter, req *http.Request, index r
 func (h *appHandler) isDevMode() bool {
 	info, ok := h.manager.upstreamManager.AppInfo(h.workload)
 	return ok && info.DevMode
+}
+
+// canonicalRedirect returns the canonical URL of the request, when it arrived on another hostname of the app.
+// A custom host is the only host its handler serves, so it has no canonical alias.
+// The target is built from the handler's own origin, never from request headers.
+func (h *appHandler) canonicalRedirect(req *http.Request) (string, bool) {
+	if h.workload.IsSandbox() || h.app.CustomHost != "" || strings.ToLower(req.Host) == h.baseURL.Host {
+		return "", false
+	}
+	return h.baseURL.ResolveReference(&url.URL{Path: req.URL.Path, RawQuery: req.URL.RawQuery}).String(), true
 }

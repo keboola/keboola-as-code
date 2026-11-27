@@ -35,8 +35,10 @@ type AppConfig struct {
 	UpstreamAppURL string             `json:"upstreamAppUrl"`
 	AuthProviders  provider.Providers `json:"authProviders"`
 	AuthRules      []Rule             `json:"authRules"`
-	eTag           string
-	maxAge         time.Duration
+	// CustomHost is the routed request host when the app is reached on a custom domain; empty on the hub host.
+	CustomHost string `json:"-"`
+	eTag       string
+	maxAge     time.Duration
 }
 
 type NotModifiedError struct {
@@ -67,11 +69,17 @@ func (c AppConfig) Domain() string {
 
 // CookieDomain without port for cookies.
 func (c AppConfig) CookieDomain(publicURL *url.URL) string {
+	if c.CustomHost != "" {
+		return c.CustomHost
+	}
 	return c.Domain() + "." + publicURL.Hostname()
 }
 
 // BaseURL of the app.
 func (c AppConfig) BaseURL(publicURL *url.URL) *url.URL {
+	if c.CustomHost != "" {
+		return &url.URL{Scheme: publicURL.Scheme, Host: c.CustomHost, Path: "/"}
+	}
 	return &url.URL{
 		Scheme: publicURL.Scheme,
 		Host:   c.Domain() + "." + publicURL.Host,
