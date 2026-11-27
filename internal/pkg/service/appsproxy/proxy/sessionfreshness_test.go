@@ -32,15 +32,21 @@ func freshnessUser() *mockoidc.MockUser {
 	return &mockoidc.MockUser{Subject: "sub-1", Email: "admin@keboola.com", EmailVerified: new(true), Groups: []string{"admin"}}
 }
 
+// oidcCookieSecret is the secret oauth2-proxy signs the cookies of the "oidc" app with.
+func (e *previewEnv) oidcCookieSecret() string {
+	e.t.Helper()
+	h := sha256.New()
+	h.Write([]byte("oidc/oidc/" + e.d.Config().CookieSecretSalt))
+	return fmt.Sprintf("%x", h.Sum(nil)[:16])
+}
+
 // oidcSessionStore reads and writes the oauth2-proxy session of the "oidc" app,
 // so a test can move a session back in time.
 func (e *previewEnv) oidcSessionStore() sessionsapi.SessionStore {
 	e.t.Helper()
-	h := sha256.New()
-	h.Write([]byte("oidc/oidc/" + e.d.Config().CookieSecretSalt))
 	cookieOpts := &options.Cookie{
 		Name:     ticketCookieName,
-		Secret:   fmt.Sprintf("%x", h.Sum(nil)[:16]),
+		Secret:   e.oidcCookieSecret(),
 		Domains:  []string{oidcHost},
 		Path:     "/",
 		Expire:   24 * time.Hour,
