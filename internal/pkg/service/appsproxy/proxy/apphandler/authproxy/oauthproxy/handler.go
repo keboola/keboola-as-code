@@ -51,7 +51,7 @@ func NewHandler(
 	}
 
 	// Create proxy page writer adapter
-	pageWriter, err := newPageWriter(logger, pw, app, auth, handler.proxyConfig)
+	pageWriter, err := newPageWriter(logger, pw, app, callbackURL(app, cfg.API.PublicURL), auth, handler.proxyConfig)
 	if err != nil {
 		handler.initErr = wrapHandlerInitErr(app, auth, err)
 		return handler

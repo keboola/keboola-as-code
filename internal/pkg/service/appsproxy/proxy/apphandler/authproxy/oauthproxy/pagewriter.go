@@ -27,9 +27,10 @@ type pageWriter struct {
 	app          api.AppConfig
 	authProvider provider.Provider
 	pageWriter   *pagewriter.Writer
+	callbackURL  string
 }
 
-func newPageWriter(logger log.Logger, pw *pagewriter.Writer, app api.AppConfig, authProvider provider.Provider, opts *options.Options) (*pageWriter, error) {
+func newPageWriter(logger log.Logger, pw *pagewriter.Writer, app api.AppConfig, callbackURL string, authProvider provider.Provider, opts *options.Options) (*pageWriter, error) {
 	parent, err := proxypw.NewWriter(
 		proxypw.Opts{
 			TemplatesPath:    opts.Templates.Path,
@@ -53,6 +54,7 @@ func newPageWriter(logger log.Logger, pw *pagewriter.Writer, app api.AppConfig, 
 		app:             app,
 		authProvider:    authProvider,
 		pageWriter:      pw,
+		callbackURL:     callbackURL,
 	}, nil
 }
 
@@ -95,7 +97,25 @@ func (pw *pageWriter) WriteErrorPage(w http.ResponseWriter, req *http.Request, o
 	// Log warning
 	pw.logger.Warn(req.Context(), strings.Join(messages, "\n")) //nolint:contextcheck // false positive
 
-	pw.pageWriter.WriteErrorPage(w, req, &pw.app, opts.Status, joinedMessage+"\n"+opts.AppError, exceptionID)
+	details := joinedMessage + "\n" + opts.AppError
+	if pw.app.CustomHost != "" && isRedirectURIError(opts.AppError, joinedMessage) {
+		pw.pageWriter.WriteCallbackURLErrorPage(w, req, &pw.app, pw.callbackURL, details, exceptionID)
+		return
+	}
+
+	pw.pageWriter.WriteErrorPage(w, req, &pw.app, opts.Status, details, exceptionID)
+}
+
+// isRedirectURIError matches the provider errors that name a callback address the provider does not know:
+// the OAuth error code redirect_uri_mismatch and the wording of other providers.
+func isRedirectURIError(texts ...string) bool {
+	for _, text := range texts {
+		text = strings.ToLower(text)
+		if strings.Contains(text, "redirect_uri") || strings.Contains(text, "redirect uri") || strings.Contains(text, "aadsts50011") {
+			return true
+		}
+	}
+	return false
 }
 
 func (pw *pageWriter) ProxyErrorHandler(w http.ResponseWriter, req *http.Request, err error) {

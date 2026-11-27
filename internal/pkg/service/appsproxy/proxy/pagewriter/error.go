@@ -28,6 +28,8 @@ type errorPageData struct {
 	Email            string
 	ProviderName     string
 	SwitchAccountURL string
+	// CallbackURL is the OAuth callback the app owner has to register with the identity provider.
+	CallbackURL string
 }
 
 // errorCopy is the plain-language version of an HTTP status, for the error page.
@@ -87,6 +89,16 @@ func copyForStatus(status int) errorCopy {
 			Guidance: "The application couldn't handle the request. Check the address you opened, then try again.",
 		}
 	}
+}
+
+// WriteCallbackURLErrorPage answers an OAuth redirect_uri error on a custom host with the callback URL to register.
+func (pw *Writer) WriteCallbackURLErrorPage(w http.ResponseWriter, req *http.Request, app *api.AppConfig, callbackURL, details, exceptionID string) {
+	data := newErrorPageData(app, http.StatusForbidden, details, exceptionID)
+	data.PageTitle = "Callback URL not registered"
+	data.Title = "The sign-in address is not registered"
+	data.Guidance = "Your identity provider rejected the address this app signs in at. The person who owns the app has to add the callback URL below to the allowed redirect URIs of the provider."
+	data.CallbackURL = callbackURL
+	pw.writeErrorPage(w, req, data)
 }
 
 func (pw *Writer) ProxyErrorHandlerFor(app api.AppConfig) func(w http.ResponseWriter, req *http.Request, err error) {
